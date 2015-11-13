@@ -1,0 +1,216 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Source Files\util">
+      <UniqueIdentifier>{a119ce23-aae9-4b06-be2c-1c8aada4ab20}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\util">
+      <UniqueIdentifier>{8740bd83-253c-49f3-8f9a-3b9c526f67c2}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="utilities.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="bigpoly.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="bigpolyarith.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="biguint.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="chooser.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="decryptor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="encoder.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="encryptionparams.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="encryptor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="evaluationkeys.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="evaluator.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="keygenerator.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="randomgen.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="seal.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="simulator.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="util\clipnormal.h">
+      <Filter>Header Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="util\common.h">
+      <Filter>Header Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="util\computation.h">
+      <Filter>Header Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="util\mempool.h">
+      <Filter>Header Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="util\modulus.h">
+      <Filter>Header Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="util\polyarith.h">
+      <Filter>Header Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="util\polyarithmod.h">
+      <Filter>Header Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="util\polycore.h">
+      <Filter>Header Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="util\polyextras.h">
+      <Filter>Header Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="util\polyfftmult.h">
+      <Filter>Header Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="util\polyfftmultmod.h">
+      <Filter>Header Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="util\polymodulus.h">
+      <Filter>Header Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="util\randomtostd.h">
+      <Filter>Header Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="util\uintarith.h">
+      <Filter>Header Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="util\uintarithmod.h">
+      <Filter>Header Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="util\uintcore.h">
+      <Filter>Header Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="util\uintextras.h">
+      <Filter>Header Files\util</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="bigpoly.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="bigpolyarith.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="biguint.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="chooser.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="decryptor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="encoder.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="encryptionparams.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="encryptor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="evaluationkeys.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="evaluator.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="keygenerator.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="randomgen.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="simulator.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="utilities.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="util\clipnormal.cpp">
+      <Filter>Source Files\util</Filter>
+    </ClCompile>
+    <ClCompile Include="util\common.cpp">
+      <Filter>Source Files\util</Filter>
+    </ClCompile>
+    <ClCompile Include="util\computation.cpp">
+      <Filter>Source Files\util</Filter>
+    </ClCompile>
+    <ClCompile Include="util\mempool.cpp">
+      <Filter>Source Files\util</Filter>
+    </ClCompile>
+    <ClCompile Include="util\modulus.cpp">
+      <Filter>Source Files\util</Filter>
+    </ClCompile>
+    <ClCompile Include="util\polyarith.cpp">
+      <Filter>Source Files\util</Filter>
+    </ClCompile>
+    <ClCompile Include="util\polyarithmod.cpp">
+      <Filter>Source Files\util</Filter>
+    </ClCompile>
+    <ClCompile Include="util\polycore.cpp">
+      <Filter>Source Files\util</Filter>
+    </ClCompile>
+    <ClCompile Include="util\polyextras.cpp">
+      <Filter>Source Files\util</Filter>
+    </ClCompile>
+    <ClCompile Include="util\polyfftmult.cpp">
+      <Filter>Source Files\util</Filter>
+    </ClCompile>
+    <ClCompile Include="util\polyfftmultmod.cpp">
+      <Filter>Source Files\util</Filter>
+    </ClCompile>
+    <ClCompile Include="util\polymodulus.cpp">
+      <Filter>Source Files\util</Filter>
+    </ClCompile>
+    <ClCompile Include="util\uintarith.cpp">
+      <Filter>Source Files\util</Filter>
+    </ClCompile>
+    <ClCompile Include="util\uintarithmod.cpp">
+      <Filter>Source Files\util</Filter>
+    </ClCompile>
+    <ClCompile Include="util\uintcore.cpp">
+      <Filter>Source Files\util</Filter>
+    </ClCompile>
+    <ClCompile Include="util\uintextras.cpp">
+      <Filter>Source Files\util</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="makefile" />
+  </ItemGroup>
+</Project>
