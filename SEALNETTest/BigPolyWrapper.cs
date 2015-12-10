@@ -242,5 +242,43 @@ namespace SEALNETTest
             poly2.Load(stream);
             Assert.AreEqual(poly, poly2);
         }
+
+        [TestMethod]
+        public void DuplicateToNET()
+        {
+            var original = new BigPoly(123, 456);
+            original[0].Set(1);
+            original[1].Set(2);
+            original[2].Set(3);
+            original[3].Set(4);
+            original[4].Set(5);
+            original[122].Set(123);
+
+            BigPoly target = new BigPoly();
+
+            original.DuplicateTo(target);
+            Assert.AreEqual(target.CoeffCount, original.CoeffCount);
+            Assert.AreEqual(target.CoeffBitCount, original.CoeffBitCount);
+            Assert.IsTrue(target.Equals(original));
+        }
+
+        [TestMethod]
+        public void DuplicateFromNET()
+        {
+            var original = new BigPoly(123, 456);
+            original[0].Set(1);
+            original[1].Set(2);
+            original[2].Set(3);
+            original[3].Set(4);
+            original[4].Set(5);
+            original[122].Set(123);
+
+            BigPoly target = new BigPoly();
+
+            target.DuplicateFrom(original);
+            Assert.AreEqual(target.CoeffCount, original.CoeffCount);
+            Assert.AreEqual(target.CoeffBitCount, original.CoeffBitCount);
+            Assert.IsTrue(target.Equals(original));
+        }
     }
 }

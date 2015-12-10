@@ -72,7 +72,7 @@ namespace Microsoft
 
                 <param name="coeffCount">The number of coefficients</param>
                 <param name="coeffBitCount">The bit width of each coefficient</param>
-                <exception cref="System::ArgumentException">If either coeffCount or coeffBitCount is negative</exception>
+                <exception cref="System::ArgumentException">if either coeffCount or coeffBitCount is negative</exception>
                 */
                 BigPoly(int coeffCount, int coeffBitCount);
 
@@ -100,8 +100,8 @@ namespace Microsoft
                 </remarks>
 
                 <param name="hexPoly">The formatted polynomial string specifying the initial value</param>
-                <exception cref="System::ArgumentNullException">If hexPoly is null</exception>
-                <exception cref="System::ArgumentException">If hexPoly does not adhere to the expected format</exception>
+                <exception cref="System::ArgumentNullException">if hexPoly is null</exception>
+                <exception cref="System::ArgumentException">if hexPoly does not adhere to the expected format</exception>
                 */
                 BigPoly(System::String ^hexPoly);
 
@@ -132,9 +132,9 @@ namespace Microsoft
                 <param name="coeffCount">The number of coefficients</param>
                 <param name="coeffBitCount">The bit width of each coefficient</param>
                 <param name="hexPoly">The formatted polynomial string specifying the initial value</param>
-                <exception cref="System::ArgumentException">If either coeffCount or coeffBitCount is negative</exception>
-                <exception cref="System::ArgumentNullException">If hexPoly is null</exception>
-                <exception cref="System::ArgumentException">If hexPoly does not adhere to the expected format</exception>
+                <exception cref="System::ArgumentException">if either coeffCount or coeffBitCount is negative</exception>
+                <exception cref="System::ArgumentNullException">if hexPoly is null</exception>
+                <exception cref="System::ArgumentException">if hexPoly does not adhere to the expected format</exception>
                 */
                 BigPoly(int coeffCount, int coeffBitCount, System::String ^hexPoly);
 
@@ -146,7 +146,7 @@ namespace Microsoft
                 </remarks>
 
                 <param name="copy">The BigPoly to copy from</param>
-                <exception cref="System::ArgumentNullException">If copy is null</exception>
+                <exception cref="System::ArgumentNullException">if copy is null</exception>
                 */
                 BigPoly(BigPoly ^copy);
 
@@ -244,7 +244,7 @@ namespace Microsoft
                 </remarks>
 
                 <param name="index">The index of the coefficient to read/write</param>
-                <exception cref="System::ArgumentOutOfRangeException">If index is not within [0, <see cref="CoeffCount"/>)</exception>
+                <exception cref="System::ArgumentOutOfRangeException">if index is not within [0, <see cref="CoeffCount"/>)</exception>
                 <seealso cref="BigUInt">See BigUInt for operations that can be performed on the coefficients.</seealso>
                 */
                 property BigUInt ^default[int]{
@@ -274,8 +274,8 @@ namespace Microsoft
                 </remarks>
 
                 <param name="assign">The BigPoly whose value should be assigned to the current BigPoly</param>
-                <exception cref="System::ArgumentNullException">If assign is null</exception>
-                <exception cref="System::InvalidOperationException">If BigPoly is an alias and the assigned BigPoly is too large to fit the current
+                <exception cref="System::ArgumentNullException">if assign is null</exception>
+                <exception cref="System::InvalidOperationException">if BigPoly is an alias and the assigned BigPoly is too large to fit the current
                 coefficient count and/or bit width</exception>
                 */
                 void Set(BigPoly ^assign);
@@ -306,9 +306,9 @@ namespace Microsoft
                 </remarks>
 
                 <param name="assign">The formatted polynomial string specifying the value to set</param>
-                <exception cref="System::ArgumentNullException">If assign is null</exception>
-                <exception cref="System::ArgumentException">If assign does not adhere to the expected format</exception>
-                <exception cref="System::InvalidOperationException">If BigPoly is an alias and the assigned polynomial is too large to fit the
+                <exception cref="System::ArgumentNullException">if assign is null</exception>
+                <exception cref="System::ArgumentException">if assign does not adhere to the expected format</exception>
+                <exception cref="System::InvalidOperationException">if BigPoly is an alias and the assigned polynomial is too large to fit the
                 current coefficient count and/or bit width</exception>
                 */
                 void Set(System::String ^assign);
@@ -327,7 +327,7 @@ namespace Microsoft
                 </remarks>
 
                 <param name="startCoeff">The index of the first coefficient to set to zero</param>
-                <exception cref="System::ArgumentOutOfRangeException">If startCoeff is not within [0, <see cref="CoeffCount"/>]</exception>
+                <exception cref="System::ArgumentOutOfRangeException">if startCoeff is not within [0, <see cref="CoeffCount"/>]</exception>
                 */
                 void SetZero(int startCoeff);
 
@@ -340,8 +340,8 @@ namespace Microsoft
 
                 <param name="startCoeff">The index of the first coefficient to set to zero</param>
                 <param name="coeffCount">The number of coefficients to set to zero</param>
-                <exception cref="System::ArgumentOutOfRangeException">If startCoeff is not within [0, <see cref="CoeffCount"/>]</exception>
-                <exception cref="System::ArgumentOutOfRangeException">If length is negative or start_coeff + length is not within
+                <exception cref="System::ArgumentOutOfRangeException">if startCoeff is not within [0, <see cref="CoeffCount"/>]</exception>
+                <exception cref="System::ArgumentOutOfRangeException">if length is negative or start_coeff + length is not within
                 [0, <see cref="CoeffCount"/>]</exception>
                 */
                 void SetZero(int startCoeff, int coeffCount);
@@ -355,7 +355,7 @@ namespace Microsoft
                 </remarks>
 
                 <param name="stream">The stream to save the BigPoly to</param>
-                <exception cref="System::ArgumentNullException">If stream is null</exception>
+                <exception cref="System::ArgumentNullException">if stream is null</exception>
                 <seealso cref="Load()">See Load() to load a saved BigPoly.</seealso>
                 */
                 void Save(System::IO::Stream ^stream);
@@ -365,8 +365,8 @@ namespace Microsoft
                 BigPoly.</summary>
 
                 <param name="stream">The stream to load the BigPoly from</param>
-                <exception cref="System::ArgumentNullException">If stream is null</exception>
-                <exception cref="System::InvalidOperationException">If BigPoly is an alias and the loaded polynomial is too large to fit the
+                <exception cref="System::ArgumentNullException">if stream is null</exception>
+                <exception cref="System::InvalidOperationException">if BigPoly is an alias and the loaded polynomial is too large to fit the
                 current coefficient count and/or bit width</exception>
                 <seealso cref="Save()">See Save() to save a BigPoly.</seealso>
                 */
@@ -383,8 +383,8 @@ namespace Microsoft
 
                 <param name="coeffCount">The number of coefficients</param>
                 <param name="coeffBitCount">The bit width of each coefficient</param>
-                <exception cref="System::ArgumentException">If either coeffCount or coeffBitCount is negative</exception>
-                <exception cref="System::InvalidOperationException">If the BigPoly is an alias</exception>
+                <exception cref="System::ArgumentException">if either coeffCount or coeffBitCount is negative</exception>
+                <exception cref="System::InvalidOperationException">if the BigPoly is an alias</exception>
                 */
                 void Resize(int coeffCount, int coeffBitCount);
 
@@ -396,7 +396,7 @@ namespace Microsoft
                 </remarks>
 
                 <param name="compare">The BigPoly to compare against</param>
-                <exception cref="System::ArgumentNullException">If compare is null</exception>
+                <exception cref="System::ArgumentNullException">if compare is null</exception>
                 */
                 virtual bool Equals(BigPoly ^compare);
 
@@ -457,9 +457,9 @@ namespace Microsoft
                 seal::BigPoly &GetPolynomial();
 
                 /**
-                <summary>Creates a deep copy of the C++ BigPoly.</summary>
+                <summary>Creates a deep copy of a C++ BigPoly.</summary>
                 <remarks>
-                Creates a deep copy of a BigPoly. The created BigPoly will have the same coefficient count, coefficient bit count,
+                Creates a deep copy of a C++ BigPoly. The created BigPoly will have the same coefficient count, coefficient bit count,
                 and coefficient values as the original.
                 </remarks>
 
@@ -477,6 +477,28 @@ namespace Microsoft
                 <param name="value">The BigPoly to use as the backing BigPoly</param>
                 */
                 BigPoly(seal::BigPoly *value);
+
+                /**
+                <summary>Duplicates the current BigPoly.</summary>
+                <remarks>
+                Duplicates the current BigPoly. The coefficient count, the coefficient bit count, and the value of the given BigPoly
+                are set to be exactly the same as in the current one.
+                </remarks>
+                <param name="destination">The BigPoly to overwrite with the duplicate</param>
+                <exception cref="System::ArgumentNullException">if destination is null</exception>
+                */
+                void DuplicateTo(BigPoly ^destination);
+
+                /**
+                <summary>Duplicates a given BigPoly.</summary>
+                <remarks>
+                Duplicates a given BigPoly. The coefficient count, the coefficient bit count,
+                and the value of the current BigPoly are set to be exactly the same as in the given one.
+                </remarks>
+                <param name="value">The BigPoly to duplicate</param>
+                <exception cref="System::ArgumentNullException">if value is null</exception>
+                */
+                void DuplicateFrom(BigPoly ^value);
 
             internal:
 

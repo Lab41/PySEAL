@@ -15,6 +15,10 @@ namespace Microsoft
         {
             BinaryEncoder::BinaryEncoder(BigUInt ^plainModulus) : binaryEncoder_(nullptr)
             {
+                if (plainModulus == nullptr)
+                {
+                    throw gcnew ArgumentNullException("plainModulus cannot be null");
+                }
                 binaryEncoder_ = new seal::BinaryEncoder(plainModulus->GetUInt());
             }
 
@@ -36,40 +40,16 @@ namespace Microsoft
             {
                 if (binaryEncoder_ == nullptr)
                 {
-                    throw gcnew ObjectDisposedException("BinaryEncoder");
+                    throw gcnew ObjectDisposedException("BinaryEncoder is disposed");
                 }
                 return gcnew BigUInt(binaryEncoder_->plain_modulus());
-            }
-
-            void BinaryEncoder::PlainModulus::set(BigUInt ^value)
-            {
-                if (binaryEncoder_ == nullptr)
-                {
-                    throw gcnew ObjectDisposedException("BinaryEncoder");
-                }
-                if (value == nullptr)
-                {
-                    throw gcnew ArgumentNullException("value");
-                }
-                try
-                {
-                    binaryEncoder_->set_plain_modulus(value->GetUInt());
-                }
-                catch (const exception &e)
-                {
-                    HandleException(&e);
-                }
-                catch (...)
-                {
-                    HandleException(nullptr);
-                }
             }
 
             BigPoly ^BinaryEncoder::Encode(UInt64 value)
             {
                 if (binaryEncoder_ == nullptr)
                 {
-                    throw gcnew ObjectDisposedException("BinaryEncoder");
+                    throw gcnew ObjectDisposedException("BinaryEncoder is disposed");
                 }
                 try
                 {
@@ -90,11 +70,35 @@ namespace Microsoft
             {
                 if (binaryEncoder_ == nullptr)
                 {
-                    throw gcnew ObjectDisposedException("BinaryEncoder");
+                    throw gcnew ObjectDisposedException("BinaryEncoder is disposed");
                 }
                 if (destination == nullptr)
                 {
-                    throw gcnew ArgumentNullException("destination");
+                    throw gcnew ArgumentNullException("destination cannot be null");
+                }
+                try
+                {
+                    binaryEncoder_->encode(value, destination->GetPolynomial());
+                }
+                catch (const exception &e)
+                {
+                    HandleException(&e);
+                }
+                catch (...)
+                {
+                    HandleException(nullptr);
+                }
+            }
+
+            void BinaryEncoder::Encode(UInt32 value, BigPoly ^destination)
+            {
+                if (binaryEncoder_ == nullptr)
+                {
+                    throw gcnew ObjectDisposedException("BinaryEncoder is disposed");
+                }
+                if (destination == nullptr)
+                {
+                    throw gcnew ArgumentNullException("destination cannot be null");
                 }
                 try
                 {
@@ -114,11 +118,11 @@ namespace Microsoft
             {
                 if (binaryEncoder_ == nullptr)
                 {
-                    throw gcnew ObjectDisposedException("BinaryEncoder");
+                    throw gcnew ObjectDisposedException("BinaryEncoder is disposed");
                 }
                 if (value == nullptr)
                 {
-                    throw gcnew ArgumentNullException("value");
+                    throw gcnew ArgumentNullException("value cannot be null");
                 }
                 try
                 {
@@ -139,15 +143,15 @@ namespace Microsoft
             {
                 if (binaryEncoder_ == nullptr)
                 {
-                    throw gcnew ObjectDisposedException("BinaryEncoder");
+                    throw gcnew ObjectDisposedException("BinaryEncoder is disposed");
                 }
                 if (value == nullptr)
                 {
-                    throw gcnew ArgumentNullException("value");
+                    throw gcnew ArgumentNullException("value cannot be null");
                 }
                 if (destination == nullptr)
                 {
-                    throw gcnew ArgumentNullException("destination");
+                    throw gcnew ArgumentNullException("destination cannot be null");
                 }
                 try
                 {
@@ -167,7 +171,7 @@ namespace Microsoft
             {
                 if (binaryEncoder_ == nullptr)
                 {
-                    throw gcnew ObjectDisposedException("BinaryEncoder");
+                    throw gcnew ObjectDisposedException("BinaryEncoder is disposed");
                 }
                 try
                 {
@@ -188,11 +192,35 @@ namespace Microsoft
             {
                 if (binaryEncoder_ == nullptr)
                 {
-                    throw gcnew ObjectDisposedException("BinaryEncoder");
+                    throw gcnew ObjectDisposedException("BinaryEncoder is disposed");
                 }
                 if (destination == nullptr)
                 {
-                    throw gcnew ArgumentNullException("destination");
+                    throw gcnew ArgumentNullException("destination cannot be null");
+                }
+                try
+                {
+                    binaryEncoder_->encode(value, destination->GetPolynomial());
+                }
+                catch (const exception &e)
+                {
+                    HandleException(&e);
+                }
+                catch (...)
+                {
+                    HandleException(nullptr);
+                }
+            }
+
+            void BinaryEncoder::Encode(Int32 value, BigPoly ^destination)
+            {
+                if (binaryEncoder_ == nullptr)
+                {
+                    throw gcnew ObjectDisposedException("BinaryEncoder is disposed");
+                }
+                if (destination == nullptr)
+                {
+                    throw gcnew ArgumentNullException("destination cannot be null");
                 }
                 try
                 {
@@ -212,11 +240,11 @@ namespace Microsoft
             {
                 if (binaryEncoder_ == nullptr)
                 {
-                    throw gcnew ObjectDisposedException("BinaryEncoder");
+                    throw gcnew ObjectDisposedException("BinaryEncoder is disposed");
                 }
                 if (poly == nullptr)
                 {
-                    throw gcnew ArgumentNullException("poly");
+                    throw gcnew ArgumentNullException("poly cannot be null");
                 }
                 try
                 {
@@ -237,11 +265,11 @@ namespace Microsoft
             {
                 if (binaryEncoder_ == nullptr)
                 {
-                    throw gcnew ObjectDisposedException("BinaryEncoder");
+                    throw gcnew ObjectDisposedException("BinaryEncoder is disposed");
                 }
                 if (poly == nullptr)
                 {
-                    throw gcnew ArgumentNullException("poly");
+                    throw gcnew ArgumentNullException("poly cannot be null");
                 }
                 try
                 {
@@ -262,11 +290,11 @@ namespace Microsoft
             {
                 if (binaryEncoder_ == nullptr)
                 {
-                    throw gcnew ObjectDisposedException("BinaryEncoder");
+                    throw gcnew ObjectDisposedException("BinaryEncoder is disposed");
                 }
                 if (poly == nullptr)
                 {
-                    throw gcnew ArgumentNullException("poly");
+                    throw gcnew ArgumentNullException("poly cannot be null");
                 }
                 try
                 {
@@ -287,11 +315,11 @@ namespace Microsoft
             {
                 if (binaryEncoder_ == nullptr)
                 {
-                    throw gcnew ObjectDisposedException("BinaryEncoder");
+                    throw gcnew ObjectDisposedException("BinaryEncoder is disposed");
                 }
                 if (poly == nullptr)
                 {
-                    throw gcnew ArgumentNullException("poly");
+                    throw gcnew ArgumentNullException("poly cannot be null");
                 }
                 try
                 {
@@ -312,11 +340,11 @@ namespace Microsoft
             {
                 if (binaryEncoder_ == nullptr)
                 {
-                    throw gcnew ObjectDisposedException("BinaryEncoder");
+                    throw gcnew ObjectDisposedException("BinaryEncoder is disposed");
                 }
                 if (poly == nullptr)
                 {
-                    throw gcnew ArgumentNullException("poly");
+                    throw gcnew ArgumentNullException("poly cannot be null");
                 }
                 try
                 {
@@ -337,11 +365,15 @@ namespace Microsoft
             {
                 if (binaryEncoder_ == nullptr)
                 {
-                    throw gcnew ObjectDisposedException("BinaryEncoder");
+                    throw gcnew ObjectDisposedException("BinaryEncoder is disposed");
                 }
                 if (poly == nullptr)
                 {
-                    throw gcnew ArgumentNullException("poly");
+                    throw gcnew ArgumentNullException("poly cannot be null");
+                }
+                if (destination == nullptr)
+                {
+                    throw gcnew ArgumentNullException("destination cannot be null");
                 }
                 try
                 {
@@ -361,7 +393,7 @@ namespace Microsoft
             {
                 if (binaryEncoder_ == nullptr)
                 {
-                    throw gcnew ObjectDisposedException("BinaryEncoder");
+                    throw gcnew ObjectDisposedException("BinaryEncoder is disposed");
                 }
                 try
                 {
@@ -382,7 +414,7 @@ namespace Microsoft
             {
                 if (binaryEncoder_ == nullptr)
                 {
-                    throw gcnew ObjectDisposedException("BinaryEncoder");
+                    throw gcnew ObjectDisposedException("BinaryEncoder is disposed");
                 }
                 try
                 {
@@ -403,18 +435,26 @@ namespace Microsoft
             {
                 if (binaryEncoder_ == nullptr)
                 {
-                    throw gcnew ObjectDisposedException("BinaryEncoder");
+                    throw gcnew ObjectDisposedException("BinaryEncoder is disposed");
                 }
                 return *binaryEncoder_;
             }
 
             BalancedEncoder::BalancedEncoder(BigUInt ^plainModulus, int base) : balancedEncoder_(nullptr)
             {
+                if (plainModulus == nullptr)
+                {
+                    throw gcnew ArgumentNullException("plainModulus cannot be null");
+                }
                 balancedEncoder_ = new seal::BalancedEncoder(plainModulus->GetUInt(), base);
             }
 
             BalancedEncoder::BalancedEncoder(BigUInt ^plainModulus) : balancedEncoder_(nullptr)
             {
+                if (plainModulus == nullptr)
+                {
+                    throw gcnew ArgumentNullException("plainModulus cannot be null");
+                }
                 balancedEncoder_ = new seal::BalancedEncoder(plainModulus->GetUInt());
             }
 
@@ -436,7 +476,7 @@ namespace Microsoft
             {
                 if (balancedEncoder_ == nullptr)
                 {
-                    throw gcnew ObjectDisposedException("BalancedEncoder");
+                    throw gcnew ObjectDisposedException("BalancedEncoder is disposed");
                 }
                 return gcnew BigUInt(balancedEncoder_->plain_modulus());
             }
@@ -445,49 +485,16 @@ namespace Microsoft
             {
                 if (balancedEncoder_ == nullptr)
                 {
-                    throw gcnew ObjectDisposedException("BalancedEncoder");
+                    throw gcnew ObjectDisposedException("BalancedEncoder is disposed");
                 }
                 return balancedEncoder_->base();
-            }
-
-            void BalancedEncoder::PlainModulus::set(BigUInt ^value)
-            {
-                if (balancedEncoder_ == nullptr)
-                {
-                    throw gcnew ObjectDisposedException("BalancedEncoder");
-                }
-                if (value == nullptr)
-                {
-                    throw gcnew ArgumentNullException("value");
-                }
-                try
-                {
-                    balancedEncoder_->set_plain_modulus(value->GetUInt());
-                }
-                catch (const exception &e)
-                {
-                    HandleException(&e);
-                }
-                catch (...)
-                {
-                    HandleException(nullptr);
-                }
-            }
-
-            void BalancedEncoder::Base::set(int base)
-            {
-                if (balancedEncoder_ == nullptr)
-                {
-                    throw gcnew ObjectDisposedException("BalancedEncoder");
-                }
-                balancedEncoder_->set_base(base);
             }
 
             BigPoly ^BalancedEncoder::Encode(UInt64 value)
             {
                 if (balancedEncoder_ == nullptr)
                 {
-                    throw gcnew ObjectDisposedException("BalancedEncoder");
+                    throw gcnew ObjectDisposedException("BalancedEncoder is disposed");
                 }
                 try
                 {
@@ -508,11 +515,35 @@ namespace Microsoft
             {
                 if (balancedEncoder_ == nullptr)
                 {
-                    throw gcnew ObjectDisposedException("BalancedEncoder");
+                    throw gcnew ObjectDisposedException("BalancedEncoder is disposed");
                 }
                 if (destination == nullptr)
                 {
-                    throw gcnew ArgumentNullException("destination");
+                    throw gcnew ArgumentNullException("destination cannot be null");
+                }
+                try
+                {
+                    balancedEncoder_->encode(value, destination->GetPolynomial());
+                }
+                catch (const exception &e)
+                {
+                    HandleException(&e);
+                }
+                catch (...)
+                {
+                    HandleException(nullptr);
+                }
+            }
+
+            void BalancedEncoder::Encode(UInt32 value, BigPoly ^destination)
+            {
+                if (balancedEncoder_ == nullptr)
+                {
+                    throw gcnew ObjectDisposedException("BalancedEncoder is disposed");
+                }
+                if (destination == nullptr)
+                {
+                    throw gcnew ArgumentNullException("destination cannot be null");
                 }
                 try
                 {
@@ -532,11 +563,11 @@ namespace Microsoft
             {
                 if (balancedEncoder_ == nullptr)
                 {
-                    throw gcnew ObjectDisposedException("BalancedEncoder");
+                    throw gcnew ObjectDisposedException("BalancedEncoder is disposed");
                 }
                 if (value == nullptr)
                 {
-                    throw gcnew ArgumentNullException("value");
+                    throw gcnew ArgumentNullException("value cannot be null");
                 }
                 try
                 {
@@ -557,15 +588,15 @@ namespace Microsoft
             {
                 if (balancedEncoder_ == nullptr)
                 {
-                    throw gcnew ObjectDisposedException("BalancedEncoder");
+                    throw gcnew ObjectDisposedException("BalancedEncoder is disposed");
                 }
                 if (value == nullptr)
                 {
-                    throw gcnew ArgumentNullException("value");
+                    throw gcnew ArgumentNullException("value cannot be null");
                 }
                 if (destination == nullptr)
                 {
-                    throw gcnew ArgumentNullException("destination");
+                    throw gcnew ArgumentNullException("destination cannot be null");
                 }
                 try
                 {
@@ -585,7 +616,7 @@ namespace Microsoft
             {
                 if (balancedEncoder_ == nullptr)
                 {
-                    throw gcnew ObjectDisposedException("BalancedEncoder");
+                    throw gcnew ObjectDisposedException("BalancedEncoder is disposed");
                 }
                 try
                 {
@@ -606,11 +637,35 @@ namespace Microsoft
             {
                 if (balancedEncoder_ == nullptr)
                 {
-                    throw gcnew ObjectDisposedException("BalancedEncoder");
+                    throw gcnew ObjectDisposedException("BalancedEncoder is disposed");
                 }
                 if (destination == nullptr)
                 {
-                    throw gcnew ArgumentNullException("destination");
+                    throw gcnew ArgumentNullException("destination cannot be null");
+                }
+                try
+                {
+                    balancedEncoder_->encode(value, destination->GetPolynomial());
+                }
+                catch (const exception &e)
+                {
+                    HandleException(&e);
+                }
+                catch (...)
+                {
+                    HandleException(nullptr);
+                }
+            }
+
+            void BalancedEncoder::Encode(Int32 value, BigPoly ^destination)
+            {
+                if (balancedEncoder_ == nullptr)
+                {
+                    throw gcnew ObjectDisposedException("BalancedEncoder is disposed");
+                }
+                if (destination == nullptr)
+                {
+                    throw gcnew ArgumentNullException("destination cannot be null");
                 }
                 try
                 {
@@ -630,11 +685,11 @@ namespace Microsoft
             {
                 if (balancedEncoder_ == nullptr)
                 {
-                    throw gcnew ObjectDisposedException("BalancedEncoder");
+                    throw gcnew ObjectDisposedException("BalancedEncoder is disposed");
                 }
                 if (poly == nullptr)
                 {
-                    throw gcnew ArgumentNullException("poly");
+                    throw gcnew ArgumentNullException("poly cannot be null");
                 }
                 try
                 {
@@ -655,11 +710,11 @@ namespace Microsoft
             {
                 if (balancedEncoder_ == nullptr)
                 {
-                    throw gcnew ObjectDisposedException("BalancedEncoder");
+                    throw gcnew ObjectDisposedException("BalancedEncoder is disposed");
                 }
                 if (poly == nullptr)
                 {
-                    throw gcnew ArgumentNullException("poly");
+                    throw gcnew ArgumentNullException("poly cannot be null");
                 }
                 try
                 {
@@ -680,11 +735,11 @@ namespace Microsoft
             {
                 if (balancedEncoder_ == nullptr)
                 {
-                    throw gcnew ObjectDisposedException("BalancedEncoder");
+                    throw gcnew ObjectDisposedException("BalancedEncoder is disposed");
                 }
                 if (poly == nullptr)
                 {
-                    throw gcnew ArgumentNullException("poly");
+                    throw gcnew ArgumentNullException("poly cannot be null");
                 }
                 try
                 {
@@ -705,11 +760,11 @@ namespace Microsoft
             {
                 if (balancedEncoder_ == nullptr)
                 {
-                    throw gcnew ObjectDisposedException("BalancedEncoder");
+                    throw gcnew ObjectDisposedException("BalancedEncoder is disposed");
                 }
                 if (poly == nullptr)
                 {
-                    throw gcnew ArgumentNullException("poly");
+                    throw gcnew ArgumentNullException("poly cannot be null");
                 }
                 try
                 {
@@ -730,11 +785,11 @@ namespace Microsoft
             {
                 if (balancedEncoder_ == nullptr)
                 {
-                    throw gcnew ObjectDisposedException("BalancedEncoder");
+                    throw gcnew ObjectDisposedException("BalancedEncoder is disposed");
                 }
                 if (poly == nullptr)
                 {
-                    throw gcnew ArgumentNullException("poly");
+                    throw gcnew ArgumentNullException("poly cannot be null");
                 }
                 try
                 {
@@ -755,11 +810,15 @@ namespace Microsoft
             {
                 if (balancedEncoder_ == nullptr)
                 {
-                    throw gcnew ObjectDisposedException("BalancedEncoder");
+                    throw gcnew ObjectDisposedException("BalancedEncoder is disposed");
                 }
                 if (poly == nullptr)
                 {
-                    throw gcnew ArgumentNullException("poly");
+                    throw gcnew ArgumentNullException("poly cannot be null");
+                }
+                if (destination == nullptr)
+                {
+                    throw gcnew ArgumentNullException("destination cannot be null");
                 }
                 try
                 {
@@ -779,7 +838,7 @@ namespace Microsoft
             {
                 if (balancedEncoder_ == nullptr)
                 {
-                    throw gcnew ObjectDisposedException("BalancedEncoder");
+                    throw gcnew ObjectDisposedException("BalancedEncoder is disposed");
                 }
                 try
                 {
@@ -800,7 +859,7 @@ namespace Microsoft
             {
                 if (balancedEncoder_ == nullptr)
                 {
-                    throw gcnew ObjectDisposedException("BalancedEncoder");
+                    throw gcnew ObjectDisposedException("BalancedEncoder is disposed");
                 }
                 try
                 {
@@ -821,7 +880,7 @@ namespace Microsoft
             {
                 if (balancedEncoder_ == nullptr)
                 {
-                    throw gcnew ObjectDisposedException("BalancedEncoder");
+                    throw gcnew ObjectDisposedException("BalancedEncoder is disposed");
                 }
                 return *balancedEncoder_;
             }
@@ -830,11 +889,11 @@ namespace Microsoft
             {
                 if (plainModulus == nullptr)
                 {
-                    throw gcnew ArgumentNullException("plainModulus");
+                    throw gcnew ArgumentNullException("plainModulus cannot be null");
                 }
                 if (polyModulus == nullptr)
                 {
-                    throw gcnew ArgumentNullException("polyModulus");
+                    throw gcnew ArgumentNullException("polyModulus cannot be null");
                 }
                 try
                 {
@@ -868,7 +927,7 @@ namespace Microsoft
             {
                 if (fractionalEncoder_ == nullptr)
                 {
-                    throw gcnew ObjectDisposedException("BinaryFractionalEncoder");
+                    throw gcnew ObjectDisposedException("BinaryFractionalEncoder is disposed");
                 }
                 try
                 {
@@ -885,19 +944,19 @@ namespace Microsoft
                 throw gcnew Exception("Unexpected exception");
             }
 
-            double BinaryFractionalEncoder::Decode(BigPoly ^value)
+            double BinaryFractionalEncoder::Decode(BigPoly ^poly)
             {
                 if (fractionalEncoder_ == nullptr)
                 {
-                    throw gcnew ObjectDisposedException("BinaryFractionalEncoder");
+                    throw gcnew ObjectDisposedException("BinaryFractionalEncoder is disposed");
                 }
-                if (value == nullptr)
+                if (poly == nullptr)
                 {
-                    throw gcnew ArgumentNullException("value");
+                    throw gcnew ArgumentNullException("value cannot be null");
                 }
                 try
                 {
-                    return fractionalEncoder_->decode(value->GetPolynomial());
+                    return fractionalEncoder_->decode(poly->GetPolynomial());
                 }
                 catch (const exception &e)
                 {
@@ -914,40 +973,16 @@ namespace Microsoft
             {
                 if (fractionalEncoder_ == nullptr)
                 {
-                    throw gcnew ObjectDisposedException("BinaryFractionalEncoder");
+                    throw gcnew ObjectDisposedException("BinaryFractionalEncoder is disposed");
                 }
                 return gcnew BigUInt(fractionalEncoder_->plain_modulus());
-            }
-
-            void BinaryFractionalEncoder::PlainModulus::set(BigUInt ^value)
-            {
-                if (fractionalEncoder_ == nullptr)
-                {
-                    throw gcnew ObjectDisposedException("BinaryFractionalEncoder");
-                }
-                if (value == nullptr)
-                {
-                    throw gcnew ArgumentNullException("value");
-                }
-                try
-                {
-                    fractionalEncoder_->set_plain_modulus(value->GetUInt());
-                }
-                catch (const exception &e)
-                {
-                    HandleException(&e);
-                }
-                catch (...)
-                {
-                    HandleException(nullptr);
-                }
             }
 
             seal::BinaryFractionalEncoder &BinaryFractionalEncoder::GetEncoder()
             {
                 if (fractionalEncoder_ == nullptr)
                 {
-                    throw gcnew ObjectDisposedException("BinaryFractionalEncoder");
+                    throw gcnew ObjectDisposedException("BinaryFractionalEncoder is disposed");
                 }
                 return *fractionalEncoder_;
             }
@@ -956,11 +991,11 @@ namespace Microsoft
             {
                 if (plainModulus == nullptr)
                 {
-                    throw gcnew ArgumentNullException("plainModulus");
+                    throw gcnew ArgumentNullException("plainModulus cannot be null");
                 }
                 if (polyModulus == nullptr)
                 {
-                    throw gcnew ArgumentNullException("polyModulus");
+                    throw gcnew ArgumentNullException("polyModulus cannot be null");
                 }
                 try
                 {
@@ -980,11 +1015,11 @@ namespace Microsoft
             {
                 if (plainModulus == nullptr)
                 {
-                    throw gcnew ArgumentNullException("plainModulus");
+                    throw gcnew ArgumentNullException("plainModulus cannot be null");
                 }
                 if (polyModulus == nullptr)
                 {
-                    throw gcnew ArgumentNullException("polyModulus");
+                    throw gcnew ArgumentNullException("polyModulus cannot be null");
                 }
                 try
                 {
@@ -1018,7 +1053,7 @@ namespace Microsoft
             {
                 if (fractionalEncoder_ == nullptr)
                 {
-                    throw gcnew ObjectDisposedException("BalancedFractionalEncoder");
+                    throw gcnew ObjectDisposedException("BalancedFractionalEncoder is disposed");
                 }
                 try
                 {
@@ -1035,19 +1070,19 @@ namespace Microsoft
                 throw gcnew Exception("Unexpected exception");
             }
 
-            double BalancedFractionalEncoder::Decode(BigPoly ^value)
+            double BalancedFractionalEncoder::Decode(BigPoly ^poly)
             {
                 if (fractionalEncoder_ == nullptr)
                 {
-                    throw gcnew ObjectDisposedException("BalancedFractionalEncoder");
+                    throw gcnew ObjectDisposedException("BalancedFractionalEncoder is disposed");
                 }
-                if (value == nullptr)
+                if (poly == nullptr)
                 {
-                    throw gcnew ArgumentNullException("value");
+                    throw gcnew ArgumentNullException("poly cannot be null");
                 }
                 try
                 {
-                    return fractionalEncoder_->decode(value->GetPolynomial());
+                    return fractionalEncoder_->decode(poly->GetPolynomial());
                 }
                 catch (const exception &e)
                 {
@@ -1064,69 +1099,25 @@ namespace Microsoft
             {
                 if (fractionalEncoder_ == nullptr)
                 {
-                    throw gcnew ObjectDisposedException("BalancedFractionalEncoder");
+                    throw gcnew ObjectDisposedException("BalancedFractionalEncoder is disposed");
                 }
                 return gcnew BigUInt(fractionalEncoder_->plain_modulus());
-            }
-
-            void BalancedFractionalEncoder::PlainModulus::set(BigUInt ^value)
-            {
-                if (fractionalEncoder_ == nullptr)
-                {
-                    throw gcnew ObjectDisposedException("BalancedFractionalEncoder");
-                }
-                if (value == nullptr)
-                {
-                    throw gcnew ArgumentNullException("value");
-                }
-                try
-                {
-                    fractionalEncoder_->set_plain_modulus(value->GetUInt());
-                }
-                catch (const exception &e)
-                {
-                    HandleException(&e);
-                }
-                catch (...)
-                {
-                    HandleException(nullptr);
-                }
             }
 
             int BalancedFractionalEncoder::Base::get()
             {
                 if (fractionalEncoder_ == nullptr)
                 {
-                    throw gcnew ObjectDisposedException("BalancedFractionalEncoder");
+                    throw gcnew ObjectDisposedException("BalancedFractionalEncoder is disposed");
                 }
                 return fractionalEncoder_->base();
-            }
-
-            void BalancedFractionalEncoder::Base::set(int value)
-            {
-                if (fractionalEncoder_ == nullptr)
-                {
-                    throw gcnew ObjectDisposedException("BalancedFractionalEncoder");
-                }
-                try
-                {
-                    fractionalEncoder_->set_base(value);
-                }
-                catch (const exception &e)
-                {
-                    HandleException(&e);
-                }
-                catch (...)
-                {
-                    HandleException(nullptr);
-                }
             }
 
             seal::BalancedFractionalEncoder &BalancedFractionalEncoder::GetEncoder()
             {
                 if (fractionalEncoder_ == nullptr)
                 {
-                    throw gcnew ObjectDisposedException("BalancedFractionalEncoder");
+                    throw gcnew ObjectDisposedException("BalancedFractionalEncoder is disposed");
                 }
                 return *fractionalEncoder_;
             }

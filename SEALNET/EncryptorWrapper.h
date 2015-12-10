@@ -34,7 +34,7 @@ namespace Microsoft
                 <summary>Creates an Encryptor instances initialized with the specified encryption parameters and public key.</summary>
                 <param name="parms">The encryption parameters</param>
                 <param name="publicKey">The public key</param>
-                <exception cref="System::ArgumentNullException">If parms or publicKey is null</exception>
+                <exception cref="System::ArgumentNullException">if parms or publicKey is null</exception>
                 <exception cref="System::ArgumentException">if encryption parameters or public key are not valid</exception>
                 <seealso cref="EncryptionParameters">See EncryptionParameters for more details on valid encryption
                 parameters.</seealso>
@@ -52,13 +52,13 @@ namespace Microsoft
                 <summary>Encrypts a plain-text polynomial and stores the result in the destination parameter.</summary>
 
                 <remarks>
-                Encrypts a plain-text polynomial and stores the result in the destination parameter. The destination parameter is
+                Encrypts a plaintext polynomial and stores the result in the destination parameter. The destination parameter is
                 resized if and only if its coefficient count or coefficient bit count does not match the encryption parameters. The
                 plain polynomial must have a significant coefficient count smaller than the coefficient count specified by the
-                encryption parameters, and with coefficient values less-than the plain modulus
+                encryption parameters, and with coefficient values less-than the plaintext modulus
                 (<see cref="EncryptionParameters::PlainModulus"/>).
                 </remarks>
-                <param name="plain">The plain-text polynomial to encrypt</param>
+                <param name="plain">The plaintext polynomial to encrypt</param>
                 <param name="destination">The polynomial to overwrite with the encrypted polynomial</param>
                 <exception cref="System::ArgumentNullException">If plain or destination is null</exception>
                 <exception cref="System::ArgumentException">if the plain polynomial's significant coefficient count or coefficient
@@ -75,9 +75,9 @@ namespace Microsoft
                 <remarks>
                 Encrypts a plain-text polynomial and returns the result. The plain polynomial must have a significant coefficient count
                 smaller than the coefficient count specified by the encryption parameters, and with coefficient values less-than the
-                plain modulus (<see cref="EncryptionParameters::PlainModulus"/>).
+                plaintext modulus (<see cref="EncryptionParameters::PlainModulus"/>).
                 </remarks>
-                <param name="plain">The plain-text polynomial to encrypt</param>
+                <param name="plain">The plaintext polynomial to encrypt</param>
                 <exception cref="System::ArgumentNullException">If plain is null</exception>
                 <exception cref="System::ArgumentException">if the plain polynomial's significant coefficient count or coefficient
                 values are too large to represent with the encryption parameters</exception>

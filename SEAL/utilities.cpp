@@ -24,6 +24,11 @@ namespace seal
         {
             return duplicate_poly_if_needed(poly.pointer(), poly.coeff_count(), poly.coeff_uint64_count(), new_coeff_count, new_coeff_uint64_count, force, pool);
         }
+
+        bool are_poly_coefficients_less_than(const BigPoly &poly, const BigUInt &max_coeff)
+        {
+            return util::are_poly_coefficients_less_than(poly.pointer(), poly.coeff_count(), poly.coeff_uint64_count(), max_coeff.pointer(), max_coeff.uint64_count());
+        }
     }
 
     BigUInt poly_infty_norm(const BigPoly &poly)
@@ -47,7 +52,7 @@ namespace seal
     {
         if (modulus.is_zero())
         {
-            throw invalid_argument("modulus");
+            throw invalid_argument("modulus cannot be zero");
         }
         if (poly.is_zero())
         {
@@ -77,6 +82,36 @@ namespace seal
 
     void inherent_noise(const BigPoly &encrypted, const BigPoly &plain, const EncryptionParameters &parms, const BigPoly &secret_key, BigUInt &result)
     {
+        // Verify encryption parameters are non-zero and non-nullptr.
+        if (parms.poly_modulus().is_zero())
+        {
+            throw invalid_argument("poly_modulus cannot be zero");
+        }
+        if (parms.coeff_modulus().is_zero())
+        {
+            throw invalid_argument("coeff_modulus cannot be zero");
+        }
+        if (parms.plain_modulus().is_zero())
+        {
+            throw invalid_argument("plain_modulus cannot be zero");
+        }
+        if (parms.noise_standard_deviation() < 0)
+        {
+            throw invalid_argument("noise_standard_deviation must be non-negative");
+        }
+        if (parms.noise_max_deviation() < 0)
+        {
+            throw invalid_argument("noise_max_deviation must be non-negative");
+        }
+        if (parms.plain_modulus() >= parms.coeff_modulus())
+        {
+            throw invalid_argument("plain_modulus must be smaller than coeff_modulus");
+        }
+        if (!are_poly_coefficients_less_than(parms.poly_modulus(), parms.coeff_modulus()))
+        {
+            throw invalid_argument("poly_modulus cannot have coefficients larger than coeff_modulus");
+        }
+
         // Extract encryption parameters.
         const BigPoly &poly_modulus = parms.poly_modulus();
         const BigUInt &coeff_modulus = parms.coeff_modulus();
@@ -88,15 +123,26 @@ namespace seal
         // Verify parameters.
         if (encrypted.coeff_count() != coeff_count || encrypted.coeff_bit_count() != coeff_bit_count)
         {
-            throw invalid_argument("encrypted");
+            throw invalid_argument("encrypted is not a valid ciphertext");
         }
-        if (plain.coeff_count() > coeff_count || plain.coeff_bit_count() > coeff_bit_count)
+#ifdef _DEBUG
+        if (encrypted.significant_coeff_count() == coeff_count || !are_poly_coefficients_less_than(encrypted, coeff_modulus))
         {
-            throw invalid_argument("plain");
+            throw invalid_argument("encrypted is not valid for encryption parameters");
         }
-        if (secret_key.coeff_count() != coeff_count || secret_key.coeff_bit_count() != coeff_bit_count)
+        if (plain.significant_coeff_count() >= coeff_count || !are_poly_coefficients_less_than(plain, plain_modulus))
         {
-            throw invalid_argument("secret_key");
+            throw invalid_argument("plain is too large to be represented by encryption parameters");
+        }
+#endif
+        if (secret_key.is_zero())
+        {
+            throw invalid_argument("secret_key cannot be zero");
+        }
+        if (secret_key.coeff_count() != coeff_count || secret_key.coeff_bit_count() != coeff_bit_count ||
+            secret_key.significant_coeff_count() == coeff_count || !are_poly_coefficients_less_than(secret_key, coeff_modulus))
+        {
+            throw invalid_argument("secret_key is not valid for encryption parameters");
         }
 
         // Resize plaintext modulus.
@@ -142,6 +188,36 @@ namespace seal
 
     BigUInt inherent_noise_max(const EncryptionParameters &parms)
     {
+        // Verify encryption parameters are non-zero and non-nullptr.
+        if (parms.poly_modulus().is_zero())
+        {
+            throw invalid_argument("poly_modulus cannot be zero");
+        }
+        if (parms.coeff_modulus().is_zero())
+        {
+            throw invalid_argument("coeff_modulus cannot be zero");
+        }
+        if (parms.plain_modulus().is_zero())
+        {
+            throw invalid_argument("plain_modulus cannot be zero");
+        }
+        if (parms.noise_standard_deviation() < 0)
+        {
+            throw invalid_argument("noise_standard_deviation must be non-negative");
+        }
+        if (parms.noise_max_deviation() < 0)
+        {
+            throw invalid_argument("noise_max_deviation must be non-negative");
+        }
+        if (parms.plain_modulus() >= parms.coeff_modulus())
+        {
+            throw invalid_argument("plain_modulus must be smaller than coeff_modulus");
+        }
+        if (!are_poly_coefficients_less_than(parms.poly_modulus(), parms.coeff_modulus()))
+        {
+            throw invalid_argument("poly_modulus cannot have coefficients larger than coeff_modulus");
+        }
+
         // Extract encryption parameters
         const BigUInt &coeff_modulus = parms.coeff_modulus();
         const BigUInt &plain_modulus = parms.plain_modulus();
@@ -160,6 +236,7 @@ namespace seal
         divide_uint_uint(coeff_modulus.pointer(), plain_modulus_ptr.get(), coeff_uint64_count, coeff_div_plain_modulus.get(), remainder.get(), pool);
         sub_uint_uint(coeff_div_plain_modulus.get(), remainder.get(), coeff_uint64_count, result.pointer());
         right_shift_uint(result.pointer(), 1, coeff_uint64_count, result.pointer());
+
         return result;
     }
 
@@ -186,11 +263,11 @@ namespace seal
     {
         if (exponent < 0)
         {
-            throw out_of_range("exponent");
+            throw invalid_argument("exponent must be a non-negative integer");
         }
         if (operand.is_zero() && exponent == 0)
         {
-            throw invalid_argument("undefined");
+            throw invalid_argument("undefined operation");
         }
         if (operand.is_zero())
         {
@@ -208,15 +285,22 @@ namespace seal
         util::exponentiate_uint(operand.pointer(), operand.uint64_count(), exponent, result.uint64_count(), result.pointer(), pool);
     }
 
+    BigUInt exponentiate_uint(const BigUInt &operand, int exponent)
+    {
+        BigUInt result;
+        exponentiate_uint(operand, exponent, result);
+        return result;
+    }
+
     void exponentiate_poly(const BigPoly &operand, int exponent, BigPoly &result)
     {
         if (exponent < 0)
         {
-            throw out_of_range("exponent");
+            throw invalid_argument("exponent must be a non-negative integer");
         }
         if (operand.is_zero() && exponent == 0)
         {
-            throw invalid_argument("undefined");
+            throw invalid_argument("undefined operation");
         }
         if (operand.is_zero())
         {
@@ -238,29 +322,36 @@ namespace seal
             exponent, result.coeff_count(), result.coeff_uint64_count(), result.pointer(), pool);
     }
 
-    BigPoly poly_eval_poly(const BigPoly &poly_to_eval, const BigPoly &value)
+    BigPoly exponentiate_poly(const BigPoly &operand, int exponent)
     {
-        int poly_to_eval_coeff_uint64_count = divide_round_up(poly_to_eval.coeff_bit_count(), bits_per_uint64);
-        int value_coeff_uint64_count = divide_round_up(value.coeff_bit_count(), bits_per_uint64);
+        BigPoly result;
+        exponentiate_poly(operand, exponent, result);
+        return result;
+    }
 
-        if (poly_to_eval.is_zero())
+    BigPoly poly_eval_poly(const BigPoly &poly_to_evaluate, const BigPoly &poly_to_evaluate_at)
+    {
+        int poly_to_eval_coeff_uint64_count = divide_round_up(poly_to_evaluate.coeff_bit_count(), bits_per_uint64);
+        int value_coeff_uint64_count = divide_round_up(poly_to_evaluate_at.coeff_bit_count(), bits_per_uint64);
+
+        if (poly_to_evaluate.is_zero())
         {
             return BigPoly();
         }
-        if (value.is_zero())
+        if (poly_to_evaluate_at.is_zero())
         {
-            BigPoly result(1, poly_to_eval.coeff_bit_count());
-            set_uint_uint(poly_to_eval.pointer(), poly_to_eval_coeff_uint64_count, result.pointer());
+            BigPoly result(1, poly_to_evaluate.coeff_bit_count());
+            set_uint_uint(poly_to_evaluate.pointer(), poly_to_eval_coeff_uint64_count, result.pointer());
             return result;
         }
 
-        int result_coeff_count = (poly_to_eval.significant_coeff_count() - 1) * (value.significant_coeff_count() - 1) + 1;
-        int result_coeff_bit_count = poly_to_eval.coeff_bit_count() + (poly_to_eval.coeff_count() - 1) * value.coeff_bit_count();
+        int result_coeff_count = (poly_to_evaluate.significant_coeff_count() - 1) * (poly_to_evaluate_at.significant_coeff_count() - 1) + 1;
+        int result_coeff_bit_count = poly_to_evaluate.coeff_bit_count() + (poly_to_evaluate.coeff_count() - 1) * poly_to_evaluate_at.coeff_bit_count();
         int result_coeff_uint64_count = divide_round_up(result_coeff_bit_count, bits_per_uint64);
         BigPoly result(result_coeff_count, result_coeff_bit_count);
 
         MemoryPool pool;
-        util::poly_eval_poly(poly_to_eval.pointer(), poly_to_eval.coeff_count(), poly_to_eval_coeff_uint64_count, value.pointer(), value.coeff_count(),
+        util::poly_eval_poly(poly_to_evaluate.pointer(), poly_to_evaluate.coeff_count(), poly_to_eval_coeff_uint64_count, poly_to_evaluate_at.pointer(), poly_to_evaluate_at.coeff_count(),
             value_coeff_uint64_count, result_coeff_count, result_coeff_uint64_count, result.pointer(), pool);
 
         return result;

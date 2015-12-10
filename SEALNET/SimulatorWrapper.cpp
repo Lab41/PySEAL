@@ -35,6 +35,7 @@ namespace Microsoft
                 }
             }
 
+            /*
             Simulation ^SimulationEvaluator::Relinearize(Simulation ^simulation)
             {
                 if (simulationEvaluator_ == nullptr)
@@ -88,6 +89,7 @@ namespace Microsoft
                 }
                 throw gcnew Exception("Unexpected exception");
             }
+            */
 
             Simulation ^SimulationEvaluator::Multiply(Simulation ^simulation1, Simulation ^simulation2)
             {
@@ -137,6 +139,41 @@ namespace Microsoft
                     return gcnew Simulation(simulationEvaluator_->add(simulation1->GetSimulation(), simulation2->GetSimulation()));
                 }
                 catch (const exception &e)
+                {
+                    HandleException(&e);
+                }
+                catch (...)
+                {
+                    HandleException(nullptr);
+                }
+                throw gcnew Exception("Unexpected exception");
+            }
+
+            Simulation ^SimulationEvaluator::AddMany(List<Simulation^> ^simulations)
+            {
+                if (simulationEvaluator_ == nullptr)
+                {
+                    throw gcnew ObjectDisposedException("SimulationEvaluator is disposed");
+                }
+                if (simulations == nullptr)
+                {
+                    throw gcnew ArgumentNullException("simulations cannot be null");
+                }
+                try
+                {
+                    vector<seal::Simulation> v_simulations;
+                    for each (Simulation ^simulation in simulations)
+                    {
+                        if (simulation == nullptr)
+                        {
+                            throw gcnew ArgumentNullException("simulations cannot be null");
+                        }
+                        v_simulations.push_back(simulation->GetSimulation());
+                    }
+
+                    return gcnew Simulation(simulationEvaluator_->add_many(v_simulations));
+                }
+                catch (const exception& e)
                 {
                     HandleException(&e);
                 }
@@ -280,7 +317,7 @@ namespace Microsoft
                 throw gcnew Exception("Unexpected exception");
             }
 
-            Simulation ^SimulationEvaluator::TreeMultiply(List<Simulation^> ^simulations)
+            Simulation ^SimulationEvaluator::MultiplyMany(List<Simulation^> ^simulations)
             {
                 if (simulationEvaluator_ == nullptr)
                 {
@@ -302,7 +339,7 @@ namespace Microsoft
                         v_simulations.push_back(simulation->GetSimulation());
                     }
 
-                    return gcnew Simulation(simulationEvaluator_->tree_multiply(v_simulations));
+                    return gcnew Simulation(simulationEvaluator_->multiply_many(v_simulations));
                 }
                 catch (const exception& e)
                 {
@@ -315,7 +352,7 @@ namespace Microsoft
                 throw gcnew Exception("Unexpected exception");
             }
 
-            Simulation ^SimulationEvaluator::TreeExponentiate(Simulation ^simulation, int exponent)
+            Simulation ^SimulationEvaluator::Exponentiate(Simulation ^simulation, int exponent)
             {
                 if (simulationEvaluator_ == nullptr)
                 {
@@ -327,32 +364,7 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew Simulation(simulationEvaluator_->tree_exponentiate(simulation->GetSimulation(), exponent));
-                }
-                catch (const exception &e)
-                {
-                    HandleException(&e);
-                }
-                catch (...)
-                {
-                    HandleException(nullptr);
-                }
-                throw gcnew Exception("Unexpected exception");
-            }
-
-            Simulation ^SimulationEvaluator::BinaryExponentiate(Simulation ^simulation, int exponent)
-            {
-                if (simulationEvaluator_ == nullptr)
-                {
-                    throw gcnew ObjectDisposedException("SimulationEvaluator is disposed");
-                }
-                if (simulation == nullptr)
-                {
-                    throw gcnew ArgumentNullException("simulation cannot be null");
-                }
-                try
-                {
-                    return gcnew Simulation(simulationEvaluator_->binary_exponentiate(simulation->GetSimulation(), exponent));
+                    return gcnew Simulation(simulationEvaluator_->exponentiate(simulation->GetSimulation(), exponent));
                 }
                 catch (const exception &e)
                 {
@@ -392,10 +404,6 @@ namespace Microsoft
 
             void Simulation::Set(Simulation ^assign)
             {
-                if (simulation_ == nullptr)
-                {
-                    throw gcnew ObjectDisposedException("Simulation is disposed");
-                }
                 if (assign == nullptr)
                 {
                     throw gcnew ArgumentNullException("assign cannot be null");
@@ -501,15 +509,6 @@ namespace Microsoft
                 throw gcnew Exception("Unexpected exception");
             }
 
-            String ^Simulation::ToString()
-            {
-                if (simulation_ == nullptr)
-                {
-                    throw gcnew ObjectDisposedException("Simulation is disposed");
-                }
-                return marshal_as<String^>(simulation_->to_string());
-            }
-
             Simulation::Simulation(EncryptionParameters ^parms) : simulation_(nullptr)
             {
                 if (parms == nullptr)
@@ -535,6 +534,10 @@ namespace Microsoft
                 if (parms == nullptr)
                 {
                     throw gcnew ArgumentNullException("parms cannot be null");
+                }
+                if (noise == nullptr)
+                {
+                    throw gcnew ArgumentNullException("noise cannot be null");
                 }
                 try
                 {

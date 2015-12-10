@@ -523,7 +523,7 @@ namespace SEALTest
             Assert::AreEqual(static_cast<int32_t>(-14), encoder.decode_int32(decryptor.decrypt(product)));
         }
 
-        TEST_METHOD(EncryptTreeMultiplyDecrypt)
+        TEST_METHOD(EncryptMultiplyManyDecrypt)
         {
             EncryptionParameters parms;
             BigUInt &coeff_modulus = parms.coeff_modulus();
@@ -557,20 +557,20 @@ namespace SEALTest
             BigPoly encrypted2 = encryptor.encrypt(encoder.encode(6));
             BigPoly encrypted3 = encryptor.encrypt(encoder.encode(7));
             vector<BigPoly> encrypteds = { encrypted1, encrypted2, encrypted3 };
-            BigPoly product = evaluator.tree_multiply(encrypteds);
+            BigPoly product = evaluator.multiply_many(encrypteds);
             Assert::AreEqual(static_cast<uint64_t>(210), encoder.decode_uint64(decryptor.decrypt(product)));
 
             encrypted1 = encryptor.encrypt(encoder.encode(-9));
             encrypted2 = encryptor.encrypt(encoder.encode(-17));
             encrypteds = { encrypted1, encrypted2 };
-            product = evaluator.tree_multiply(encrypteds);
+            product = evaluator.multiply_many(encrypteds);
             Assert::AreEqual(static_cast<uint64_t>(153), encoder.decode_uint64(decryptor.decrypt(product)));
 
             encrypted1 = encryptor.encrypt(encoder.encode(2));
             encrypted2 = encryptor.encrypt(encoder.encode(-31));
             encrypted3 = encryptor.encrypt(encoder.encode(7));
             encrypteds = { encrypted1, encrypted2, encrypted3 };
-            product = evaluator.tree_multiply(encrypteds);
+            product = evaluator.multiply_many(encrypteds);
             Assert::AreEqual(static_cast<int32_t>(-434), encoder.decode_int32(decryptor.decrypt(product)));
 
             encrypted1 = encryptor.encrypt(encoder.encode(1));
@@ -578,7 +578,7 @@ namespace SEALTest
             encrypted3 = encryptor.encrypt(encoder.encode(1));
             BigPoly encrypted4 = encryptor.encrypt(encoder.encode(-1));
             encrypteds = { encrypted1, encrypted2, encrypted3, encrypted4 };
-            product = evaluator.tree_multiply(encrypteds);
+            product = evaluator.multiply_many(encrypteds);
             Assert::AreEqual(static_cast<int32_t>(1), encoder.decode_int32(decryptor.decrypt(product)));
 
             encrypted1 = encryptor.encrypt(encoder.encode(98765));
@@ -586,11 +586,11 @@ namespace SEALTest
             encrypted3 = encryptor.encrypt(encoder.encode(12345));
             encrypted4 = encryptor.encrypt(encoder.encode(34567));
             encrypteds = { encrypted1, encrypted2, encrypted3, encrypted4 };
-            product = evaluator.tree_multiply(encrypteds);
+            product = evaluator.multiply_many(encrypteds);
             Assert::AreEqual(static_cast<int32_t>(0), encoder.decode_int32(decryptor.decrypt(product)));
         }
 
-        TEST_METHOD(EncryptTreeExponentiateDecrypt)
+        TEST_METHOD(EncryptExponentiateDecrypt)
         {
             EncryptionParameters parms;
             BigUInt &coeff_modulus = parms.coeff_modulus();
@@ -621,23 +621,23 @@ namespace SEALTest
             Decryptor decryptor(parms, keygen.secret_key());
 
             BigPoly encrypted = encryptor.encrypt(encoder.encode(5));
-            BigPoly power = evaluator.tree_exponentiate(encrypted, 1);
+            BigPoly power = evaluator.exponentiate(encrypted, 1);
             Assert::AreEqual(static_cast<uint64_t>(5), encoder.decode_uint64(decryptor.decrypt(power)));
 
             encrypted = encryptor.encrypt(encoder.encode(5));
-            power = evaluator.tree_exponentiate(encrypted, 0);
+            power = evaluator.exponentiate(encrypted, 0);
             Assert::AreEqual(static_cast<uint64_t>(1), encoder.decode_uint64(decryptor.decrypt(power)));
 
             encrypted = encryptor.encrypt(encoder.encode(7));
-            power = evaluator.tree_exponentiate(encrypted, 2);
+            power = evaluator.exponentiate(encrypted, 2);
             Assert::AreEqual(static_cast<uint64_t>(49), encoder.decode_uint64(decryptor.decrypt(power)));
 
             encrypted = encryptor.encrypt(encoder.encode(-7));
-            power = evaluator.tree_exponentiate(encrypted, 3);
+            power = evaluator.exponentiate(encrypted, 3);
             Assert::AreEqual(static_cast<int32_t>(-343), encoder.decode_int32(decryptor.decrypt(power)));
         }
 
-        TEST_METHOD(EncryptBinaryExponentiateDecrypt)
+        TEST_METHOD(EncryptAddManyDecrypt)
         {
             EncryptionParameters parms;
             BigUInt &coeff_modulus = parms.coeff_modulus();
@@ -667,21 +667,50 @@ namespace SEALTest
             }
             Decryptor decryptor(parms, keygen.secret_key());
 
-            BigPoly encrypted = encryptor.encrypt(encoder.encode(5));
-            BigPoly power = evaluator.binary_exponentiate(encrypted, 1);
-            Assert::AreEqual(static_cast<uint64_t>(5), encoder.decode_uint64(decryptor.decrypt(power)));
+            BigPoly encrypted1 = encryptor.encrypt(encoder.encode(5));
+            BigPoly encrypted2 = encryptor.encrypt(encoder.encode(6));
+            BigPoly encrypted3 = encryptor.encrypt(encoder.encode(7));
+            vector<BigPoly> encrypteds = { encrypted1, encrypted2, encrypted3 };
+            BigPoly product = evaluator.add_many(encrypteds);
+            Assert::AreEqual(static_cast<uint64_t>(18), encoder.decode_uint64(decryptor.decrypt(product)));
 
-            encrypted = encryptor.encrypt(encoder.encode(5));
-            power = evaluator.binary_exponentiate(encrypted, 0);
-            Assert::AreEqual(static_cast<uint64_t>(1), encoder.decode_uint64(decryptor.decrypt(power)));
+            encrypted1 = encryptor.encrypt(encoder.encode(-9));
+            encrypted2 = encryptor.encrypt(encoder.encode(-17));
+            encrypteds = { encrypted1, encrypted2 };
+            product = evaluator.add_many(encrypteds);
+            Assert::AreEqual(static_cast<int32_t>(-26), encoder.decode_int32(decryptor.decrypt(product)));
 
-            encrypted = encryptor.encrypt(encoder.encode(7));
-            power = evaluator.binary_exponentiate(encrypted, 2);
-            Assert::AreEqual(static_cast<uint64_t>(49), encoder.decode_uint64(decryptor.decrypt(power)));
+            encrypted1 = encryptor.encrypt(encoder.encode(2));
+            encrypted2 = encryptor.encrypt(encoder.encode(-31));
+            encrypted3 = encryptor.encrypt(encoder.encode(7));
+            encrypteds = { encrypted1, encrypted2, encrypted3 };
+            product = evaluator.add_many(encrypteds);
+            Assert::AreEqual(static_cast<int32_t>(-22), encoder.decode_int32(decryptor.decrypt(product)));
 
-            encrypted = encryptor.encrypt(encoder.encode(-7));
-            power = evaluator.binary_exponentiate(encrypted, 3);
-            Assert::AreEqual(static_cast<int32_t>(-343), encoder.decode_int32(decryptor.decrypt(power)));
+            encrypted1 = encryptor.encrypt(encoder.encode(1));
+            encrypted2 = encryptor.encrypt(encoder.encode(-1));
+            encrypted3 = encryptor.encrypt(encoder.encode(1));
+            BigPoly encrypted4 = encryptor.encrypt(encoder.encode(-1));
+            encrypteds = { encrypted1, encrypted2, encrypted3, encrypted4 };
+            product = evaluator.add_many(encrypteds);
+            Assert::AreEqual(static_cast<int32_t>(0), encoder.decode_int32(decryptor.decrypt(product)));
+
+            encrypted1 = encryptor.encrypt(encoder.encode(98765));
+            encrypted2 = encryptor.encrypt(encoder.encode(0));
+            encrypted3 = encryptor.encrypt(encoder.encode(12345));
+            encrypted4 = encryptor.encrypt(encoder.encode(34567));
+            encrypteds = { encrypted1, encrypted2, encrypted3, encrypted4 };
+            product = evaluator.add_many(encrypteds);
+            Assert::AreEqual(static_cast<int32_t>(145677), encoder.decode_int32(decryptor.decrypt(product)));
+    
+            BalancedFractionalEncoder frac_encoder(plain_modulus, poly_modulus, 10, 15);
+            encrypted1 = encryptor.encrypt(frac_encoder.encode(3.1415));
+            encrypted2 = encryptor.encrypt(frac_encoder.encode(12.345));
+            encrypted3 = encryptor.encrypt(frac_encoder.encode(98.765));
+            encrypted4 = encryptor.encrypt(frac_encoder.encode(1.1111));
+            encrypteds = { encrypted1, encrypted2, encrypted3, encrypted4 };
+            product = evaluator.add_many(encrypteds);
+            Assert::IsTrue(abs(frac_encoder.decode(decryptor.decrypt(product))-115.3626) < 0.000001);
         }
 
         TEST_METHOD(EvaluateTestMode)

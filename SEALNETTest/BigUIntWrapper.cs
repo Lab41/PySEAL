@@ -307,6 +307,32 @@ namespace SEALNETTest
             value2.Load(stream);
             Assert.AreEqual(value, value2);
         }
+
+        [TestMethod]
+        public void DuplicateToNET()
+        {
+            var original = new BigUInt(123);
+            original.Set(56789);
+
+            var target = new BigUInt();
+
+            original.DuplicateTo(target);
+            Assert.AreEqual(target.BitCount, original.BitCount);
+            Assert.IsTrue(target.Equals(original));
+        }
+
+        [TestMethod]
+        public void DuplicateFromNET()
+        {
+            var original = new BigUInt(123);
+            original.Set(56789);
+
+            var target = new BigUInt();
+
+            target.DuplicateFrom(original);
+            Assert.AreEqual(target.BitCount, original.BitCount);
+            Assert.IsTrue(target.Equals(original));
+        }
     }
 }
 

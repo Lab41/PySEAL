@@ -399,6 +399,22 @@ namespace seal
         */
         void load(std::istream &stream);
 
+        /**
+        Duplicates the current BigPoly. The coefficient count, the coefficient bit count,
+        and the value of the given BigPoly are set to be exactly the same as in the current one.
+
+        @param[out] destination The BigPoly to overwrite with the duplicate
+        */
+        void duplicate_to(BigPoly &destination) const;
+
+        /**
+        Duplicates a given BigPoly. The coefficient count, the coefficient bit count,
+        and the value of the current BigPoly are set to be exactly the same as in the given one.
+
+        @param[in] value The BigPoly to duplicate
+        */
+        void duplicate_from(const BigPoly &value);
+
     private:
         /**
         Resets the entire state of the BigPoly to an empty, zero-sized state, freeing any memory it internally allocated.

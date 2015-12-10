@@ -872,6 +872,28 @@ namespace Microsoft
                 */
                 BigUInt(seal::BigUInt *value);
 
+                /**
+                <summary>Duplicates the current BigUInt.</summary>
+                <remarks>
+                Duplicates the current BigUInt. The bit count and the value of the given BigUInt are set to be exactly the same as in
+                the current one.
+                </remarks>
+                <param name="destination">The BigUInt to overwrite with the duplicate</param>
+                <exception cref="System::ArgumentNullException">if destination is null</exception>
+                */
+                void DuplicateTo(BigUInt ^destination);
+
+                /**
+                <summary>Duplicates a given BigUInt.</summary>
+                <remarks>
+                Duplicates a given BigUInt. The bit count and the value of the current BigUInt
+                are set to be exactly the same as in the given one.
+                </remarks>
+                <param name="value">The BigUInt to duplicate</param>
+                <exception cref="System::ArgumentNullException">if value is null</exception>
+                */
+                void DuplicateFrom(BigUInt ^value);
+
             internal:
 
             private:

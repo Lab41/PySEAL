@@ -116,8 +116,8 @@ namespace seal
         }
 
         /**
-        Returns a reference to the plain-text modulus (represented by a BigUInt) used for encryption. Note that the
-        plain-text modulus is one greater than the maximum value allowed for any plain-text coefficient that the library
+        Returns a reference to the plaintext modulus (represented by a BigUInt) used for encryption. Note that the
+        plain-text modulus is one greater than the maximum value allowed for any plaintext coefficient that the library
         can encrypt or represent.
         */
         const BigUInt &plain_modulus() const

@@ -238,5 +238,41 @@ namespace SEALTest
             poly2.load(stream);
             Assert::IsTrue(poly == poly2);
         }
+
+        TEST_METHOD(DuplicateTo)
+        {
+            BigPoly original(123, 456);
+            *(original[0].pointer()) = 1;
+            *(original[1].pointer()) = 2;
+            *(original[2].pointer()) = 3;
+            *(original[3].pointer()) = 4;
+            *(original[4].pointer()) = 5;
+            *(original[122].pointer()) = 123;
+
+            BigPoly target;
+            
+            original.duplicate_to(target);
+            Assert::AreEqual(target.coeff_count(), original.coeff_count());
+            Assert::AreEqual(target.coeff_bit_count(), original.coeff_bit_count());
+            Assert::IsTrue(target == original);
+        }
+
+        TEST_METHOD(DuplicateFrom)
+        {
+            BigPoly original(123, 456);
+            *(original[0].pointer()) = 1;
+            *(original[1].pointer()) = 2;
+            *(original[2].pointer()) = 3;
+            *(original[3].pointer()) = 4;
+            *(original[4].pointer()) = 5;
+            *(original[122].pointer()) = 123;
+
+            BigPoly target;
+
+            target.duplicate_from(original);
+            Assert::AreEqual(target.coeff_count(), original.coeff_count());
+            Assert::AreEqual(target.coeff_bit_count(), original.coeff_bit_count());
+            Assert::IsTrue(target == original);
+        }
     };
 }

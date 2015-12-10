@@ -54,6 +54,7 @@ namespace seal
             uint64_t *intermediateptr = temp2.get();
             set_uint_uint(operand, operand_uint64_count, result_uint64_count, powerptr);
             set_uint(1, result_uint64_count, intermediateptr);
+            
             // Initially: power = operand and intermediate = 1, product is not initialized.
             while (true)
             {

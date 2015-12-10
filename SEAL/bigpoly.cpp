@@ -629,4 +629,16 @@ namespace seal
         coeff_bit_count_ = 0;
         is_alias_ = false;
     }
+
+    void BigPoly::duplicate_to(BigPoly &destination) const
+    {
+        destination.resize(this->coeff_count_, this->coeff_bit_count_);
+        destination = *this;
+    }
+
+    void BigPoly::duplicate_from(const BigPoly &value)
+    {
+        resize(value.coeff_count_, value.coeff_bit_count_);
+        *this = value;
+    }
 }

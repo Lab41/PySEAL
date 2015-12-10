@@ -989,6 +989,22 @@ namespace seal
             return result;
         }
 
+        /**
+        Duplicates the current BigUInt. The bit count and the value of the given BigUInt
+        are set to be exactly the same as in the current one.
+
+        @param[out] destination The BigUInt to overwrite with the duplicate
+        */
+        void duplicate_to(BigUInt &destination) const;
+
+        /**
+        Duplicates a given BigUInt. The bit count and the value of the current BigUInt
+        are set to be exactly the same as in the given one.
+
+        @param[in] value The BigUInt to duplicate
+        */
+        void duplicate_from(const BigUInt &value);
+
     private:
         /**
         Resets the entire state of the BigUInt to an empty, zero-sized state, freeing any memory it internally allocated.

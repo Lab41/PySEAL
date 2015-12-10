@@ -4,6 +4,7 @@
 #include "BigUIntWrapper.h"
 #include "SimulatorWrapper.h"
 #include "EncryptionParamsWrapper.h"
+#include <map>
 
 using namespace System;
 using namespace seal;
@@ -129,10 +130,6 @@ namespace Microsoft
 
             void ChooserPoly::Set(ChooserPoly ^assign)
             {
-                if (chooserPoly_ == nullptr)
-                {
-                    throw gcnew ObjectDisposedException("ChooserPoly is disposed");
-                }
                 if (assign == nullptr)
                 {
                     throw gcnew ArgumentNullException("assign cannot be null");
@@ -183,6 +180,10 @@ namespace Microsoft
                 if (chooserPoly_ == nullptr)
                 {
                     throw gcnew ObjectDisposedException("ChooserPoly is disposed");
+                }
+                if (value == nullptr)
+                {
+                    throw gcnew ArgumentNullException("value cannot be null");
                 }
                 try
                 {
@@ -248,16 +249,159 @@ namespace Microsoft
                 }
                 throw gcnew Exception("Unexpected exception");
             }
-
-            EncryptionParameters ^ChooserPoly::SelectParameters()
+            
+            bool ChooserEvaluator::SelectParameters(ChooserPoly ^operand, double noiseStandardDeviation, Dictionary<int, BigUInt^> ^parameterOptions, EncryptionParameters ^destination)
             {
-                if (chooserPoly_ == nullptr)
+                if (chooserEvaluator_ == nullptr)
                 {
-                    throw gcnew ObjectDisposedException("ChooserPoly is disposed");
+                    throw gcnew ObjectDisposedException("ChooserEvaluator is disposed");
+                }
+                if (operand == nullptr)
+                {
+                    throw gcnew ArgumentNullException("operand cannot be null");
+                }
+                if (parameterOptions == nullptr)
+                {
+                    throw gcnew ArgumentNullException("parameterOptions cannot be null");
+                }
+                if (destination == nullptr)
+                {
+                    throw gcnew ArgumentNullException("destination cannot be null");
                 }
                 try
                 {
-                    return gcnew EncryptionParameters(chooserPoly_->select_parameters());
+                    map<int, seal::BigUInt> parameter_options_map;
+                    for each (KeyValuePair<int, BigUInt^> paramPair in parameterOptions)
+                    {
+                        if (paramPair.Value == nullptr)
+                        {
+                            throw gcnew ArgumentNullException("parameterOptions cannot contain null values");
+                        }
+                        parameter_options_map[paramPair.Key] = paramPair.Value->GetUInt();
+                    }
+
+                    return chooserEvaluator_->select_parameters(operand->GetChooserPoly(), noiseStandardDeviation, parameter_options_map, destination->GetParameters());
+                }
+                catch (const exception &e)
+                {
+                    HandleException(&e);
+                }
+                catch (...)
+                {
+                    HandleException(nullptr);
+                }
+                throw gcnew Exception("Unexpected exception");
+            }
+
+            bool ChooserEvaluator::SelectParameters(ChooserPoly ^operand, EncryptionParameters ^destination)
+            {
+                if (chooserEvaluator_ == nullptr)
+                {
+                    throw gcnew ObjectDisposedException("ChooserEvaluator is disposed");
+                }
+                if (operand == nullptr)
+                {
+                    throw gcnew ArgumentNullException("operand cannot be null");
+                }
+                if (destination == nullptr)
+                {
+                    throw gcnew ArgumentNullException("destination cannot be null");
+                }
+                try
+                {
+                    return chooserEvaluator_->select_parameters(operand->GetChooserPoly(),destination->GetParameters());
+                }
+                catch (const exception &e)
+                {
+                    HandleException(&e);
+                }
+                catch (...)
+                {
+                    HandleException(nullptr);
+                }
+                throw gcnew Exception("Unexpected exception");
+            }
+
+            bool ChooserEvaluator::SelectParameters(List<ChooserPoly^> ^operands, double noiseStandardDeviation, Dictionary<int, BigUInt^> ^parameterOptions, EncryptionParameters ^destination)
+            {
+                if (chooserEvaluator_ == nullptr)
+                {
+                    throw gcnew ObjectDisposedException("ChooserEvaluator is disposed");
+                }
+                if (operands == nullptr)
+                {
+                    throw gcnew ArgumentNullException("operands cannot be null");
+                }
+                if (parameterOptions == nullptr)
+                {
+                    throw gcnew ArgumentNullException("parameterOptions cannot be null");
+                }
+                if (destination == nullptr)
+                {
+                    throw gcnew ArgumentNullException("destination cannot be null");
+                }
+                try
+                {
+                    vector<seal::ChooserPoly> operands_vector;
+                    for each (ChooserPoly ^operand in operands)
+                    {
+                        if (operand == nullptr)
+                        {
+                            throw gcnew ArgumentNullException("operand cannot be null");
+                        }
+                        operands_vector.push_back(operand->GetChooserPoly());
+                    }
+
+                    map<int, seal::BigUInt> parameter_options_map;
+                    for each (KeyValuePair<int, BigUInt^> paramPair in parameterOptions)
+                    {
+                        if (paramPair.Value == nullptr)
+                        {
+                            throw gcnew ArgumentNullException("parameterOptions cannot contain null values");
+                        }
+                        parameter_options_map[paramPair.Key] = paramPair.Value->GetUInt();
+                    }
+
+                    return chooserEvaluator_->select_parameters(operands_vector, noiseStandardDeviation, parameter_options_map, destination->GetParameters());
+                }
+                catch (const exception &e)
+                {
+                    HandleException(&e);
+                }
+                catch (...)
+                {
+                    HandleException(nullptr);
+                }
+                throw gcnew Exception("Unexpected exception");
+            }
+
+            bool ChooserEvaluator::SelectParameters(List<ChooserPoly^> ^operands, EncryptionParameters ^destination)
+            {
+                if (chooserEvaluator_ == nullptr)
+                {
+                    throw gcnew ObjectDisposedException("ChooserEvaluator is disposed");
+                }
+                if (operands == nullptr)
+                {
+                    throw gcnew ArgumentNullException("operands cannot be null");
+                }
+                if (destination == nullptr)
+                {
+                    throw gcnew ArgumentNullException("destination cannot be null");
+                }
+                try
+                {
+                    vector<seal::ChooserPoly> operands_vector;
+                    for each (ChooserPoly ^operand in operands)
+                    {
+                        if (operand == nullptr)
+                        {
+                            throw gcnew ArgumentNullException("operand cannot be null");
+                        }
+                        operands_vector.push_back(operand->GetChooserPoly());
+                    }
+
+                    return chooserEvaluator_->select_parameters(operands_vector, destination->GetParameters());
                 }
                 catch (const exception &e)
                 {
@@ -347,7 +491,7 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew BigUInt(chooserPoly_->noise_bits(parms->GetParameters()));
+                    return gcnew BigUInt(chooserPoly_->max_noise(parms->GetParameters()));
                 }
                 catch (const exception &e)
                 {
@@ -435,6 +579,23 @@ namespace Microsoft
                 throw gcnew Exception("Unexpected exception");
             }
 
+            Dictionary<int, BigUInt^> ^ChooserEvaluator::DefaultParameterOptions()
+            {
+                Dictionary<int, BigUInt^> ^defaultParametersDict = gcnew Dictionary<int, BigUInt^>;
+
+                // Copy the key-value pairs from the map to the Dictionary.
+                for (pair<int, seal::BigUInt> param_pair : seal::ChooserEvaluator::default_parameter_options())
+                {
+                    defaultParametersDict->Add(param_pair.first, gcnew BigUInt(param_pair.second));
+                }
+                return defaultParametersDict;
+            }
+
+            double ChooserEvaluator::DefaultNoiseStandardDeviation()
+            {
+                return seal::ChooserEvaluator::default_noise_standard_deviation();
+            }
+
             ChooserEvaluator::ChooserEvaluator() : chooserEvaluator_(nullptr)
             {
                 chooserEvaluator_ = new seal::ChooserEvaluator;
@@ -483,6 +644,7 @@ namespace Microsoft
                 throw gcnew Exception("Unexpected exception");
             }
 
+            /*
             ChooserPoly ^ChooserEvaluator::MultiplyNoRelin(ChooserPoly ^operand1, ChooserPoly ^operand2)
             {
                 if (chooserEvaluator_ == nullptr)
@@ -536,6 +698,7 @@ namespace Microsoft
                 }
                 throw gcnew Exception("Unexpected exception");
             }
+            */
 
             ChooserPoly ^ChooserEvaluator::Add(ChooserPoly ^operand1, ChooserPoly ^operand2)
             {
@@ -556,6 +719,41 @@ namespace Microsoft
                     return gcnew ChooserPoly(chooserEvaluator_->add(operand1->GetChooserPoly(), operand2->GetChooserPoly()));
                 }
                 catch (const exception &e)
+                {
+                    HandleException(&e);
+                }
+                catch (...)
+                {
+                    HandleException(nullptr);
+                }
+                throw gcnew Exception("Unexpected exception");
+            }
+
+            ChooserPoly ^ChooserEvaluator::AddMany(List<ChooserPoly^> ^operands)
+            {
+                if (chooserEvaluator_ == nullptr)
+                {
+                    throw gcnew ObjectDisposedException("ChooserEvaluator is disposed");
+                }
+                if (operands == nullptr)
+                {
+                    throw gcnew ArgumentNullException("operands cannot be null");
+                }
+                try
+                {
+                    vector<seal::ChooserPoly> v_simulations;
+                    for each (ChooserPoly ^operand in operands)
+                    {
+                        if (operand == nullptr)
+                        {
+                            throw gcnew ArgumentNullException("operand cannot be null");
+                        }
+                        v_simulations.push_back(operand->GetChooserPoly());
+                    }
+
+                    return gcnew ChooserPoly(chooserEvaluator_->add_many(v_simulations));
+                }
+                catch (const exception& e)
                 {
                     HandleException(&e);
                 }
@@ -604,6 +802,10 @@ namespace Microsoft
                 if (operand == nullptr)
                 {
                     throw gcnew ArgumentNullException("operand cannot be null");
+                }
+                if (plainMaxAbsValue == nullptr)
+                {
+                    throw gcnew ArgumentNullException("plainMaxAbsValue cannot be null");
                 }
                 try
                 {
@@ -840,7 +1042,7 @@ namespace Microsoft
                 throw gcnew Exception("Unexpected exception");
             }
 
-            ChooserPoly ^ChooserEvaluator::TreeMultiply(List<ChooserPoly^> ^operands)
+            ChooserPoly ^ChooserEvaluator::MultiplyMany(List<ChooserPoly^> ^operands)
             {
                 if (chooserEvaluator_ == nullptr)
                 {
@@ -862,7 +1064,7 @@ namespace Microsoft
                         v_operands.push_back(operand->GetChooserPoly());
                     }
 
-                    return gcnew ChooserPoly(chooserEvaluator_->tree_multiply(v_operands));
+                    return gcnew ChooserPoly(chooserEvaluator_->multiply_many(v_operands));
                 }
                 catch (const exception& e)
                 {
@@ -875,7 +1077,7 @@ namespace Microsoft
                 throw gcnew Exception("Unexpected exception");
             }
 
-            ChooserPoly ^ChooserEvaluator::TreeExponentiate(ChooserPoly ^operand, int exponent)
+            ChooserPoly ^ChooserEvaluator::Exponentiate(ChooserPoly ^operand, int exponent)
             {
                 if (chooserEvaluator_ == nullptr)
                 {
@@ -887,32 +1089,7 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew ChooserPoly(chooserEvaluator_->tree_exponentiate(operand->GetChooserPoly(), exponent));
-                }
-                catch (const exception &e)
-                {
-                    HandleException(&e);
-                }
-                catch (...)
-                {
-                    HandleException(nullptr);
-                }
-                throw gcnew Exception("Unexpected exception");
-            }
-
-            ChooserPoly ^ChooserEvaluator::BinaryExponentiate(ChooserPoly ^operand, int exponent)
-            {
-                if (chooserEvaluator_ == nullptr)
-                {
-                    throw gcnew ObjectDisposedException("ChooserEvaluator is disposed");
-                }
-                if (operand == nullptr)
-                {
-                    throw gcnew ArgumentNullException("operand cannot be null");
-                }
-                try
-                {
-                    return gcnew ChooserPoly(chooserEvaluator_->binary_exponentiate(operand->GetChooserPoly(), exponent));
+                    return gcnew ChooserPoly(chooserEvaluator_->exponentiate(operand->GetChooserPoly(), exponent));
                 }
                 catch (const exception &e)
                 {
@@ -1101,6 +1278,10 @@ namespace Microsoft
                 {
                     throw gcnew ObjectDisposedException("ChooserEncoder is disposed");
                 }
+                if (value == nullptr)
+                {
+                    throw gcnew ArgumentNullException("value cannot be null");
+                }
                 try
                 {
                     return gcnew ChooserPoly(chooserEncoder_->encode(value->GetUInt()));
@@ -1125,6 +1306,10 @@ namespace Microsoft
                 if (destination == nullptr)
                 {
                     throw gcnew ArgumentNullException("destination cannot be null");
+                }
+                if (value == nullptr)
+                {
+                    throw gcnew ArgumentNullException("value cannot be null");
                 }
                 try
                 {
@@ -1189,27 +1374,6 @@ namespace Microsoft
                     throw gcnew ObjectDisposedException("ChooserEncoder is disposed");
                 }
                 return chooserEncoder_->base();
-            }
-
-            void ChooserEncoder::Base::set(int value)
-            {
-                if (chooserEncoder_ == nullptr)
-                {
-                    throw gcnew ObjectDisposedException("ChooserEncoder is disposed");
-                }
-                try
-                {
-                    chooserEncoder_->set_base(value);
-                }
-                catch (const exception &e)
-                {
-                    HandleException(&e);
-                }
-                catch (...)
-                {
-                    HandleException(nullptr);
-                }
-                throw gcnew Exception("Unexpected exception");
             }
 
             seal::ChooserEncoder &ChooserEncoder::GetEncoder()
@@ -1279,7 +1443,7 @@ namespace Microsoft
                 }
             }
 
-            inline ChooserPoly ^ChooserEncryptor::Encrypt(ChooserPoly ^plain)
+            ChooserPoly ^ChooserEncryptor::Encrypt(ChooserPoly ^plain)
             {
                 if (chooserEncryptor_ == nullptr)
                 {
@@ -1332,7 +1496,7 @@ namespace Microsoft
                 }
             }
 
-            inline ChooserPoly ^ChooserEncryptor::Decrypt(ChooserPoly ^encrypted)
+            ChooserPoly ^ChooserEncryptor::Decrypt(ChooserPoly ^encrypted)
             {
                 if (chooserEncryptor_ == nullptr)
                 {

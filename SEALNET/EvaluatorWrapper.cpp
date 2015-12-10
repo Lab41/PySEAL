@@ -164,6 +164,79 @@ namespace Microsoft
                 throw gcnew Exception("Unexpected exception");
             }
 
+            void Evaluator::AddMany(List<BigPoly^> ^encrypteds, BigPoly ^destination)
+            {
+                if (evaluator_ == nullptr)
+                {
+                    throw gcnew ObjectDisposedException("Evaluator is disposed");
+                }
+                if (encrypteds == nullptr)
+                {
+                    throw gcnew ArgumentNullException("encrypteds");
+                }
+                if (destination == nullptr)
+                {
+                    throw gcnew ArgumentNullException("destination cannot be null");
+                }
+                try
+                {
+                    vector<seal::BigPoly> v_encrypteds;
+                    for each (BigPoly ^poly in encrypteds)
+                    {
+                        if (poly == nullptr)
+                        {
+                            throw gcnew ArgumentNullException("encrypted cannot be null");
+                        }
+                        v_encrypteds.push_back(poly->GetPolynomial());
+                    }
+
+                    evaluator_->add_many(v_encrypteds, destination->GetPolynomial());
+                }
+                catch (const exception &e)
+                {
+                    HandleException(&e);
+                }
+                catch (...)
+                {
+                    HandleException(nullptr);
+                }
+            }
+
+            BigPoly ^Evaluator::AddMany(List<BigPoly^> ^encrypteds)
+            {
+                if (evaluator_ == nullptr)
+                {
+                    throw gcnew ObjectDisposedException("Evaluator is disposed");
+                }
+                if (encrypteds == nullptr)
+                {
+                    throw gcnew ArgumentNullException("encrypteds cannot be null");
+                }
+                try
+                {
+                    vector<seal::BigPoly> v_encrypteds;
+                    for each (BigPoly ^poly in encrypteds)
+                    {
+                        if (poly == nullptr)
+                        {
+                            throw gcnew ArgumentNullException("encrypteds cannot contain null values null");
+                        }
+                        v_encrypteds.push_back(poly->GetPolynomial());
+                    }
+
+                    return gcnew BigPoly(evaluator_->add_many(v_encrypteds));
+                }
+                catch (const exception &e)
+                {
+                    HandleException(&e);
+                }
+                catch (...)
+                {
+                    HandleException(nullptr);
+                }
+                throw gcnew Exception("Unexpected exception");
+            }
+
             void Evaluator::Sub(BigPoly ^encrypted1, BigPoly ^encrypted2, BigPoly ^destination)
             {
                 if (evaluator_ == nullptr)
@@ -583,7 +656,7 @@ namespace Microsoft
                 throw gcnew Exception("Unexpected exception");
             }
 
-            void Evaluator::TreeMultiply(List<BigPoly^> ^encrypteds, BigPoly ^destination)
+            void Evaluator::MultiplyMany(List<BigPoly^> ^encrypteds, BigPoly ^destination)
             {
                 if (evaluator_ == nullptr)
                 {
@@ -609,7 +682,7 @@ namespace Microsoft
                         v_encrypteds.push_back(poly->GetPolynomial());
                     }
 
-                    evaluator_->tree_multiply(v_encrypteds, destination->GetPolynomial());
+                    evaluator_->multiply_many(v_encrypteds, destination->GetPolynomial());
                 }
                 catch (const exception &e)
                 {
@@ -621,7 +694,7 @@ namespace Microsoft
                 }
             }
 
-            BigPoly ^Evaluator::TreeMultiply(List<BigPoly^> ^encrypteds)
+            BigPoly ^Evaluator::MultiplyMany(List<BigPoly^> ^encrypteds)
             {
                 if (evaluator_ == nullptr)
                 {
@@ -638,12 +711,85 @@ namespace Microsoft
                     {
                         if (poly == nullptr)
                         {
+                            throw gcnew ArgumentNullException("encrypteds cannot contain null values null");
+                        }
+                        v_encrypteds.push_back(poly->GetPolynomial());
+                    }
+
+                    return gcnew BigPoly(evaluator_->multiply_many(v_encrypteds));
+                }
+                catch (const exception &e)
+                {
+                    HandleException(&e);
+                }
+                catch (...)
+                {
+                    HandleException(nullptr);
+                }
+                throw gcnew Exception("Unexpected exception");
+            }
+
+            void Evaluator::MultiplyNoRelinMany(List<BigPoly^> ^encrypteds, BigPoly ^destination)
+            {
+                if (evaluator_ == nullptr)
+                {
+                    throw gcnew ObjectDisposedException("Evaluator is disposed");
+                }
+                if (encrypteds == nullptr)
+                {
+                    throw gcnew ArgumentNullException("encrypteds");
+                }
+                if (destination == nullptr)
+                {
+                    throw gcnew ArgumentNullException("destination cannot be null");
+                }
+                try
+                {
+                    vector<seal::BigPoly> v_encrypteds;
+                    for each (BigPoly ^poly in encrypteds)
+                    {
+                        if (poly == nullptr)
+                        {
                             throw gcnew ArgumentNullException("encrypted cannot be null");
                         }
                         v_encrypteds.push_back(poly->GetPolynomial());
                     }
 
-                    return gcnew BigPoly(evaluator_->tree_multiply(v_encrypteds));
+                    evaluator_->multiply_norelin_many(v_encrypteds, destination->GetPolynomial());
+                }
+                catch (const exception &e)
+                {
+                    HandleException(&e);
+                }
+                catch (...)
+                {
+                    HandleException(nullptr);
+                }
+            }
+
+            BigPoly ^Evaluator::MultiplyNoRelinMany(List<BigPoly^> ^encrypteds)
+            {
+                if (evaluator_ == nullptr)
+                {
+                    throw gcnew ObjectDisposedException("Evaluator is disposed");
+                }
+                if (encrypteds == nullptr)
+                {
+                    throw gcnew ArgumentNullException("encrypteds cannot be null");
+                }
+                try
+                {
+                    vector<seal::BigPoly> v_encrypteds;
+                    for each (BigPoly ^poly in encrypteds)
+                    {
+                        if (poly == nullptr)
+                        {
+                            throw gcnew ArgumentNullException("encrypteds cannot contain null values null");
+                        }
+                        v_encrypteds.push_back(poly->GetPolynomial());
+                    }
+
+                    return gcnew BigPoly(evaluator_->multiply_norelin_many(v_encrypteds));
                 }
                 catch (const exception &e)
                 {
@@ -656,7 +802,7 @@ namespace Microsoft
                 throw gcnew Exception("Unexpected exception");
             }
 
-            void Evaluator::TreeExponentiate(BigPoly ^encrypted, int exponent, BigPoly ^destination)
+            void Evaluator::Exponentiate(BigPoly ^encrypted, int exponent, BigPoly ^destination)
             {
                 if (evaluator_ == nullptr)
                 {
@@ -668,7 +814,7 @@ namespace Microsoft
                 }
                 try
                 {
-                    evaluator_->tree_exponentiate(encrypted->GetPolynomial(), exponent, destination->GetPolynomial());
+                    evaluator_->exponentiate(encrypted->GetPolynomial(), exponent, destination->GetPolynomial());
                 }
                 catch (const exception &e)
                 {
@@ -680,7 +826,7 @@ namespace Microsoft
                 }
             }
 
-            BigPoly ^Evaluator::TreeExponentiate(BigPoly ^encrypted, int exponent)
+            BigPoly ^Evaluator::Exponentiate(BigPoly ^encrypted, int exponent)
             {
                 if (evaluator_ == nullptr)
                 {
@@ -692,7 +838,7 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew BigPoly(evaluator_->tree_exponentiate(encrypted->GetPolynomial(), exponent));
+                    return gcnew BigPoly(evaluator_->exponentiate(encrypted->GetPolynomial(), exponent));
                 }
                 catch (const exception &e)
                 {
@@ -705,7 +851,7 @@ namespace Microsoft
                 throw gcnew Exception("Unexpected exception");
             }
 
-            void Evaluator::BinaryExponentiate(BigPoly ^encrypted, int exponent, BigPoly ^destination)
+            void Evaluator::ExponentiateNoRelin(BigPoly ^encrypted, int exponent, BigPoly ^destination)
             {
                 if (evaluator_ == nullptr)
                 {
@@ -717,7 +863,7 @@ namespace Microsoft
                 }
                 try
                 {
-                    evaluator_->binary_exponentiate(encrypted->GetPolynomial(), exponent, destination->GetPolynomial());
+                    evaluator_->exponentiate_norelin(encrypted->GetPolynomial(), exponent, destination->GetPolynomial());
                 }
                 catch (const exception &e)
                 {
@@ -729,7 +875,7 @@ namespace Microsoft
                 }
             }
 
-            BigPoly ^Evaluator::BinaryExponentiate(BigPoly ^encrypted, int exponent)
+            BigPoly ^Evaluator::ExponentiateNoRelin(BigPoly ^encrypted, int exponent)
             {
                 if (evaluator_ == nullptr)
                 {
@@ -741,7 +887,7 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew BigPoly(evaluator_->binary_exponentiate(encrypted->GetPolynomial(), exponent));
+                    return gcnew BigPoly(evaluator_->exponentiate_norelin(encrypted->GetPolynomial(), exponent));
                 }
                 catch (const exception &e)
                 {

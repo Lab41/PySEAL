@@ -505,6 +505,54 @@ namespace Microsoft
             BigPoly::BigPoly(seal::BigPoly *value) : bigpoly_(value), owned_(false)
             {
             }
+
+            void BigPoly::DuplicateTo(BigPoly ^destination)
+            {
+                if (bigpoly_ == nullptr)
+                {
+                    throw gcnew ObjectDisposedException("BigPoly is disposed");
+                }
+                if (destination == nullptr)
+                {
+                    throw gcnew ArgumentNullException("destination cannot be null");
+                }
+                try
+                {
+                    bigpoly_->duplicate_to(*destination->bigpoly_);
+                }
+                catch (const exception &e)
+                {
+                    HandleException(&e);
+                }
+                catch (...)
+                {
+                    HandleException(nullptr);
+                }
+            }
+
+            void BigPoly::DuplicateFrom(BigPoly ^value)
+            {
+                if (bigpoly_ == nullptr)
+                {
+                    throw gcnew ObjectDisposedException("BigPoly is disposed");
+                }
+                if (value == nullptr)
+                {
+                    throw gcnew ArgumentNullException("value cannot be null");
+                }
+                try
+                {
+                    bigpoly_->duplicate_from(*value->bigpoly_);
+                }
+                catch (const exception &e)
+                {
+                    HandleException(&e);
+                }
+                catch (...)
+                {
+                    HandleException(nullptr);
+                }
+            }
         }
     }
 }

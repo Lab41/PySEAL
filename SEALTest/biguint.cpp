@@ -299,5 +299,29 @@ namespace SEALTest
             value2.load(stream);
             Assert::IsTrue(value == value2);
         }
+
+        TEST_METHOD(DuplicateTo)
+        {
+            BigUInt original(123);
+            original = 56789;
+
+            BigUInt target;
+
+            original.duplicate_to(target);
+            Assert::AreEqual(target.bit_count(), original.bit_count());
+            Assert::IsTrue(target == original);
+        }
+
+        TEST_METHOD(DuplicateFrom)
+        {
+            BigUInt original(123);
+            original = 56789;
+
+            BigUInt target;
+
+            target.duplicate_from(original);
+            Assert::AreEqual(target.bit_count(), original.bit_count());
+            Assert::IsTrue(target == original);
+        }
     };
 }

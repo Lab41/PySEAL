@@ -81,7 +81,6 @@ namespace Microsoft
 
                 /**
                 <summary>Adds two encrypted polynomials and stores the result in the destination parameter.</summary>
-
                 <remarks>
                 Adds two encrypted polynomials and stores the result in the destination parameter. The destination parameter is resized
                 if and only if its coefficient count or coefficient bit count does not match the encryption parameters.
@@ -105,8 +104,33 @@ namespace Microsoft
                 BigPoly ^Add(BigPoly ^encrypted1, BigPoly ^encrypted2);
 
                 /**
-                <summary>Subtracts two encrypted polynomials and stores the result in the destination parameter.</summary>
+                <summary>Adds together an number of ciphertexts stored as elements of a list and stores the result
+                in the destination parameter.</summary>
+                <remarks>
+                Adds together an number of ciphertexts stored as elements of a list and stores the result in the
+                destination parameter. The destination parameter is resized if and only if its coefficient count or coefficient bit
+                count does not match the encryption parameters.
+                </remarks>
+                <param name="encrypteds">The encrypted polynomials to add</param>
+                <param name="destination">The polynomial to overwrite with the addition result</param>
+                <exception cref="System::ArgumentNullException">if encrypteds or any of its elements is null</exception>
+                <exception cref="System::ArgumentException">if encrypteds is empty</exception>
+                <exception cref="System::ArgumentException">if the encrypted polynomials are not valid for the encryption parameters</exception>
+                <exception cref="System::InvalidOperationException">If destination is an alias but needs to be resized</exception>
+                */
+                void AddMany(System::Collections::Generic::List<BigPoly^> ^encrypteds, BigPoly ^destination);
 
+                /**
+                <summary>Adds together an number of ciphertexts stored as elements of a list and returns the result.</summary>
+                <param name="encrypteds">The encrypted polynomials to add</param>
+                <exception cref="System::ArgumentNullException">if encrypteds or any of its elements is null</exception>
+                <exception cref="System::ArgumentException">if encrypteds is empty</exception>
+                <exception cref="System::ArgumentException">if the encrypted polynomials are not valid for the encryption parameters</exception>
+                */
+                BigPoly ^AddMany(System::Collections::Generic::List<BigPoly^> ^encrypteds);
+
+                /**
+                <summary>Subtracts two encrypted polynomials and stores the result in the destination parameter.</summary>
                 <remarks>
                 Subtracts two encrypted polynomials and stores the result in the destination parameter. The destination parameter is
                 resized if and only if its coefficient count or coefficient bit count does not match the encryption parameters.
@@ -325,7 +349,6 @@ namespace Microsoft
                 /**
                 <summary>Multiplies a vector of encrypted polynomials together and stores the result in the destination
                 parameter.</summary>
-
                 <remarks>
                 Multiplies a vector of encrypted polynomials together and stores the result in the destination parameter. The
                 destination parameter is resized if and only if its coefficient count or coefficient bit count does not match the
@@ -338,7 +361,7 @@ namespace Microsoft
                 encryption parameters</exception>
                 <exception cref="System::InvalidOperationException">If destination is an alias but needs to be resized</exception>
                 */
-                void TreeMultiply(System::Collections::Generic::List<BigPoly^> ^encrypteds, BigPoly ^destination);
+                void MultiplyMany(System::Collections::Generic::List<BigPoly^> ^encrypteds, BigPoly ^destination);
 
                 /**
                 <summary>Multiplies a vector of encrypted polynomials together and returns the result.</summary>
@@ -347,12 +370,37 @@ namespace Microsoft
                 <exception cref="System::ArgumentException">if the encrypted polynomials are not valid encrypted polynomials for the
                 encryption parameters</exception>
                 */
-                BigPoly ^TreeMultiply(System::Collections::Generic::List<BigPoly^> ^encrypteds);
+                BigPoly ^MultiplyMany(System::Collections::Generic::List<BigPoly^> ^encrypteds);
+
+                /**
+                <summary>Multiplies a vector of encrypted polynomials together without performing relinearization and stores the result in the destination
+                parameter.</summary>
+                <remarks>
+                Multiplies a vector of encrypted polynomials together and stores the result in the destination parameter. The
+                destination parameter is resized if and only if its coefficient count or coefficient bit count does not match the
+                encryption parameters.
+                </remarks>
+                <param name="encrypteds">The vector of encrypted polynomials to multiply</param>
+                <param name="destination">The polynomial to overwrite with the multiplication result</param>
+                <exception cref="System::ArgumentException">if the encrypteds vector is empty</exception>
+                <exception cref="System::ArgumentException">if the encrypted polynomials are not valid encrypted polynomials for the
+                encryption parameters</exception>
+                <exception cref="System::InvalidOperationException">If destination is an alias but needs to be resized</exception>
+                */
+                void MultiplyNoRelinMany(System::Collections::Generic::List<BigPoly^> ^encrypteds, BigPoly ^destination);
+
+                /**
+                <summary>Multiplies a vector of encrypted polynomials together without performing relinearization and returns the result.</summary>
+                <param name="encrypteds">The vector of encrypted polynomials to multiply</param>
+                <exception cref="System::ArgumentException">if the encrypteds vector is empty</exception>
+                <exception cref="System::ArgumentException">if the encrypted polynomials are not valid encrypted polynomials for the
+                encryption parameters</exception>
+                */
+                BigPoly ^MultiplyNoRelinMany(System::Collections::Generic::List<BigPoly^> ^encrypteds);
 
                 /**
                 <summary>Raises an encrypted polynomial to the specified power and stores the result in the destination
                 parameter.</summary>
-
                 <remarks>
                 Raises an encrypted polynomial to the specified power and stores the result in the destination parameter. The
                 destination parameter is resized if and only if its coefficient count or coefficient bit count does not match the
@@ -360,13 +408,13 @@ namespace Microsoft
                 </remarks>
                 <param name="encrypted">The encrypted polynomial to raise to a power</param>
                 <param name="exponent">The power to raise the encrypted polynomial to</param>
-                <param name="destination">The polynomial to overwrite with the multiplication result</param>
+                <param name="destination">The polynomial to overwrite with the exponentiation result</param>
                 <exception cref="System::ArgumentException">if the encrypted polynomial is not valid for the encryption
                 parameters</exception>
                 <exception cref="System::ArgumentException">if the exponent is negative</exception>
                 <exception cref="System::InvalidOperationException">If destination is an alias but needs to be resized</exception>
                 */
-                void TreeExponentiate(BigPoly ^encrypted, int exponent, BigPoly ^destination);
+                void Exponentiate(BigPoly ^encrypted, int exponent, BigPoly ^destination);
 
                 /**
                 <summary>Raises an encrypted polynomial to the specified power and returns the result.</summary>
@@ -376,12 +424,11 @@ namespace Microsoft
                 parameters</exception>
                 <exception cref="System::ArgumentException">if the exponent is negative</exception>
                 */
-                BigPoly ^TreeExponentiate(BigPoly ^encrypted, int exponent);
+                BigPoly ^Exponentiate(BigPoly ^encrypted, int exponent);
 
                 /**
-                <summary>Raises an encrypted polynomial to the specified power and stores the result in the destination
+                <summary>Raises an encrypted polynomial to the specified power without performing relinearization and stores the result in the destination
                 parameter.</summary>
-
                 <remarks>
                 Raises an encrypted polynomial to the specified power and stores the result in the destination parameter. The
                 destination parameter is resized if and only if its coefficient count or coefficient bit count does not match the
@@ -389,23 +436,23 @@ namespace Microsoft
                 </remarks>
                 <param name="encrypted">The encrypted polynomial to raise to a power</param>
                 <param name="exponent">The power to raise the encrypted polynomial to</param>
-                <param name="destination">The polynomial to overwrite with the multiplication result</param>
+                <param name="destination">The polynomial to overwrite with the exponentiation result</param>
                 <exception cref="System::ArgumentException">if the encrypted polynomial is not valid for the encryption
                 parameters</exception>
                 <exception cref="System::ArgumentException">if the exponent is negative</exception>
                 <exception cref="System::InvalidOperationException">If destination is an alias but needs to be resized</exception>
                 */
-                void BinaryExponentiate(BigPoly ^encrypted, int exponent, BigPoly ^destination);
+                void ExponentiateNoRelin(BigPoly ^encrypted, int exponent, BigPoly ^destination);
 
                 /**
-                <summary>Raises an encrypted polynomial to the specified power and returns the result.</summary>
+                <summary>Raises an encrypted polynomial to the specified power without performing relinearization and returns the result.</summary>
                 <param name="encrypted">The encrypted polynomial to raise to a power</param>
                 <param name="exponent">The power to raise the encrypted polynomial to</param>
                 <exception cref="System::ArgumentException">if the encrypted polynomial is not valid for the encryption
                 parameters</exception>
                 <exception cref="System::ArgumentException">if the exponent is negative</exception>
                 */
-                BigPoly ^BinaryExponentiate(BigPoly ^encrypted, int exponent);
+                BigPoly ^ExponentiateNoRelin(BigPoly ^encrypted, int exponent);
 
                 /**
                 <summary>Destroys the Evaluator.</summary>

@@ -98,12 +98,43 @@ namespace seal
         }
 
         /**
+        Adds together an number of ciphertexts stored as elements of std::vector<BigPoly>
+        and stores the result in the destination parameter. The destination parameter 
+        is resized if and only if its coefficient count or coefficient
+        bit count does not match the encryption parameters.
+
+        @param[in] encrypteds The encrypted polynomials to add
+        @param[out] destination The polynomial to overwrite with the addition result
+        @throws std::invalid_argument if encrypteds is empty
+        @throws std::invalid_argument if the encrypted polynomials are not valid for the
+        encryption parameters
+        @throws std::logic_error If destination is an alias but needs to be resized
+        */
+        void add_many(const std::vector<BigPoly> &encrypteds, BigPoly &destination);
+
+        /**
+        Adds together an number of ciphertexts stored as elements of std::vector<BigPoly>
+        and returns the result.
+
+        @param[in] encrypteds The encrypted polynomials to add
+        @throws std::invalid_argument if encrypteds is empty
+        @throws std::invalid_argument if the encrypted polynomials are not valid for the
+        encryption parameters
+        */
+        BigPoly add_many(const std::vector<BigPoly> &encrypteds)
+        {
+            BigPoly result;
+            add_many(encrypteds, result);
+            return result;
+        }
+
+        /**
         Subtracts two encrypted polynomials and stores the result in the destination parameter. The
         destination parameter is resized if and only if its coefficient count or coefficient
         bit count does not match the encryption parameters.
 
-        @param[in] encrypted1 The first encrypted polynomial to subtract
-        @param[in] encrypted2 The second encrypted polynomial to subtract
+        @param[in] encrypted1 The encrypted polynomial to subtract from
+        @param[in] encrypted2 The encrypted polynomial to subtract
         @param[out] destination The polynomial to overwrite with the subtraction result
         @throws std::invalid_argument if the encrypted polynomials are not valid for the
         encryption parameters
@@ -114,8 +145,8 @@ namespace seal
         /**
         Subtracts two encrypted polynomials and returns the result.
 
-        @param[in] encrypted1 The first encrypted polynomial to subtract
-        @param[in] encrypted2 The second encrypted polynomial to subtract
+        @param[in] encrypted1 The encrypted polynomial to subtract from
+        @param[in] encrypted2 The encrypted polynomial to subtract
         @throws std::invalid_argument if the encrypted polynomials are not valid for the
         encryption parameters
         */
@@ -210,6 +241,16 @@ namespace seal
         }
 
         /**
+        Multiplies a vector of encrypted polynomials together and returns the result.
+
+        @param[in] encrypteds The vector of encrypted polynomials to multiply
+        @throws std::invalid_argument if the encrypteds vector is empty
+        @throws std::invalid_argument if the encrypted polynomials are not valid encrypted polynomials
+        for the encryption parameters
+        */
+        BigPoly multiply_many(std::vector<BigPoly> &encrypteds);
+
+        /**
         Multiplies a vector of encrypted polynomials together and stores the result in the destination
         parameter. The destination parameter is resized if and only if its coefficient count or coefficient
         bit count does not match the encryption parameters.
@@ -221,21 +262,36 @@ namespace seal
         for the encryption parameters
         @throws std::logic_error If destination is an alias but needs to be resized
         */
-        void tree_multiply(const std::vector<BigPoly> &encrypteds, BigPoly &destination);
+        void multiply_many(std::vector<BigPoly> &encrypteds, BigPoly &destination)
+        {
+            multiply_many(encrypteds).duplicate_to(destination);
+        }
 
         /**
-        Multiplies a vector of encrypted polynomials together and returns the result.
+        Multiplies a vector of encrypted polynomials together without relinearization and returns the result.
 
         @param[in] encrypteds The vector of encrypted polynomials to multiply
         @throws std::invalid_argument if the encrypteds vector is empty
         @throws std::invalid_argument if the encrypted polynomials are not valid encrypted polynomials
         for the encryption parameters
         */
-        BigPoly tree_multiply(const std::vector<BigPoly> &encrypteds)
+        BigPoly multiply_norelin_many(std::vector<BigPoly> &encrypteds);
+
+        /**
+        Multiplies a vector of encrypted polynomials together without relinearization and stores the result in the destination
+        parameter. The destination parameter is resized if and only if its coefficient count or coefficient
+        bit count does not match the encryption parameters.
+
+        @param[in] encrypteds The vector of encrypted polynomials to multiply
+        @param[out] destination The polynomial to overwrite with the multiplication result
+        @throws std::invalid_argument if the encrypteds vector is empty
+        @throws std::invalid_argument if the encrypted polynomials are not valid encrypted polynomials
+        for the encryption parameters
+        @throws std::logic_error If destination is an alias but needs to be resized
+        */
+        void multiply_norelin_many(std::vector<BigPoly> &encrypteds, BigPoly &destination)
         {
-            BigPoly result;
-            tree_multiply(encrypteds, result);
-            return result;
+            multiply_norelin_many(encrypteds).duplicate_to(destination);
         }
 
         /**
@@ -245,54 +301,54 @@ namespace seal
 
         @param[in] encrypted The encrypted polynomial to raise to a power
         @param[in] exponent The power to raise the encrypted polynomial to
-        @param[out] destination The polynomial to overwrite with the multiplication result
+        @param[out] destination The polynomial to overwrite with the exponentiation result
         @throws std::invalid_argument if the encrypted polynomial is not valid for the encryption parameters
         @throws std::invalid_argument if the exponent is negative
         @throws std::logic_error If destination is an alias but needs to be resized
         */
-        void tree_exponentiate(const BigPoly &encrypted, int exponent, BigPoly &destination);
+        void exponentiate(const BigPoly &encrypted, int exponent, BigPoly &destination);
 
         /**
-        Raises an encrypted polynomial to the specified power and stores the result in the destination
+        Raises an encrypted polynomial to the specified power and returns the result.
+
+        @param[in] encrypted The encrypted polynomial to raise to a power
+        @param[in] exponent The non-negative power to raise the encrypted polynomial to
+        @throws std::invalid_argument if the encrypted polynomial is not valid for the encryption parameters
+        @throws std::invalid_argument if the exponent is negative
+        */
+        BigPoly exponentiate(const BigPoly &encrypted, int exponent)
+        {
+            BigPoly result;
+            exponentiate(encrypted, exponent, result);
+            return result;
+        }
+
+        /**
+        Raises an encrypted polynomial to the specified power without performing relinearization and stores the result in the destination
         parameter. The destination parameter is resized if and only if its coefficient count or coefficient
         bit count does not match the encryption parameters.
 
         @param[in] encrypted The encrypted polynomial to raise to a power
         @param[in] exponent The power to raise the encrypted polynomial to
-        @param[out] destination The polynomial to overwrite with the multiplication result
+        @param[out] destination The polynomial to overwrite with the exponentiation result
         @throws std::invalid_argument if the encrypted polynomial is not valid for the encryption parameters
         @throws std::invalid_argument if the exponent is negative
         @throws std::logic_error If destination is an alias but needs to be resized
         */
-        void binary_exponentiate(const BigPoly &encrypted, int exponent, BigPoly &destination);
+        void exponentiate_norelin(const BigPoly &encrypted, int exponent, BigPoly &destination);
 
         /**
-        Raises an encrypted polynomial to the specified power and returns the result.
+        Raises an encrypted polynomial to the specified power without performing relinearization and returns the result.
 
         @param[in] encrypted The encrypted polynomial to raise to a power
         @param[in] exponent The non-negative power to raise the encrypted polynomial to
         @throws std::invalid_argument if the encrypted polynomial is not valid for the encryption parameters
         @throws std::invalid_argument if the exponent is negative
         */
-        BigPoly tree_exponentiate(const BigPoly &encrypted, int exponent)
+        BigPoly exponentiate_norelin(const BigPoly &encrypted, int exponent)
         {
             BigPoly result;
-            tree_exponentiate(encrypted, exponent, result);
-            return result;
-        }
-
-        /**
-        Raises an encrypted polynomial to the specified power and returns the result.
-
-        @param[in] encrypted The encrypted polynomial to raise to a power
-        @param[in] exponent The non-negative power to raise the encrypted polynomial to
-        @throws std::invalid_argument if the encrypted polynomial is not valid for the encryption parameters
-        @throws std::invalid_argument if the exponent is negative
-        */
-        BigPoly binary_exponentiate(const BigPoly &encrypted, int exponent)
-        {
-            BigPoly result;
-            binary_exponentiate(encrypted, exponent, result);
+            exponentiate_norelin(encrypted, exponent, result);
             return result;
         }
 
@@ -339,8 +395,8 @@ namespace seal
         coefficient count smaller than the coefficient count specified by the encryption parameters, and with
         coefficient values less-than the plain modulus (EncryptionParameters::plain_modulus()).
 
-        @param[in] encrypted1 The first encrypted polynomial to subtract
-        @param[in] plain2 The second plain polynomial to subtract
+        @param[in] encrypted1 The encrypted polynomial to subtract from
+        @param[in] plain2 The plain polynomial to subtract
         @param[out] destination The polynomial to overwrite with the subtraction result
         @throws std::invalid_argument if the encrypted1 polynomials are not valid for the encryption parameters
         @throws std::invalid_argument if the plain2 polynomial's significant coefficient count or coefficient
@@ -355,8 +411,8 @@ namespace seal
         encryption parameters, and with coefficient values less-than the plain modulus
         (EncryptionParameters::plain_modulus()).
 
-        @param[in] encrypted1 The first encrypted polynomial to subtract
-        @param[in] plain2 The second plain polynomial to subtract
+        @param[in] encrypted1 The encrypted polynomial to subtract from
+        @param[in] plain2 The plain polynomial to subtract
         @throws std::invalid_argument if the encrypted1 polynomials are not valid for the encryption parameters
         @throws std::invalid_argument if the plain2 polynomial's significant coefficient count or coefficient
         values are too large to represent with the encryption parameters

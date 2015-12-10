@@ -104,28 +104,28 @@ namespace SEALTest
 
             value = "1";
             BigPoly poly1 = encoder.encode(value);
-            Assert::AreEqual(1, poly1.coeff_count());
+            Assert::AreEqual(1, poly1.significant_coeff_count());
             Assert::AreEqual(modulus.bit_count(), poly1.coeff_bit_count());
             Assert::IsTrue("1" == poly1.to_string());
             Assert::IsTrue(value == encoder.decode_biguint(poly1));
 
             value = "2";
             BigPoly poly2 = encoder.encode(value);
-            Assert::AreEqual(2, poly2.coeff_count());
+            Assert::AreEqual(2, poly2.significant_coeff_count());
             Assert::AreEqual(modulus.bit_count(), poly2.coeff_bit_count());
             Assert::IsTrue("1x^1 + FFFF" == poly2.to_string());
             Assert::IsTrue(value == encoder.decode_biguint(poly2));
 
             value = "3";
             BigPoly poly3 = encoder.encode(value);
-            Assert::AreEqual(2, poly3.coeff_count());
+            Assert::AreEqual(2, poly3.significant_coeff_count());
             Assert::AreEqual(modulus.bit_count(), poly3.coeff_bit_count());
             Assert::IsTrue("1x^1" == poly3.to_string());
             Assert::IsTrue(value == encoder.decode_biguint(poly3));
 
             value = "2671";
             BigPoly poly4 = encoder.encode(value);
-            Assert::AreEqual(9, poly4.coeff_count());
+            Assert::AreEqual(9, poly4.significant_coeff_count());
             Assert::AreEqual(modulus.bit_count(), poly4.coeff_bit_count());
             for (int i = 0; i < 9; ++i)
             {
@@ -135,7 +135,7 @@ namespace SEALTest
 
             value = "D4EB";
             BigPoly poly5 = encoder.encode(value);
-            Assert::AreEqual(11, poly5.coeff_count());
+            Assert::AreEqual(11, poly5.significant_coeff_count());
             Assert::AreEqual(modulus.bit_count(), poly5.coeff_bit_count());
             for (int i = 0; i < 11; ++i)
             {
@@ -247,30 +247,30 @@ namespace SEALTest
             BalancedEncoder encoder(modulus);
 
             BigPoly poly = encoder.encode(static_cast<uint64_t>(0));
-            Assert::AreEqual(0, poly.coeff_count());
+            Assert::AreEqual(0, poly.significant_coeff_count());
             Assert::IsTrue(poly.is_zero());
             Assert::AreEqual(static_cast<uint64_t>(0), encoder.decode_uint64(poly));
 
             BigPoly poly1 = encoder.encode(static_cast<uint64_t>(1));
-            Assert::AreEqual(1, poly1.coeff_count());
+            Assert::AreEqual(1, poly1.significant_coeff_count());
             Assert::AreEqual(modulus.bit_count(), poly1.coeff_bit_count());
             Assert::IsTrue("1" == poly1.to_string());
             Assert::AreEqual(static_cast<uint64_t>(1), encoder.decode_uint64(poly1));
 
             BigPoly poly2 = encoder.encode(static_cast<uint64_t>(2));
-            Assert::AreEqual(2, poly2.coeff_count());
+            Assert::AreEqual(2, poly2.significant_coeff_count());
             Assert::AreEqual(modulus.bit_count(), poly2.coeff_bit_count());
             Assert::IsTrue("1x^1 + FFFF" == poly2.to_string());
             Assert::AreEqual(static_cast<uint64_t>(2), encoder.decode_uint64(poly2));
 
             BigPoly poly3 = encoder.encode(static_cast<uint64_t>(3));
-            Assert::AreEqual(2, poly3.coeff_count());
+            Assert::AreEqual(2, poly3.significant_coeff_count());
             Assert::AreEqual(modulus.bit_count(), poly3.coeff_bit_count());
             Assert::IsTrue("1x^1" == poly3.to_string());
             Assert::AreEqual(static_cast<uint64_t>(3), encoder.decode_uint64(poly3));
 
             BigPoly poly4 = encoder.encode(static_cast<uint64_t>(0x2671));
-            Assert::AreEqual(9, poly4.coeff_count());
+            Assert::AreEqual(9, poly4.significant_coeff_count());
             Assert::AreEqual(modulus.bit_count(), poly4.coeff_bit_count());
             for (int i = 0; i < 9; ++i)
             {
@@ -279,7 +279,7 @@ namespace SEALTest
             Assert::AreEqual(static_cast<uint64_t>(0x2671), encoder.decode_uint64(poly4));
 
             BigPoly poly5 = encoder.encode(static_cast<uint64_t>(0xD4EB));
-            Assert::AreEqual(11, poly5.coeff_count());
+            Assert::AreEqual(11, poly5.significant_coeff_count());
             Assert::AreEqual(modulus.bit_count(), poly5.coeff_bit_count());
             for (int i = 0; i < 11; ++i)
             {
@@ -319,30 +319,30 @@ namespace SEALTest
             BinaryEncoder encoder(modulus);
 
             BigPoly poly = encoder.encode(static_cast<uint32_t>(0));
-            Assert::AreEqual(0, poly.coeff_count());
+            Assert::AreEqual(0, poly.significant_coeff_count());
             Assert::IsTrue(poly.is_zero());
             Assert::AreEqual(static_cast<uint32_t>(0), encoder.decode_uint32(poly));
 
             BigPoly poly1 = encoder.encode(static_cast<uint32_t>(1));
-            Assert::AreEqual(1, poly1.coeff_count());
+            Assert::AreEqual(1, poly1.significant_coeff_count());
             Assert::AreEqual(1, poly1.coeff_bit_count());
             Assert::IsTrue("1" == poly1.to_string());
             Assert::AreEqual(static_cast<uint32_t>(1), encoder.decode_uint32(poly1));
 
             BigPoly poly2 = encoder.encode(static_cast<uint32_t>(2));
-            Assert::AreEqual(2, poly2.coeff_count());
+            Assert::AreEqual(2, poly2.significant_coeff_count());
             Assert::AreEqual(1, poly2.coeff_bit_count());
             Assert::IsTrue("1x^1" == poly2.to_string());
             Assert::AreEqual(static_cast<uint32_t>(2), encoder.decode_uint32(poly2));
 
             BigPoly poly3 = encoder.encode(static_cast<uint32_t>(3));
-            Assert::AreEqual(2, poly3.coeff_count());
+            Assert::AreEqual(2, poly3.significant_coeff_count());
             Assert::AreEqual(1, poly3.coeff_bit_count());
             Assert::IsTrue("1x^1 + 1" == poly3.to_string());
             Assert::AreEqual(static_cast<uint32_t>(3), encoder.decode_uint32(poly3));
 
             BigPoly poly4 = encoder.encode(static_cast<uint32_t>(0xFFFFFFFF));
-            Assert::AreEqual(32, poly4.coeff_count());
+            Assert::AreEqual(32, poly4.significant_coeff_count());
             Assert::AreEqual(1, poly4.coeff_bit_count());
             for (int i = 0; i < 32; ++i)
             {
@@ -351,7 +351,7 @@ namespace SEALTest
             Assert::AreEqual(static_cast<uint32_t>(0xFFFFFFFF), encoder.decode_uint32(poly4));
 
             BigPoly poly5 = encoder.encode(static_cast<uint32_t>(0x80F02));
-            Assert::AreEqual(20, poly5.coeff_count());
+            Assert::AreEqual(20, poly5.significant_coeff_count());
             Assert::AreEqual(1, poly5.coeff_bit_count());
             for (int i = 0; i < 20; ++i)
             {
@@ -388,30 +388,30 @@ namespace SEALTest
             BalancedEncoder encoder(modulus);
 
             BigPoly poly = encoder.encode(static_cast<uint32_t>(0));
-            Assert::AreEqual(0, poly.coeff_count());
+            Assert::AreEqual(0, poly.significant_coeff_count());
             Assert::IsTrue(poly.is_zero());
             Assert::AreEqual(static_cast<uint32_t>(0), encoder.decode_uint32(poly));
 
             BigPoly poly1 = encoder.encode(static_cast<uint32_t>(1));
-            Assert::AreEqual(1, poly1.coeff_count());
+            Assert::AreEqual(1, poly1.significant_coeff_count());
             Assert::AreEqual(modulus.bit_count(), poly1.coeff_bit_count());
             Assert::IsTrue("1" == poly1.to_string());
             Assert::AreEqual(static_cast<uint32_t>(1), encoder.decode_uint32(poly1));
 
             BigPoly poly2 = encoder.encode(static_cast<uint32_t>(2));
-            Assert::AreEqual(2, poly2.coeff_count());
+            Assert::AreEqual(2, poly2.significant_coeff_count());
             Assert::AreEqual(modulus.bit_count(), poly2.coeff_bit_count());
             Assert::IsTrue("1x^1 + FFFF" == poly2.to_string());
             Assert::AreEqual(static_cast<uint32_t>(2), encoder.decode_uint32(poly2));
 
             BigPoly poly3 = encoder.encode(static_cast<uint32_t>(3));
-            Assert::AreEqual(2, poly3.coeff_count());
+            Assert::AreEqual(2, poly3.significant_coeff_count());
             Assert::AreEqual(modulus.bit_count(), poly3.coeff_bit_count());
             Assert::IsTrue("1x^1" == poly3.to_string());
             Assert::AreEqual(static_cast<uint32_t>(3), encoder.decode_uint32(poly3));
 
             BigPoly poly4 = encoder.encode(static_cast<uint32_t>(0x2671));
-            Assert::AreEqual(9, poly4.coeff_count());
+            Assert::AreEqual(9, poly4.significant_coeff_count());
             Assert::AreEqual(modulus.bit_count(), poly4.coeff_bit_count());
             for (int i = 0; i < 9; ++i)
             {
@@ -420,7 +420,7 @@ namespace SEALTest
             Assert::AreEqual(static_cast<uint32_t>(0x2671), encoder.decode_uint32(poly4));
 
             BigPoly poly5 = encoder.encode(static_cast<uint32_t>(0xD4EB));
-            Assert::AreEqual(11, poly5.coeff_count());
+            Assert::AreEqual(11, poly5.significant_coeff_count());
             Assert::AreEqual(modulus.bit_count(), poly5.coeff_bit_count());
             for (int i = 0; i < 11; ++i)
             {
@@ -460,48 +460,48 @@ namespace SEALTest
             BinaryEncoder encoder(modulus);
 
             BigPoly poly = encoder.encode(static_cast<int64_t>(0));
-            Assert::AreEqual(0, poly.coeff_count());
+            Assert::AreEqual(0, poly.significant_coeff_count());
             Assert::IsTrue(poly.is_zero());
             Assert::AreEqual(static_cast<uint64_t>(0), static_cast<uint64_t>(encoder.decode_int64(poly)));
 
             BigPoly poly1 = encoder.encode(static_cast<int64_t>(1));
-            Assert::AreEqual(1, poly1.coeff_count());
+            Assert::AreEqual(1, poly1.significant_coeff_count());
             Assert::AreEqual(1, poly1.coeff_bit_count());
             Assert::IsTrue("1" == poly1.to_string());
             Assert::AreEqual(static_cast<uint64_t>(1), static_cast<uint64_t>(encoder.decode_int64(poly1)));
 
             BigPoly poly2 = encoder.encode(static_cast<int64_t>(2));
-            Assert::AreEqual(2, poly2.coeff_count());
+            Assert::AreEqual(2, poly2.significant_coeff_count());
             Assert::AreEqual(1, poly2.coeff_bit_count());
             Assert::IsTrue("1x^1" == poly2.to_string());
             Assert::AreEqual(static_cast<uint64_t>(2), static_cast<uint64_t>(encoder.decode_int64(poly2)));
 
             BigPoly poly3 = encoder.encode(static_cast<int64_t>(3));
-            Assert::AreEqual(2, poly3.coeff_count());
+            Assert::AreEqual(2, poly3.significant_coeff_count());
             Assert::AreEqual(1, poly3.coeff_bit_count());
             Assert::IsTrue("1x^1 + 1" == poly3.to_string());
             Assert::AreEqual(static_cast<uint64_t>(3), static_cast<uint64_t>(encoder.decode_int64(poly3)));
 
             BigPoly poly4 = encoder.encode(static_cast<int64_t>(-1));
-            Assert::AreEqual(1, poly4.coeff_count());
+            Assert::AreEqual(1, poly4.significant_coeff_count());
             Assert::AreEqual(64, poly4.coeff_bit_count());
             Assert::IsTrue("FFFFFFFFFFFFFFFE" == poly4.to_string());
             Assert::AreEqual(static_cast<uint64_t>(-1), static_cast<uint64_t>(encoder.decode_int64(poly4)));
 
             BigPoly poly5 = encoder.encode(static_cast<int64_t>(-2));
-            Assert::AreEqual(2, poly5.coeff_count());
+            Assert::AreEqual(2, poly5.significant_coeff_count());
             Assert::AreEqual(64, poly5.coeff_bit_count());
             Assert::IsTrue("FFFFFFFFFFFFFFFEx^1" == poly5.to_string());
             Assert::AreEqual(static_cast<uint64_t>(-2), static_cast<uint64_t>(encoder.decode_int64(poly5)));
 
             BigPoly poly6 = encoder.encode(static_cast<int64_t>(-3));
-            Assert::AreEqual(2, poly6.coeff_count());
+            Assert::AreEqual(2, poly6.significant_coeff_count());
             Assert::AreEqual(64, poly6.coeff_bit_count());
             Assert::IsTrue("FFFFFFFFFFFFFFFEx^1 + FFFFFFFFFFFFFFFE" == poly6.to_string());
             Assert::AreEqual(static_cast<uint64_t>(-3), static_cast<uint64_t>(encoder.decode_int64(poly6)));
 
             BigPoly poly7 = encoder.encode(static_cast<int64_t>(0x7FFFFFFFFFFFFFFF));
-            Assert::AreEqual(63, poly7.coeff_count());
+            Assert::AreEqual(63, poly7.significant_coeff_count());
             Assert::AreEqual(1, poly7.coeff_bit_count());
             for (int i = 0; i < 63; ++i)
             {
@@ -510,7 +510,7 @@ namespace SEALTest
             Assert::AreEqual(static_cast<uint64_t>(0x7FFFFFFFFFFFFFFF), static_cast<uint64_t>(encoder.decode_int64(poly7)));
 
             BigPoly poly8 = encoder.encode(static_cast<int64_t>(0x8000000000000000));
-            Assert::AreEqual(64, poly8.coeff_count());
+            Assert::AreEqual(64, poly8.significant_coeff_count());
             Assert::AreEqual(64, poly8.coeff_bit_count());
             Assert::IsTrue("FFFFFFFFFFFFFFFE" == poly8[63].to_string());
             for (int i = 0; i < 63; ++i)
@@ -520,7 +520,7 @@ namespace SEALTest
             Assert::AreEqual(static_cast<uint64_t>(0x8000000000000000), static_cast<uint64_t>(encoder.decode_int64(poly8)));
 
             BigPoly poly9 = encoder.encode(static_cast<int64_t>(0x80F02));
-            Assert::AreEqual(20, poly9.coeff_count());
+            Assert::AreEqual(20, poly9.significant_coeff_count());
             Assert::AreEqual(1, poly9.coeff_bit_count());
             for (int i = 0; i < 20; ++i)
             {
@@ -536,7 +536,7 @@ namespace SEALTest
             Assert::AreEqual(static_cast<uint64_t>(0x80F02), static_cast<uint64_t>(encoder.decode_int64(poly9)));
 
             BigPoly poly10 = encoder.encode(static_cast<int64_t>(-1073));
-            Assert::AreEqual(11, poly10.coeff_count());
+            Assert::AreEqual(11, poly10.significant_coeff_count());
             Assert::AreEqual(64, poly10.coeff_bit_count());
             Assert::IsTrue("FFFFFFFFFFFFFFFE" == poly10[10].to_string());
             Assert::IsTrue(poly10[9].is_zero());
@@ -569,48 +569,48 @@ namespace SEALTest
             BalancedEncoder encoder(modulus);
 
             BigPoly poly = encoder.encode(static_cast<int64_t>(0));
-            Assert::AreEqual(0, poly.coeff_count());
+            Assert::AreEqual(0, poly.significant_coeff_count());
             Assert::IsTrue(poly.is_zero());
             Assert::AreEqual(static_cast<uint64_t>(0), static_cast<uint64_t>(encoder.decode_int64(poly)));
 
             BigPoly poly1 = encoder.encode(static_cast<int64_t>(1));
-            Assert::AreEqual(1, poly1.coeff_count());
+            Assert::AreEqual(1, poly1.significant_coeff_count());
             Assert::AreEqual(modulus.bit_count(), poly1.coeff_bit_count());
             Assert::IsTrue("1" == poly1.to_string());
             Assert::AreEqual(static_cast<uint64_t>(1), static_cast<uint64_t>(encoder.decode_int64(poly1)));
 
             BigPoly poly2 = encoder.encode(static_cast<int64_t>(2));
-            Assert::AreEqual(2, poly2.coeff_count());
+            Assert::AreEqual(2, poly2.significant_coeff_count());
             Assert::AreEqual(modulus.bit_count(), poly2.coeff_bit_count());
             Assert::IsTrue("1x^1 + FFFF" == poly2.to_string());
             Assert::AreEqual(static_cast<uint64_t>(2), static_cast<uint64_t>(encoder.decode_int64(poly2)));
 
             BigPoly poly3 = encoder.encode(static_cast<int64_t>(3));
-            Assert::AreEqual(2, poly3.coeff_count());
+            Assert::AreEqual(2, poly3.significant_coeff_count());
             Assert::AreEqual(modulus.bit_count(), poly3.coeff_bit_count());
             Assert::IsTrue("1x^1" == poly3.to_string());
             Assert::AreEqual(static_cast<uint64_t>(3), static_cast<uint64_t>(encoder.decode_int64(poly3)));
 
             BigPoly poly4 = encoder.encode(static_cast<int64_t>(-1));
-            Assert::AreEqual(1, poly4.coeff_count());
+            Assert::AreEqual(1, poly4.significant_coeff_count());
             Assert::AreEqual(modulus.bit_count(), poly4.coeff_bit_count());
             Assert::IsTrue("FFFF" == poly4.to_string());
             Assert::AreEqual(static_cast<uint64_t>(-1), static_cast<uint64_t>(encoder.decode_int64(poly4)));
 
             BigPoly poly5 = encoder.encode(static_cast<int64_t>(-2));
-            Assert::AreEqual(2, poly5.coeff_count());
+            Assert::AreEqual(2, poly5.significant_coeff_count());
             Assert::AreEqual(modulus.bit_count(), poly5.coeff_bit_count());
             Assert::IsTrue("FFFFx^1 + 1" == poly5.to_string());
             Assert::AreEqual(static_cast<uint64_t>(-2), static_cast<uint64_t>(encoder.decode_int64(poly5)));
 
             BigPoly poly6 = encoder.encode(static_cast<int64_t>(-3));
-            Assert::AreEqual(2, poly6.coeff_count());
+            Assert::AreEqual(2, poly6.significant_coeff_count());
             Assert::AreEqual(modulus.bit_count(), poly6.coeff_bit_count());
             Assert::IsTrue("FFFFx^1" == poly6.to_string());
             Assert::AreEqual(static_cast<uint64_t>(-3), static_cast<uint64_t>(encoder.decode_int64(poly6)));
 
             BigPoly poly7 = encoder.encode(static_cast<int64_t>(-0x2671));
-            Assert::AreEqual(9, poly7.coeff_count());
+            Assert::AreEqual(9, poly7.significant_coeff_count());
             Assert::AreEqual(modulus.bit_count(), poly7.coeff_bit_count());
             for (int i = 0; i < 9; ++i)
             {
@@ -619,7 +619,7 @@ namespace SEALTest
             Assert::AreEqual(static_cast<uint64_t>(-0x2671), static_cast<uint64_t>(encoder.decode_int64(poly7)));
 
             BigPoly poly8 = encoder.encode(static_cast<int64_t>(-4374));
-            Assert::AreEqual(9, poly8.coeff_count());
+            Assert::AreEqual(9, poly8.significant_coeff_count());
             Assert::AreEqual(modulus.bit_count(), poly8.coeff_bit_count());
             Assert::IsTrue("FFFF" == poly8[8].to_string());
             Assert::IsTrue("1" == poly8[7].to_string());
@@ -630,7 +630,7 @@ namespace SEALTest
             Assert::AreEqual(static_cast<uint64_t>(-4374), static_cast<uint64_t>(encoder.decode_int64(poly8)));
 
             BigPoly poly9 = encoder.encode(static_cast<int64_t>(-0xD4EB));
-            Assert::AreEqual(11, poly9.coeff_count());
+            Assert::AreEqual(11, poly9.significant_coeff_count());
             Assert::AreEqual(modulus.bit_count(), poly9.coeff_bit_count());
             for (int i = 0; i < 11; ++i)
             {
@@ -650,7 +650,7 @@ namespace SEALTest
             Assert::AreEqual(static_cast<uint64_t>(-0xD4EB), static_cast<uint64_t>(encoder.decode_int64(poly9)));
 
             BigPoly poly10 = encoder.encode(static_cast<int64_t>(-30724));
-            Assert::AreEqual(11, poly10.coeff_count());
+            Assert::AreEqual(11, poly10.significant_coeff_count());
             Assert::AreEqual(modulus.bit_count(), poly10.coeff_bit_count());
             Assert::IsTrue("FFFF" == poly10[10].to_string());
             Assert::IsTrue("1" == poly10[9].to_string());
@@ -667,7 +667,7 @@ namespace SEALTest
 
             BalancedEncoder encoder2(modulus, 13);
             BigPoly poly11 = encoder2.encode(static_cast<int64_t>(-126375543984));
-            Assert::AreEqual(11, poly11.coeff_count());
+            Assert::AreEqual(11, poly11.significant_coeff_count());
             Assert::AreEqual(modulus.bit_count(), poly11.coeff_bit_count());
             Assert::IsTrue("FFFF" == poly11[10].to_string());
             Assert::IsTrue("1" == poly11[9].to_string());
@@ -700,48 +700,48 @@ namespace SEALTest
             BinaryEncoder encoder(modulus);
 
             BigPoly poly = encoder.encode(static_cast<int32_t>(0));
-            Assert::AreEqual(0, poly.coeff_count());
+            Assert::AreEqual(0, poly.significant_coeff_count());
             Assert::IsTrue(poly.is_zero());
             Assert::AreEqual(static_cast<int32_t>(0), encoder.decode_int32(poly));
 
             BigPoly poly1 = encoder.encode(static_cast<int32_t>(1));
-            Assert::AreEqual(1, poly1.coeff_count());
+            Assert::AreEqual(1, poly1.significant_coeff_count());
             Assert::AreEqual(1, poly1.coeff_bit_count());
             Assert::IsTrue("1" == poly1.to_string());
             Assert::AreEqual(static_cast<int32_t>(1), encoder.decode_int32(poly1));
 
             BigPoly poly2 = encoder.encode(static_cast<int32_t>(2));
-            Assert::AreEqual(2, poly2.coeff_count());
+            Assert::AreEqual(2, poly2.significant_coeff_count());
             Assert::AreEqual(1, poly2.coeff_bit_count());
             Assert::IsTrue("1x^1" == poly2.to_string());
             Assert::AreEqual(static_cast<int32_t>(2), encoder.decode_int32(poly2));
 
             BigPoly poly3 = encoder.encode(static_cast<int32_t>(3));
-            Assert::AreEqual(2, poly3.coeff_count());
+            Assert::AreEqual(2, poly3.significant_coeff_count());
             Assert::AreEqual(1, poly3.coeff_bit_count());
             Assert::IsTrue("1x^1 + 1" == poly3.to_string());
             Assert::AreEqual(static_cast<int32_t>(3), encoder.decode_int32(poly3));
 
             BigPoly poly4 = encoder.encode(static_cast<int32_t>(-1));
-            Assert::AreEqual(1, poly4.coeff_count());
+            Assert::AreEqual(1, poly4.significant_coeff_count());
             Assert::AreEqual(64, poly4.coeff_bit_count());
             Assert::IsTrue("FFFFFFFFFFFFFFFE" == poly4.to_string());
             Assert::AreEqual(static_cast<int32_t>(-1), encoder.decode_int32(poly4));
 
             BigPoly poly5 = encoder.encode(static_cast<int32_t>(-2));
-            Assert::AreEqual(2, poly5.coeff_count());
+            Assert::AreEqual(2, poly5.significant_coeff_count());
             Assert::AreEqual(64, poly5.coeff_bit_count());
             Assert::IsTrue("FFFFFFFFFFFFFFFEx^1" == poly5.to_string());
             Assert::AreEqual(static_cast<int32_t>(-2), encoder.decode_int32(poly5));
 
             BigPoly poly6 = encoder.encode(static_cast<int32_t>(-3));
-            Assert::AreEqual(2, poly6.coeff_count());
+            Assert::AreEqual(2, poly6.significant_coeff_count());
             Assert::AreEqual(64, poly6.coeff_bit_count());
             Assert::IsTrue("FFFFFFFFFFFFFFFEx^1 + FFFFFFFFFFFFFFFE" == poly6.to_string());
             Assert::AreEqual(static_cast<int32_t>(-3), encoder.decode_int32(poly6));
 
             BigPoly poly7 = encoder.encode(static_cast<int32_t>(0x7FFFFFFF));
-            Assert::AreEqual(31, poly7.coeff_count());
+            Assert::AreEqual(31, poly7.significant_coeff_count());
             Assert::AreEqual(1, poly7.coeff_bit_count());
             for (int i = 0; i < 31; ++i)
             {
@@ -750,7 +750,7 @@ namespace SEALTest
             Assert::AreEqual(static_cast<int32_t>(0x7FFFFFFF), encoder.decode_int32(poly7));
 
             BigPoly poly8 = encoder.encode(static_cast<int32_t>(0x80000000));
-            Assert::AreEqual(32, poly8.coeff_count());
+            Assert::AreEqual(32, poly8.significant_coeff_count());
             Assert::AreEqual(64, poly8.coeff_bit_count());
             Assert::IsTrue("FFFFFFFFFFFFFFFE" == poly8[31].to_string());
             for (int i = 0; i < 31; ++i)
@@ -760,7 +760,7 @@ namespace SEALTest
             Assert::AreEqual(static_cast<int32_t>(0x80000000), encoder.decode_int32(poly8));
 
             BigPoly poly9 = encoder.encode(static_cast<int32_t>(0x80F02));
-            Assert::AreEqual(20, poly9.coeff_count());
+            Assert::AreEqual(20, poly9.significant_coeff_count());
             Assert::AreEqual(1, poly9.coeff_bit_count());
             for (int i = 0; i < 20; ++i)
             {
@@ -776,7 +776,7 @@ namespace SEALTest
             Assert::AreEqual(static_cast<int32_t>(0x80F02), encoder.decode_int32(poly9));
 
             BigPoly poly10 = encoder.encode(static_cast<int32_t>(-1073));
-            Assert::AreEqual(11, poly10.coeff_count());
+            Assert::AreEqual(11, poly10.significant_coeff_count());
             Assert::AreEqual(64, poly10.coeff_bit_count());
             Assert::IsTrue("FFFFFFFFFFFFFFFE" == poly10[10].to_string());
             Assert::IsTrue(poly10[9].is_zero());
@@ -809,48 +809,48 @@ namespace SEALTest
             BalancedEncoder encoder(modulus);
 
             BigPoly poly = encoder.encode(static_cast<int32_t>(0));
-            Assert::AreEqual(0, poly.coeff_count());
+            Assert::AreEqual(0, poly.significant_coeff_count());
             Assert::IsTrue(poly.is_zero());
             Assert::AreEqual(static_cast<int32_t>(0), encoder.decode_int32(poly));
 
             BigPoly poly1 = encoder.encode(static_cast<int32_t>(1));
-            Assert::AreEqual(1, poly1.coeff_count());
+            Assert::AreEqual(1, poly1.significant_coeff_count());
             Assert::AreEqual(modulus.bit_count(), poly1.coeff_bit_count());
             Assert::IsTrue("1" == poly1.to_string());
             Assert::AreEqual(static_cast<int32_t>(1), encoder.decode_int32(poly1));
 
             BigPoly poly2 = encoder.encode(static_cast<int32_t>(2));
-            Assert::AreEqual(2, poly2.coeff_count());
+            Assert::AreEqual(2, poly2.significant_coeff_count());
             Assert::AreEqual(modulus.bit_count(), poly2.coeff_bit_count());
             Assert::IsTrue("1x^1 + FFFF" == poly2.to_string());
             Assert::AreEqual(static_cast<int32_t>(2), encoder.decode_int32(poly2));
 
             BigPoly poly3 = encoder.encode(static_cast<int32_t>(3));
-            Assert::AreEqual(2, poly3.coeff_count());
+            Assert::AreEqual(2, poly3.significant_coeff_count());
             Assert::AreEqual(modulus.bit_count(), poly3.coeff_bit_count());
             Assert::IsTrue("1x^1" == poly3.to_string());
             Assert::AreEqual(static_cast<int32_t>(3), encoder.decode_int32(poly3));
 
             BigPoly poly4 = encoder.encode(static_cast<int32_t>(-1));
-            Assert::AreEqual(1, poly4.coeff_count());
+            Assert::AreEqual(1, poly4.significant_coeff_count());
             Assert::AreEqual(modulus.bit_count(), poly4.coeff_bit_count());
             Assert::IsTrue("FFFF" == poly4.to_string());
             Assert::AreEqual(static_cast<int32_t>(-1), encoder.decode_int32(poly4));
 
             BigPoly poly5 = encoder.encode(static_cast<int32_t>(-2));
-            Assert::AreEqual(2, poly5.coeff_count());
+            Assert::AreEqual(2, poly5.significant_coeff_count());
             Assert::AreEqual(modulus.bit_count(), poly5.coeff_bit_count());
             Assert::IsTrue("FFFFx^1 + 1" == poly5.to_string());
             Assert::AreEqual(static_cast<int32_t>(-2), encoder.decode_int32(poly5));
 
             BigPoly poly6 = encoder.encode(static_cast<int32_t>(-3));
-            Assert::AreEqual(2, poly6.coeff_count());
+            Assert::AreEqual(2, poly6.significant_coeff_count());
             Assert::AreEqual(modulus.bit_count(), poly6.coeff_bit_count());
             Assert::IsTrue("FFFFx^1" == poly6.to_string());
             Assert::AreEqual(static_cast<int32_t>(-3), encoder.decode_int32(poly6));
 
             BigPoly poly7 = encoder.encode(static_cast<int32_t>(-0x2671));
-            Assert::AreEqual(9, poly7.coeff_count());
+            Assert::AreEqual(9, poly7.significant_coeff_count());
             Assert::AreEqual(modulus.bit_count(), poly7.coeff_bit_count());
             for (int i = 0; i < 9; ++i)
             {
@@ -859,7 +859,7 @@ namespace SEALTest
             Assert::AreEqual(static_cast<int32_t>(-0x2671), encoder.decode_int32(poly7));
 
             BigPoly poly8 = encoder.encode(static_cast<int32_t>(-4374));
-            Assert::AreEqual(9, poly8.coeff_count());
+            Assert::AreEqual(9, poly8.significant_coeff_count());
             Assert::AreEqual(modulus.bit_count(), poly8.coeff_bit_count());
             Assert::IsTrue("FFFF" == poly8[8].to_string());
             Assert::IsTrue("1" == poly8[7].to_string());
@@ -870,7 +870,7 @@ namespace SEALTest
             Assert::AreEqual(static_cast<int32_t>(-4374), encoder.decode_int32(poly8));
 
             BigPoly poly9 = encoder.encode(static_cast<int32_t>(-0xD4EB));
-            Assert::AreEqual(11, poly9.coeff_count());
+            Assert::AreEqual(11, poly9.significant_coeff_count());
             Assert::AreEqual(modulus.bit_count(), poly9.coeff_bit_count());
             for (int i = 0; i < 11; ++i)
             {
@@ -890,7 +890,7 @@ namespace SEALTest
             Assert::AreEqual(static_cast<int32_t>(-0xD4EB), encoder.decode_int32(poly9));
 
             BigPoly poly10 = encoder.encode(static_cast<int32_t>(-30724));
-            Assert::AreEqual(11, poly10.coeff_count());
+            Assert::AreEqual(11, poly10.significant_coeff_count());
             Assert::AreEqual(modulus.bit_count(), poly10.coeff_bit_count());
             Assert::IsTrue("FFFF" == poly10[10].to_string());
             Assert::IsTrue("1" == poly10[9].to_string());
@@ -962,7 +962,7 @@ namespace SEALTest
 
             for (int b = 3; b < 20; b += 2)
             {
-                encoder.set_base(b);
+                BalancedFractionalEncoder encoder(modulus, poly_modulus, 500, 50, b);
 
                 BigPoly poly = encoder.encode(0.0);
                 Assert::AreEqual(poly_modulus.coeff_count(), poly.coeff_count());

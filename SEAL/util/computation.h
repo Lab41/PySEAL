@@ -11,9 +11,9 @@ namespace seal
         class Computation
         {
         public:
-            virtual Simulation simulate(EncryptionParameters &parms) const = 0;
+            virtual Simulation simulate(const EncryptionParameters &parms) = 0;
 
-            virtual Computation *clone() const = 0;
+            virtual Computation *clone() = 0;
 
             virtual ~Computation() {}
 
@@ -27,9 +27,9 @@ namespace seal
 
             ~FreshComputation();
 
-            Simulation simulate(EncryptionParameters &parms) const override;
+            Simulation simulate(const EncryptionParameters &parms) override;
 
-            FreshComputation *clone() const override;
+            FreshComputation *clone() override;
 
         private:
             FreshComputation(const FreshComputation &copy) = delete;
@@ -40,13 +40,13 @@ namespace seal
         class AddComputation : public Computation
         {
         public:
-            AddComputation(const Computation &input1, const Computation &input2);
+            AddComputation(Computation &input1, Computation &input2);
 
             ~AddComputation();
 
-            Simulation simulate(EncryptionParameters &parms) const override;
+            Simulation simulate(const EncryptionParameters &parms) override;
 
-            AddComputation *clone() const override;
+            AddComputation *clone() override;
 
         private:
             AddComputation(const AddComputation &copy) = delete;
@@ -58,16 +58,35 @@ namespace seal
             Computation *input2_;
         };
 
+        class AddManyComputation : public Computation
+        {
+        public:
+            AddManyComputation(std::vector<Computation*> inputs);
+
+            ~AddManyComputation();
+
+            Simulation simulate(const EncryptionParameters &parms) override;
+
+            AddManyComputation *clone() override;
+
+        private:
+            AddManyComputation(const AddManyComputation &copy) = delete;
+
+            AddManyComputation &operator =(const AddManyComputation &copy) = delete;
+
+            std::vector<Computation*> inputs_;
+        };
+
         class SubComputation : public Computation
         {
         public:
-            SubComputation(const Computation &input1, const Computation &input2);
+            SubComputation(Computation &input1, Computation &input2);
 
             ~SubComputation();
 
-            Simulation simulate(EncryptionParameters &parms) const override;
+            Simulation simulate(const EncryptionParameters &parms) override;
 
-            SubComputation *clone() const override;
+            SubComputation *clone() override;
 
         private:
             SubComputation(const SubComputation &copy) = delete;
@@ -82,13 +101,13 @@ namespace seal
         class MultiplyComputation : public Computation
         {
         public:
-            MultiplyComputation(const Computation &input1, const Computation &input2);
+            MultiplyComputation(Computation &input1, Computation &input2);
 
             ~MultiplyComputation();
 
-            Simulation simulate(EncryptionParameters &parms) const override;
+            Simulation simulate(const EncryptionParameters &parms) override;
 
-            MultiplyComputation *clone() const override;
+            MultiplyComputation *clone() override;
 
         private:
             MultiplyComputation(const MultiplyComputation &copy) = delete;
@@ -100,16 +119,17 @@ namespace seal
             Computation *input2_;
         };
 
+        /*
         class MultiplyNoRelinComputation : public Computation
         {
         public:
-            MultiplyNoRelinComputation(const Computation &input1, const Computation &input2);
+            MultiplyNoRelinComputation(Computation &input1, Computation &input2);
 
             ~MultiplyNoRelinComputation();
 
-            Simulation simulate(EncryptionParameters &parms) const override;
+            Simulation simulate(const EncryptionParameters &parms) override;
 
-            MultiplyNoRelinComputation *clone() const override;
+            MultiplyNoRelinComputation *clone() override;
 
         private:
             MultiplyNoRelinComputation(const MultiplyComputation &copy) = delete;
@@ -124,13 +144,13 @@ namespace seal
         class RelinearizeComputation : public Computation
         {
         public:
-            RelinearizeComputation(const Computation &input);
+            RelinearizeComputation(Computation &input);
 
             ~RelinearizeComputation();
 
-            Simulation simulate(EncryptionParameters &parms) const override;
+            Simulation simulate(const EncryptionParameters &parms) override;
 
-            RelinearizeComputation *clone() const override;
+            RelinearizeComputation *clone() override;
 
         private:
             RelinearizeComputation(const MultiplyComputation &copy) = delete;
@@ -139,19 +159,20 @@ namespace seal
 
             Computation *input_;
         };
+        */
 
         class MultiplyPlainComputation : public Computation
         {
         public:
-            MultiplyPlainComputation(const Computation &input, int plain_max_coeff_count, const BigUInt &plain_max_abs_value);
+            MultiplyPlainComputation(Computation &input, int plain_max_coeff_count, const BigUInt &plain_max_abs_value);
 
-            MultiplyPlainComputation(const Computation &input, int plain_max_coeff_count, uint64_t plain_max_abs_value);
+            MultiplyPlainComputation(Computation &input, int plain_max_coeff_count, uint64_t plain_max_abs_value);
 
             ~MultiplyPlainComputation();
 
-            Simulation simulate(EncryptionParameters &parms) const override;
+            Simulation simulate(const EncryptionParameters &parms) override;
 
-            MultiplyPlainComputation *clone() const override;
+            MultiplyPlainComputation *clone() override;
 
         private:
             MultiplyPlainComputation(const MultiplyPlainComputation &copy) = delete;
@@ -168,13 +189,13 @@ namespace seal
         class AddPlainComputation : public Computation
         {
         public:
-            AddPlainComputation(const Computation &input);
+            AddPlainComputation(Computation &input);
 
             ~AddPlainComputation();
 
-            Simulation simulate(EncryptionParameters &parms) const override;
+            Simulation simulate(const EncryptionParameters &parms) override;
 
-            AddPlainComputation *clone() const override;
+            AddPlainComputation *clone() override;
 
         private:
             AddPlainComputation(const AddPlainComputation &copy) = delete;
@@ -187,13 +208,13 @@ namespace seal
         class SubPlainComputation : public Computation
         {
         public:
-            SubPlainComputation(const Computation &input);
+            SubPlainComputation(Computation &input);
 
             ~SubPlainComputation();
 
-            Simulation simulate(EncryptionParameters &parms) const override;
+            Simulation simulate(const EncryptionParameters &parms) override;
 
-            SubPlainComputation *clone() const override;
+            SubPlainComputation *clone() override;
 
         private:
             SubPlainComputation(const SubPlainComputation &copy) = delete;
@@ -206,13 +227,13 @@ namespace seal
         class NegateComputation : public Computation
         {
         public:
-            NegateComputation(const Computation &input);
+            NegateComputation(Computation &input);
 
             ~NegateComputation();
 
-            Simulation simulate(EncryptionParameters &parms) const override;
+            Simulation simulate(const EncryptionParameters &parms) override;
 
-            NegateComputation *clone() const override;
+            NegateComputation *clone() override;
 
         private:
             NegateComputation(const NegateComputation &copy) = delete;
@@ -222,65 +243,44 @@ namespace seal
             Computation *input_;
         };
 
-        class BinaryExponentiateComputation : public Computation
+        class ExponentiateComputation : public Computation
         {
         public:
-            BinaryExponentiateComputation(const Computation &input, int exponent);
+            ExponentiateComputation(Computation &input, int exponent);
 
-            ~BinaryExponentiateComputation();
+            ~ExponentiateComputation();
 
-            Simulation simulate(EncryptionParameters &parms) const override;
+            Simulation simulate(const EncryptionParameters &parms) override;
 
-            BinaryExponentiateComputation *clone() const override;
+            ExponentiateComputation *clone() override;
 
         private:
-            BinaryExponentiateComputation(const BinaryExponentiateComputation &copy) = delete;
+            ExponentiateComputation(const ExponentiateComputation &copy) = delete;
 
-            BinaryExponentiateComputation &operator =(const BinaryExponentiateComputation &copy) = delete;
+            ExponentiateComputation &operator =(const ExponentiateComputation &copy) = delete;
 
             Computation *input_;
 
             int exponent_;
         };
 
-        class TreeExponentiateComputation : public Computation
+        class MultiplyManyComputation : public Computation
         {
         public:
-            TreeExponentiateComputation(const Computation &input, int exponent);
+            MultiplyManyComputation(std::vector<Computation*> inputs);
 
-            ~TreeExponentiateComputation();
+            ~MultiplyManyComputation();
 
-            Simulation simulate(EncryptionParameters &parms) const override;
+            Simulation simulate(const EncryptionParameters &parms) override;
 
-            TreeExponentiateComputation *clone() const override;
-
-        private:
-            TreeExponentiateComputation(const TreeExponentiateComputation &copy) = delete;
-
-            TreeExponentiateComputation &operator =(const TreeExponentiateComputation &copy) = delete;
-
-            Computation *input_;
-
-            int exponent_;
-        };
-
-        class TreeMultiplyComputation : public Computation
-        {
-        public:
-            TreeMultiplyComputation(const std::vector<const Computation*> inputs);
-
-            ~TreeMultiplyComputation();
-
-            Simulation simulate(EncryptionParameters &parms) const override;
-
-            TreeMultiplyComputation *clone() const override;
+            MultiplyManyComputation *clone() override;
 
         private:
-            TreeMultiplyComputation(const TreeMultiplyComputation &copy) = delete;
+            MultiplyManyComputation(const MultiplyManyComputation &copy) = delete;
 
-            TreeMultiplyComputation &operator =(const TreeMultiplyComputation &copy) = delete;
+            MultiplyManyComputation &operator =(const MultiplyManyComputation &copy) = delete;
 
-            std::vector<const Computation*> inputs_;
+            std::vector<Computation*> inputs_;
         };
     }
 }

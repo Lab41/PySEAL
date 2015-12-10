@@ -1338,6 +1338,54 @@ namespace Microsoft
             BigUInt::BigUInt(seal::BigUInt *value) : biguint_(value), owned_(false)
             {
             }
+
+            void BigUInt::DuplicateTo(BigUInt ^destination)
+            {
+                if (biguint_ == nullptr)
+                {
+                    throw gcnew ObjectDisposedException("BigUInt is disposed");
+                }                
+                if (destination == nullptr)
+                {
+                    throw gcnew ArgumentNullException("destination cannot be null");
+                }
+                try
+                {
+                    biguint_->duplicate_to(*destination->biguint_);
+                }
+                catch (const exception &e)
+                {
+                    HandleException(&e);
+                }
+                catch (...)
+                {
+                    HandleException(nullptr);
+                }
+            }
+
+            void BigUInt::DuplicateFrom(BigUInt ^value)
+            {
+                if (biguint_ == nullptr)
+                {
+                    throw gcnew ObjectDisposedException("BigUInt is disposed");
+                }
+                if (value == nullptr)
+                {
+                    throw gcnew ArgumentNullException("value cannot be null");
+                }
+                try
+                {
+                    biguint_->duplicate_from(*value->biguint_);
+                }
+                catch (const exception &e)
+                {
+                    HandleException(&e);
+                }
+                catch (...)
+                {
+                    HandleException(nullptr);
+                }
+            }
         }
     }
 }

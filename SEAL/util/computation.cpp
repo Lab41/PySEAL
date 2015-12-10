@@ -16,17 +16,17 @@ namespace seal
         {
         }
 
-        Simulation FreshComputation::simulate(EncryptionParameters &parms) const
+        Simulation FreshComputation::simulate(const EncryptionParameters &parms)
         {
             return Simulation(parms);
         }
 
-        FreshComputation *FreshComputation::clone() const
+        FreshComputation *FreshComputation::clone()
         {
             return new FreshComputation();
         }
 
-        AddComputation::AddComputation(const Computation &input1, const Computation &input2)
+        AddComputation::AddComputation(Computation &input1, Computation &input2)
         {
             input1_ = input1.clone();
             input2_ = input2.clone();
@@ -38,17 +38,60 @@ namespace seal
             delete input2_;
         }
 
-        Simulation AddComputation::simulate(EncryptionParameters &parms) const
+        Simulation AddComputation::simulate(const EncryptionParameters &parms)
         {
             return simulation_evaluator_.add(input1_->simulate(parms), input2_->simulate(parms));
         }
 
-        AddComputation *AddComputation::clone() const
+        AddComputation *AddComputation::clone()
         {
             return new AddComputation(*input1_, *input2_);
         }
 
-        SubComputation::SubComputation(const Computation &input1, const Computation &input2)
+        AddManyComputation::AddManyComputation(vector<Computation*> inputs)
+        {
+#ifdef _DEBUG
+            if (inputs.empty())
+            {
+                throw invalid_argument("inputs can not be empty");
+            }
+#endif
+            for (vector<Computation*>::size_type i = 0; i < inputs.size(); ++i)
+            {
+#ifdef _DEBUG
+                if (inputs[i] == nullptr)
+                {
+                    throw invalid_argument("inputs can not contain null pointers");
+                }
+#endif
+                inputs_.push_back(inputs[i]->clone());
+            }
+        }
+
+        AddManyComputation::~AddManyComputation()
+        {
+            for (vector<Computation*>::size_type i = 0; i < inputs_.size(); ++i)
+            {
+                delete inputs_[i];
+            }
+        }
+
+        Simulation AddManyComputation::simulate(const EncryptionParameters &parms)
+        {
+            vector<Simulation> inputs;
+            for (vector<Computation*>::size_type i = 0; i < inputs_.size(); ++i)
+            {
+                inputs.push_back(inputs_[i]->simulate(parms));
+            }
+            return simulation_evaluator_.add_many(inputs);
+        }
+
+        AddManyComputation *AddManyComputation::clone()
+        {
+            return new AddManyComputation(inputs_);
+        }
+
+        SubComputation::SubComputation(Computation &input1, Computation &input2)
         {
             input1_ = input1.clone();
             input2_ = input2.clone();
@@ -60,17 +103,17 @@ namespace seal
             delete input2_;
         }
 
-        Simulation SubComputation::simulate(EncryptionParameters &parms) const
+        Simulation SubComputation::simulate(const EncryptionParameters &parms)
         {
             return simulation_evaluator_.sub(input1_->simulate(parms), input2_->simulate(parms));
         }
 
-        SubComputation *SubComputation::clone() const
+        SubComputation *SubComputation::clone()
         {
             return new SubComputation(*input1_, *input2_);
         }
 
-        MultiplyComputation::MultiplyComputation(const Computation &input1, const Computation &input2)
+        MultiplyComputation::MultiplyComputation(Computation &input1, Computation &input2)
         {
             input1_ = input1.clone();
             input2_ = input2.clone();
@@ -82,17 +125,18 @@ namespace seal
             delete input2_;
         }
 
-        Simulation MultiplyComputation::simulate(EncryptionParameters &parms) const
+        Simulation MultiplyComputation::simulate(const EncryptionParameters &parms)
         {
             return simulation_evaluator_.multiply(input1_->simulate(parms), input2_->simulate(parms));
         }
 
-        MultiplyComputation *MultiplyComputation::clone() const
+        MultiplyComputation *MultiplyComputation::clone()
         {
             return new MultiplyComputation(*input1_, *input2_);
         }
 
-        MultiplyNoRelinComputation::MultiplyNoRelinComputation(const Computation &input1, const Computation &input2)
+        /*
+        MultiplyNoRelinComputation::MultiplyNoRelinComputation(Computation &input1, Computation &input2)
         {
             input1_ = input1.clone();
             input2_ = input2.clone();
@@ -104,17 +148,17 @@ namespace seal
             delete input2_;
         }
 
-        Simulation MultiplyNoRelinComputation::simulate(EncryptionParameters &parms) const
+        Simulation MultiplyNoRelinComputation::simulate(const EncryptionParameters &parms)
         {
             return simulation_evaluator_.multiply_norelin(input1_->simulate(parms), input2_->simulate(parms));
         }
 
-        MultiplyNoRelinComputation *MultiplyNoRelinComputation::clone() const
+        MultiplyNoRelinComputation *MultiplyNoRelinComputation::clone()
         {
             return new MultiplyNoRelinComputation(*input1_, *input2_);
         }
 
-        RelinearizeComputation::RelinearizeComputation(const Computation &input)
+        RelinearizeComputation::RelinearizeComputation(Computation &input)
         {
             input_ = input.clone();
         }
@@ -124,34 +168,39 @@ namespace seal
             delete input_;
         }
 
-        Simulation RelinearizeComputation::simulate(EncryptionParameters &parms) const
+        Simulation RelinearizeComputation::simulate(const EncryptionParameters &parms)
         {
             return simulation_evaluator_.relinearize(input_->simulate(parms));
         }
 
-        RelinearizeComputation *RelinearizeComputation::clone() const
+        RelinearizeComputation *RelinearizeComputation::clone()
         {
             return new RelinearizeComputation(*input_);
         }
+        */
 
-        MultiplyPlainComputation::MultiplyPlainComputation(const Computation &input, int plain_max_coeff_count, const BigUInt &plain_max_abs_value) :
+        MultiplyPlainComputation::MultiplyPlainComputation(Computation &input, int plain_max_coeff_count, const BigUInt &plain_max_abs_value) :
             plain_max_coeff_count_(plain_max_coeff_count), plain_max_abs_value_(plain_max_abs_value)
         {
+#ifdef _DEBUG
             if (plain_max_coeff_count <= 0)
             {
-                throw out_of_range("plain_max_coeff_count");
+                throw invalid_argument("plain_max_coeff_count");
             }
+#endif
 
             input_ = input.clone();
         }
 
-        MultiplyPlainComputation::MultiplyPlainComputation(const Computation &input, int plain_max_coeff_count, uint64_t plain_max_abs_value) :
+        MultiplyPlainComputation::MultiplyPlainComputation(Computation &input, int plain_max_coeff_count, uint64_t plain_max_abs_value) :
             plain_max_coeff_count_(plain_max_coeff_count)
         {
+#ifdef _DEBUG
             if (plain_max_coeff_count <= 0)
             {
-                throw out_of_range("plain_max_coeff_count");
+                throw invalid_argument("plain_max_coeff_count");
             }
+#endif
 
             BigUInt plain_max_abs_value_uint;
             plain_max_abs_value_uint = plain_max_abs_value;
@@ -165,17 +214,17 @@ namespace seal
             delete input_;
         }
 
-        Simulation MultiplyPlainComputation::simulate(EncryptionParameters &parms) const
+        Simulation MultiplyPlainComputation::simulate(const EncryptionParameters &parms)
         {
             return simulation_evaluator_.multiply_plain(input_->simulate(parms), plain_max_coeff_count_, plain_max_abs_value_);
         }
 
-        MultiplyPlainComputation *MultiplyPlainComputation::clone() const
+        MultiplyPlainComputation *MultiplyPlainComputation::clone()
         {
             return new MultiplyPlainComputation(*input_, plain_max_coeff_count_, plain_max_abs_value_);
         }
 
-        AddPlainComputation::AddPlainComputation(const Computation &input)
+        AddPlainComputation::AddPlainComputation(Computation &input)
         {
             input_ = input.clone();
         }
@@ -185,17 +234,17 @@ namespace seal
             delete input_;
         }
 
-        Simulation AddPlainComputation::simulate(EncryptionParameters &parms) const
+        Simulation AddPlainComputation::simulate(const EncryptionParameters &parms)
         {
             return simulation_evaluator_.add_plain(input_->simulate(parms));
         }
 
-        AddPlainComputation *AddPlainComputation::clone() const
+        AddPlainComputation *AddPlainComputation::clone()
         {
             return new AddPlainComputation(*input_);
         }
 
-        SubPlainComputation::SubPlainComputation(const Computation &input)
+        SubPlainComputation::SubPlainComputation(Computation &input)
         {
             input_ = input.clone();
         }
@@ -205,17 +254,17 @@ namespace seal
             delete input_;
         }
 
-        Simulation SubPlainComputation::simulate(EncryptionParameters &parms) const
+        Simulation SubPlainComputation::simulate(const EncryptionParameters &parms)
         {
             return simulation_evaluator_.sub_plain(input_->simulate(parms));
         }
 
-        SubPlainComputation *SubPlainComputation::clone() const
+        SubPlainComputation *SubPlainComputation::clone()
         {
             return new SubPlainComputation(*input_);
         }
 
-        NegateComputation::NegateComputation(const Computation &input)
+        NegateComputation::NegateComputation(Computation &input)
         {
             input_ = input.clone();
         }
@@ -225,109 +274,84 @@ namespace seal
             delete input_;
         }
 
-        Simulation NegateComputation::simulate(EncryptionParameters &parms) const
+        Simulation NegateComputation::simulate(const EncryptionParameters &parms)
         {
             return simulation_evaluator_.negate(input_->simulate(parms));
         }
 
-        NegateComputation *NegateComputation::clone() const
+        NegateComputation *NegateComputation::clone()
         {
             return new NegateComputation(*input_);
         }
 
-        BinaryExponentiateComputation::BinaryExponentiateComputation(const Computation &input, int exponent) : exponent_(exponent)
+        ExponentiateComputation::ExponentiateComputation(Computation &input, int exponent) : exponent_(exponent)
         {
+#ifdef _DEBUG
             if (exponent < 0)
             {
-                throw out_of_range("exponent");
+                throw invalid_argument("exponent can not be negative");
             }
+#endif
 
             input_ = input.clone();
         }
 
-        BinaryExponentiateComputation::~BinaryExponentiateComputation()
+        ExponentiateComputation::~ExponentiateComputation()
         {
             delete input_;
         }
 
-        Simulation BinaryExponentiateComputation::simulate(EncryptionParameters &parms) const
+        Simulation ExponentiateComputation::simulate(const EncryptionParameters &parms)
         {
-            return simulation_evaluator_.binary_exponentiate(input_->simulate(parms), exponent_);
+            return simulation_evaluator_.exponentiate(input_->simulate(parms), exponent_);
         }
 
-        BinaryExponentiateComputation *BinaryExponentiateComputation::clone() const
+        ExponentiateComputation *ExponentiateComputation::clone()
         {
-            return new BinaryExponentiateComputation(*input_, exponent_);
+            return new ExponentiateComputation(*input_, exponent_);
         }
 
-        TreeExponentiateComputation::TreeExponentiateComputation(const Computation &input, int exponent) : exponent_(exponent)
+        MultiplyManyComputation::MultiplyManyComputation(vector<Computation*> inputs)
         {
-            if (exponent < 0)
-            {
-                throw out_of_range("exponent");
-            }
-
-            input_ = input.clone();
-        }
-
-        TreeExponentiateComputation::~TreeExponentiateComputation()
-        {
-            delete input_;
-        }
-
-        Simulation TreeExponentiateComputation::simulate(EncryptionParameters &parms) const
-        {
-            return simulation_evaluator_.tree_exponentiate(input_->simulate(parms), exponent_);
-        }
-
-        TreeExponentiateComputation *TreeExponentiateComputation::clone() const
-        {
-            return new TreeExponentiateComputation(*input_, exponent_);
-        }
-
-        TreeMultiplyComputation::TreeMultiplyComputation(const vector<const Computation*> inputs)
-        {
+#ifdef _DEBUG
             if (inputs.empty())
             {
-                throw invalid_argument("inputs");
+                throw invalid_argument("inputs can not be empty");
             }
-            int inputs_size = static_cast<int>(inputs_.size());
-            for (int i = 0; i < inputs_size; ++i)
+#endif
+            for (vector<Computation*>::size_type i = 0; i < inputs.size(); ++i)
             {
+#ifdef _DEBUG
                 if (inputs[i] == nullptr)
                 {
-                    throw invalid_argument("inputs");
+                    throw invalid_argument("inputs can not contain null pointers");
                 }
-            }
-            for (int i = 0; i < inputs_size; ++i)
-            {
+#endif
                 inputs_.push_back(inputs[i]->clone());
             }
         }
 
-        TreeMultiplyComputation::~TreeMultiplyComputation()
+        MultiplyManyComputation::~MultiplyManyComputation()
         {
-            int inputs_size = static_cast<int>(inputs_.size());
-            for (int i = 0; i < inputs_size; ++i)
+            for (vector<Computation*>::size_type i = 0; i < inputs_.size(); ++i)
             {
                 delete inputs_[i];
             }
         }
 
-        Simulation TreeMultiplyComputation::simulate(EncryptionParameters &parms) const
+        Simulation MultiplyManyComputation::simulate(const EncryptionParameters &parms)
         {
             vector<Simulation> inputs;
-            int inputs_size = static_cast<int>(inputs_.size());
-            for (int i = 0; i < inputs_size; ++i)
+            for (vector<Computation*>::size_type i = 0; i < inputs_.size(); ++i)
             {
                 inputs.push_back(inputs_[i]->simulate(parms));
             }
-            return simulation_evaluator_.tree_multiply(inputs);
+            return simulation_evaluator_.multiply_many(inputs);
         }
 
-        TreeMultiplyComputation *TreeMultiplyComputation::clone() const
+        MultiplyManyComputation *MultiplyManyComputation::clone()
         {
-            return new TreeMultiplyComputation(inputs_);
+            return new MultiplyManyComputation(inputs_);
         }
     }
 }

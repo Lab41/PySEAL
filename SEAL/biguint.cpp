@@ -37,7 +37,7 @@ namespace seal
     BigUInt::BigUInt(int bit_count, uint64_t *value) : value_(nullptr), bit_count_(0), is_alias_(false)
     {
         alias(bit_count, value);
-    }
+    } 
 
     BigUInt::BigUInt(int bit_count, uint64_t value) : value_(nullptr), bit_count_(0), is_alias_(false)
     {
@@ -775,5 +775,17 @@ namespace seal
         value_ = nullptr;
         bit_count_ = 0;
         is_alias_ = false;
+    }
+
+    void BigUInt::duplicate_to(BigUInt &destination) const
+    {
+        destination.resize(this->bit_count_);
+        destination = *this;
+    }
+
+    void BigUInt::duplicate_from(const BigUInt &value)
+    {
+        this->resize(value.bit_count_);
+        *this = value;
     }
 }

@@ -13,27 +13,27 @@ namespace Microsoft
     {
         namespace SEAL
         {
-            BigUInt ^Utilities::InherentNoise(BigPoly ^encrypted, BigPoly ^plain, EncryptionParameters ^parms, BigPoly ^secret_key)
+            BigUInt ^Utilities::InherentNoise(BigPoly ^encrypted, BigPoly ^plain, EncryptionParameters ^parms, BigPoly ^secretKey)
             {
                 if (encrypted == nullptr)
                 {
-                    throw gcnew ArgumentNullException("encrypted");
+                    throw gcnew ArgumentNullException("encrypted cannot be null");
                 }
                 if (plain == nullptr)
                 {
-                    throw gcnew ArgumentNullException("plain");
+                    throw gcnew ArgumentNullException("plain cannot be null");
                 }
                 if (parms == nullptr)
                 {
-                    throw gcnew ArgumentNullException("parms");
+                    throw gcnew ArgumentNullException("parms cannot be null");
                 }
-                if (secret_key == nullptr)
+                if (secretKey == nullptr)
                 {
-                    throw gcnew ArgumentNullException("secret_key");
+                    throw gcnew ArgumentNullException("secretKey cannot be null");
                 }
                 try
                 {
-                    return gcnew BigUInt(seal::inherent_noise(encrypted->GetPolynomial(), plain->GetPolynomial(), parms->GetParameters(), secret_key->GetPolynomial()));
+                    return gcnew BigUInt(seal::inherent_noise(encrypted->GetPolynomial(), plain->GetPolynomial(), parms->GetParameters(), secretKey->GetPolynomial()));
                 }
                 catch (const exception &e)
                 {
@@ -46,23 +46,23 @@ namespace Microsoft
                 throw gcnew Exception("Unexpected exception");
             }
 
-            BigUInt ^Utilities::InherentNoise(BigPoly ^encrypted, EncryptionParameters ^parms, BigPoly ^secret_key)
+            BigUInt ^Utilities::InherentNoise(BigPoly ^encrypted, EncryptionParameters ^parms, BigPoly ^secretKey)
             {
                 if (encrypted == nullptr)
                 {
-                    throw gcnew ArgumentNullException("encrypted");
+                    throw gcnew ArgumentNullException("encrypted cannot be null");
                 }
                 if (parms == nullptr)
                 {
-                    throw gcnew ArgumentNullException("parms");
+                    throw gcnew ArgumentNullException("parms cannot be null");
                 }
-                if (secret_key == nullptr)
+                if (secretKey == nullptr)
                 {
-                    throw gcnew ArgumentNullException("secret_key");
+                    throw gcnew ArgumentNullException("secretKey cannot be null");
                 }
                 try
                 {
-                    return gcnew BigUInt(seal::inherent_noise(encrypted->GetPolynomial(), parms->GetParameters(), secret_key->GetPolynomial()));
+                    return gcnew BigUInt(seal::inherent_noise(encrypted->GetPolynomial(), parms->GetParameters(), secretKey->GetPolynomial()));
                 }
                 catch (const exception &e)
                 {
@@ -75,31 +75,31 @@ namespace Microsoft
                 throw gcnew Exception("Unexpected exception");
             }
 
-            void Utilities::InherentNoise(BigPoly ^encrypted, BigPoly ^plain, EncryptionParameters ^parms, BigPoly ^secret_key, BigUInt ^result)
+            void Utilities::InherentNoise(BigPoly ^encrypted, BigPoly ^plain, EncryptionParameters ^parms, BigPoly ^secretKey, BigUInt ^result)
             {
                 if (encrypted == nullptr)
                 {
-                    throw gcnew ArgumentNullException("encrypted");
+                    throw gcnew ArgumentNullException("encrypted cannot be null");
                 }
                 if (plain == nullptr)
                 {
-                    throw gcnew ArgumentNullException("plain");
+                    throw gcnew ArgumentNullException("plain cannot be null");
                 }
                 if (parms == nullptr)
                 {
-                    throw gcnew ArgumentNullException("parms");
+                    throw gcnew ArgumentNullException("parms cannot be null");
                 }
-                if (secret_key == nullptr)
+                if (secretKey == nullptr)
                 {
-                    throw gcnew ArgumentNullException("secret_key");
+                    throw gcnew ArgumentNullException("secretKey cannot be null");
                 }
                 if (result == nullptr)
                 {
-                    throw gcnew ArgumentNullException("result");
+                    throw gcnew ArgumentNullException("result cannot be null");
                 }
                 try
                 {
-                    seal::inherent_noise(encrypted->GetPolynomial(), plain->GetPolynomial(), parms->GetParameters(), secret_key->GetPolynomial(), result->GetUInt());
+                    seal::inherent_noise(encrypted->GetPolynomial(), plain->GetPolynomial(), parms->GetParameters(), secretKey->GetPolynomial(), result->GetUInt());
                 }
                 catch (const exception &e)
                 {
@@ -115,7 +115,7 @@ namespace Microsoft
             {
                 if (parms == nullptr)
                 {
-                    throw gcnew ArgumentNullException("parms");
+                    throw gcnew ArgumentNullException("parms cannot be null");
                 }
                 try
                 {
@@ -136,7 +136,7 @@ namespace Microsoft
             {
                 if (poly == nullptr)
                 {
-                    throw gcnew ArgumentNullException("poly");
+                    throw gcnew ArgumentNullException("poly cannot be null");
                 }
                 try
                 {
@@ -157,11 +157,11 @@ namespace Microsoft
             {
                 if (poly == nullptr)
                 {
-                    throw gcnew ArgumentNullException("poly");
+                    throw gcnew ArgumentNullException("poly cannot be null");
                 }
                 if (modulus == nullptr)
                 {
-                    throw gcnew ArgumentNullException("modulus");
+                    throw gcnew ArgumentNullException("modulus cannot be null");
                 }
                 try
                 {
@@ -182,7 +182,7 @@ namespace Microsoft
             {
                 if (parms == nullptr)
                 {
-                    throw gcnew ArgumentNullException("parms");
+                    throw gcnew ArgumentNullException("parms cannot be null");
                 }
                 try
                 {
@@ -199,11 +199,32 @@ namespace Microsoft
                 throw gcnew Exception("Unexpected exception");
             }
 
+            void Utilities::ExponentiateUInt(BigUInt ^operand, int exponent, BigUInt ^result)
+            {
+                if (operand == nullptr)
+                {
+                    throw gcnew ArgumentNullException("operand cannot be null");
+                }
+                if (result == nullptr)
+                {
+                    throw gcnew ArgumentNullException("result cannot be null");
+                }
+                try
+                {
+                    seal::exponentiate_uint(operand->GetUInt(), exponent, result->GetUInt());
+                }
+                catch (const exception &e)
+                {
+                    HandleException(&e);
+                }
+                throw gcnew Exception("Unhandled exception");
+            }
+
             BigUInt ^Utilities::ExponentiateUInt(BigUInt ^operand, int exponent)
             {
                 if (operand == nullptr)
                 {
-                    throw gcnew ArgumentNullException("operand");
+                    throw gcnew ArgumentNullException("operand cannot be null");
                 }
                 try
                 {
@@ -216,11 +237,32 @@ namespace Microsoft
                 throw gcnew Exception("Unhandled exception");
             }
 
+            void Utilities::ExponentiatePoly(BigPoly ^operand, int exponent, BigPoly ^result)
+            {
+                if (operand == nullptr)
+                {
+                    throw gcnew ArgumentNullException("operand cannot be null");
+                }
+                if (result == nullptr)
+                {
+                    throw gcnew ArgumentNullException("result cannot be null");
+                }
+                try
+                {
+                    seal::exponentiate_poly(operand->GetPolynomial(), exponent, result->GetPolynomial());
+                }
+                catch (const exception &e)
+                {
+                    HandleException(&e);
+                }
+                throw gcnew Exception("Unhandled exception");
+            }
+
             BigPoly ^Utilities::ExponentiatePoly(BigPoly ^operand, int exponent)
             {
                 if (operand == nullptr)
                 {
-                    throw gcnew ArgumentNullException("operand");
+                    throw gcnew ArgumentNullException("operand cannot be null");
                 }
                 try
                 {
@@ -233,19 +275,19 @@ namespace Microsoft
                 throw gcnew Exception("Unhandled exception");
             }
 
-            BigPoly ^Utilities::PolyEvalPoly(BigPoly ^poly_to_eval, BigPoly ^value)
+            BigPoly ^Utilities::PolyEvalPoly(BigPoly ^polyToEvaluate, BigPoly ^polyToEvaluateAt)
             {
-                if (poly_to_eval == nullptr)
+                if (polyToEvaluate == nullptr)
                 {
-                    throw gcnew ArgumentNullException("poly_to_eval");
+                    throw gcnew ArgumentNullException("polyToEvaluate cannot be null");
                 }
-                if (value == nullptr)
+                if (polyToEvaluateAt == nullptr)
                 {
-                    throw gcnew ArgumentNullException("value");
+                    throw gcnew ArgumentNullException("polyToEvaluateAt cannot be null");
                 }
                 try
                 {
-                    return gcnew BigPoly(seal::poly_eval_poly(poly_to_eval->GetPolynomial(), value->GetPolynomial()));
+                    return gcnew BigPoly(seal::poly_eval_poly(polyToEvaluate->GetPolynomial(), polyToEvaluateAt->GetPolynomial()));
                 }
                 catch (const exception &e)
                 {

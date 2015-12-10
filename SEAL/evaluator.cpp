@@ -110,6 +110,25 @@ namespace seal
         add_poly_poly_coeffmod(encrypted1.pointer(), encrypted2.pointer(), coeff_count, coeff_modulus_.pointer(), coeff_uint64_count, destination.pointer());
     }
 
+    void Evaluator::add_many(const std::vector<BigPoly> &encrypteds, BigPoly &destination)
+    {
+        if (encrypteds.empty())
+        {
+            throw invalid_argument("encrypteds cannot be empty");
+        }
+
+        if (destination.coeff_count() != encrypteds[0].coeff_count() || destination.coeff_bit_count() != encrypteds[0].coeff_bit_count())
+        {
+            destination.resize(encrypteds[0].coeff_count(), encrypteds[0].coeff_bit_count());
+        }
+
+        destination = encrypteds[0];
+        for (vector<BigPoly>::size_type i = 1; i < encrypteds.size(); ++i)
+        {
+            add(destination, encrypteds[i], destination);
+        }
+    }
+
     void Evaluator::sub(const BigPoly &encrypted1, const BigPoly &encrypted2, BigPoly &destination)
     {
         // Extract encryption parameters.
@@ -626,22 +645,22 @@ namespace seal
         }
     }
 
-    void Evaluator::tree_multiply(const vector<BigPoly> &encrypteds, BigPoly &destination)
+    BigPoly Evaluator::multiply_many(vector<BigPoly> &encrypteds)
     {
         // Extract encryption parameters.
         int coeff_count = poly_modulus_.coeff_count();
         int coeff_bit_count = poly_modulus_.coeff_bit_count();
 
+        vector<BigPoly>::size_type original_size = encrypteds.size();
+
         // Verify parameters.
-        if (encrypteds.empty())
+        if (original_size == 0)
         {
             throw invalid_argument("encrypteds vector must not be empty");
         }
-        int encrypteds_size = static_cast<int>(encrypteds.size());
-        for (int i = 0; i < encrypteds_size; ++i)
+        for (vector<BigPoly>::size_type i = 0; i < original_size; ++i)
         {
-            const BigPoly& encrypted = encrypteds[i];
-            if (encrypted.coeff_count() != coeff_count || encrypted.coeff_bit_count() != coeff_bit_count)
+            if (encrypteds[i].coeff_count() != coeff_count || encrypteds[i].coeff_bit_count() != coeff_bit_count)
             {
                 throw invalid_argument("encrypteds is not valid for encryption parameters");
             }
@@ -652,41 +671,67 @@ namespace seal
             }
 #endif
         }
-        if (destination.coeff_count() != coeff_count || destination.coeff_bit_count() != coeff_bit_count)
+
+        if (original_size == 1)
         {
-            destination.resize(coeff_count, coeff_bit_count);
+            return encrypteds[0];
         }
 
-        if (encrypteds.size() == 1)
+        // Repeatedly multiply and add to the back of the vector until the end is reached
+        for (vector<BigPoly>::size_type i = 0; i < encrypteds.size() - 1; i += 2)
         {
-            destination = encrypteds[0];
-            return;
+            encrypteds.push_back(multiply(encrypteds[i], encrypteds[i+1]));
         }
-
-        vector<BigPoly> intermediate;
-        for (int i = 0; i < encrypteds_size; i += 2)
-        {
-            if (i + 1 < encrypteds_size)
-            {
-                const BigPoly &poly1 = encrypteds[i];
-                const BigPoly &poly2 = encrypteds[i + 1];
-                intermediate.push_back(multiply(poly1, poly2));
-            }
-            else
-            {
-                intermediate.push_back(encrypteds[i]);
-            }
-        }
-        for (int i = 0; i + 1 < static_cast<int>(intermediate.size()); i += 2)
-        {
-            BigPoly &poly1 = intermediate[i];
-            BigPoly &poly2 = intermediate[i + 1];
-            intermediate.push_back(multiply(poly1, poly2));
-        }
-        destination = intermediate[intermediate.size() - 1];
+   
+        BigPoly result = encrypteds[encrypteds.size() - 1];
+        encrypteds.erase(encrypteds.begin() + original_size, encrypteds.end());
+        return result;
     }
 
-    void Evaluator::binary_exponentiate(const BigPoly &encrypted, int exponent, BigPoly &destination)
+    BigPoly Evaluator::multiply_norelin_many(vector<BigPoly> &encrypteds)
+    {
+        // Extract encryption parameters.
+        int coeff_count = poly_modulus_.coeff_count();
+        int coeff_bit_count = poly_modulus_.coeff_bit_count();
+
+        vector<BigPoly>::size_type original_size = encrypteds.size();
+
+        // Verify parameters.
+        if (original_size == 0)
+        {
+            throw invalid_argument("encrypteds vector must not be empty");
+        }
+        for (vector<BigPoly>::size_type i = 0; i < original_size; ++i)
+        {
+            if (encrypteds[i].coeff_count() != coeff_count || encrypteds[i].coeff_bit_count() != coeff_bit_count)
+            {
+                throw invalid_argument("encrypteds is not valid for encryption parameters");
+            }
+#ifdef _DEBUG
+            if (encrypted.significant_coeff_count() == coeff_count || !are_poly_coefficients_less_than(encrypted, coeff_modulus_))
+            {
+                throw invalid_argument("encrypteds is not valid for encryption parameters");
+            }
+#endif
+        }
+
+        if (original_size == 1)
+        {
+            return encrypteds[0];
+        }
+
+        // Repeatedly multiply and add to the back of the vector until the end is reached
+        for (vector<BigPoly>::size_type i = 0; i < encrypteds.size() - 1; i += 2)
+        {
+            encrypteds.push_back(multiply_norelin(encrypteds[i], encrypteds[i + 1]));
+        }
+
+        BigPoly result = encrypteds[encrypteds.size() - 1];
+        encrypteds.erase(encrypteds.begin() + original_size, encrypteds.end());
+        return result;
+    }
+
+    void Evaluator::exponentiate(const BigPoly &encrypted, int exponent, BigPoly &destination)
     {
         // Extract encryption parameters.
         int coeff_count = poly_modulus_.coeff_count();
@@ -708,31 +753,37 @@ namespace seal
         {
             throw invalid_argument("exponent must be non-negative");
         }
-        if (destination.coeff_count() != coeff_count || destination.coeff_bit_count() != coeff_bit_count)
-        {
-            destination.resize(coeff_count, coeff_bit_count);
-        }
 
         if (exponent == 0)
         {
+            if (destination.coeff_count() != coeff_count || destination.coeff_bit_count() != coeff_bit_count)
+            {
+                destination.resize(coeff_count, coeff_bit_count);
+            }
             set_uint_uint(coeff_div_plain_modulus_.pointer(), coeff_uint64_count, destination.pointer());
             return;
         }
         if (exponent == 1)
         {
-            destination = encrypted;
+            encrypted.duplicate_to(destination);
             return;
         }
 
+        vector<BigPoly> exp_vector(exponent, encrypted);
+        multiply_many(exp_vector, destination);
+
+        // Binary exponentiation
+        /*
         if (exponent % 2 == 0)
         {
-            binary_exponentiate(multiply(encrypted, encrypted), exponent >> 1, destination);
+            exponentiate(multiply(encrypted, encrypted), exponent >> 1, destination);
             return;
         }
-        multiply(binary_exponentiate(multiply(encrypted, encrypted), (exponent - 1) >> 1), encrypted, destination);
+        multiply(exponentiate(multiply(encrypted, encrypted), (exponent - 1) >> 1), encrypted, destination);
+        */
     }
 
-    void Evaluator::tree_exponentiate(const BigPoly &encrypted, int exponent, BigPoly &destination)
+    void Evaluator::exponentiate_norelin(const BigPoly &encrypted, int exponent, BigPoly &destination)
     {
         // Extract encryption parameters.
         int coeff_count = poly_modulus_.coeff_count();
@@ -754,22 +805,34 @@ namespace seal
         {
             throw invalid_argument("exponent must be non-negative");
         }
-        if (destination.coeff_count() != coeff_count || destination.coeff_bit_count() != coeff_bit_count)
-        {
-            destination.resize(coeff_count, coeff_bit_count);
-        }
 
         if (exponent == 0)
         {
+            if (destination.coeff_count() != coeff_count || destination.coeff_bit_count() != coeff_bit_count)
+            {
+                destination.resize(coeff_count, coeff_bit_count);
+            }
             set_uint_uint(coeff_div_plain_modulus_.pointer(), coeff_uint64_count, destination.pointer());
             return;
         }
         if (exponent == 1)
         {
-            destination = encrypted;
+            encrypted.duplicate_to(destination);
             return;
         }
-        tree_multiply(vector<BigPoly>(exponent, encrypted), destination);
+
+        vector<BigPoly> exp_vector(exponent, encrypted);
+        multiply_norelin_many(exp_vector, destination);
+
+        // Binary exponentiation
+        /*
+        if (exponent % 2 == 0)
+        {
+            exponentiate_norelin(multiply_norelin(encrypted, encrypted), exponent >> 1, destination);
+            return;
+        }
+        multiply_norelin(exponentiate_norelin(multiply_norelin(encrypted, encrypted), (exponent - 1) >> 1), encrypted, destination);
+        */
     }
 
     Evaluator::Evaluator(const EncryptionParameters &parms, const EvaluationKeys &evaluation_keys) :
