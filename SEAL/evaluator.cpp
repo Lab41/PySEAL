@@ -665,7 +665,7 @@ namespace seal
                 throw invalid_argument("encrypteds is not valid for encryption parameters");
             }
 #ifdef _DEBUG
-            if (encrypted.significant_coeff_count() == coeff_count || !are_poly_coefficients_less_than(encrypted, coeff_modulus_))
+            if (encrypteds[i].significant_coeff_count() == coeff_count || !are_poly_coefficients_less_than(encrypteds[i], coeff_modulus_))
             {
                 throw invalid_argument("encrypteds is not valid for encryption parameters");
             }
@@ -708,7 +708,7 @@ namespace seal
                 throw invalid_argument("encrypteds is not valid for encryption parameters");
             }
 #ifdef _DEBUG
-            if (encrypted.significant_coeff_count() == coeff_count || !are_poly_coefficients_less_than(encrypted, coeff_modulus_))
+            if (encrypteds[i].significant_coeff_count() == coeff_count || !are_poly_coefficients_less_than(encrypteds[i], coeff_modulus_))
             {
                 throw invalid_argument("encrypteds is not valid for encryption parameters");
             }

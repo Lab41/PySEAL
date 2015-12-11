@@ -55,7 +55,7 @@ namespace seal
         }
 
         // Find the largest of the noises
-        int largest_noise_index = 0;
+        vector<Simulation>::size_type largest_noise_index = 0;
         for (vector<Simulation>::size_type i = 1; i < simulations.size(); ++i)
         {
             if (!simulations[i].compare_encryption_parameters(simulations[0]))
