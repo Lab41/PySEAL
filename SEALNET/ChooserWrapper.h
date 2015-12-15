@@ -875,7 +875,10 @@ namespace Microsoft
                 An expert user might want to give a modified dictionary as an argument to SelectParameters() for better results.
                 </remarks>
                 */
-                static System::Collections::Generic::Dictionary<int, BigUInt^> ^DefaultParameterOptions();
+                static property System::Collections::Generic::Dictionary<int, BigUInt^> ^DefaultParameterOptions
+                {
+                    System::Collections::Generic::Dictionary<int, BigUInt^> ^get();
+                }
 
                 /**
                 <summary>Returns the default value for the standard deviation of the noise (error) distribution used by automatic
@@ -885,7 +888,10 @@ namespace Microsoft
                 selection. An expert user might want to give a modified value as an argument to SelectParameters().
                 </remarks>
                 */
-                static double DefaultNoiseStandardDeviation();
+                static property double DefaultNoiseStandardDeviation
+                {
+                    double get();
+                }
 
 
                 /**
@@ -939,7 +945,7 @@ namespace Microsoft
                 <param name="base">The base</param>
                 <exception cref="System::ArgumentException">if base is not an odd integer and at least 3</exception>
                 */
-                ChooserEncoder(int base);
+                ChooserEncoder(System::UInt64 base);
 
                 /**
                 <summary>Destroys the ChooserEncoder.</summary>
@@ -1055,9 +1061,9 @@ namespace Microsoft
                 /**
                 <summary>Returns the base used for encoding.</summary>
                 */
-                property int Base
+                property System::UInt64 Base
                 {
-                    int get();
+                    System::UInt64 get();
                 }
 
                 /**

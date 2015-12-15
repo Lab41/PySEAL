@@ -960,7 +960,7 @@ namespace SEALTest
             BigUInt modulus("10000");
             BalancedFractionalEncoder encoder(modulus, poly_modulus, 500, 50);
 
-            for (int b = 3; b < 20; b += 2)
+            for (uint64_t b = 3; b < 20; b += 2)
             {
                 BalancedFractionalEncoder encoder(modulus, poly_modulus, 500, 50, b);
 

@@ -785,7 +785,7 @@ namespace seal
         @param[in] base The base (default value is 3)
         @throws std::invalid_argument if base is not an odd integer and at least 3
         */
-        ChooserEncoder(int base = 3);
+        ChooserEncoder(uint64_t base = 3);
 
         /**
         Encodes a number (represented by std::uint64_t) into a ChooserPoly object. This is done by first
@@ -887,7 +887,7 @@ namespace seal
         /**
         Returns the base used for encoding.
         */
-        int base() const
+        uint64_t base() const
         {
             return encoder_.base();
         }

@@ -440,7 +440,7 @@ namespace Microsoft
                 return *binaryEncoder_;
             }
 
-            BalancedEncoder::BalancedEncoder(BigUInt ^plainModulus, int base) : balancedEncoder_(nullptr)
+            BalancedEncoder::BalancedEncoder(BigUInt ^plainModulus, UInt64 base) : balancedEncoder_(nullptr)
             {
                 if (plainModulus == nullptr)
                 {
@@ -481,7 +481,7 @@ namespace Microsoft
                 return gcnew BigUInt(balancedEncoder_->plain_modulus());
             }
 
-            int BalancedEncoder::Base::get()
+            UInt64 BalancedEncoder::Base::get()
             {
                 if (balancedEncoder_ == nullptr)
                 {
@@ -987,7 +987,7 @@ namespace Microsoft
                 return *fractionalEncoder_;
             }
 
-            BalancedFractionalEncoder::BalancedFractionalEncoder(BigUInt ^plainModulus, BigPoly ^polyModulus, int integerCoeffCount, int fractionCoeffCount, int base) : fractionalEncoder_(nullptr)
+            BalancedFractionalEncoder::BalancedFractionalEncoder(BigUInt ^plainModulus, BigPoly ^polyModulus, int integerCoeffCount, int fractionCoeffCount, UInt64 base) : fractionalEncoder_(nullptr)
             {
                 if (plainModulus == nullptr)
                 {
@@ -1104,7 +1104,7 @@ namespace Microsoft
                 return gcnew BigUInt(fractionalEncoder_->plain_modulus());
             }
 
-            int BalancedFractionalEncoder::Base::get()
+            UInt64 BalancedFractionalEncoder::Base::get()
             {
                 if (fractionalEncoder_ == nullptr)
                 {

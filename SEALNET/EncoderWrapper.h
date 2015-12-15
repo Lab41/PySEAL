@@ -339,7 +339,7 @@ namespace Microsoft
                 <exception cref="System::ArgumentException">if base is not an odd integer and at least 3</exception>
                 <exception cref="System::ArgumentException">if plainModulus is not at least (base+1)/2</exception>
                 */
-                BalancedEncoder(BigUInt ^plainModulus, int base);
+                BalancedEncoder(BigUInt ^plainModulus, System::UInt64 base);
 
                 /**
                 <summary>Destroys the BalancedEncoder.</summary>
@@ -362,9 +362,9 @@ namespace Microsoft
                 /**
                 <summary>Returns the base used for encoding.</summary>
                 */
-                property int Base
+                property System::UInt64 Base
                 {
-                    int get();
+                    System::UInt64 get();
                 }
 
                 /**
@@ -768,7 +768,7 @@ namespace Microsoft
                 parts</exception>
                 <exception cref="System::ArgumentException">if base is not an odd integer and at least 3</exception>
                 */
-                BalancedFractionalEncoder(BigUInt ^plainModulus, BigPoly ^polyModulus, int integerCoeffCount, int fractionCoeffCount, int base);
+                BalancedFractionalEncoder(BigUInt ^plainModulus, BigPoly ^polyModulus, int integerCoeffCount, int fractionCoeffCount, System::UInt64 base);
 
                 /**
                 <summary>Destroys the BalancedFractionalEncoder.</summary>
@@ -806,9 +806,9 @@ namespace Microsoft
                 /**
                 <summary>Returns the base used for encoding.</summary>
                 */
-                property int Base
+                property System::UInt64 Base
                 {
-                    int get();
+                    System::UInt64 get();
                 }
 
                 /**

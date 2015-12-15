@@ -18,6 +18,7 @@ SEALLIB=$(BIN_DIR)/libseal.a
 all: $(SEALLIB)
 
 $(SEALLIB): $(OBJS)
+	-mkdir -p $(BIN_DIR)
 	ar rcs $(SEALLIB) $(OBJS)
 
 clean:

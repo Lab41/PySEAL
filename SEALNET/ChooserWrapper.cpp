@@ -579,7 +579,7 @@ namespace Microsoft
                 throw gcnew Exception("Unexpected exception");
             }
 
-            Dictionary<int, BigUInt^> ^ChooserEvaluator::DefaultParameterOptions()
+            Dictionary<int, BigUInt^> ^ChooserEvaluator::DefaultParameterOptions::get()
             {
                 Dictionary<int, BigUInt^> ^defaultParametersDict = gcnew Dictionary<int, BigUInt^>;
 
@@ -591,7 +591,7 @@ namespace Microsoft
                 return defaultParametersDict;
             }
 
-            double ChooserEvaluator::DefaultNoiseStandardDeviation()
+            double ChooserEvaluator::DefaultNoiseStandardDeviation::get()
             {
                 return seal::ChooserEvaluator::default_noise_standard_deviation();
             }
@@ -1152,7 +1152,7 @@ namespace Microsoft
                 }
             }
 
-            ChooserEncoder::ChooserEncoder(int base) : chooserEncoder_(nullptr)
+            ChooserEncoder::ChooserEncoder(UInt64 base) : chooserEncoder_(nullptr)
             {
                 try
                 {
@@ -1367,7 +1367,7 @@ namespace Microsoft
                 throw gcnew Exception("Unexpected exception");
             }
 
-            int ChooserEncoder::Base::get()
+            UInt64 ChooserEncoder::Base::get()
             {
                 if (chooserEncoder_ == nullptr)
                 {

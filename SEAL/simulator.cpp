@@ -31,8 +31,8 @@ namespace seal
         {
             result_bit_count = simulation1.noise_.significant_bit_count() + 1;
             result_uint64_count = divide_round_up(result_bit_count, bits_per_uint64);
-            Pointer result(allocate_zero_uint(result_uint64_count, pool_));
-            set_uint_uint(simulation1.noise_.pointer(), simulation1.noise_.uint64_count(), result.get());
+            Pointer result(allocate_uint(result_uint64_count, pool_));
+            set_uint_uint(simulation1.noise_.pointer(), simulation1.noise_.uint64_count(), result_uint64_count, result.get());
             left_shift_uint(result.get(), 1, result_uint64_count, result.get());
 
             return Simulation(BigUInt(result_bit_count, result.get()), simulation1.max_noise_, simulation1.coeff_modulus_, simulation1.plain_modulus_, simulation1.poly_modulus_coeff_count_, simulation1.noise_standard_deviation_, simulation1.noise_max_deviation_, simulation1.decomposition_bit_count_);
@@ -40,8 +40,8 @@ namespace seal
 
         result_bit_count = simulation2.noise_.significant_bit_count() + 1;
         result_uint64_count = divide_round_up(result_bit_count, bits_per_uint64);
-        Pointer result(allocate_zero_uint(result_uint64_count, pool_));
-        set_uint_uint(simulation2.noise_.pointer(), simulation2.noise_.uint64_count(), result.get());
+        Pointer result(allocate_uint(result_uint64_count, pool_));
+        set_uint_uint(simulation2.noise_.pointer(), simulation2.noise_.uint64_count(), result_uint64_count, result.get());
         left_shift_uint(result.get(), 1, result_uint64_count, result.get());
 
         return Simulation(BigUInt(result_bit_count, result.get()), simulation1.max_noise_, simulation1.coeff_modulus_, simulation1.plain_modulus_, simulation1.poly_modulus_coeff_count_, simulation1.noise_standard_deviation_, simulation1.noise_max_deviation_, simulation1.decomposition_bit_count_);
@@ -86,9 +86,9 @@ namespace seal
 
     Simulation SimulationEvaluator::relinearize(const Simulation &simulation)
     {
-        uint64_t growth_factor = static_cast<uint64_t>(sqrt(static_cast<uint64_t>(simulation.poly_modulus_coeff_count_ - 1) * 2 / 3));
+        uint64_t growth_factor = static_cast<uint64_t>(sqrt(static_cast<double>(simulation.poly_modulus_coeff_count_ - 1) * 2 / 3));
         
-        int result_bit_count = max(max(simulation.noise_.significant_bit_count(), simulation.plain_modulus_.significant_bit_count() + 32 + simulation.coeff_modulus_.significant_bit_count() / simulation.decomposition_bit_count_ + simulation.decomposition_bit_count_) + 1, simulation.coeff_modulus_.significant_bit_count());
+        int result_bit_count = max(simulation.noise_.significant_bit_count(), simulation.plain_modulus_.significant_bit_count() + 32 + simulation.coeff_modulus_.significant_bit_count() / simulation.decomposition_bit_count_ + simulation.decomposition_bit_count_) + 1;
         int result_uint64_count = divide_round_up(result_bit_count, bits_per_uint64);
 
         Pointer decomposition_coeff(allocate_zero_uint(result_uint64_count, pool_));
@@ -100,7 +100,7 @@ namespace seal
         Pointer temp2(allocate_zero_uint(result_uint64_count, pool_));
 
         // Noise growth from relinearization
-        temp1 = growth_factor * static_cast<uint64_t>(sqrt(simulation.poly_modulus_coeff_count_ - 1)) * static_cast<uint64_t>(simulation.noise_max_deviation_) * (simulation.coeff_modulus_.significant_bit_count() / simulation.decomposition_bit_count_ + 2);
+        temp1 = growth_factor * static_cast<uint64_t>(sqrt(simulation.poly_modulus_coeff_count_ - 1) * simulation.noise_max_deviation_ * (simulation.coeff_modulus_.significant_bit_count() / simulation.decomposition_bit_count_ + 2));
         multiply_uint_uint(&temp1, 1, simulation.plain_modulus_.pointer(), simulation.plain_modulus_.uint64_count(), result_uint64_count, temp2.get());
         multiply_uint_uint(temp2.get(), result_uint64_count, decomposition_coeff.get(), result_uint64_count, result_uint64_count, result.get());
 
@@ -118,11 +118,11 @@ namespace seal
             throw invalid_argument("mismatch in encryption parameters");
         }
 
-        uint64_t growth_factor = static_cast<uint64_t>(sqrt(static_cast<uint64_t>(simulation1.poly_modulus_coeff_count_ - 1) * 2 / 3));
+        uint64_t growth_factor = static_cast<uint64_t>(sqrt(static_cast<double>(simulation1.poly_modulus_coeff_count_ - 1) * 2 / 3));
 
         int max_input_noise_sig_bit_count = max(simulation1.noise_.significant_bit_count(), simulation2.noise_.significant_bit_count());
 
-        int result_bit_count = max(max_input_noise_sig_bit_count + 2*simulation1.plain_modulus_.significant_bit_count() + 32, simulation1.coeff_modulus_.significant_bit_count());
+        int result_bit_count = max_input_noise_sig_bit_count + 2*simulation1.plain_modulus_.significant_bit_count() + 32;
         int result_uint64_count = divide_round_up(result_bit_count, bits_per_uint64);
         Pointer result(allocate_zero_uint(result_uint64_count, pool_));
 
@@ -161,11 +161,11 @@ namespace seal
             return simulation;
         }
         if (plain_max_abs_value.is_zero())
-        {
+        {            
             return Simulation(BigUInt(1, static_cast<uint64_t>(0)), simulation.max_noise_, simulation.coeff_modulus_, simulation.plain_modulus_, simulation.poly_modulus_coeff_count_, simulation.noise_standard_deviation_, simulation.noise_max_deviation_, simulation.decomposition_bit_count_);
         }
 
-        int result_bit_count = max(simulation.noise_.significant_bit_count() + simulation.coeff_modulus_.significant_bit_count(), simulation.coeff_modulus_.significant_bit_count());
+        int result_bit_count = simulation.noise_.significant_bit_count() + plain_max_abs_value.significant_bit_count() + 32;
         int result_uint64_count = divide_round_up(result_bit_count, bits_per_uint64);
         Pointer result(allocate_uint(result_uint64_count, pool_));
 
@@ -196,7 +196,7 @@ namespace seal
         return add_plain(simulation);
     }
 
-    Simulation SimulationEvaluator::multiply_many(vector<Simulation> &simulations)
+    Simulation SimulationEvaluator::multiply_many(vector<Simulation> simulations)
     {
         size_t original_size = simulations.size();
 
@@ -220,9 +220,7 @@ namespace seal
             simulations.push_back(multiply(simulations[i], simulations[i + 1]));
         }
 
-        Simulation result = simulations[simulations.size() - 1];
-        simulations.erase(simulations.begin() + original_size, simulations.end());
-        return result;
+        return simulations[simulations.size() - 1];
     }
 
     Simulation SimulationEvaluator::exponentiate(const Simulation &simulation, int exponent)

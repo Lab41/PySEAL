@@ -10,5 +10,6 @@
 #include "decryptor.h"
 #include "encoder.h"
 #include "chooser.h"
+#include "utilities.h"
 
 #endif // SEAL_H

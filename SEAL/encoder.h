@@ -285,7 +285,7 @@ namespace seal
         @throws std::invalid_argument if base is not an odd integer and at least 3
         @throws std::invalid_argument if plain_modulus is not at least (base+1)/2
         */
-        BalancedEncoder(const BigUInt &plain_modulus, int base = 3);
+        BalancedEncoder(const BigUInt &plain_modulus, uint64_t base = 3);
 
         /**
         Encodes an unsigned integer (represented by std::uint64_t) into a plaintext polynomial.
@@ -475,7 +475,7 @@ namespace seal
         /**
         Returns the base used for encoding.
         */
-        int base() const
+        uint64_t base() const
         {
             return base_;
         }
@@ -483,7 +483,7 @@ namespace seal
     private:
         BigUInt plain_modulus_;
 
-        int base_;
+        uint64_t base_;
 
         BigUInt coeff_neg_threshold_;
 
@@ -661,7 +661,7 @@ namespace seal
         @throws std::invalid_argument if poly_modulus is too small for the integral and fractional parts
         @throws std::invalid_argument if base is not an odd integer and at least 3
         */
-        BalancedFractionalEncoder(const BigUInt &plain_modulus, const BigPoly &poly_modulus, int integer_coeff_count, int fraction_coeff_count, int base = 3);
+        BalancedFractionalEncoder(const BigUInt &plain_modulus, const BigPoly &poly_modulus, int integer_coeff_count, int fraction_coeff_count, uint64_t base = 3);
 
         /**
         Encodes a double precision floating point number into a plaintext polynomial.
@@ -691,7 +691,7 @@ namespace seal
         /**
         Returns the base used for encoding.
         */
-        int base() const
+        uint64_t base() const
         {
             return encoder_.base();
         }

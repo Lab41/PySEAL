@@ -973,7 +973,7 @@ namespace SEALNETTest
             var poly4 = new BigPoly();
             var poly5 = new BigPoly();
 
-            for(int b=3; b<20; b+=2)
+            for(ulong b=3; b<20; b+=2)
             {
                 var encoder = new BalancedFractionalEncoder(modulus, polyModulus, 500, 50, b);
 

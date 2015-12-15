@@ -383,6 +383,7 @@ namespace seal
         int result_uint64_count = divide_round_up(result_bit_count, bits_per_uint64);
 
         Pointer result_max_abs_value(allocate_uint(result_uint64_count, pool_));
+
         util::exponentiate_uint(operand.max_abs_value_.pointer(), operand.max_abs_value_.uint64_count(), exponent, result_uint64_count, result_max_abs_value.get(), pool_);
 
         ConstPointer temp_pointer(duplicate_uint_if_needed(result_max_abs_value.get(), result_uint64_count, result_uint64_count, true, pool_));
@@ -496,7 +497,6 @@ namespace seal
         // coefficient that we can expect to appear. Thus, we need one more bit.
         destination.plain_modulus() = 1;
         left_shift_uint(destination.plain_modulus().pointer(), largest_bit_count + 2, destination.plain_modulus().uint64_count(), destination.plain_modulus().pointer());
-        cout << "plain modulus: " << destination.plain_modulus().to_dec_string() << endl;
 
         bool found_good_parms = false;
         map<int, BigUInt>::const_iterator iter = parameter_options.begin();
@@ -603,7 +603,7 @@ namespace seal
         comp_ = new FreshComputation();
     }
 
-    ChooserEncoder::ChooserEncoder(int base) : encoder_(BigUInt(get_significant_bit_count(base), base), base)
+    ChooserEncoder::ChooserEncoder(uint64_t base) : encoder_(BigUInt(get_significant_bit_count(base), base), base)
     {
     }
 
@@ -633,7 +633,7 @@ namespace seal
     {
         BigPoly value_poly = encoder_.encode(value);
         destination.reset();
-        destination.max_coeff_count() = value_poly.significant_coeff_count();
+        destination.max_coeff_count() = max(value_poly.significant_coeff_count(), 1);
         destination.max_abs_value() = poly_infty_norm_coeffmod(value_poly, encoder_.plain_modulus());
     }
 

@@ -210,7 +210,7 @@ namespace seal
         @throws std::invalid_argument if at least two of the elements in the simulations vector were constructed with different encryption parameters
         @see Evaluator::multiply_many() for the corresponding operation on ciphertexts.
         */
-        Simulation multiply_many(std::vector<Simulation> &simulations);
+        Simulation multiply_many(std::vector<Simulation> simulations);
 
         /**
         Simulates inherent noise growth in Evaluator::multiply() and returns the result.

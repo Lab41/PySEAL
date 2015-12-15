@@ -645,7 +645,7 @@ namespace seal
         }
     }
 
-    BigPoly Evaluator::multiply_many(vector<BigPoly> &encrypteds)
+    BigPoly Evaluator::multiply_many(vector<BigPoly> encrypteds)
     {
         // Extract encryption parameters.
         int coeff_count = poly_modulus_.coeff_count();
@@ -683,12 +683,10 @@ namespace seal
             encrypteds.push_back(multiply(encrypteds[i], encrypteds[i+1]));
         }
    
-        BigPoly result = encrypteds[encrypteds.size() - 1];
-        encrypteds.erase(encrypteds.begin() + original_size, encrypteds.end());
-        return result;
+        return encrypteds[encrypteds.size() - 1];
     }
 
-    BigPoly Evaluator::multiply_norelin_many(vector<BigPoly> &encrypteds)
+    BigPoly Evaluator::multiply_norelin_many(vector<BigPoly> encrypteds)
     {
         // Extract encryption parameters.
         int coeff_count = poly_modulus_.coeff_count();
@@ -726,9 +724,7 @@ namespace seal
             encrypteds.push_back(multiply_norelin(encrypteds[i], encrypteds[i + 1]));
         }
 
-        BigPoly result = encrypteds[encrypteds.size() - 1];
-        encrypteds.erase(encrypteds.begin() + original_size, encrypteds.end());
-        return result;
+        return encrypteds[encrypteds.size() - 1];
     }
 
     void Evaluator::exponentiate(const BigPoly &encrypted, int exponent, BigPoly &destination)

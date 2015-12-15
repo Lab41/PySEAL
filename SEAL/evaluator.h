@@ -248,7 +248,7 @@ namespace seal
         @throws std::invalid_argument if the encrypted polynomials are not valid encrypted polynomials
         for the encryption parameters
         */
-        BigPoly multiply_many(std::vector<BigPoly> &encrypteds);
+        BigPoly multiply_many(std::vector<BigPoly> encrypteds);
 
         /**
         Multiplies a vector of encrypted polynomials together and stores the result in the destination
@@ -275,7 +275,7 @@ namespace seal
         @throws std::invalid_argument if the encrypted polynomials are not valid encrypted polynomials
         for the encryption parameters
         */
-        BigPoly multiply_norelin_many(std::vector<BigPoly> &encrypteds);
+        BigPoly multiply_norelin_many(std::vector<BigPoly> encrypteds);
 
         /**
         Multiplies a vector of encrypted polynomials together without relinearization and stores the result in the destination

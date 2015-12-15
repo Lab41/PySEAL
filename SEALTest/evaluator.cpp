@@ -702,7 +702,7 @@ namespace SEALTest
             encrypteds = { encrypted1, encrypted2, encrypted3, encrypted4 };
             product = evaluator.add_many(encrypteds);
             Assert::AreEqual(static_cast<int32_t>(145677), encoder.decode_int32(decryptor.decrypt(product)));
-    
+
             BalancedFractionalEncoder frac_encoder(plain_modulus, poly_modulus, 10, 15);
             encrypted1 = encryptor.encrypt(frac_encoder.encode(3.1415));
             encrypted2 = encryptor.encrypt(frac_encoder.encode(12.345));

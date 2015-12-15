@@ -413,13 +413,13 @@ namespace seal
         }
     }
 
-    BalancedEncoder::BalancedEncoder(const BigUInt &plain_modulus, int base) : plain_modulus_(plain_modulus), base_(base)
+    BalancedEncoder::BalancedEncoder(const BigUInt &plain_modulus, uint64_t base) : plain_modulus_(plain_modulus), base_(base)
     {
         if (base <= 1 || base % 2 == 0)
         {
             throw invalid_argument("base must be an odd integer and at least 3");
         }
-        if (plain_modulus <= static_cast<uint64_t>((base - 1) / 2))
+        if (plain_modulus <= (base - 1) / 2)
         {
             throw invalid_argument("plain_modulus must be at least (b+1)/2");
         }
@@ -450,7 +450,7 @@ namespace seal
         int coeff_index = 0;
         while (value != 0)
         {
-            int remainder = value % base_;
+            uint64_t remainder = value % base_;
             if (0 < remainder && remainder <= base_ / 2)
             {
                 destination[coeff_index] = remainder;
@@ -490,7 +490,7 @@ namespace seal
             int coeff_index = 0;
             while (pos_value != 0)
             {
-                int remainder = pos_value % base_;
+                uint64_t remainder = pos_value % base_;
                 if (0 < remainder && remainder <= base_ / 2)
                 {
                     destination[coeff_index] = remainder;
@@ -997,7 +997,7 @@ namespace seal
         return static_cast<double>(integral_part) - fractional_part;
     }
 
-    BalancedFractionalEncoder::BalancedFractionalEncoder(const BigUInt &plain_modulus, const BigPoly &poly_modulus, int integer_coeff_count, int fraction_coeff_count, int base) : encoder_(plain_modulus, base),
+    BalancedFractionalEncoder::BalancedFractionalEncoder(const BigUInt &plain_modulus, const BigPoly &poly_modulus, int integer_coeff_count, int fraction_coeff_count, uint64_t base) : encoder_(plain_modulus, base),
         fraction_coeff_count_(fraction_coeff_count), integer_coeff_count_(integer_coeff_count), poly_modulus_(poly_modulus)
     {
         if (integer_coeff_count <= 0)
@@ -1053,7 +1053,11 @@ namespace seal
             // We store the representative of value_int modulo the base (symmetric representative)
             // as the absolute value (in value_int_mod_base) and as the sign (in is_negative).
             bool is_negative = false;
-            int64_t value_int_mod_base = value_int % encoder_.base_;
+            // A slightly easier way to do the following would be:
+            // int64_t value_int_mod_base = value_int % static_cast<int64_t>(encoder_.base_);
+            // but then we need the cast work as expected so the base can't be 64 bits.
+            // Warning: The sign of % was undefined behavior until C++11 for negative integers.
+            int64_t value_int_mod_base = value_int - (value_int < 0 ? -1 : 1) * (abs(value_int) / encoder_.base_) * encoder_.base_;
             if (value_int_mod_base < 0)
             {
                 is_negative = true;
@@ -1065,7 +1069,7 @@ namespace seal
             // And negate it modulo plain_modulus if it was NOT supposed to be negative, because the
             // fractional encoding requires the signs of the fractional coefficients to be negatives of
             // what one might naively expect, as they change sign when "wrapping around" the polynomial modulus.
-            if (!is_negative)
+            if (!is_negative && value_int_mod_base != 0)
             {
                 sub_uint_uint(encoder_.plain_modulus_.pointer(), encoded_fract.get(), plain_uint64_count, encoded_fract.get());
             }
