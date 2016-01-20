@@ -13,14 +13,74 @@ namespace seal
 {
     const map<int, BigUInt> ChooserEvaluator::default_parameter_options_
     {
-        { 1024, BigUInt("FFFFFFFFC001") },
-        { 2048, BigUInt("7FFFFFFFFFFFFFFFFFFF001") },
-        { 4096, BigUInt("7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF") },
-        { 8192, BigUInt("1FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFC000001") },
-        { 16384, BigUInt("7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00000000000001") }
+        /*
+        Polynomial modulus: 1x^1024 + 1
+        Coefficient modulus: 2^48 - 2^20 + 1
+        Hex form: FFFFFFF00001
+        NTT prime: Yes
+        Plain modulus recommendation: Power of 2 up to 2^20
+        */
+        { 1024, BigUInt("FFFFFFF00001") },
+
+        /*
+        Polynomial modulus: 1x^2048 + 1
+        Coefficient modulus: 2^94 - 2^20 + 1
+        Hex form: 3FFFFFFFFFFFFFFFFFF00001
+        NTT prime: Yes
+        Plain modulus recommendation: Power of 2 up to 2^20
+        */
+        { 2048, BigUInt("3FFFFFFFFFFFFFFFFFF00001") },
+
+        /*
+        Polynomial modulus: 1x^4096 + 1
+        Coefficient modulus: 2^125 - 2^29 + 1
+        Hex form: 1FFFFFFFFFFFFFFFFFFFFFFFE0000001
+        NTT prime: Yes
+        Plain modulus recommendation: Power of 2 up to 2^29
+        */
+        //{ 4096, BigUInt("1FFFFFFFFFFFFFFFFFFFFFFFE0000001") },
+
+        /*
+        Polynomial modulus: 1x^4096 + 1
+        Coefficient modulus: 2^190 - 2^30 + 1
+        Hex form: 3FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFC0000001
+        NTT prime: Yes
+        Plain modulus recommendation: Power of 2 up to 2^30
+        */
+        { 4096, BigUInt("3FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFC0000001") },
+
+        /*
+        Polynomial modulus: 1x^8192 + 1
+        Coefficient modulus: 2^314 - 2^28 + 1
+        Hex form: 3FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF0000001
+        NTT prime: Yes
+        Plain modulus recommendation: Power of 2 up to 2^28
+        */
+        //{ 8192, BigUInt("3FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF0000001") },
+
+        /*
+        Polynomial modulus: 1x^8192 + 1
+        Coefficient modulus: 2^383 - 2^33 + 1
+        Hex form: 7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFE00000001
+        NTT prime: Yes
+        Plain modulus recommendation: Power of 2 up to 2^33
+        */
+        { 8192, BigUInt("7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFE00000001") },
+
+        /*
+        Polynomial modulus: 1x^16384 + 1
+        Coefficient modulus: 2^767 - 2^56 + 1
+        Hex form: 7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00000000000001
+        NTT prime: Yes
+        Plain modulus recommendation: Power of 2 up to 2^56
+        */
+        { 16384, BigUInt("7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00000000000001") },
     };
 
     const double ChooserEvaluator::default_noise_standard_deviation_ = 3.19;
+
+    const double ChooserEvaluator::default_noise_max_deviation_ = 15.95;
+
 
     ChooserPoly::ChooserPoly() : max_coeff_count_(0), max_abs_value_(), comp_(nullptr)
     {
@@ -352,15 +412,11 @@ namespace seal
         return sub_plain(operand, plain_max_coeff_count, BigUInt(64, plain_max_abs_value));
     }
 
-    ChooserPoly ChooserEvaluator::exponentiate(const ChooserPoly &operand, int exponent)
+    ChooserPoly ChooserEvaluator::exponentiate(const ChooserPoly &operand, uint64_t exponent)
     {
         if (operand.max_coeff_count_ <= 0 || operand.comp_ == nullptr)
         {
             throw invalid_argument("operand is not correctly initialized");
-        }
-        if (exponent < 0)
-        {
-            throw invalid_argument("exponent can not be negative");
         }
         if (exponent == 0 && operand.max_abs_value_.is_zero())
         {
@@ -379,17 +435,17 @@ namespace seal
         // k^n * sqrt[6/((k-1)*(k+1)*Pi*n)], where k = max_coeff_count_, n = exponent.
         uint64_t growth_factor = static_cast<uint64_t>(pow(operand.max_coeff_count_, exponent) * sqrt(6 / ((operand.max_coeff_count_ - 1) * (operand.max_coeff_count_ + 1) * 3.1415 * exponent)));
 
-        int result_bit_count = exponent * operand.max_abs_value_.significant_bit_count() + get_significant_bit_count(growth_factor) + 1;
+        int result_bit_count = static_cast<int>(exponent) * operand.max_abs_value_.significant_bit_count() + get_significant_bit_count(growth_factor) + 1;
         int result_uint64_count = divide_round_up(result_bit_count, bits_per_uint64);
 
         Pointer result_max_abs_value(allocate_uint(result_uint64_count, pool_));
 
-        util::exponentiate_uint(operand.max_abs_value_.pointer(), operand.max_abs_value_.uint64_count(), exponent, result_uint64_count, result_max_abs_value.get(), pool_);
+        util::exponentiate_uint(operand.max_abs_value_.pointer(), operand.max_abs_value_.uint64_count(), &exponent, 1, result_uint64_count, result_max_abs_value.get(), pool_);
 
         ConstPointer temp_pointer(duplicate_uint_if_needed(result_max_abs_value.get(), result_uint64_count, result_uint64_count, true, pool_));
         multiply_uint_uint(&growth_factor, 1, temp_pointer.get(), result_uint64_count, result_uint64_count, result_max_abs_value.get());
 
-        return ChooserPoly(exponent * (operand.max_coeff_count_ - 1) + 1, BigUInt(result_bit_count, result_max_abs_value.get()), new ExponentiateComputation(*operand.comp_, exponent));
+        return ChooserPoly(static_cast<int>(exponent) * (operand.max_coeff_count_ - 1) + 1, BigUInt(result_bit_count, result_max_abs_value.get()), new ExponentiateComputation(*operand.comp_, exponent));
     }
 
     ChooserPoly ChooserEvaluator::negate(const ChooserPoly &operand)
@@ -455,19 +511,23 @@ namespace seal
 
     bool ChooserEvaluator::select_parameters(const std::vector<ChooserPoly> &operands, EncryptionParameters &destination)
     {
-        return select_parameters(operands, default_noise_standard_deviation_, default_parameter_options_, destination);
+        return select_parameters(operands, default_noise_standard_deviation_, default_noise_max_deviation_, default_parameter_options_, destination);
     }
 
-    bool ChooserEvaluator::select_parameters(const ChooserPoly &operand, double noise_standard_deviation, const std::map<int, BigUInt> &parameter_options, EncryptionParameters &destination)
+    bool ChooserEvaluator::select_parameters(const ChooserPoly &operand, double noise_standard_deviation, double noise_max_deviation, const std::map<int, BigUInt> &parameter_options, EncryptionParameters &destination)
     {
-        return select_parameters(vector<ChooserPoly>{operand}, noise_standard_deviation, parameter_options, destination);
+        return select_parameters(vector<ChooserPoly>{operand}, noise_standard_deviation, noise_max_deviation, parameter_options, destination);
     }
 
-    bool ChooserEvaluator::select_parameters(const std::vector<ChooserPoly> &operands, double noise_standard_deviation, const std::map<int, BigUInt> &parameter_options, EncryptionParameters &destination)
+    bool ChooserEvaluator::select_parameters(const std::vector<ChooserPoly> &operands, double noise_standard_deviation, double noise_max_deviation, const std::map<int, BigUInt> &parameter_options, EncryptionParameters &destination)
     {
         if (noise_standard_deviation < 0)
         {
             throw invalid_argument("noise_standard_deviation can not be negative");
+        }
+        if (noise_max_deviation < 0)
+        {
+            throw invalid_argument("noise_max_deviation can not be negative");
         }
         if (parameter_options.size() == 0)
         {
@@ -496,7 +556,7 @@ namespace seal
         // We restrict to plain moduli that are powers of two. Here largest_bit_count is the largest positive
         // coefficient that we can expect to appear. Thus, we need one more bit.
         destination.plain_modulus() = 1;
-        left_shift_uint(destination.plain_modulus().pointer(), largest_bit_count + 2, destination.plain_modulus().uint64_count(), destination.plain_modulus().pointer());
+        destination.plain_modulus() <<= largest_bit_count;
 
         bool found_good_parms = false;
         map<int, BigUInt>::const_iterator iter = parameter_options.begin();
@@ -523,8 +583,8 @@ namespace seal
                 // Use constant (small) standard deviation.
                 destination.noise_standard_deviation() = noise_standard_deviation;
 
-                // We truncate the gaussian at 5 * noise_standard_deviation.
-                destination.noise_max_deviation() = 5 * destination.noise_standard_deviation();
+                // We truncate the gaussian at noise_max_deviation.
+                destination.noise_max_deviation() = noise_max_deviation;
 
                 // Start initially with the maximum decomposition_bit_count, then decrement until decrypts().
                 destination.decomposition_bit_count() = destination.coeff_modulus().significant_bit_count();

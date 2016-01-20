@@ -612,12 +612,11 @@ namespace seal
         @param[in] operand The ChooserPoly object to raise to a power
         @param[in] exponent The non-negative power to raise the ChooserPoly object to
         @throws std::invalid_argument if operand is not correctly initialized
-        @throws std::invalid_argument if the exponent is negative
         @throws std::invalid_argument if operand models a zero polynomial and exponent is zero
         @see Evaluator::exponentiate() for the corresponding operation on ciphertexts.
         @see SimulationEvaluator::exponentiate() for the corresponding operation on Simulation objects.
         */
-        ChooserPoly exponentiate(const ChooserPoly &operand, int exponent);
+        ChooserPoly exponentiate(const ChooserPoly &operand, std::uint64_t exponent);
 
         /**
         Performs an operation modeling Evaluator::negate() on ChooserPoly objects. This operation
@@ -637,8 +636,7 @@ namespace seal
         operations performed on the given ChooserPoly. Some choices are made in the process that
         an expert user might want to change: (1) We use a constant small standard deviation for the noise distribution;
         (2) We choose the size of the polynomial modulus and the coefficient modulus from a hard-coded list of
-        choices we consider secure, and estimate to have at least 80 bits of security against a 2^(-80) advantage
-        for solving decision-LWE (see http://eprint.iacr.org/2014/062.pdf, Table 2).
+        choices we consider secure (see http://eprint.iacr.org/2014/062.pdf, Table 2).
 
         The function returns true or false depending on whether a working parameter set was found or not.
 
@@ -647,6 +645,7 @@ namespace seal
         @throws std::logic_error if operation history of the given ChooserPoly is null
         @see EncryptionParameters for a description of the encryption parameters.
         @see default_noise_standard_deviation() for the default noise standard deviation.
+        @see default_noise_max_deviation() for the default maximal noise deviation.
         @see default_parameter_options() for the default set of parameter options.
         */
         bool select_parameters(const ChooserPoly &operand, EncryptionParameters &destination);
@@ -656,8 +655,7 @@ namespace seal
         operations performed on all of the given ChooserPolys. Some choices are made in the process that
         an expert user might want to change: (1) We use a constant small standard deviation for the noise distribution;
         (2) We choose the size of the polynomial modulus and the coefficient modulus from a hard-coded list of
-        choices we consider secure, and estimate to have at least 80 bits of security against a 2^(-80) advantage
-        for solving decision-LWE (see http://eprint.iacr.org/2014/062.pdf, Table 2).
+        choices we consider secure (see http://eprint.iacr.org/2014/062.pdf, Table 2).
 
         The function returns true or false depending on whether a working parameter set was found or not.
 
@@ -667,15 +665,16 @@ namespace seal
         @throws std::invalid_argument if operands is empty
         @see EncryptionParameters for a description of the encryption parameters.
         @see default_noise_standard_deviation() for the default noise standard deviation.
+        @see default_noise_max_deviation() for the default maximal noise deviation.
         @see default_parameter_options() for the default set of parameter options.
         */
         bool select_parameters(const std::vector<ChooserPoly> &operands, EncryptionParameters &destination);
 
         /**
         Provides the user with optimized encryption parameters that are large enough to support the
-        operations performed on the given ChooserPoly. Both the standard deviation of the noise distribution
-        and the list from which we choose the size of the polynomial modulus and the coefficient modulus
-        are provided by the user as input parameters.
+        operations performed on the given ChooserPoly. The standard deviation of the noise distribution,
+        the maximal deviation, and the list from which we choose the size of the polynomial modulus 
+        and the coefficient modulus are provided by the user as input parameters.
 
         The parameter options are given as an std::map<int, BigUInt>, where the sizes of the polynomial moduli
         are the keys, and the corresponding values are the coefficient moduli (represented by BigUInt).
@@ -689,18 +688,20 @@ namespace seal
         @param[out] destination The encryption parameters to overwrite with the selected parameter set
         @throws std::logic_error if operation history is null
         @throws std::invalid_argument if noise_standard_deviation is negative
+        @throws std::invalid_argument if noise_max_deviation is negative
         @throws std::invalid_argument if parameter_options is empty
         @throws std::invalid_argument if parameter_options has keys that are less than 512 or not powers of 2
         @see EncryptionParameters for a description of the encryption parameters.
-        @see ChooserEvaluator::default_noise_standard_deviation() for the default noise standard deviation.
-        @see ChooserEvaluator::default_parameter_options() for the default set of parameter options.
+        @see default_noise_standard_deviation() for the default noise standard deviation.
+        @see default_noise_max_deviation() for the default maximal noise deviation.
+        @see default_parameter_options() for the default set of parameter options.
         */
-        bool select_parameters(const ChooserPoly &operand, double noise_standard_deviation, const std::map<int, BigUInt> &parameter_options, EncryptionParameters &destination);
+        bool select_parameters(const ChooserPoly &operand, double noise_standard_deviation, double noise_max_deviation, const std::map<int, BigUInt> &parameter_options, EncryptionParameters &destination);
 
         /**
         Provides the user with optimized encryption parameters that are large enough to support the
-        operations performed on all of the given ChooserPolys. Both the standard deviation of the noise distribution
-        and the list from which we choose the size of the polynomial modulus and the coefficient modulus
+        operations performed on all of the given ChooserPolys. The standard deviation of the noise distribution,
+        the maximal deviation, and the list from which we choose the size of the polynomial modulus and the coefficient modulus
         are provided by the user as input parameters.
 
         The parameter options are given as an std::map<int, BigUInt>, where the sizes of the polynomial moduli
@@ -716,16 +717,18 @@ namespace seal
         @throws std::logic_error if operation history is null
         @throws std::invalid_argument if operands is empty
         @throws std::invalid_argument if noise_standard_deviation is negative
+        @throws std::invalid_argument if noise_max_deviation is negative
         @throws std::invalid_argument if parameter_options is empty
         @throws std::invalid_argument if parameter_options has keys that are less than 512 or not powers of 2
         @see EncryptionParameters for a description of the encryption parameters.
-        @see ChooserEvaluator::default_noise_standard_deviation() for the default noise standard deviation.
-        @see ChooserEvaluator::default_parameter_options() for the default set of parameter options.
+        @see default_noise_standard_deviation() for the default noise standard deviation.
+        @see default_noise_max_deviation() for the default maximal noise deviation.
+        @see default_parameter_options() for the default set of parameter options.
         */
-        bool select_parameters(const std::vector<ChooserPoly> &operands, double noise_standard_deviation, const std::map<int, BigUInt> &parameter_options, EncryptionParameters &destination);
+        bool select_parameters(const std::vector<ChooserPoly> &operands, double noise_standard_deviation, double noise_max_deviation, const std::map<int, BigUInt> &parameter_options, EncryptionParameters &destination);
 
         /**
-        Returns the default set of (degree(polynomial modulus),coeff_modulus)-pairs used by automatic parameter selection.
+        Returns the default set of (degree(polynomial modulus),coeff_modulus)-pairs.
         The functions returns an std::map<int,BigUInt>, where the degree of the polynomial modulus acts as the key,
         and the corresponding modulus is the value.
         An expert user might want to give a modified map as an argument to select_parameters() for better results.
@@ -736,12 +739,21 @@ namespace seal
         }
 
         /**
-        Returns the default value for the standard deviation of the noise (error) distribution used by automatic
-        parameter selection. An expert user might want to give a modified value as an argument to select_parameters().
+        Returns the default value for the standard deviation of the noise (error) distribution. 
+        An expert user might want to give a modified value as an argument to select_parameters().
         */
         static double default_noise_standard_deviation()
         {
             return default_noise_standard_deviation_;
+        }
+
+        /**
+        Returns the default value for the maximal deviation of the noise (error) distribution.
+        An expert user might want to give a modified value as an argument to select_parameters().
+        */
+        static double default_noise_max_deviation()
+        {
+            return default_noise_max_deviation_;
         }
 
     private:
@@ -754,6 +766,8 @@ namespace seal
         static const std::map<int, BigUInt> default_parameter_options_;
 
         static const double default_noise_standard_deviation_;
+
+        static const double default_noise_max_deviation_;
     };
 
     /**

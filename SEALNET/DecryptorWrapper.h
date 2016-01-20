@@ -54,11 +54,11 @@ namespace Microsoft
                 <param name="power">The power to raise the secret key to</param>
                 <exception cref="System::ArgumentNullException">If parms or secretKey is null</exception>
                 <exception cref="System::ArgumentException">if encryption parameters or secret key are not valid</exception>
-                <exception cref="System::ArgumentException">if power is not positive</exception>
+                <exception cref="System::ArgumentException">if power is zero</exception>
                 <seealso cref="EncryptionParameters">See EncryptionParameters for more details on valid encryption
                 parameters.</seealso>
                 */
-                Decryptor(EncryptionParameters ^parms, BigPoly ^secretKey, int power);
+                Decryptor(EncryptionParameters ^parms, BigPoly ^secretKey, System::UInt64 power);
 
                 /**
                 <summary>Returns the secret key used by the Decryptor.</summary>

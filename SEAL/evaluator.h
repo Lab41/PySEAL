@@ -31,7 +31,7 @@ namespace seal
     {
     public:
         /**
-        Creates an Evaluator instances initialized with the specified encryption parameters and
+        Creates an Evaluator instance initialized with the specified encryption parameters and
         evaluation keys.
 
         @param[in] parms The encryption parameters
@@ -303,10 +303,9 @@ namespace seal
         @param[in] exponent The power to raise the encrypted polynomial to
         @param[out] destination The polynomial to overwrite with the exponentiation result
         @throws std::invalid_argument if the encrypted polynomial is not valid for the encryption parameters
-        @throws std::invalid_argument if the exponent is negative
         @throws std::logic_error If destination is an alias but needs to be resized
         */
-        void exponentiate(const BigPoly &encrypted, int exponent, BigPoly &destination);
+        void exponentiate(const BigPoly &encrypted, std::uint64_t exponent, BigPoly &destination);
 
         /**
         Raises an encrypted polynomial to the specified power and returns the result.
@@ -314,9 +313,8 @@ namespace seal
         @param[in] encrypted The encrypted polynomial to raise to a power
         @param[in] exponent The non-negative power to raise the encrypted polynomial to
         @throws std::invalid_argument if the encrypted polynomial is not valid for the encryption parameters
-        @throws std::invalid_argument if the exponent is negative
         */
-        BigPoly exponentiate(const BigPoly &encrypted, int exponent)
+        BigPoly exponentiate(const BigPoly &encrypted, std::uint64_t exponent)
         {
             BigPoly result;
             exponentiate(encrypted, exponent, result);
@@ -332,10 +330,9 @@ namespace seal
         @param[in] exponent The power to raise the encrypted polynomial to
         @param[out] destination The polynomial to overwrite with the exponentiation result
         @throws std::invalid_argument if the encrypted polynomial is not valid for the encryption parameters
-        @throws std::invalid_argument if the exponent is negative
         @throws std::logic_error If destination is an alias but needs to be resized
         */
-        void exponentiate_norelin(const BigPoly &encrypted, int exponent, BigPoly &destination);
+        void exponentiate_norelin(const BigPoly &encrypted, std::uint64_t exponent, BigPoly &destination);
 
         /**
         Raises an encrypted polynomial to the specified power without performing relinearization and returns the result.
@@ -343,9 +340,8 @@ namespace seal
         @param[in] encrypted The encrypted polynomial to raise to a power
         @param[in] exponent The non-negative power to raise the encrypted polynomial to
         @throws std::invalid_argument if the encrypted polynomial is not valid for the encryption parameters
-        @throws std::invalid_argument if the exponent is negative
         */
-        BigPoly exponentiate_norelin(const BigPoly &encrypted, int exponent)
+        BigPoly exponentiate_norelin(const BigPoly &encrypted, std::uint64_t exponent)
         {
             BigPoly result;
             exponentiate_norelin(encrypted, exponent, result);

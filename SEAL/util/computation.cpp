@@ -284,15 +284,8 @@ namespace seal
             return new NegateComputation(*input_);
         }
 
-        ExponentiateComputation::ExponentiateComputation(Computation &input, int exponent) : exponent_(exponent)
+        ExponentiateComputation::ExponentiateComputation(Computation &input, uint64_t exponent) : exponent_(exponent)
         {
-#ifdef _DEBUG
-            if (exponent < 0)
-            {
-                throw invalid_argument("exponent can not be negative");
-            }
-#endif
-
             input_ = input.clone();
         }
 

@@ -152,6 +152,7 @@ namespace Microsoft
                 try
                 {
                     biguint_ = new seal::BigUInt(copy->GetUInt());
+                    GC::KeepAlive(copy);
                 }
                 catch (const exception &e)
                 {
@@ -280,6 +281,7 @@ namespace Microsoft
                 try
                 {
                     *biguint_ = assign->GetUInt();
+                    GC::KeepAlive(assign);
                 }
                 catch (const exception &e)
                 {
@@ -453,7 +455,9 @@ namespace Microsoft
                 {
                     return false;
                 }
-                return *biguint_ == compare->GetUInt();
+                auto result = *biguint_ == compare->GetUInt();
+                GC::KeepAlive(compare);
+                return result;
             }
 
             bool BigUInt::Equals(Object ^compare)
@@ -550,7 +554,9 @@ namespace Microsoft
                 }
                 try
                 {
-                    return biguint_->compareto(compare->GetUInt());
+                    auto result = biguint_->compareto(compare->GetUInt());
+                    GC::KeepAlive(compare);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -600,7 +606,10 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew BigUInt(biguint_->divrem(operand2->GetUInt(), remainder->GetUInt()));
+                    auto result = gcnew BigUInt(biguint_->divrem(operand2->GetUInt(), remainder->GetUInt()));
+                    GC::KeepAlive(operand2);
+                    GC::KeepAlive(remainder);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -625,7 +634,9 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew BigUInt(biguint_->divrem(operand2, remainder->GetUInt()));
+                    auto result = gcnew BigUInt(biguint_->divrem(operand2, remainder->GetUInt()));
+                    GC::KeepAlive(remainder);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -650,7 +661,9 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew BigUInt(biguint_->modinv(modulus->GetUInt()));
+                    auto result = gcnew BigUInt(biguint_->modinv(modulus->GetUInt()));
+                    GC::KeepAlive(modulus);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -700,7 +713,10 @@ namespace Microsoft
                 }
                 try
                 {
-                    return biguint_->trymodinv(modulus->GetUInt(), inverse->GetUInt());
+                    auto result = biguint_->trymodinv(modulus->GetUInt(), inverse->GetUInt());
+                    GC::KeepAlive(modulus);
+                    GC::KeepAlive(inverse);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -725,7 +741,9 @@ namespace Microsoft
                 }
                 try
                 {
-                    return biguint_->trymodinv(modulus, inverse->GetUInt());
+                    auto result = biguint_->trymodinv(modulus, inverse->GetUInt());
+                    GC::KeepAlive(inverse);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -746,7 +764,9 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew BigUInt(+operand->GetUInt());
+                    auto result = gcnew BigUInt(+operand->GetUInt());
+                    GC::KeepAlive(operand);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -767,7 +787,9 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew BigUInt(-operand->GetUInt());
+                    auto result = gcnew BigUInt(-operand->GetUInt());
+                    GC::KeepAlive(operand);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -788,7 +810,9 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew BigUInt(~operand->GetUInt());
+                    auto result = gcnew BigUInt(~operand->GetUInt());
+                    GC::KeepAlive(operand);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -809,7 +833,9 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew BigUInt(operand->GetUInt() + 1);
+                    auto result = gcnew BigUInt(operand->GetUInt() + 1);
+                    GC::KeepAlive(operand);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -830,7 +856,9 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew BigUInt(operand->GetUInt() - 1);
+                    auto result = gcnew BigUInt(operand->GetUInt() - 1);
+                    GC::KeepAlive(operand);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -855,7 +883,10 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew BigUInt(operand1->GetUInt() + operand2->GetUInt());
+                    auto result = gcnew BigUInt(operand1->GetUInt() + operand2->GetUInt());
+                    GC::KeepAlive(operand1);
+                    GC::KeepAlive(operand2);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -876,7 +907,9 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew BigUInt(operand1->GetUInt() + operand2);
+                    auto result = gcnew BigUInt(operand1->GetUInt() + operand2);
+                    GC::KeepAlive(operand1);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -901,7 +934,10 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew BigUInt(operand1->GetUInt() - operand2->GetUInt());
+                    auto result = gcnew BigUInt(operand1->GetUInt() - operand2->GetUInt());
+                    GC::KeepAlive(operand1);
+                    GC::KeepAlive(operand2);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -922,7 +958,9 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew BigUInt(operand1->GetUInt() - operand2);
+                    auto result = gcnew BigUInt(operand1->GetUInt() - operand2);
+                    GC::KeepAlive(operand1);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -947,7 +985,10 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew BigUInt(operand1->GetUInt() * operand2->GetUInt());
+                    auto result =gcnew BigUInt(operand1->GetUInt() * operand2->GetUInt());
+                    GC::KeepAlive(operand1);
+                    GC::KeepAlive(operand2);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -968,7 +1009,9 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew BigUInt(operand1->GetUInt() * operand2);
+                    auto result = gcnew BigUInt(operand1->GetUInt() * operand2);
+                    GC::KeepAlive(operand1);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -993,7 +1036,10 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew BigUInt(operand1->GetUInt() / operand2->GetUInt());
+                    auto result = gcnew BigUInt(operand1->GetUInt() / operand2->GetUInt());
+                    GC::KeepAlive(operand1);
+                    GC::KeepAlive(operand2);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -1014,7 +1060,9 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew BigUInt(operand1->GetUInt() / operand2);
+                    auto result = gcnew BigUInt(operand1->GetUInt() / operand2);
+                    GC::KeepAlive(operand1);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -1039,7 +1087,10 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew BigUInt(operand1->GetUInt() % operand2->GetUInt());
+                    auto result = gcnew BigUInt(operand1->GetUInt() % operand2->GetUInt());
+                    GC::KeepAlive(operand1);
+                    GC::KeepAlive(operand2);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -1060,7 +1111,9 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew BigUInt(operand1->GetUInt() % operand2);
+                    auto result = gcnew BigUInt(operand1->GetUInt() % operand2);
+                    GC::KeepAlive(operand1);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -1085,7 +1138,10 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew BigUInt(operand1->GetUInt() ^ operand2->GetUInt());
+                    auto result = gcnew BigUInt(operand1->GetUInt() ^ operand2->GetUInt());
+                    GC::KeepAlive(operand1);
+                    GC::KeepAlive(operand2);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -1106,7 +1162,9 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew BigUInt(operand1->GetUInt() ^ operand2);
+                    auto result = gcnew BigUInt(operand1->GetUInt() ^ operand2);
+                    GC::KeepAlive(operand1);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -1131,7 +1189,10 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew BigUInt(operand1->GetUInt() & operand2->GetUInt());
+                    auto result = gcnew BigUInt(operand1->GetUInt() & operand2->GetUInt());
+                    GC::KeepAlive(operand1);
+                    GC::KeepAlive(operand2);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -1152,7 +1213,9 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew BigUInt(operand1->GetUInt() & operand2);
+                    auto result = gcnew BigUInt(operand1->GetUInt() & operand2);
+                    GC::KeepAlive(operand1);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -1177,7 +1240,10 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew BigUInt(operand1->GetUInt() | operand2->GetUInt());
+                    auto result = gcnew BigUInt(operand1->GetUInt() | operand2->GetUInt());
+                    GC::KeepAlive(operand1);
+                    GC::KeepAlive(operand2);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -1198,7 +1264,9 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew BigUInt(operand1->GetUInt() | operand2);
+                    auto result = gcnew BigUInt(operand1->GetUInt() | operand2);
+                    GC::KeepAlive(operand1);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -1219,7 +1287,9 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew BigUInt(operand1->GetUInt() << shift);
+                    auto result = gcnew BigUInt(operand1->GetUInt() << shift);
+                    GC::KeepAlive(operand1);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -1240,7 +1310,9 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew BigUInt(operand1->GetUInt() >> shift);
+                    auto result = gcnew BigUInt(operand1->GetUInt() >> shift);
+                    GC::KeepAlive(operand1);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -1259,7 +1331,9 @@ namespace Microsoft
                 {
                     throw gcnew ArgumentNullException("value cannot be null");
                 }
-                return value->GetUInt().to_double();
+                auto result = value->GetUInt().to_double();
+                GC::KeepAlive(value);
+                return result;
             }
 
             BigUInt::operator float(BigUInt ^value)
@@ -1268,10 +1342,12 @@ namespace Microsoft
                 {
                     throw gcnew ArgumentNullException("value cannot be null");
                 }
-                return static_cast<float>((double)value);
+                auto result = static_cast<float>((double)value);
+                GC::KeepAlive(value);
+                return result;
             }
 
-            BigUInt::operator System::UInt64(BigUInt ^value)
+            BigUInt::operator UInt64(BigUInt ^value)
             {
                 if (value == nullptr)
                 {
@@ -1280,39 +1356,48 @@ namespace Microsoft
                 seal::BigUInt &uint = value->GetUInt();
                 if (uint.bit_count() == 0)
                 {
+                    GC::KeepAlive(value);
                     return 0;
                 }
-                return uint.pointer()[0];
+                auto result = uint.pointer()[0];
+                GC::KeepAlive(value);
+                return result;
             }
 
-            BigUInt::operator System::Int64(BigUInt ^value)
+            BigUInt::operator Int64(BigUInt ^value)
             {
                 if (value == nullptr)
                 {
                     throw gcnew ArgumentNullException("value cannot be null");
                 }
-                return static_cast<Int64>((UInt64)value);
+                auto result = static_cast<Int64>((UInt64)value);
+                GC::KeepAlive(value);
+                return result;
             }
 
-            BigUInt::operator System::UInt32(BigUInt ^value)
+            BigUInt::operator UInt32(BigUInt ^value)
             {
                 if (value == nullptr)
                 {
                     throw gcnew ArgumentNullException("value cannot be null");
                 }
-                return static_cast<UInt32>((UInt64)value);
+                auto result = static_cast<UInt32>((UInt64)value);
+                GC::KeepAlive(value);
+                return result;
             }
 
-            BigUInt::operator System::Int32(BigUInt ^value)
+            BigUInt::operator Int32(BigUInt ^value)
             {
                 if (value == nullptr)
                 {
                     throw gcnew ArgumentNullException("value cannot be null");
                 }
-                return static_cast<Int32>((UInt64)value);
+                auto result = static_cast<Int32>((UInt64)value);
+                GC::KeepAlive(value);
+                return result;
             }
 
-            BigUInt ^BigUInt::Of(System::UInt64 value)
+            BigUInt ^BigUInt::Of(UInt64 value)
             {
                 BigUInt ^result = gcnew BigUInt();
                 result->Set(value);
@@ -1352,6 +1437,7 @@ namespace Microsoft
                 try
                 {
                     biguint_->duplicate_to(*destination->biguint_);
+                    GC::KeepAlive(destination);
                 }
                 catch (const exception &e)
                 {
@@ -1376,6 +1462,7 @@ namespace Microsoft
                 try
                 {
                     biguint_->duplicate_from(*value->biguint_);
+                    GC::KeepAlive(value);
                 }
                 catch (const exception &e)
                 {

@@ -24,7 +24,7 @@ namespace Microsoft
             Constructing a KeyGenerator requires the encryption parameters (set through an <see cref="EncryptionParameters"/>
             object). Invoking the <see cref="Generate()"/> function will generate a new secret key (which can be read from
             <see cref="SecretKey"/>), public key (which can be read from <see cref="PublicKey"/>), and evaluation keys (which
-            can be read from <see cref="EvaluationKeys"/>). Invoking the <see cref="Generate(BigPoly^, int)"/> variant will
+            can be read from <see cref="EvaluationKeys"/>). Invoking the Generate(BigPoly, System.UInt64) variant will
             generate new public key and evaluation keys for a specified secret key, raised to an optional power.
             </para>
             <para>
@@ -86,13 +86,13 @@ namespace Microsoft
                 <param name="secretKey">The secret key</param>
                 <param name="power">The power to raise the secret key to</param>
                 <exception cref="System::ArgumentException">if secret key is not valid</exception>
-                <exception cref="System::ArgumentException">if power is not positive</exception>
+                <exception cref="System::ArgumentException">if power is zero</exception>
                 <exception cref="System::ArgumentNullException">If secretKey is null</exception>
                 <seealso cref="SecretKey">See SecretKey to read specified secret key, raised to the specified power.</seealso>
                 <seealso cref="PublicKey">See PublicKey to read generated public key.</seealso>
                 <seealso cref="EvaluationKeys">See EvaluationKeys to read generated evaluation keys.</seealso>
                 */
-                void Generate(BigPoly ^secretKey, int power);
+                void Generate(BigPoly ^secretKey, System::UInt64 power);
 
                 /**
                 <summary>Returns the generated public key after a Generate() invocation.</summary>

@@ -24,6 +24,7 @@ namespace Microsoft
                 try
                 {
                     generator_ = new seal::KeyGenerator(parms->GetParameters());
+                    GC::KeepAlive(parms);
                 }
                 catch (const exception &e)
                 {
@@ -60,7 +61,7 @@ namespace Microsoft
                 Generate(secretKey, 1);
             }
 
-            void KeyGenerator::Generate(BigPoly ^secretKey, int power)
+            void KeyGenerator::Generate(BigPoly ^secretKey, UInt64 power)
             {
                 if (generator_ == nullptr)
                 {
@@ -73,6 +74,7 @@ namespace Microsoft
                 try
                 {
                     generator_->generate(secretKey->GetPolynomial(), power);
+                    GC::KeepAlive(secretKey);
                 }
                 catch (const exception &e)
                 {

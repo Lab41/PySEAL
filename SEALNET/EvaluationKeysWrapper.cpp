@@ -53,6 +53,7 @@ namespace Microsoft
                 try
                 {
                     keys_ = new seal::EvaluationKeys(copy->GetKeys());
+                    GC::KeepAlive(copy);
                 }
                 catch (const exception &e)
                 {
@@ -136,6 +137,7 @@ namespace Microsoft
                 try
                 {
                     *keys_ = assign->GetKeys();
+                    GC::KeepAlive(assign);
                 }
                 catch (const exception &e)
                 {

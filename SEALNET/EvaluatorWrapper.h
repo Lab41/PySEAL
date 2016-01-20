@@ -39,7 +39,7 @@ namespace Microsoft
             {
             public:
                 /**
-                <summary>Creates an Evaluator instances initialized with the specified encryption parameters and evaluation
+                <summary>Creates an Evaluator instance initialized with the specified encryption parameters and evaluation
                 keys.</summary>
                 <param name="parms">The encryption parameters</param>
                 <param name="evaluationKeys">The evaluation keys</param>
@@ -411,10 +411,9 @@ namespace Microsoft
                 <param name="destination">The polynomial to overwrite with the exponentiation result</param>
                 <exception cref="System::ArgumentException">if the encrypted polynomial is not valid for the encryption
                 parameters</exception>
-                <exception cref="System::ArgumentException">if the exponent is negative</exception>
                 <exception cref="System::InvalidOperationException">If destination is an alias but needs to be resized</exception>
                 */
-                void Exponentiate(BigPoly ^encrypted, int exponent, BigPoly ^destination);
+                void Exponentiate(BigPoly ^encrypted, System::UInt64 exponent, BigPoly ^destination);
 
                 /**
                 <summary>Raises an encrypted polynomial to the specified power and returns the result.</summary>
@@ -422,9 +421,8 @@ namespace Microsoft
                 <param name="exponent">The power to raise the encrypted polynomial to</param>
                 <exception cref="System::ArgumentException">if the encrypted polynomial is not valid for the encryption
                 parameters</exception>
-                <exception cref="System::ArgumentException">if the exponent is negative</exception>
                 */
-                BigPoly ^Exponentiate(BigPoly ^encrypted, int exponent);
+                BigPoly ^Exponentiate(BigPoly ^encrypted, System::UInt64 exponent);
 
                 /**
                 <summary>Raises an encrypted polynomial to the specified power without performing relinearization and stores the result in the destination
@@ -439,10 +437,9 @@ namespace Microsoft
                 <param name="destination">The polynomial to overwrite with the exponentiation result</param>
                 <exception cref="System::ArgumentException">if the encrypted polynomial is not valid for the encryption
                 parameters</exception>
-                <exception cref="System::ArgumentException">if the exponent is negative</exception>
                 <exception cref="System::InvalidOperationException">If destination is an alias but needs to be resized</exception>
                 */
-                void ExponentiateNoRelin(BigPoly ^encrypted, int exponent, BigPoly ^destination);
+                void ExponentiateNoRelin(BigPoly ^encrypted, System::UInt64 exponent, BigPoly ^destination);
 
                 /**
                 <summary>Raises an encrypted polynomial to the specified power without performing relinearization and returns the result.</summary>
@@ -450,9 +447,8 @@ namespace Microsoft
                 <param name="exponent">The power to raise the encrypted polynomial to</param>
                 <exception cref="System::ArgumentException">if the encrypted polynomial is not valid for the encryption
                 parameters</exception>
-                <exception cref="System::ArgumentException">if the exponent is negative</exception>
                 */
-                BigPoly ^ExponentiateNoRelin(BigPoly ^encrypted, int exponent);
+                BigPoly ^ExponentiateNoRelin(BigPoly ^encrypted, System::UInt64 exponent);
 
                 /**
                 <summary>Destroys the Evaluator.</summary>

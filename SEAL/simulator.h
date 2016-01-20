@@ -302,7 +302,7 @@ namespace seal
         @throws std::invalid_argument if the exponent is negative
         @see Evaluator::exponentiate() for the corresponding operation on ciphertexts.
         */
-        Simulation exponentiate(const Simulation &simulation, int exponent);
+        Simulation exponentiate(const Simulation &simulation, std::uint64_t exponent);
 
         /**
         Simulates inherent noise growth in Evaluator::negate() and returns the result.

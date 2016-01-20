@@ -27,6 +27,8 @@ namespace Microsoft
                 try
                 {
                     encryptor_ = new seal::Encryptor(parms->GetParameters(), publicKey->GetPolynomial());
+                    GC::KeepAlive(parms);
+                    GC::KeepAlive(publicKey);
                 }
                 catch (const exception &e)
                 {
@@ -64,6 +66,8 @@ namespace Microsoft
                 try
                 {
                     encryptor_->encrypt(plain->GetPolynomial(), destination->GetPolynomial());
+                    GC::KeepAlive(plain);
+                    GC::KeepAlive(destination);
                 }
                 catch (const exception &e)
                 {
@@ -87,7 +91,9 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew BigPoly(encryptor_->encrypt(plain->GetPolynomial()));
+                    auto result = gcnew BigPoly(encryptor_->encrypt(plain->GetPolynomial()));
+                    GC::KeepAlive(plain);
+                    return result;
                 }
                 catch (const exception &e)
                 {

@@ -30,6 +30,7 @@
     <ClInclude Include="evaluationkeys.h" />
     <ClInclude Include="evaluator.h" />
     <ClInclude Include="keygenerator.h" />
+    <ClInclude Include="polycrt.h" />
     <ClInclude Include="randomgen.h" />
     <ClInclude Include="seal.h" />
     <ClInclude Include="simulator.h" />
@@ -64,6 +65,7 @@
     <ClCompile Include="evaluationkeys.cpp" />
     <ClCompile Include="evaluator.cpp" />
     <ClCompile Include="keygenerator.cpp" />
+    <ClCompile Include="polycrt.cpp" />
     <ClCompile Include="randomgen.cpp" />
     <ClCompile Include="simulator.cpp" />
     <ClCompile Include="utilities.cpp" />
@@ -173,7 +175,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-	  <AdditionalIncludeDirectories>$(ProjectDir)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -201,7 +203,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-	  <AdditionalIncludeDirectories>$(ProjectDir)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>

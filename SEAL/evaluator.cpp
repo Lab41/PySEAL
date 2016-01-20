@@ -727,7 +727,7 @@ namespace seal
         return encrypteds[encrypteds.size() - 1];
     }
 
-    void Evaluator::exponentiate(const BigPoly &encrypted, int exponent, BigPoly &destination)
+    void Evaluator::exponentiate(const BigPoly &encrypted, uint64_t exponent, BigPoly &destination)
     {
         // Extract encryption parameters.
         int coeff_count = poly_modulus_.coeff_count();
@@ -745,10 +745,6 @@ namespace seal
             throw invalid_argument("encrypted is not valid for encryption parameters");
         }
 #endif
-        if (exponent < 0)
-        {
-            throw invalid_argument("exponent must be non-negative");
-        }
 
         if (exponent == 0)
         {
@@ -779,7 +775,7 @@ namespace seal
         */
     }
 
-    void Evaluator::exponentiate_norelin(const BigPoly &encrypted, int exponent, BigPoly &destination)
+    void Evaluator::exponentiate_norelin(const BigPoly &encrypted, uint64_t exponent, BigPoly &destination)
     {
         // Extract encryption parameters.
         int coeff_count = poly_modulus_.coeff_count();
@@ -797,10 +793,6 @@ namespace seal
             throw invalid_argument("encrypted is not valid for encryption parameters");
         }
 #endif
-        if (exponent < 0)
-        {
-            throw invalid_argument("exponent must be non-negative");
-        }
 
         if (exponent == 0)
         {

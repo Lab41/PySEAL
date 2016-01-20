@@ -11,5 +11,6 @@
 #include "encoder.h"
 #include "chooser.h"
 #include "utilities.h"
+#include "polycrt.h"
 
 #endif // SEAL_H

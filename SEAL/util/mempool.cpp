@@ -63,7 +63,16 @@ namespace seal
                 }
             }
             MemoryPoolHead *new_head = new MemoryPoolHead(uint64_count);
-            pools_.insert(pools_.begin() + start, new_head);
+
+            if (!pools_.empty())
+            {
+                pools_.insert(pools_.begin() + start, new_head);
+            }
+            else
+            {
+                pools_.push_back(new_head);
+            }
+
             return Pointer(new_head);
         }
 

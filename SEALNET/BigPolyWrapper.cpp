@@ -110,6 +110,7 @@ namespace Microsoft
                 try
                 {
                     bigpoly_ = new seal::BigPoly(copy->GetPolynomial());
+                    GC::KeepAlive(copy);
                 }
                 catch (const exception &e)
                 {
@@ -236,6 +237,7 @@ namespace Microsoft
                 try
                 {
                     *bigpoly_ = assign->GetPolynomial();
+                    GC::KeepAlive(assign);
                 }
                 catch (const exception &e)
                 {
@@ -425,7 +427,9 @@ namespace Microsoft
                 {
                     return false;
                 }
-                return *bigpoly_ == compare->GetPolynomial();
+                auto result = *bigpoly_ == compare->GetPolynomial();
+                GC::KeepAlive(compare);
+                return result;
             }
 
             bool BigPoly::Equals(Object ^compare)
@@ -519,6 +523,7 @@ namespace Microsoft
                 try
                 {
                     bigpoly_->duplicate_to(*destination->bigpoly_);
+                    GC::KeepAlive(destination);
                 }
                 catch (const exception &e)
                 {
@@ -543,6 +548,7 @@ namespace Microsoft
                 try
                 {
                     bigpoly_->duplicate_from(*value->bigpoly_);
+                    GC::KeepAlive(value);
                 }
                 catch (const exception &e)
                 {

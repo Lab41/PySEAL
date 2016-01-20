@@ -27,6 +27,7 @@ namespace seal
     void Decryptor::decrypt(const BigPoly &encrypted, BigPoly &destination)
     {
         // Extract encryption parameters.
+        // Remark: poly_modulus_ has enlarged coefficient size set in constructor
         int coeff_count = poly_modulus_.coeff_count();
         int coeff_bit_count = poly_modulus_.coeff_bit_count();
         int coeff_uint64_count = divide_round_up(coeff_bit_count, bits_per_uint64);
@@ -42,6 +43,9 @@ namespace seal
             throw invalid_argument("encrypted is not valid for encryption parameters");
         }
 #endif
+        // Make sure destination is of right size to perform all computations. At the end we will
+        // resize the coefficients to be the size of plain_modulus.
+        // Remark: plain_modulus_ has enlarged coefficient size set in constructor
         if (destination.coeff_count() != coeff_count || destination.coeff_bit_count() != coeff_bit_count)
         {
             destination.resize(coeff_count, coeff_bit_count);
@@ -78,10 +82,13 @@ namespace seal
             set_uint_uint(quotient.get(), coeff_uint64_count, dest_coeff);
             dest_coeff += coeff_uint64_count;
         }
+
+        // Resize the coefficient to the original plain_modulus size
+        destination.resize(coeff_count, orig_plain_modulus_bit_count_);
     }
 
-    Decryptor::Decryptor(const EncryptionParameters &parms, const BigPoly &secret_key, int power) :
-        poly_modulus_(parms.poly_modulus()), coeff_modulus_(parms.coeff_modulus()), plain_modulus_(parms.plain_modulus()), secret_key_(secret_key), mode_(parms.mode())
+    Decryptor::Decryptor(const EncryptionParameters &parms, const BigPoly &secret_key, uint64_t power) :
+        poly_modulus_(parms.poly_modulus()), coeff_modulus_(parms.coeff_modulus()), plain_modulus_(parms.plain_modulus()), secret_key_(secret_key), mode_(parms.mode()), orig_plain_modulus_bit_count_(parms.plain_modulus().significant_bit_count())
     {
         // Verify required parameters are non-zero and non-nullptr.
         if (poly_modulus_.is_zero())
@@ -100,9 +107,9 @@ namespace seal
         {
             throw invalid_argument("secret_key cannot be zero");
         }
-        if (power <= 0)
+        if (power == 0)
         {
-            throw invalid_argument("power must be positive");
+            throw invalid_argument("power cannot be zero");
         }
 
         // Verify parameters.
@@ -169,7 +176,7 @@ namespace seal
         // Raise level of secret key.
         if (power > 1)
         {
-            exponentiate_poly(secret_key_.pointer(), power, polymod_, mod_, secret_key_.pointer(), pool_);
+            exponentiate_poly_polymod_coeffmod(secret_key_.pointer(), &power, 1, polymod_, mod_, secret_key_.pointer(), pool_);
         }
     }
 }

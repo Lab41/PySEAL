@@ -20,6 +20,7 @@ namespace Microsoft
                     throw gcnew ArgumentNullException("plainModulus cannot be null");
                 }
                 binaryEncoder_ = new seal::BinaryEncoder(plainModulus->GetUInt());
+                GC::KeepAlive(plainModulus);
             }
 
             BinaryEncoder::~BinaryEncoder()
@@ -79,6 +80,7 @@ namespace Microsoft
                 try
                 {
                     binaryEncoder_->encode(value, destination->GetPolynomial());
+                    GC::KeepAlive(destination);
                 }
                 catch (const exception &e)
                 {
@@ -103,6 +105,7 @@ namespace Microsoft
                 try
                 {
                     binaryEncoder_->encode(value, destination->GetPolynomial());
+                    GC::KeepAlive(destination);
                 }
                 catch (const exception &e)
                 {
@@ -126,7 +129,9 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew BigPoly(binaryEncoder_->encode(value->GetUInt()));
+                    auto result = gcnew BigPoly(binaryEncoder_->encode(value->GetUInt()));
+                    GC::KeepAlive(value);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -156,6 +161,8 @@ namespace Microsoft
                 try
                 {
                     binaryEncoder_->encode(value->GetUInt(), destination->GetPolynomial());
+                    GC::KeepAlive(value);
+                    GC::KeepAlive(destination);
                 }
                 catch (const exception &e)
                 {
@@ -201,6 +208,7 @@ namespace Microsoft
                 try
                 {
                     binaryEncoder_->encode(value, destination->GetPolynomial());
+                    GC::KeepAlive(destination);
                 }
                 catch (const exception &e)
                 {
@@ -225,6 +233,7 @@ namespace Microsoft
                 try
                 {
                     binaryEncoder_->encode(value, destination->GetPolynomial());
+                    GC::KeepAlive(destination);
                 }
                 catch (const exception &e)
                 {
@@ -248,7 +257,9 @@ namespace Microsoft
                 }
                 try
                 {
-                    return binaryEncoder_->decode_uint64(poly->GetPolynomial());
+                    auto result = binaryEncoder_->decode_uint64(poly->GetPolynomial());
+                    GC::KeepAlive(poly);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -273,7 +284,9 @@ namespace Microsoft
                 }
                 try
                 {
-                    return binaryEncoder_->decode_uint32(poly->GetPolynomial());
+                    auto result = binaryEncoder_->decode_uint32(poly->GetPolynomial());
+                    GC::KeepAlive(poly);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -298,7 +311,9 @@ namespace Microsoft
                 }
                 try
                 {
-                    return binaryEncoder_->decode_int64(poly->GetPolynomial());
+                    auto result = binaryEncoder_->decode_int64(poly->GetPolynomial());
+                    GC::KeepAlive(poly);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -323,7 +338,9 @@ namespace Microsoft
                 }
                 try
                 {
-                    return binaryEncoder_->decode_int32(poly->GetPolynomial());
+                    auto result = binaryEncoder_->decode_int32(poly->GetPolynomial());
+                    GC::KeepAlive(poly);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -348,7 +365,9 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew BigUInt(binaryEncoder_->decode_biguint(poly->GetPolynomial()));
+                    auto result = gcnew BigUInt(binaryEncoder_->decode_biguint(poly->GetPolynomial()));
+                    GC::KeepAlive(poly);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -378,6 +397,8 @@ namespace Microsoft
                 try
                 {
                     binaryEncoder_->decode_biguint(poly->GetPolynomial(), destination->GetUInt());
+                    GC::KeepAlive(poly);
+                    GC::KeepAlive(destination);
                 }
                 catch (const exception &e)
                 {
@@ -447,6 +468,7 @@ namespace Microsoft
                     throw gcnew ArgumentNullException("plainModulus cannot be null");
                 }
                 balancedEncoder_ = new seal::BalancedEncoder(plainModulus->GetUInt(), base);
+                GC::KeepAlive(plainModulus);
             }
 
             BalancedEncoder::BalancedEncoder(BigUInt ^plainModulus) : balancedEncoder_(nullptr)
@@ -456,6 +478,7 @@ namespace Microsoft
                     throw gcnew ArgumentNullException("plainModulus cannot be null");
                 }
                 balancedEncoder_ = new seal::BalancedEncoder(plainModulus->GetUInt());
+                GC::KeepAlive(plainModulus);
             }
 
             BalancedEncoder::~BalancedEncoder()
@@ -524,6 +547,7 @@ namespace Microsoft
                 try
                 {
                     balancedEncoder_->encode(value, destination->GetPolynomial());
+                    GC::KeepAlive(destination);
                 }
                 catch (const exception &e)
                 {
@@ -548,6 +572,7 @@ namespace Microsoft
                 try
                 {
                     balancedEncoder_->encode(value, destination->GetPolynomial());
+                    GC::KeepAlive(destination);
                 }
                 catch (const exception &e)
                 {
@@ -571,7 +596,9 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew BigPoly(balancedEncoder_->encode(value->GetUInt()));
+                    auto result = gcnew BigPoly(balancedEncoder_->encode(value->GetUInt()));
+                    GC::KeepAlive(value);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -601,6 +628,8 @@ namespace Microsoft
                 try
                 {
                     balancedEncoder_->encode(value->GetUInt(), destination->GetPolynomial());
+                    GC::KeepAlive(value);
+                    GC::KeepAlive(destination);
                 }
                 catch (const exception &e)
                 {
@@ -646,6 +675,7 @@ namespace Microsoft
                 try
                 {
                     balancedEncoder_->encode(value, destination->GetPolynomial());
+                    GC::KeepAlive(destination);
                 }
                 catch (const exception &e)
                 {
@@ -670,6 +700,7 @@ namespace Microsoft
                 try
                 {
                     balancedEncoder_->encode(value, destination->GetPolynomial());
+                    GC::KeepAlive(destination);
                 }
                 catch (const exception &e)
                 {
@@ -693,7 +724,9 @@ namespace Microsoft
                 }
                 try
                 {
-                    return balancedEncoder_->decode_uint64(poly->GetPolynomial());
+                    auto result = balancedEncoder_->decode_uint64(poly->GetPolynomial());
+                    GC::KeepAlive(poly);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -718,7 +751,9 @@ namespace Microsoft
                 }
                 try
                 {
-                    return balancedEncoder_->decode_uint32(poly->GetPolynomial());
+                    auto result = balancedEncoder_->decode_uint32(poly->GetPolynomial());
+                    GC::KeepAlive(poly);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -743,7 +778,9 @@ namespace Microsoft
                 }
                 try
                 {
-                    return balancedEncoder_->decode_int64(poly->GetPolynomial());
+                    auto result = balancedEncoder_->decode_int64(poly->GetPolynomial());
+                    GC::KeepAlive(poly);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -768,7 +805,9 @@ namespace Microsoft
                 }
                 try
                 {
-                    return balancedEncoder_->decode_int32(poly->GetPolynomial());
+                    auto result = balancedEncoder_->decode_int32(poly->GetPolynomial());
+                    GC::KeepAlive(poly);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -793,7 +832,9 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew BigUInt(balancedEncoder_->decode_biguint(poly->GetPolynomial()));
+                    auto result = gcnew BigUInt(balancedEncoder_->decode_biguint(poly->GetPolynomial()));
+                    GC::KeepAlive(poly);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -823,6 +864,8 @@ namespace Microsoft
                 try
                 {
                     balancedEncoder_->decode_biguint(poly->GetPolynomial(), destination->GetUInt());
+                    GC::KeepAlive(poly);
+                    GC::KeepAlive(destination);
                 }
                 catch (const exception &e)
                 {
@@ -898,6 +941,8 @@ namespace Microsoft
                 try
                 {
                     fractionalEncoder_ = new seal::BinaryFractionalEncoder(plainModulus->GetUInt(), polyModulus->GetPolynomial(), integerCoeffCount, fractionCoeffCount);
+                    GC::KeepAlive(plainModulus);
+                    GC::KeepAlive(polyModulus);
                 }
                 catch (const exception &e)
                 {
@@ -956,7 +1001,9 @@ namespace Microsoft
                 }
                 try
                 {
-                    return fractionalEncoder_->decode(poly->GetPolynomial());
+                    auto result = fractionalEncoder_->decode(poly->GetPolynomial());
+                    GC::KeepAlive(poly);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -1000,6 +1047,8 @@ namespace Microsoft
                 try
                 {
                     fractionalEncoder_ = new seal::BalancedFractionalEncoder(plainModulus->GetUInt(), polyModulus->GetPolynomial(), integerCoeffCount, fractionCoeffCount, base);
+                    GC::KeepAlive(plainModulus);
+                    GC::KeepAlive(polyModulus);
                 }
                 catch (const exception &e)
                 {
@@ -1024,6 +1073,8 @@ namespace Microsoft
                 try
                 {
                     fractionalEncoder_ = new seal::BalancedFractionalEncoder(plainModulus->GetUInt(), polyModulus->GetPolynomial(), integerCoeffCount, fractionCoeffCount);
+                    GC::KeepAlive(plainModulus);
+                    GC::KeepAlive(polyModulus);
                 }
                 catch (const exception &e)
                 {
@@ -1082,7 +1133,9 @@ namespace Microsoft
                 }
                 try
                 {
-                    return fractionalEncoder_->decode(poly->GetPolynomial());
+                   auto result = fractionalEncoder_->decode(poly->GetPolynomial());
+                   GC::KeepAlive(poly);
+                   return result;
                 }
                 catch (const exception &e)
                 {

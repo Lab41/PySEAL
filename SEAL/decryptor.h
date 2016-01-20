@@ -28,10 +28,10 @@ namespace seal
         @param[in] secret_key The secret key
         @param[in] power The power to raise the secret key to, defaults to 1
         @throws std::invalid_argument if encryption parameters or secret key are not valid
-        @throws std::invalid_argument if power is not positive
+        @throws std::invalid_argument if power is zero
         @see EncryptionParameters for more details on valid encryption parameters.
         */
-        Decryptor(const EncryptionParameters &parms, const BigPoly &secret_key, int power = 1);
+        Decryptor(const EncryptionParameters &parms, const BigPoly &secret_key, std::uint64_t power = 1);
 
         /**
         Decrypts an encrypted polynomial and stores the result in the destination parameter. The destination parameter is resized if
@@ -89,6 +89,8 @@ namespace seal
         BigPoly secret_key_;
 
         EncryptionMode mode_;
+
+        int orig_plain_modulus_bit_count_;
 
         util::MemoryPool pool_;
 

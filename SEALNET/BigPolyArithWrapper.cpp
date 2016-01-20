@@ -51,6 +51,9 @@ namespace Microsoft
                 try
                 {
                     arith_->negate(poly->GetPolynomial(), coeffMod->GetUInt(), result->GetPolynomial());
+                    GC::KeepAlive(poly);
+                    GC::KeepAlive(coeffMod);
+                    GC::KeepAlive(result);
                 }
                 catch (const exception &e)
                 {
@@ -78,7 +81,10 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew BigPoly(arith_->negate(poly->GetPolynomial(), coeffMod->GetUInt()));
+                    auto result = gcnew BigPoly(arith_->negate(poly->GetPolynomial(), coeffMod->GetUInt()));
+                    GC::KeepAlive(poly);
+                    GC::KeepAlive(coeffMod);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -107,7 +113,9 @@ namespace Microsoft
                 }
                 try
                 {
-                    arith_->negate(poly->GetPolynomial(), result->GetPolynomial());
+                    arith_->negate(poly->GetPolynomial(), result->GetPolynomial());                    
+                    GC::KeepAlive(poly);
+                    GC::KeepAlive(result);
                 }
                 catch (const exception &e)
                 {
@@ -131,7 +139,9 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew BigPoly(arith_->negate(poly->GetPolynomial()));
+                    auto result = gcnew BigPoly(arith_->negate(poly->GetPolynomial()));
+                    GC::KeepAlive(poly);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -169,6 +179,10 @@ namespace Microsoft
                 try
                 {
                     arith_->add(poly1->GetPolynomial(), poly2->GetPolynomial(), coeffMod->GetUInt(), result->GetPolynomial());
+                    GC::KeepAlive(poly1);
+                    GC::KeepAlive(poly2);
+                    GC::KeepAlive(coeffMod);
+                    GC::KeepAlive(result);
                 }
                 catch (const exception &e)
                 {
@@ -200,7 +214,11 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew BigPoly(arith_->add(poly1->GetPolynomial(), poly2->GetPolynomial(), coeffMod->GetUInt()));
+                    auto result = gcnew BigPoly(arith_->add(poly1->GetPolynomial(), poly2->GetPolynomial(), coeffMod->GetUInt()));
+                    GC::KeepAlive(poly1);
+                    GC::KeepAlive(poly2);
+                    GC::KeepAlive(coeffMod);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -238,6 +256,10 @@ namespace Microsoft
                 try
                 {
                     arith_->sub(poly1->GetPolynomial(), poly2->GetPolynomial(), coeffMod->GetUInt(), result->GetPolynomial());
+                    GC::KeepAlive(poly1);
+                    GC::KeepAlive(poly2);
+                    GC::KeepAlive(coeffMod);
+                    GC::KeepAlive(result);
                 }
                 catch (const exception &e)
                 {
@@ -269,7 +291,11 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew BigPoly(arith_->sub(poly1->GetPolynomial(), poly2->GetPolynomial(), coeffMod->GetUInt()));
+                    auto result = gcnew BigPoly(arith_->sub(poly1->GetPolynomial(), poly2->GetPolynomial(), coeffMod->GetUInt()));
+                    GC::KeepAlive(poly1);
+                    GC::KeepAlive(poly2);
+                    GC::KeepAlive(coeffMod);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -303,6 +329,9 @@ namespace Microsoft
                 try
                 {
                     arith_->add(poly1->GetPolynomial(), poly2->GetPolynomial(), result->GetPolynomial());
+                    GC::KeepAlive(poly1);
+                    GC::KeepAlive(poly2);
+                    GC::KeepAlive(result);
                 }
                 catch (const exception &e)
                 {
@@ -330,7 +359,10 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew BigPoly(arith_->add(poly1->GetPolynomial(), poly2->GetPolynomial()));
+                    auto result = gcnew BigPoly(arith_->add(poly1->GetPolynomial(), poly2->GetPolynomial()));
+                    GC::KeepAlive(poly1);
+                    GC::KeepAlive(poly2);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -364,6 +396,9 @@ namespace Microsoft
                 try
                 {
                     arith_->sub(poly1->GetPolynomial(), poly2->GetPolynomial(), result->GetPolynomial());
+                    GC::KeepAlive(poly1);
+                    GC::KeepAlive(poly2);
+                    GC::KeepAlive(result);
                 }
                 catch (const exception &e)
                 {
@@ -391,7 +426,10 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew BigPoly(arith_->sub(poly1->GetPolynomial(), poly2->GetPolynomial()));
+                    auto result = gcnew BigPoly(arith_->sub(poly1->GetPolynomial(), poly2->GetPolynomial()));
+                    GC::KeepAlive(poly1);
+                    GC::KeepAlive(poly2);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -433,6 +471,11 @@ namespace Microsoft
                 try
                 {
                     arith_->multiply(poly1->GetPolynomial(), poly2->GetPolynomial(), polyMod->GetPolynomial(), coeffMod->GetUInt(), result->GetPolynomial());
+                    GC::KeepAlive(poly1);
+                    GC::KeepAlive(poly2);
+                    GC::KeepAlive(polyMod);
+                    GC::KeepAlive(coeffMod);
+                    GC::KeepAlive(result);
                 }
                 catch (const exception &e)
                 {
@@ -468,7 +511,12 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew BigPoly(arith_->multiply(poly1->GetPolynomial(), poly2->GetPolynomial(), polyMod->GetPolynomial(), coeffMod->GetUInt()));
+                    auto result = gcnew BigPoly(arith_->multiply(poly1->GetPolynomial(), poly2->GetPolynomial(), polyMod->GetPolynomial(), coeffMod->GetUInt()));
+                    GC::KeepAlive(poly1);
+                    GC::KeepAlive(poly2);
+                    GC::KeepAlive(polyMod);
+                    GC::KeepAlive(coeffMod);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -506,6 +554,10 @@ namespace Microsoft
                 try
                 {
                     arith_->multiply(poly1->GetPolynomial(), poly2->GetPolynomial(), coeffMod->GetUInt(), result->GetPolynomial());
+                    GC::KeepAlive(poly1);
+                    GC::KeepAlive(poly2);
+                    GC::KeepAlive(coeffMod);
+                    GC::KeepAlive(result);
                 }
                 catch (const exception &e)
                 {
@@ -537,7 +589,11 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew BigPoly(arith_->multiply(poly1->GetPolynomial(), poly2->GetPolynomial(), coeffMod->GetUInt()));
+                    auto result =gcnew BigPoly(arith_->multiply(poly1->GetPolynomial(), poly2->GetPolynomial(), coeffMod->GetUInt()));
+                    GC::KeepAlive(poly1);
+                    GC::KeepAlive(poly2);
+                    GC::KeepAlive(coeffMod);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -571,6 +627,9 @@ namespace Microsoft
                 try
                 {
                     arith_->multiply(poly1->GetPolynomial(), poly2->GetPolynomial(), result->GetPolynomial());
+                    GC::KeepAlive(poly1);
+                    GC::KeepAlive(poly2);
+                    GC::KeepAlive(result);
                 }
                 catch (const exception &e)
                 {
@@ -598,7 +657,10 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew BigPoly(arith_->multiply(poly1->GetPolynomial(), poly2->GetPolynomial()));
+                    auto result = gcnew BigPoly(arith_->multiply(poly1->GetPolynomial(), poly2->GetPolynomial()));
+                    GC::KeepAlive(poly1);
+                    GC::KeepAlive(poly2);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -636,6 +698,10 @@ namespace Microsoft
                 try
                 {
                     arith_->multiply(poly1->GetPolynomial(), uint2->GetUInt(), coeffMod->GetUInt(), result->GetPolynomial());
+                    GC::KeepAlive(poly1);
+                    GC::KeepAlive(uint2);
+                    GC::KeepAlive(coeffMod);
+                    GC::KeepAlive(result);
                 }
                 catch (const exception &e)
                 {
@@ -667,7 +733,11 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew BigPoly(arith_->multiply(poly1->GetPolynomial(), uint2->GetUInt(), coeffMod->GetUInt()));
+                    auto result = gcnew BigPoly(arith_->multiply(poly1->GetPolynomial(), uint2->GetUInt(), coeffMod->GetUInt()));
+                    GC::KeepAlive(poly1);
+                    GC::KeepAlive(uint2);
+                    GC::KeepAlive(coeffMod);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -701,6 +771,9 @@ namespace Microsoft
                 try
                 {
                     arith_->multiply(poly1->GetPolynomial(), uint2->GetUInt(), result->GetPolynomial());
+                    GC::KeepAlive(poly1);
+                    GC::KeepAlive(uint2);
+                    GC::KeepAlive(result);
                 }
                 catch (const exception &e)
                 {
@@ -728,7 +801,10 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew BigPoly(arith_->multiply(poly1->GetPolynomial(), uint2->GetUInt()));
+                    auto result = gcnew BigPoly(arith_->multiply(poly1->GetPolynomial(), uint2->GetUInt()));
+                    GC::KeepAlive(poly1);
+                    GC::KeepAlive(uint2);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -770,6 +846,11 @@ namespace Microsoft
                 try
                 {
                     arith_->divide(numerator->GetPolynomial(), denominator->GetPolynomial(), coeffMod->GetUInt(), quotient->GetPolynomial(), remainder->GetPolynomial());
+                    GC::KeepAlive(numerator);
+                    GC::KeepAlive(denominator);
+                    GC::KeepAlive(coeffMod);
+                    GC::KeepAlive(quotient);
+                    GC::KeepAlive(remainder);
                 }
                 catch (const exception &e)
                 {
@@ -806,6 +887,10 @@ namespace Microsoft
                 try
                 {
                     arith_->modulo(numerator->GetPolynomial(), denominator->GetPolynomial(), coeffMod->GetUInt(), remainder->GetPolynomial());
+                    GC::KeepAlive(numerator);
+                    GC::KeepAlive(denominator);
+                    GC::KeepAlive(coeffMod);
+                    GC::KeepAlive(remainder);
                 }
                 catch (const exception &e)
                 {
@@ -837,7 +922,11 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew BigPoly(arith_->modulo(numerator->GetPolynomial(), denominator->GetPolynomial(), coeffMod->GetUInt()));
+                    auto result = gcnew BigPoly(arith_->modulo(numerator->GetPolynomial(), denominator->GetPolynomial(), coeffMod->GetUInt()));
+                    GC::KeepAlive(numerator);
+                    GC::KeepAlive(denominator);
+                    GC::KeepAlive(coeffMod);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -874,7 +963,12 @@ namespace Microsoft
                 }
                 try
                 {
-                    return arith_->try_invert(poly->GetPolynomial(), polyMod->GetPolynomial(), coeffMod->GetUInt(), result->GetPolynomial());
+                    auto ret = arith_->try_invert(poly->GetPolynomial(), polyMod->GetPolynomial(), coeffMod->GetUInt(), result->GetPolynomial());
+                    GC::KeepAlive(poly);
+                    GC::KeepAlive(polyMod);
+                    GC::KeepAlive(coeffMod);
+                    GC::KeepAlive(result);
+                    return ret;
                 }
                 catch (const exception &e)
                 {

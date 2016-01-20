@@ -720,13 +720,12 @@ namespace Microsoft
                 <param name="exponent">The non-negative power to raise the ChooserPoly object to</param>
                 <exception cref="System::ArgumentNullException">if operand is null</exception>
                 <exception cref="System::ArgumentException">if operand is not correctly initialized</exception>
-                <exception cref="System::ArgumentException">if the exponent is negative</exception>
                 <exception cref="System::ArgumentException">if operand models a zero polynomial and exponent is zero</exception>
                 <seealso>See Evaluator::Exponentiate() for the corresponding operation on
                 ciphertexts.</seealso>
                 <seealso>See SimulationEvaluator::Exponentiate() for the corresponding operation on <see cref="Simulation"/> objects.</seealso>
                 */
-                ChooserPoly ^Exponentiate(ChooserPoly ^operand, int exponent);
+                ChooserPoly ^Exponentiate(ChooserPoly ^operand, System::UInt64 exponent);
 
                 /**
                 <summary>Performs an operation modeling Evaluator::Negate() on ChooserPoly objects.</summary>
@@ -751,8 +750,7 @@ namespace Microsoft
                 Provides the user with optimized encryption parameters that are large enough to support the operations performed on the
                 given <see cref="ChooserPoly"/>. Some choices are made in the process that an expert user might want to change: (1) We use a constant
                 small standard deviation for the noise distribution; (2) We choose the size of the polynomial modulus and the
-                coefficient modulus from a hard-coded list of choices we consider secure, and estimate to have at least 80 bits of
-                security against a 2^(-80) advantage for solving decision-LWE (see http://eprint.iacr.org/2014/062.pdf, Table 2).
+                coefficient modulus from a hard-coded list of choices we consider secure (see http://eprint.iacr.org/2014/062.pdf, Table 2).
                 </para>
                 <para>
                 The function returns true or false depending on whether a working parameter set was found or not.
@@ -764,6 +762,7 @@ namespace Microsoft
                 <exception cref="System::InvalidOperationException">if operation history of the given ChooserPoly is null</exception>
                 <seealso cref="EncryptionParameters">See EncryptionParameters for a description of the encryption parameters.</seealso>
                 <seealso cref="DefaultNoiseStandardDeviation()">See DefaultNoiseStandardDeviation() for the default noise standard deviation.</seealso>
+                <seealso cref="DefaultNoiseMaxDeviation()">See DefaultNoiseMaxDeviation() for the default maximal noise deviation.</seealso>
                 <seealso cref="DefaultParameterOptions()">See DefaultParameterOptions() for the default set of parameter options.</seealso>
                 */
                 bool SelectParameters(ChooserPoly ^operand, EncryptionParameters ^destination);
@@ -776,8 +775,7 @@ namespace Microsoft
                 Provides the user with optimized encryption parameters that are large enough to support the operations performed on all
                 of the given <see cref="ChooserPoly"/> objects. Some choices are made in the process that an expert user might want to change: (1) We use a
                 constant small standard deviation for the noise distribution; (2) We choose the size of the polynomial modulus and the
-                coefficient modulus from a hard-coded list of choices we consider secure, and estimate to have at least 80 bits of
-                security against a 2^(-80) advantage for solving decision-LWE (see http://eprint.iacr.org/2014/062.pdf, Table 2).
+                coefficient modulus from a hard-coded list of choices we consider secure (see http://eprint.iacr.org/2014/062.pdf, Table 2).
                 </para>
                 <para>
                 The function returns true or false depending on whether a working parameter set was found or not.
@@ -791,6 +789,7 @@ namespace Microsoft
                 <exception cref="System::ArgumentException">if operands is empty</exception>
                 <seealso cref="EncryptionParameters">See EncryptionParameters for a description of the encryption parameters.</seealso>
                 <seealso cref="DefaultNoiseStandardDeviation()">See DefaultNoiseStandardDeviation() for the default noise standard deviation.</seealso>
+                <seealso cref="DefaultNoiseMaxDeviation()">See DefaultNoiseMaxDeviation() for the default maximal noise deviation.</seealso>
                 <seealso cref="DefaultParameterOptions()">See DefaultParameterOptions() for the default set of parameter options.</seealso>
                 */
                 bool SelectParameters(System::Collections::Generic::List<ChooserPoly^> ^operands, EncryptionParameters ^destination);
@@ -815,19 +814,22 @@ namespace Microsoft
                 </remarks>
                 <param name="operand">The ChooserPoly for which the parameters are optimized</param>
                 <param name="noiseStandardDeviation">The noise standard deviation</param>
+                <param name="noiseMaxDeviation">The maximal noise deviation</param>
                 <param name="parameterOptions">The parameter options to be used</param>
                 <param name="destination">The encryption parameters to overwrite with the selected parameter set</param>
                 <exception cref="System::ArgumentNullException">if operand or destination is null</exception>
                 <exception cref="System::ArgumentNullException">if parameterOptions or any of its values is null</exception>
                 <exception cref="System::InvalidOperationException">if operation history is null</exception>
                 <exception cref="System::ArgumentException">if noiseStandardDeviation is negative</exception>
+                <exception cref="System::ArgumentException">if noiseMaxDeviation is negative</exception>
                 <exception cref="System::ArgumentException">if parameterOptions is empty</exception>
                 <exception cref="System::ArgumentException">if parameterOptions has keys that are less than 512 or not powers of 2</exception>
                 <seealso cref="EncryptionParameters">See EncryptionParameters for a description of the encryption parameters.</seealso>
                 <seealso cref="DefaultNoiseStandardDeviation()">See DefaultNoiseStandardDeviation() for the default noise standard deviation.</seealso>
+                <seealso cref="DefaultNoiseMaxDeviation()">See DefaultNoiseMaxDeviation() for the default maximal noise deviation.</seealso>
                 <seealso cref="DefaultParameterOptions()">See DefaultParameterOptions() for the default set of parameter options.</seealso>
                 */
-                bool SelectParameters(ChooserPoly ^operand, double noiseStandardDeviation, System::Collections::Generic::Dictionary<int, BigUInt^> ^parameterOptions, EncryptionParameters ^destination);
+                bool SelectParameters(ChooserPoly ^operand, double noiseStandardDeviation, double noiseMaxDeviation, System::Collections::Generic::Dictionary<int, BigUInt^> ^parameterOptions, EncryptionParameters ^destination);
 
                 /**
                 <summary>Provides the user with optimized encryption parameters that are large enough to support the operations
@@ -849,6 +851,7 @@ namespace Microsoft
                 </remarks>
                 <param name="operands">The ChooserPolys for which the parameters are optimized</param>
                 <param name="noiseStandardDeviation">The noise standard deviation</param>
+                <param name="noiseMaxDeviation">The maximal noise deviation</param>
                 <param name="parameterOptions">The parameter options to be used</param>
                 <param name="destination">The encryption parameters to overwrite with the selected parameter set</param>
                 <exception cref="System::ArgumentNullException">if operands list or any of its elements is null</exception>
@@ -857,21 +860,21 @@ namespace Microsoft
                 <exception cref="System::InvalidOperationException">if operation history is null</exception>
                 <exception cref="System::ArgumentException">if operands is empty</exception>
                 <exception cref="System::ArgumentException">if noiseStandardDeviation is negative</exception>
+                <exception cref="System::ArgumentException">if noiseMaxDeviation is negative</exception>
                 <exception cref="System::ArgumentException">if parameterOptions is empty</exception>
                 <exception cref="System::ArgumentException">if parameterOptions has keys that are less than 512 or not powers of 2</exception>
                 <seealso cref="EncryptionParameters">See EncryptionParameters for a description of the encryption parameters.</seealso>
                 <seealso cref="DefaultNoiseStandardDeviation()">See DefaultNoiseStandardDeviation() for the default noise standard deviation.</seealso>
+                <seealso cref="DefaultNoiseMaxDeviation()">See DefaultNoiseMaxDeviation() for the default maximal noise deviation.</seealso>
                 <seealso cref="DefaultParameterOptions()">See DefaultParameterOptions() for the default set of parameter options.</seealso>
                 */
-                bool SelectParameters(System::Collections::Generic::List<ChooserPoly^> ^operands, double noiseStandardDeviation, System::Collections::Generic::Dictionary<int, BigUInt^> ^parameterOptions, EncryptionParameters ^destination);
+                bool SelectParameters(System::Collections::Generic::List<ChooserPoly^> ^operands, double noiseStandardDeviation, double noiseMaxDeviation, System::Collections::Generic::Dictionary<int, BigUInt^> ^parameterOptions, EncryptionParameters ^destination);
 
                 /**
-                <summary>Returns the default set of (degree(polynomial modulus),coeffModulus)-pairs used by automatic parameter
-                selection.</summary>
+                <summary>Returns the default set of (degree(polynomial modulus),coeffModulus)-pairs.</summary>
                 <remarks>
-                Returns the default set of (degree(polynomial modulus),coeffModulus)-pairs used by automatic parameter selection. The
-                functions returns a dictionary of entries where the degree of the polynomial modulus acts as the key, and the
-                corresponding modulus is the value.
+                Returns the default set of (degree(polynomial modulus),coeffModulus)-pairs. The function returns a dictionary 
+                of entries where the degree of the polynomial modulus acts as the key, and the corresponding modulus is the value.
                 An expert user might want to give a modified dictionary as an argument to SelectParameters() for better results.
                 </remarks>
                 */
@@ -881,11 +884,10 @@ namespace Microsoft
                 }
 
                 /**
-                <summary>Returns the default value for the standard deviation of the noise (error) distribution used by automatic
-                parameter selection.</summary>
+                <summary>Returns the default value for the standard deviation of the noise (error) distribution.</summary>
                 <remarks>
-                Returns the default value for the standard deviation of the noise (error) distribution used by automatic parameter
-                selection. An expert user might want to give a modified value as an argument to SelectParameters().
+                Returns the default value for the standard deviation of the noise (error) distribution.
+                An expert user might want to give a modified value as an argument to SelectParameters().
                 </remarks>
                 */
                 static property double DefaultNoiseStandardDeviation
@@ -893,6 +895,17 @@ namespace Microsoft
                     double get();
                 }
 
+                /**
+                <summary>Returns the default value for the maximal deviation of the noise (error) distribution.</summary>
+                <remarks>
+                Returns the default value for the maximal deviation of the noise (error) distribution.
+                An expert user might want to give a modified value as an argument to SelectParameters().
+                </remarks>
+                */
+                static property double DefaultNoiseMaxDeviation
+                {
+                    double get();
+                }
 
                 /**
                 <summary>Returns a reference to the underlying C++ ChooserEvaluator.</summary>

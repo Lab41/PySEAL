@@ -42,6 +42,7 @@ namespace Microsoft
                 try
                 {
                     chooserPoly_ = new seal::ChooserPoly(maxCoeffCount, maxAbsValue->GetUInt());
+                    GC::KeepAlive(maxAbsValue);
                 }
                 catch (const exception &e)
                 {
@@ -53,7 +54,7 @@ namespace Microsoft
                 }
             }
 
-            ChooserPoly::ChooserPoly(int maxCoeffCount, System::UInt64 maxAbsValue) : chooserPoly_(nullptr)
+            ChooserPoly::ChooserPoly(int maxCoeffCount, UInt64 maxAbsValue) : chooserPoly_(nullptr)
             {
                 try
                 {
@@ -108,6 +109,7 @@ namespace Microsoft
                 try
                 {
                     chooserPoly_ = new seal::ChooserPoly(copy->GetChooserPoly());
+                    GC::KeepAlive(copy);
                 }
                 catch (const exception &e)
                 {
@@ -137,6 +139,7 @@ namespace Microsoft
                 try
                 {
                     *chooserPoly_ = assign->GetChooserPoly();
+                    GC::KeepAlive(assign);
                 }
                 catch (const exception &e)
                 {
@@ -188,6 +191,7 @@ namespace Microsoft
                 try
                 {
                     chooserPoly_->max_abs_value() = value->GetUInt();
+                    GC::KeepAlive(value);
                 }
                 catch (const exception &e)
                 {
@@ -212,7 +216,9 @@ namespace Microsoft
                 }
                 try
                 {
-                    return chooserPoly_->test_parameters(parms->GetParameters());
+                    auto result = chooserPoly_->test_parameters(parms->GetParameters());
+                    GC::KeepAlive(parms);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -237,7 +243,9 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew Simulation(chooserPoly_->simulate(parms->GetParameters()));
+                    auto result = gcnew Simulation(chooserPoly_->simulate(parms->GetParameters()));
+                    GC::KeepAlive(parms);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -250,7 +258,7 @@ namespace Microsoft
                 throw gcnew Exception("Unexpected exception");
             }
             
-            bool ChooserEvaluator::SelectParameters(ChooserPoly ^operand, double noiseStandardDeviation, Dictionary<int, BigUInt^> ^parameterOptions, EncryptionParameters ^destination)
+            bool ChooserEvaluator::SelectParameters(ChooserPoly ^operand, double noiseStandardDeviation, double noiseMaxDeviation, Dictionary<int, BigUInt^> ^parameterOptions, EncryptionParameters ^destination)
             {
                 if (chooserEvaluator_ == nullptr)
                 {
@@ -271,16 +279,20 @@ namespace Microsoft
                 try
                 {
                     map<int, seal::BigUInt> parameter_options_map;
-                    for each (KeyValuePair<int, BigUInt^> paramPair in parameterOptions)
+                    for each (KeyValuePair<int, BigUInt^> ^paramPair in parameterOptions)
                     {
-                        if (paramPair.Value == nullptr)
+                        if (paramPair->Value == nullptr)
                         {
                             throw gcnew ArgumentNullException("parameterOptions cannot contain null values");
                         }
-                        parameter_options_map[paramPair.Key] = paramPair.Value->GetUInt();
+                        parameter_options_map[paramPair->Key] = paramPair->Value->GetUInt();
+                        GC::KeepAlive(paramPair);
                     }
 
-                    return chooserEvaluator_->select_parameters(operand->GetChooserPoly(), noiseStandardDeviation, parameter_options_map, destination->GetParameters());
+                    auto result = chooserEvaluator_->select_parameters(operand->GetChooserPoly(), noiseStandardDeviation, noiseMaxDeviation, parameter_options_map, destination->GetParameters());
+                    GC::KeepAlive(operand);
+                    GC::KeepAlive(destination);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -309,7 +321,10 @@ namespace Microsoft
                 }
                 try
                 {
-                    return chooserEvaluator_->select_parameters(operand->GetChooserPoly(),destination->GetParameters());
+                    auto result = chooserEvaluator_->select_parameters(operand->GetChooserPoly(),destination->GetParameters());
+                    GC::KeepAlive(operand);
+                    GC::KeepAlive(destination);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -322,7 +337,7 @@ namespace Microsoft
                 throw gcnew Exception("Unexpected exception");
             }
 
-            bool ChooserEvaluator::SelectParameters(List<ChooserPoly^> ^operands, double noiseStandardDeviation, Dictionary<int, BigUInt^> ^parameterOptions, EncryptionParameters ^destination)
+            bool ChooserEvaluator::SelectParameters(List<ChooserPoly^> ^operands, double noiseStandardDeviation, double noiseMaxDeviation, Dictionary<int, BigUInt^> ^parameterOptions, EncryptionParameters ^destination)
             {
                 if (chooserEvaluator_ == nullptr)
                 {
@@ -350,19 +365,23 @@ namespace Microsoft
                             throw gcnew ArgumentNullException("operand cannot be null");
                         }
                         operands_vector.push_back(operand->GetChooserPoly());
+                        GC::KeepAlive(operand);
                     }
 
                     map<int, seal::BigUInt> parameter_options_map;
-                    for each (KeyValuePair<int, BigUInt^> paramPair in parameterOptions)
+                    for each (KeyValuePair<int, BigUInt^> ^paramPair in parameterOptions)
                     {
-                        if (paramPair.Value == nullptr)
+                        if (paramPair->Value == nullptr)
                         {
                             throw gcnew ArgumentNullException("parameterOptions cannot contain null values");
                         }
-                        parameter_options_map[paramPair.Key] = paramPair.Value->GetUInt();
+                        parameter_options_map[paramPair->Key] = paramPair->Value->GetUInt();
+                        GC::KeepAlive(paramPair);
                     }
 
-                    return chooserEvaluator_->select_parameters(operands_vector, noiseStandardDeviation, parameter_options_map, destination->GetParameters());
+                    auto result = chooserEvaluator_->select_parameters(operands_vector, noiseStandardDeviation, noiseMaxDeviation, parameter_options_map, destination->GetParameters());
+                    GC::KeepAlive(destination);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -399,9 +418,12 @@ namespace Microsoft
                             throw gcnew ArgumentNullException("operand cannot be null");
                         }
                         operands_vector.push_back(operand->GetChooserPoly());
+                        GC::KeepAlive(operand);
                     }
 
-                    return chooserEvaluator_->select_parameters(operands_vector, destination->GetParameters());
+                    auto result = chooserEvaluator_->select_parameters(operands_vector, destination->GetParameters());
+                    GC::KeepAlive(destination);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -466,7 +488,9 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew BigUInt(chooserPoly_->noise(parms->GetParameters()));
+                    auto result = gcnew BigUInt(chooserPoly_->noise(parms->GetParameters()));
+                    GC::KeepAlive(parms);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -491,7 +515,9 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew BigUInt(chooserPoly_->max_noise(parms->GetParameters()));
+                    auto result = gcnew BigUInt(chooserPoly_->max_noise(parms->GetParameters()));
+                    GC::KeepAlive(parms);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -516,7 +542,9 @@ namespace Microsoft
                 }
                 try
                 {
-                    return chooserPoly_->noise_bits(parms->GetParameters());
+                    auto result = chooserPoly_->noise_bits(parms->GetParameters());
+                    GC::KeepAlive(parms);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -541,7 +569,9 @@ namespace Microsoft
                 }
                 try
                 {
-                    return chooserPoly_->noise_bits_left(parms->GetParameters());
+                    auto result = chooserPoly_->noise_bits_left(parms->GetParameters());
+                    GC::KeepAlive(parms);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -566,7 +596,9 @@ namespace Microsoft
                 }
                 try
                 {
-                    return chooserPoly_->decrypts(parms->GetParameters());
+                    auto result = chooserPoly_->decrypts(parms->GetParameters());
+                    GC::KeepAlive(parms);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -594,6 +626,11 @@ namespace Microsoft
             double ChooserEvaluator::DefaultNoiseStandardDeviation::get()
             {
                 return seal::ChooserEvaluator::default_noise_standard_deviation();
+            }
+
+            double ChooserEvaluator::DefaultNoiseMaxDeviation::get()
+            {
+                return seal::ChooserEvaluator::default_noise_max_deviation();
             }
 
             ChooserEvaluator::ChooserEvaluator() : chooserEvaluator_(nullptr)
@@ -631,7 +668,10 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew ChooserPoly(chooserEvaluator_->multiply(operand1->GetChooserPoly(), operand2->GetChooserPoly()));
+                    auto result = gcnew ChooserPoly(chooserEvaluator_->multiply(operand1->GetChooserPoly(), operand2->GetChooserPoly()));
+                    GC::KeepAlive(operand1);
+                    GC::KeepAlive(operand2);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -661,7 +701,10 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew ChooserPoly(chooserEvaluator_->multiply_norelin(operand1->GetChooserPoly(), operand2->GetChooserPoly()));
+                    auto result = gcnew ChooserPoly(chooserEvaluator_->multiply_norelin(operand1->GetChooserPoly(), operand2->GetChooserPoly()));
+                    GC::KeepAlive(operand1);
+                    GC::KeepAlive(operand2);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -686,7 +729,9 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew ChooserPoly(chooserEvaluator_->relinearize(operand->GetChooserPoly()));
+                    auto result = gcnew ChooserPoly(chooserEvaluator_->relinearize(operand->GetChooserPoly()));
+                    GC::KeepAlive(operand);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -716,7 +761,10 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew ChooserPoly(chooserEvaluator_->add(operand1->GetChooserPoly(), operand2->GetChooserPoly()));
+                    auto result = gcnew ChooserPoly(chooserEvaluator_->add(operand1->GetChooserPoly(), operand2->GetChooserPoly()));
+                    GC::KeepAlive(operand1);
+                    GC::KeepAlive(operand2);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -749,6 +797,7 @@ namespace Microsoft
                             throw gcnew ArgumentNullException("operand cannot be null");
                         }
                         v_simulations.push_back(operand->GetChooserPoly());
+                        GC::KeepAlive(operand);
                     }
 
                     return gcnew ChooserPoly(chooserEvaluator_->add_many(v_simulations));
@@ -780,7 +829,10 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew ChooserPoly(chooserEvaluator_->sub(operand1->GetChooserPoly(), operand2->GetChooserPoly()));
+                    auto result = gcnew ChooserPoly(chooserEvaluator_->sub(operand1->GetChooserPoly(), operand2->GetChooserPoly()));
+                    GC::KeepAlive(operand1);
+                    GC::KeepAlive(operand2);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -809,7 +861,10 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew ChooserPoly(chooserEvaluator_->multiply_plain(operand->GetChooserPoly(), plainMaxCoeffCount, plainMaxAbsValue->GetUInt()));
+                    auto result = gcnew ChooserPoly(chooserEvaluator_->multiply_plain(operand->GetChooserPoly(), plainMaxCoeffCount, plainMaxAbsValue->GetUInt()));
+                    GC::KeepAlive(operand);
+                    GC::KeepAlive(plainMaxAbsValue);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -834,7 +889,9 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew ChooserPoly(chooserEvaluator_->multiply_plain(operand->GetChooserPoly(), plainMaxCoeffCount, plainMaxAbsValue));
+                    auto result = gcnew ChooserPoly(chooserEvaluator_->multiply_plain(operand->GetChooserPoly(), plainMaxCoeffCount, plainMaxAbsValue));
+                    GC::KeepAlive(operand);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -863,7 +920,10 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew ChooserPoly(chooserEvaluator_->multiply_plain(operand->GetChooserPoly(), plainChooserPoly->GetChooserPoly()));
+                    auto result = gcnew ChooserPoly(chooserEvaluator_->multiply_plain(operand->GetChooserPoly(), plainChooserPoly->GetChooserPoly()));
+                    GC::KeepAlive(operand);
+                    GC::KeepAlive(plainChooserPoly);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -892,7 +952,10 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew ChooserPoly(chooserEvaluator_->add_plain(operand->GetChooserPoly(), plainMaxCoeffCount, plainMaxAbsValue->GetUInt()));
+                    auto result = gcnew ChooserPoly(chooserEvaluator_->add_plain(operand->GetChooserPoly(), plainMaxCoeffCount, plainMaxAbsValue->GetUInt()));
+                    GC::KeepAlive(operand);
+                    GC::KeepAlive(plainMaxAbsValue);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -917,7 +980,9 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew ChooserPoly(chooserEvaluator_->add_plain(operand->GetChooserPoly(), plainMaxCoeffCount, plainMaxAbsValue));
+                    auto result = gcnew ChooserPoly(chooserEvaluator_->add_plain(operand->GetChooserPoly(), plainMaxCoeffCount, plainMaxAbsValue));
+                    GC::KeepAlive(operand);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -946,7 +1011,10 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew ChooserPoly(chooserEvaluator_->add_plain(operand->GetChooserPoly(), plainChooserPoly->GetChooserPoly()));
+                    auto result = gcnew ChooserPoly(chooserEvaluator_->add_plain(operand->GetChooserPoly(), plainChooserPoly->GetChooserPoly()));
+                    GC::KeepAlive(operand);
+                    GC::KeepAlive(plainChooserPoly);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -975,7 +1043,10 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew ChooserPoly(chooserEvaluator_->sub_plain(operand->GetChooserPoly(), plainMaxCoeffCount, plainMaxAbsValue->GetUInt()));
+                    auto result = gcnew ChooserPoly(chooserEvaluator_->sub_plain(operand->GetChooserPoly(), plainMaxCoeffCount, plainMaxAbsValue->GetUInt()));
+                    GC::KeepAlive(operand);
+                    GC::KeepAlive(plainMaxAbsValue);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -1000,7 +1071,9 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew ChooserPoly(chooserEvaluator_->sub_plain(operand->GetChooserPoly(), plainMaxCoeffCount, plainMaxAbsValue));
+                    auto result = gcnew ChooserPoly(chooserEvaluator_->sub_plain(operand->GetChooserPoly(), plainMaxCoeffCount, plainMaxAbsValue));
+                    GC::KeepAlive(operand);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -1029,7 +1102,10 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew ChooserPoly(chooserEvaluator_->sub_plain(operand->GetChooserPoly(), plainChooserPoly->GetChooserPoly()));
+                    auto result = gcnew ChooserPoly(chooserEvaluator_->sub_plain(operand->GetChooserPoly(), plainChooserPoly->GetChooserPoly()));
+                    GC::KeepAlive(operand);
+                    GC::KeepAlive(plainChooserPoly);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -1062,6 +1138,7 @@ namespace Microsoft
                             throw gcnew ArgumentNullException("operand cannot be null");
                         }
                         v_operands.push_back(operand->GetChooserPoly());
+                        GC::KeepAlive(operand);
                     }
 
                     return gcnew ChooserPoly(chooserEvaluator_->multiply_many(v_operands));
@@ -1077,7 +1154,7 @@ namespace Microsoft
                 throw gcnew Exception("Unexpected exception");
             }
 
-            ChooserPoly ^ChooserEvaluator::Exponentiate(ChooserPoly ^operand, int exponent)
+            ChooserPoly ^ChooserEvaluator::Exponentiate(ChooserPoly ^operand, UInt64 exponent)
             {
                 if (chooserEvaluator_ == nullptr)
                 {
@@ -1089,7 +1166,9 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew ChooserPoly(chooserEvaluator_->exponentiate(operand->GetChooserPoly(), exponent));
+                    auto result = gcnew ChooserPoly(chooserEvaluator_->exponentiate(operand->GetChooserPoly(), exponent));
+                    GC::KeepAlive(operand);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -1114,7 +1193,9 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew ChooserPoly(chooserEvaluator_->negate(operand->GetChooserPoly()));
+                    auto result = gcnew ChooserPoly(chooserEvaluator_->negate(operand->GetChooserPoly()));
+                    GC::KeepAlive(operand);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -1182,7 +1263,7 @@ namespace Microsoft
                 }
             }
 
-            ChooserPoly ^ChooserEncoder::Encode(System::UInt64 value)
+            ChooserPoly ^ChooserEncoder::Encode(UInt64 value)
             {
                 if (chooserEncoder_ == nullptr)
                 {
@@ -1203,7 +1284,7 @@ namespace Microsoft
                 throw gcnew Exception("Unexpected exception");
             }
 
-            void ChooserEncoder::Encode(System::UInt64 value, ChooserPoly ^destination)
+            void ChooserEncoder::Encode(UInt64 value, ChooserPoly ^destination)
             {
                 if (chooserEncoder_ == nullptr)
                 {
@@ -1216,6 +1297,7 @@ namespace Microsoft
                 try
                 {
                     chooserEncoder_->encode(value, destination->GetChooserPoly());
+                    GC::KeepAlive(destination);
                 }
                 catch (const exception &e)
                 {
@@ -1227,7 +1309,7 @@ namespace Microsoft
                 }
             }
 
-            ChooserPoly ^ChooserEncoder::Encode(System::Int64 value)
+            ChooserPoly ^ChooserEncoder::Encode(Int64 value)
             {
                 if (chooserEncoder_ == nullptr)
                 {
@@ -1248,7 +1330,7 @@ namespace Microsoft
                 throw gcnew Exception("Unexpected exception");
             }
 
-            void ChooserEncoder::Encode(System::Int64 value, ChooserPoly ^destination)
+            void ChooserEncoder::Encode(Int64 value, ChooserPoly ^destination)
             {
                 if (chooserEncoder_ == nullptr)
                 {
@@ -1261,6 +1343,7 @@ namespace Microsoft
                 try
                 {
                     chooserEncoder_->encode(value, destination->GetChooserPoly());
+                    GC::KeepAlive(destination);
                 }
                 catch (const exception &e)
                 {
@@ -1284,7 +1367,9 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew ChooserPoly(chooserEncoder_->encode(value->GetUInt()));
+                    auto result = gcnew ChooserPoly(chooserEncoder_->encode(value->GetUInt()));
+                    GC::KeepAlive(value);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -1314,6 +1399,8 @@ namespace Microsoft
                 try
                 {
                     chooserEncoder_->encode(value->GetUInt(), destination->GetChooserPoly());
+                    GC::KeepAlive(value);
+                    GC::KeepAlive(destination);
                 }
                 catch (const exception &e)
                 {
@@ -1325,7 +1412,7 @@ namespace Microsoft
                 }
             }
 
-            ChooserPoly ^ChooserEncoder::Encode(System::Int32 value)
+            ChooserPoly ^ChooserEncoder::Encode(Int32 value)
             {
                 if (chooserEncoder_ == nullptr)
                 {
@@ -1346,7 +1433,7 @@ namespace Microsoft
                 throw gcnew Exception("Unexpected exception");
             }
 
-            ChooserPoly ^ChooserEncoder::Encode(System::UInt32 value)
+            ChooserPoly ^ChooserEncoder::Encode(UInt32 value)
             {
                 if (chooserEncoder_ == nullptr)
                 {
@@ -1432,6 +1519,8 @@ namespace Microsoft
                 try
                 {
                     chooserEncryptor_->encrypt(plain->GetChooserPoly());
+                    GC::KeepAlive(plain);
+                    GC::KeepAlive(destination);
                 }
                 catch (const exception &e)
                 {
@@ -1455,7 +1544,9 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew ChooserPoly(chooserEncryptor_->encrypt(plain->GetChooserPoly()));
+                    auto result = gcnew ChooserPoly(chooserEncryptor_->encrypt(plain->GetChooserPoly()));
+                    GC::KeepAlive(plain);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -1485,6 +1576,8 @@ namespace Microsoft
                 try
                 {
                     chooserEncryptor_->decrypt(encrypted->GetChooserPoly());
+                    GC::KeepAlive(encrypted);
+                    GC::KeepAlive(destination);
                 }
                 catch (const exception &e)
                 {
@@ -1508,7 +1601,9 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew ChooserPoly(chooserEncryptor_->decrypt(encrypted->GetChooserPoly()));
+                    auto result =gcnew ChooserPoly(chooserEncryptor_->decrypt(encrypted->GetChooserPoly()));
+                    GC::KeepAlive(encrypted);
+                    return result;
                 }
                 catch (const exception &e)
                 {

@@ -30,6 +30,8 @@ namespace Microsoft
                 try
                 {
                     evaluator_ = new seal::Evaluator(parms->GetParameters(), evaluationKeys->GetKeys());
+                    GC::KeepAlive(parms);
+                    GC::KeepAlive(evaluationKeys);
                 }
                 catch (const exception &e)
                 {
@@ -67,6 +69,8 @@ namespace Microsoft
                 try
                 {
                     evaluator_->negate(encrypted->GetPolynomial(), destination->GetPolynomial());
+                    GC::KeepAlive(encrypted);
+                    GC::KeepAlive(destination);
                 }
                 catch (const exception &e)
                 {
@@ -90,7 +94,9 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew BigPoly(evaluator_->negate(encrypted->GetPolynomial()));
+                    auto result = gcnew BigPoly(evaluator_->negate(encrypted->GetPolynomial()));
+                    GC::KeepAlive(encrypted);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -124,6 +130,9 @@ namespace Microsoft
                 try
                 {
                     evaluator_->add(encrypted1->GetPolynomial(), encrypted2->GetPolynomial(), destination->GetPolynomial());
+                    GC::KeepAlive(encrypted1);
+                    GC::KeepAlive(encrypted2);
+                    GC::KeepAlive(destination);
                 }
                 catch (const exception &e)
                 {
@@ -151,7 +160,10 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew BigPoly(evaluator_->add(encrypted1->GetPolynomial(), encrypted2->GetPolynomial()));
+                    auto result = gcnew BigPoly(evaluator_->add(encrypted1->GetPolynomial(), encrypted2->GetPolynomial()));
+                    GC::KeepAlive(encrypted1);
+                    GC::KeepAlive(encrypted2);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -188,9 +200,11 @@ namespace Microsoft
                             throw gcnew ArgumentNullException("encrypted cannot be null");
                         }
                         v_encrypteds.push_back(poly->GetPolynomial());
+                        GC::KeepAlive(poly);
                     }
 
                     evaluator_->add_many(v_encrypteds, destination->GetPolynomial());
+                    GC::KeepAlive(destination);
                 }
                 catch (const exception &e)
                 {
@@ -222,6 +236,7 @@ namespace Microsoft
                             throw gcnew ArgumentNullException("encrypteds cannot contain null values null");
                         }
                         v_encrypteds.push_back(poly->GetPolynomial());
+                        GC::KeepAlive(poly);
                     }
 
                     return gcnew BigPoly(evaluator_->add_many(v_encrypteds));
@@ -258,6 +273,9 @@ namespace Microsoft
                 try
                 {
                     evaluator_->sub(encrypted1->GetPolynomial(), encrypted2->GetPolynomial(), destination->GetPolynomial());
+                    GC::KeepAlive(encrypted1);
+                    GC::KeepAlive(encrypted2);
+                    GC::KeepAlive(destination);
                 }
                 catch (const exception &e)
                 {
@@ -285,7 +303,10 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew BigPoly(evaluator_->sub(encrypted1->GetPolynomial(), encrypted2->GetPolynomial()));
+                    auto result = gcnew BigPoly(evaluator_->sub(encrypted1->GetPolynomial(), encrypted2->GetPolynomial()));
+                    GC::KeepAlive(encrypted1);
+                    GC::KeepAlive(encrypted2);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -319,6 +340,9 @@ namespace Microsoft
                 try
                 {
                     evaluator_->multiply(encrypted1->GetPolynomial(), encrypted2->GetPolynomial(), destination->GetPolynomial());
+                    GC::KeepAlive(encrypted1);
+                    GC::KeepAlive(encrypted2);
+                    GC::KeepAlive(destination);
                 }
                 catch (const exception &e)
                 {
@@ -346,7 +370,10 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew BigPoly(evaluator_->multiply(encrypted1->GetPolynomial(), encrypted2->GetPolynomial()));
+                    auto result = gcnew BigPoly(evaluator_->multiply(encrypted1->GetPolynomial(), encrypted2->GetPolynomial()));
+                    GC::KeepAlive(encrypted1);
+                    GC::KeepAlive(encrypted2);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -380,6 +407,9 @@ namespace Microsoft
                 try
                 {
                     evaluator_->multiply_norelin(encrypted1->GetPolynomial(), encrypted2->GetPolynomial(), destination->GetPolynomial());
+                    GC::KeepAlive(encrypted1);
+                    GC::KeepAlive(encrypted2);
+                    GC::KeepAlive(destination);
                 }
                 catch (const exception &e)
                 {
@@ -407,7 +437,10 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew BigPoly(evaluator_->multiply_norelin(encrypted1->GetPolynomial(), encrypted2->GetPolynomial()));
+                    auto result = gcnew BigPoly(evaluator_->multiply_norelin(encrypted1->GetPolynomial(), encrypted2->GetPolynomial()));
+                    GC::KeepAlive(encrypted1);
+                    GC::KeepAlive(encrypted2);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -437,6 +470,8 @@ namespace Microsoft
                 try
                 {
                     evaluator_->relinearize(encrypted->GetPolynomial(), destination->GetPolynomial());
+                    GC::KeepAlive(encrypted);
+                    GC::KeepAlive(destination);
                 }
                 catch (const exception &e)
                 {
@@ -460,7 +495,9 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew BigPoly(evaluator_->relinearize(encrypted->GetPolynomial()));
+                    auto result = gcnew BigPoly(evaluator_->relinearize(encrypted->GetPolynomial()));
+                    GC::KeepAlive(encrypted);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -494,6 +531,9 @@ namespace Microsoft
                 try
                 {
                     evaluator_->add_plain(encrypted1->GetPolynomial(), plain2->GetPolynomial(), destination->GetPolynomial());
+                    GC::KeepAlive(encrypted1);
+                    GC::KeepAlive(plain2);
+                    GC::KeepAlive(destination);
                 }
                 catch (const exception &e)
                 {
@@ -521,7 +561,10 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew BigPoly(evaluator_->add_plain(encrypted1->GetPolynomial(), plain2->GetPolynomial()));
+                    auto result = gcnew BigPoly(evaluator_->add_plain(encrypted1->GetPolynomial(), plain2->GetPolynomial()));
+                    GC::KeepAlive(encrypted1);
+                    GC::KeepAlive(plain2);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -555,6 +598,9 @@ namespace Microsoft
                 try
                 {
                     evaluator_->sub_plain(encrypted1->GetPolynomial(), plain2->GetPolynomial(), destination->GetPolynomial());
+                    GC::KeepAlive(encrypted1);
+                    GC::KeepAlive(plain2);
+                    GC::KeepAlive(destination);
                 }
                 catch (const exception &e)
                 {
@@ -582,7 +628,10 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew BigPoly(evaluator_->sub_plain(encrypted1->GetPolynomial(), plain2->GetPolynomial()));
+                    auto result = gcnew BigPoly(evaluator_->sub_plain(encrypted1->GetPolynomial(), plain2->GetPolynomial()));
+                    GC::KeepAlive(encrypted1);
+                    GC::KeepAlive(plain2);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -616,6 +665,9 @@ namespace Microsoft
                 try
                 {
                     evaluator_->multiply_plain(encrypted1->GetPolynomial(), plain2->GetPolynomial(), destination->GetPolynomial());
+                    GC::KeepAlive(encrypted1);
+                    GC::KeepAlive(plain2);
+                    GC::KeepAlive(destination);
                 }
                 catch (const exception &e)
                 {
@@ -643,7 +695,10 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew BigPoly(evaluator_->multiply_plain(encrypted1->GetPolynomial(), plain2->GetPolynomial()));
+                    auto result = gcnew BigPoly(evaluator_->multiply_plain(encrypted1->GetPolynomial(), plain2->GetPolynomial()));
+                    GC::KeepAlive(encrypted1);
+                    GC::KeepAlive(plain2);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -680,9 +735,11 @@ namespace Microsoft
                             throw gcnew ArgumentNullException("encrypted cannot be null");
                         }
                         v_encrypteds.push_back(poly->GetPolynomial());
+                        GC::KeepAlive(poly);
                     }
 
                     evaluator_->multiply_many(v_encrypteds, destination->GetPolynomial());
+                    GC::KeepAlive(destination);
                 }
                 catch (const exception &e)
                 {
@@ -714,6 +771,7 @@ namespace Microsoft
                             throw gcnew ArgumentNullException("encrypteds cannot contain null values null");
                         }
                         v_encrypteds.push_back(poly->GetPolynomial());
+                        GC::KeepAlive(poly);
                     }
 
                     return gcnew BigPoly(evaluator_->multiply_many(v_encrypteds));
@@ -753,9 +811,11 @@ namespace Microsoft
                             throw gcnew ArgumentNullException("encrypted cannot be null");
                         }
                         v_encrypteds.push_back(poly->GetPolynomial());
+                        GC::KeepAlive(poly);
                     }
 
                     evaluator_->multiply_norelin_many(v_encrypteds, destination->GetPolynomial());
+                    GC::KeepAlive(destination);
                 }
                 catch (const exception &e)
                 {
@@ -784,9 +844,10 @@ namespace Microsoft
                     {
                         if (poly == nullptr)
                         {
-                            throw gcnew ArgumentNullException("encrypteds cannot contain null values null");
+                            throw gcnew ArgumentNullException("encrypteds cannot contain null values");
                         }
                         v_encrypteds.push_back(poly->GetPolynomial());
+                        GC::KeepAlive(poly);
                     }
 
                     return gcnew BigPoly(evaluator_->multiply_norelin_many(v_encrypteds));
@@ -802,7 +863,7 @@ namespace Microsoft
                 throw gcnew Exception("Unexpected exception");
             }
 
-            void Evaluator::Exponentiate(BigPoly ^encrypted, int exponent, BigPoly ^destination)
+            void Evaluator::Exponentiate(BigPoly ^encrypted, UInt64 exponent, BigPoly ^destination)
             {
                 if (evaluator_ == nullptr)
                 {
@@ -815,6 +876,8 @@ namespace Microsoft
                 try
                 {
                     evaluator_->exponentiate(encrypted->GetPolynomial(), exponent, destination->GetPolynomial());
+                    GC::KeepAlive(encrypted);
+                    GC::KeepAlive(destination);
                 }
                 catch (const exception &e)
                 {
@@ -826,7 +889,7 @@ namespace Microsoft
                 }
             }
 
-            BigPoly ^Evaluator::Exponentiate(BigPoly ^encrypted, int exponent)
+            BigPoly ^Evaluator::Exponentiate(BigPoly ^encrypted, UInt64 exponent)
             {
                 if (evaluator_ == nullptr)
                 {
@@ -838,7 +901,9 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew BigPoly(evaluator_->exponentiate(encrypted->GetPolynomial(), exponent));
+                    auto result = gcnew BigPoly(evaluator_->exponentiate(encrypted->GetPolynomial(), exponent));
+                    GC::KeepAlive(encrypted);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -851,7 +916,7 @@ namespace Microsoft
                 throw gcnew Exception("Unexpected exception");
             }
 
-            void Evaluator::ExponentiateNoRelin(BigPoly ^encrypted, int exponent, BigPoly ^destination)
+            void Evaluator::ExponentiateNoRelin(BigPoly ^encrypted, UInt64 exponent, BigPoly ^destination)
             {
                 if (evaluator_ == nullptr)
                 {
@@ -864,6 +929,8 @@ namespace Microsoft
                 try
                 {
                     evaluator_->exponentiate_norelin(encrypted->GetPolynomial(), exponent, destination->GetPolynomial());
+                    GC::KeepAlive(encrypted);
+                    GC::KeepAlive(destination);
                 }
                 catch (const exception &e)
                 {
@@ -875,7 +942,7 @@ namespace Microsoft
                 }
             }
 
-            BigPoly ^Evaluator::ExponentiateNoRelin(BigPoly ^encrypted, int exponent)
+            BigPoly ^Evaluator::ExponentiateNoRelin(BigPoly ^encrypted, UInt64 exponent)
             {
                 if (evaluator_ == nullptr)
                 {
@@ -887,7 +954,9 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew BigPoly(evaluator_->exponentiate_norelin(encrypted->GetPolynomial(), exponent));
+                    auto result = gcnew BigPoly(evaluator_->exponentiate_norelin(encrypted->GetPolynomial(), exponent));
+                    GC::KeepAlive(encrypted);
+                    return result;
                 }
                 catch (const exception &e)
                 {

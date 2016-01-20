@@ -246,7 +246,7 @@ namespace seal
         class ExponentiateComputation : public Computation
         {
         public:
-            ExponentiateComputation(Computation &input, int exponent);
+            ExponentiateComputation(Computation &input, std::uint64_t exponent);
 
             ~ExponentiateComputation();
 
@@ -261,7 +261,7 @@ namespace seal
 
             Computation *input_;
 
-            int exponent_;
+            std::uint64_t exponent_;
         };
 
         class MultiplyManyComputation : public Computation

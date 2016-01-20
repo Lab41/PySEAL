@@ -74,9 +74,11 @@ namespace seal
                 }
                 if (value_bits >= modulus_bits)
                 {
-                    while (is_greater_than_or_equal_uint_uint(value, modulusptr, uint64_count))
+                    ConstPointer wide_modulus = duplicate_uint_if_needed(modulusptr, modulus_uint64_count, uint64_count, false, pool);
+                    const uint64_t *wide_modulusptr = wide_modulus.get();
+                    while (is_greater_than_or_equal_uint_uint(value, wide_modulusptr, uint64_count))
                     {
-                        sub_uint_uint(value, modulusptr, uint64_count, value);
+                        sub_uint_uint(value, wide_modulusptr, uint64_count, value);
                     }
                 }
                 return;
@@ -102,9 +104,11 @@ namespace seal
                 // Use subtraction for few remaining iterations.
                 if (value_bits >= modulus_bits)
                 {
-                    while (is_greater_than_or_equal_uint_uint(value, modulusptr, uint64_count))
+                    ConstPointer wide_modulus = duplicate_uint_if_needed(modulusptr, modulus_uint64_count, uint64_count, false, pool);
+                    const uint64_t *wide_modulusptr = wide_modulus.get();
+                    while (is_greater_than_or_equal_uint_uint(value, wide_modulusptr, uint64_count))
                     {
-                        sub_uint_uint(value, modulusptr, uint64_count, value);
+                        sub_uint_uint(value, wide_modulusptr, uint64_count, value);
                     }
                 }
                 return;
@@ -468,11 +472,11 @@ namespace seal
             }
             if (is_greater_than_or_equal_uint_uint(operand1, modulus.get(), modulus.uint64_count()))
             {
-                throw out_of_range("operand1");
+                throw invalid_argument("operand1");
             }
             if (is_greater_than_or_equal_uint_uint(operand2, modulus.get(), modulus.uint64_count()))
             {
-                throw out_of_range("operand2");
+                throw invalid_argument("operand2");
             }
             if (operand1 == result || operand2 == result || modulus.get() == result)
             {

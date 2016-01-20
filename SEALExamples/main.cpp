@@ -1,7 +1,8 @@
 #include <iostream>
+#include <vector>
+
 #include "seal.h"
 
-#include <vector>
 
 using namespace std;
 using namespace seal;
@@ -11,6 +12,7 @@ void print_example_banner(string title);
 void example_basics();
 void example_weighted_average();
 void example_parameter_selection();
+void example_batching();
 
 int main()
 {
@@ -22,6 +24,9 @@ int main()
 
     // Example: Automatic Parameter Selection
     example_parameter_selection();
+
+    // Example: Batching using CRT
+    example_batching();
 
     // Wait for ENTER before closing screen.
     cout << "Press ENTER to exit" << endl;
@@ -61,22 +66,36 @@ void example_basics()
     i.e. a polynomial of the form "1x^(power-of-2) + 1". We recommend using polynomials of
     degree at least 1024.
     */
-    parms.poly_modulus() = "1x^4096 + 1";
+    parms.poly_modulus() = "1x^2048 + 1";
 
     /*
     Next choose the coefficient modulus. The values we recommend to be used are:
 
     [ degree(poly_modulus), coeff_modulus ]
-    [ 1024, "FFFFFFFFC001" ],
-    [ 2048, "7FFFFFFFFFFFFFFFFFFF001"],
-    [ 4096, "7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"],
-    [ 8192, "1FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFC000001"],
+    [ 1024, "FFFFFFF00001" ],
+    [ 2048, "3FFFFFFFFFFFFFFFFFF00001"],
+    [ 4096, "3FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFC0000001"],
+    [ 8192, "7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFE00000001"],
     [ 16384, "7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00000000000001"].
 
     These can be conveniently accessed using ChooserEvaluator::default_parameter_options(),
     which returns the above list of options as an std::map, keyed by the degree of the polynomial modulus.
+    
+    The user can also relatively easily choose their custom coefficient modulus. It should be a prime number
+    of the form 2^A - 2^B + 1, where A > B > degree(poly_modulus). Moreover, B should be as small as possible
+    for improved efficiency in modular reduction. For security, we recommend strictly adhering to the following 
+    size bounds: (see Lepoint-Naehrig (2014) [https://eprint.iacr.org/2014/062])
+    /------------------------------------\
+    | poly_modulus | coeff_modulus bound |
+    | -------------|---------------------|
+    | 1x^1024 + 1  | 48 bits             |
+    | 1x^2048 + 1  | 96 bits             |
+    | 1x^4096 + 1  | 192 bits            |
+    | 1x^8192 + 1  | 384 bits            |
+    | 1x^16384 + 1 | 768 bits            |
+    \------------------------------------/
     */
-    parms.coeff_modulus() = ChooserEvaluator::default_parameter_options().at(4096);
+    parms.coeff_modulus() = ChooserEvaluator::default_parameter_options().at(2048);
 
     /*
     Now we set the plaintext modulus. This can be any integer, even though here we take it to be a power of two.
@@ -85,7 +104,7 @@ void example_basics()
     On the other hand, a larger plaintext modulus typically allows for better homomorphic integer arithmetic,
     although this depends strongly on which encoder is used to encode integers into plaintext polynomials.
     */
-    parms.plain_modulus() = 1 << 10;
+    parms.plain_modulus() = 1 << 8;
 
     /*
     The decomposition bit count affects the behavior of the relinearization (key switch) operation,
@@ -102,8 +121,11 @@ void example_basics()
     */
     parms.noise_standard_deviation() = ChooserEvaluator::default_noise_standard_deviation();
 
-    // For the bound on the error distribution we can take for instance 5 * standard_deviation.
-    parms.noise_max_deviation() = 5 * parms.noise_standard_deviation();
+    /*
+    For the bound on the error distribution we can also use a constant default value
+    which is in fact 5 * ChooserEvaluator::default_noise_standard_deviation()
+    */
+    parms.noise_max_deviation() = ChooserEvaluator::default_noise_max_deviation();
 
     cout << "Encryption parameters specify " << parms.poly_modulus().significant_coeff_count() << " coefficients with "
         << parms.coeff_modulus().significant_bit_count() << " bits per coefficient" << endl;
@@ -199,16 +221,21 @@ void example_weighted_average()
     // Create encryption parameters
     EncryptionParameters parms;
 
-    parms.poly_modulus() = "1x^2048 + 1";
-    parms.coeff_modulus() = ChooserEvaluator::default_parameter_options().at(2048);
+    parms.poly_modulus() = "1x^1024 + 1";
+    parms.coeff_modulus() = ChooserEvaluator::default_parameter_options().at(1024);
     parms.plain_modulus() = 1 << 8;
 
-    // Since we are not doing any encrypted*encrypted multiplication in this example,
-    // the decomposition bit count has no practical significance.
-    parms.decomposition_bit_count() = 32;
+    /*
+    Since we are not doing any encrypted*encrypted multiplication in this example,
+    the decomposition bit count has no practical significance. We set it to the largest
+    possible value to make key generation as fast as possible. However, such a large 
+    decomposition bit count can not be used to perform any encrypted*encrypted multiplication.
+    */
+    parms.decomposition_bit_count() = parms.coeff_modulus().bit_count();
 
+    // Set to standard values
     parms.noise_standard_deviation() = ChooserEvaluator::default_noise_standard_deviation();
-    parms.noise_max_deviation() = 5 * parms.noise_standard_deviation();
+    parms.noise_max_deviation() = ChooserEvaluator::default_noise_max_deviation();
 
     cout << "Encryption parameters specify " << parms.poly_modulus().significant_coeff_count() << " coefficients with "
         << parms.coeff_modulus().significant_bit_count() << " bits per coefficient" << endl;
@@ -241,13 +268,8 @@ void example_weighted_average()
     {
         BigPoly encoded_number = encoder.encode(rational_numbers[i]);
         encrypted_rationals.push_back(encryptor.encrypt(encoded_number));
-        cout << rational_numbers[i];
-        if (i < 9)
-        {
-            cout << ", ";
-        }
+        cout << to_string(rational_numbers[i]).substr(0,6) + ((i < 9) ? ", " : ".\n");
     }
-    cout << "." << endl;
 
     // Next we encode the coefficients. There is no reason to encrypt these since they are not private data.
     cout << "Encoding ... ";
@@ -255,13 +277,8 @@ void example_weighted_average()
     for (int i = 0; i < 10; ++i)
     {
         encoded_coefficients.push_back(encoder.encode(coefficients[i]));
-        cout << coefficients[i];
-        if (i < 9)
-        {
-            cout << ", ";
-        }
+        cout << to_string(coefficients[i]).substr(0,6) + ((i < 9) ? ", " : ".\n");
     }
-    cout << ". " << endl;
     
     // We also need to encode 0.1. We will multiply the result by this to perform division by 10.
     BigPoly div_by_ten = encoder.encode(0.1);
@@ -321,9 +338,11 @@ void example_parameter_selection()
     ChooserEncoder chooser_encoder;
     ChooserEvaluator chooser_evaluator;
     
-    // First create a ChooserPoly representing the input data. You can think of this modeling a freshly
-    // encrypted cipheretext of a plaintext polynomial with length at most 10 coefficients, where the
-    // coefficients have absolute value at most 1.
+    /*
+    First create a ChooserPoly representing the input data. You can think of this modeling a freshly
+    encrypted cipheretext of a plaintext polynomial with length at most 10 coefficients, where the
+    coefficients have absolute value at most 1.
+    */
     ChooserPoly cinput(10, 1);
 
     // Compute the first term
@@ -371,7 +390,7 @@ void example_parameter_selection()
     Decryptor decryptor(optimal_parms, secret_key);
 
     // Now perform the computations on real encrypted data.
-    const int input_value = 12345;
+    int input_value = 12345;
     BigPoly plain_input = encoder.encode(input_value);
     cout << "Encoded " << input_value << " as polynomial " << plain_input.to_string() << endl;
 
@@ -406,9 +425,177 @@ void example_parameter_selection()
     cout << "done." << endl;
     
     // Finally print the result
-    cout << "Polynomial 42x^3-27x+1 evaluated at x=12345: " << encoder.decode_uint64(plain_result) << endl;
+    cout << "Polynomial 42x^3-27x+1 evaluated at x=12345: " << encoder.decode_int64(plain_result) << endl;
 
     // How much noise did we end up with?
     cout << "Noise in the result: " << inherent_noise(result, optimal_parms, secret_key).significant_bit_count()
         << "/" << inherent_noise_max(optimal_parms).significant_bit_count() << " bits" << endl;
 };
+
+void example_batching()
+{
+    print_example_banner("Example: Batching using CRT");
+
+    // Create encryption parameters
+    EncryptionParameters parms;
+
+    /*
+    For PolyCRTBuilder we need to use a plain modulus congruent to 1 modulo 2*degree(poly_modulus).
+    We could use the following parameters:
+
+    parms.poly_modulus() = "1x^4096 + 1";
+    parms.coeff_modulus() = ChooserEvaluator::default_parameter_options().at(4096);
+    parms.plain_modulus() = 1073153;
+
+    However, the primes suggested by ChooserEvaluator::default_parameter_options() are highly
+    non-optimal for PolyCRTBuilder. The problem is that the noise in a freshly encrypted ciphertext
+    will contain an additive term of the size (coeff_modulus % plain_modulus)*(largest coeff of plaintext).
+    In the case of PolyCRTBuilder, the message polynomials typically have very large coefficients
+    (of the size plain_modulus) and for a prime plain_modulus the remainder coeff_modulus % plain_modulus
+    is typically also of the size of plain_modulus. Thus we get a term of size plain_modulus^2 to
+    the noise of a freshly encrypted ciphertext! This is very bad, as normally the initial noise
+    is close to size plain_modulus.
+
+    Thus, for improved performance when using PolyCRTBuilder, we recommend the user to use their own
+    custom coeff_modulus. The prime should be of the form 2^A - D, where D is as small as possible.
+    The plain_modulus should be simultaneously chosen to be a prime so that coeff_modulus % plain_modulus == 1,
+    and that it is congruent to 1 modulo 2*degree(poly_modulus). Finally, coeff_modulus should be bounded
+    by the following strict upper bounds to ensure security:
+    /------------------------------------\
+    | poly_modulus | coeff_modulus bound |
+    | -------------|---------------------|
+    | 1x^1024 + 1  | 48 bits             |
+    | 1x^2048 + 1  | 96 bits             |
+    | 1x^4096 + 1  | 192 bits            |
+    | 1x^8192 + 1  | 384 bits            |
+    | 1x^16384 + 1 | 768 bits            |
+    \------------------------------------/
+
+    However, one issue with using such primes is that they are never NTT primes, i.e. not congruent 
+    to 1 modulo 2*degree(poly_modulus), and hence might not allow for certain optimizations to be 
+    used in polynomial arithmetic. Another issue is that the search-to-decision reduction of RLWE 
+    does not apply to non-NTT primes, but this is not known to result in any concrete reduction
+    in the security level.
+
+    In this example we use the prime 2^190 - 42385533 as our coefficient modulus. The user should 
+    try switching between this and ChooserEvaluator::default_parameter_options().at(4096) to see 
+    the significant difference in the noise level at the end of the computation.
+    */
+    parms.poly_modulus() = "1x^4096 + 1";
+    parms.coeff_modulus() = "3FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFD793F83";
+    //parms.coeff_modulus() = ChooserEvaluator::default_parameter_options().at(4096);
+    parms.plain_modulus() = 1073153;
+
+    parms.decomposition_bit_count() = 32;
+    parms.noise_standard_deviation() = ChooserEvaluator::default_noise_standard_deviation();
+    parms.noise_max_deviation() = ChooserEvaluator::default_noise_max_deviation();
+
+    cout << "Encryption parameters specify " << parms.poly_modulus().significant_coeff_count() << " coefficients with "
+        << parms.coeff_modulus().significant_bit_count() << " bits per coefficient" << endl;
+
+    // Create the PolyCRTBuilder
+    PolyCRTBuilder crtbuilder(parms.plain_modulus(), parms.poly_modulus());
+    size_t slot_count = crtbuilder.get_slot_count();
+
+    // Create a vector of values that are to be stored in the slots. We initialize all values to 0 at this point.
+    vector<BigUInt> values(slot_count, BigUInt(parms.plain_modulus().bit_count(), static_cast<uint64_t>(0)));
+
+    // Set the first few entries of the values vector to be non-zero
+    values[0] = 2;
+    values[1] = 3;
+    values[2] = 5;
+    values[3] = 7;
+    values[4] = 11;
+    values[5] = 13;
+
+    // Now compose these into one polynomial using PolyCRTBuilder
+    cout << "Plaintext slot contents (slot, value): ";
+    for (size_t i = 0; i < 6; ++i)
+    {
+        string to_write = "(" + to_string(i) + ", " + values[i].to_dec_string() + ")";
+        to_write += (i != 5) ? ", " : "\n";
+        cout << to_write;
+    }
+    BigPoly plain_composed_poly = crtbuilder.compose(values);
+
+    // Let's do some homomorphic operations now. First we need all the encryption tools.
+    // Generate keys.
+    cout << "Generating keys..." << endl;
+    KeyGenerator generator(parms);
+    generator.generate();
+    cout << "... key generation complete" << endl;
+    BigPoly public_key = generator.public_key();
+    BigPoly secret_key = generator.secret_key();
+    EvaluationKeys evaluation_keys = generator.evaluation_keys();
+
+    // Create the encryption tools
+    Encryptor encryptor(parms, public_key);
+    Evaluator evaluator(parms, evaluation_keys);
+    Decryptor decryptor(parms, secret_key);
+
+    // Encrypt plain_composed_poly
+    cout << "Encrypting ... ";
+    BigPoly encrypted_composed_poly = encryptor.encrypt(plain_composed_poly);
+    cout << "done." << endl;
+
+    // Let's square the encrypted_composed_poly
+    cout << "Squaring the encrypted polynomial ... ";
+    BigPoly encrypted_square = evaluator.exponentiate(encrypted_composed_poly, 2);
+    cout << "done." << endl;
+    cout << "Decrypting the squared polynomial ... ";
+    BigPoly plain_square = decryptor.decrypt(encrypted_square);
+    cout << "done." << endl;
+    
+    // Print the squared slots
+    cout << "Squared slot contents (slot, value): ";
+    for (size_t i = 0; i < 6; ++i)
+    {
+        string to_write = "(" + to_string(i) + ", " + crtbuilder.get_slot(plain_square, i).to_dec_string() + ")";
+        to_write += (i != 5) ? ", " : "\n";
+        cout << to_write;
+    }
+
+    // Now let's try to multiply the squares with the plaintext coefficients (3, 1, 4, 1, 5, 9, 0, 0, ..., 0).
+    // First create the coefficient vector
+    vector<BigUInt> plain_coeff_vector(slot_count, BigUInt(parms.plain_modulus().bit_count(), static_cast<uint64_t>(0)));
+    plain_coeff_vector[0] = 3;
+    plain_coeff_vector[1] = 1;
+    plain_coeff_vector[2] = 4;
+    plain_coeff_vector[3] = 1;
+    plain_coeff_vector[4] = 5;
+    plain_coeff_vector[5] = 9;
+
+    // Use PolyCRTBuilder to compose plain_coeff_vector into a polynomial
+    BigPoly plain_coeff_poly = crtbuilder.compose(plain_coeff_vector);
+
+    // Print the coefficient vector
+    cout << "Coefficient slot contents (slot, value): ";
+    for (size_t i = 0; i < 6; ++i)
+    {
+        string to_write = "(" + to_string(i) + ", " + crtbuilder.get_slot(plain_coeff_poly, i).to_dec_string() + ")";
+        to_write += (i != 5) ? ", " : "\n";
+        cout << to_write;
+    }
+
+    // Now use multiply_plain to multiply each encrypted slot with the corresponding coefficient
+    cout << "Multiplying squared slots with the coefficients ... ";
+    BigPoly encrypted_scaled_square = evaluator.multiply_plain(encrypted_square, plain_coeff_poly);
+    cout << " done." << endl;
+    
+    cout << "Decrypting the scaled squared polynomial ... ";
+    BigPoly plain_scaled_square = decryptor.decrypt(encrypted_scaled_square);
+    cout << "done." << endl;
+
+    // Print the scaled squared slots
+    cout << "Scaled squared slot contents (slot, value): ";
+    for (size_t i = 0; i < 6; ++i)
+    {
+        string to_write = "(" + to_string(i) + ", " + crtbuilder.get_slot(plain_scaled_square, i).to_dec_string() + ")";
+        to_write += (i != 5) ? ", " : "\n";
+        cout << to_write;
+    }
+
+    // How much noise did we end up with?
+    cout << "Noise in the result: " << inherent_noise(encrypted_scaled_square, parms, secret_key).significant_bit_count()
+        << "/" << inherent_noise_max(parms).significant_bit_count() << " bits" << endl;
+}

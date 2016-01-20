@@ -77,7 +77,10 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew Simulation(simulationEvaluator_->multiply_norelin(simulation1->GetSimulation(), simulation2->GetSimulation()));
+                    auto result = gcnew Simulation(simulationEvaluator_->multiply_norelin(simulation1->GetSimulation(), simulation2->GetSimulation()));
+                    GC::KeepAlive(simulation1);
+                    GC::KeepAlive(simulation2);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -107,7 +110,10 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew Simulation(simulationEvaluator_->multiply(simulation1->GetSimulation(), simulation2->GetSimulation()));
+                    auto result = gcnew Simulation(simulationEvaluator_->multiply(simulation1->GetSimulation(), simulation2->GetSimulation()));
+                    GC::KeepAlive(simulation1);
+                    GC::KeepAlive(simulation2);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -136,7 +142,10 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew Simulation(simulationEvaluator_->add(simulation1->GetSimulation(), simulation2->GetSimulation()));
+                    auto result = gcnew Simulation(simulationEvaluator_->add(simulation1->GetSimulation(), simulation2->GetSimulation()));
+                    GC::KeepAlive(simulation1);
+                    GC::KeepAlive(simulation2);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -169,6 +178,7 @@ namespace Microsoft
                             throw gcnew ArgumentNullException("simulations cannot be null");
                         }
                         v_simulations.push_back(simulation->GetSimulation());
+                        GC::KeepAlive(simulation);
                     }
 
                     return gcnew Simulation(simulationEvaluator_->add_many(v_simulations));
@@ -200,7 +210,10 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew Simulation(simulationEvaluator_->sub(simulation1->GetSimulation(), simulation2->GetSimulation()));
+                    auto result = gcnew Simulation(simulationEvaluator_->sub(simulation1->GetSimulation(), simulation2->GetSimulation()));
+                    GC::KeepAlive(simulation1);
+                    GC::KeepAlive(simulation2);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -229,7 +242,10 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew Simulation(simulationEvaluator_->multiply_plain(simulation->GetSimulation(), plainMaxCoeffCount, plainMaxAbsValue->GetUInt()));
+                   auto result = gcnew Simulation(simulationEvaluator_->multiply_plain(simulation->GetSimulation(), plainMaxCoeffCount, plainMaxAbsValue->GetUInt()));
+                   GC::KeepAlive(simulation);
+                   GC::KeepAlive(plainMaxAbsValue);
+                   return result;
                 }
                 catch (const exception &e)
                 {
@@ -254,7 +270,10 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew Simulation(simulationEvaluator_->multiply_plain(simulation->GetSimulation(), plainMaxCoeffCount, plainMaxAbsValue));
+                    auto result = gcnew Simulation(simulationEvaluator_->multiply_plain(simulation->GetSimulation(), plainMaxCoeffCount, plainMaxAbsValue));
+                    GC::KeepAlive(simulation);
+                    GC::KeepAlive(plainMaxAbsValue);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -279,7 +298,9 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew Simulation(simulationEvaluator_->add_plain(simulation->GetSimulation()));
+                    auto result = gcnew Simulation(simulationEvaluator_->add_plain(simulation->GetSimulation()));
+                    GC::KeepAlive(simulation);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -304,7 +325,9 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew Simulation(simulationEvaluator_->sub_plain(simulation->GetSimulation()));
+                    auto result = gcnew Simulation(simulationEvaluator_->sub_plain(simulation->GetSimulation()));
+                    GC::KeepAlive(simulation);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -337,6 +360,7 @@ namespace Microsoft
                             throw gcnew ArgumentNullException("simulations cannot be null");
                         }
                         v_simulations.push_back(simulation->GetSimulation());
+                        GC::KeepAlive(simulation);
                     }
 
                     return gcnew Simulation(simulationEvaluator_->multiply_many(v_simulations));
@@ -352,7 +376,7 @@ namespace Microsoft
                 throw gcnew Exception("Unexpected exception");
             }
 
-            Simulation ^SimulationEvaluator::Exponentiate(Simulation ^simulation, int exponent)
+            Simulation ^SimulationEvaluator::Exponentiate(Simulation ^simulation, UInt64 exponent)
             {
                 if (simulationEvaluator_ == nullptr)
                 {
@@ -364,7 +388,9 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew Simulation(simulationEvaluator_->exponentiate(simulation->GetSimulation(), exponent));
+                    auto result = gcnew Simulation(simulationEvaluator_->exponentiate(simulation->GetSimulation(), exponent));
+                    GC::KeepAlive(simulation);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -389,7 +415,9 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew Simulation(simulationEvaluator_->negate(simulation->GetSimulation()));
+                    auto result = gcnew Simulation(simulationEvaluator_->negate(simulation->GetSimulation()));
+                    GC::KeepAlive(simulation);
+                    return result;
                 }
                 catch (const exception &e)
                 {
@@ -518,6 +546,7 @@ namespace Microsoft
                 try
                 {
                     simulation_ = new seal::Simulation(parms->GetParameters());
+                    GC::KeepAlive(parms);
                 }
                 catch (const exception &e)
                 {
@@ -542,6 +571,8 @@ namespace Microsoft
                 try
                 {
                     simulation_ = new seal::Simulation(parms->GetParameters(), noise->GetUInt());
+                    GC::KeepAlive(parms);
+                    GC::KeepAlive(noise);
                 }
                 catch (const exception &e)
                 {

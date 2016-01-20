@@ -50,16 +50,16 @@ namespace seal
         generation process, the generated public key and evaluation keys may not match prior generated public key and
         evaluation keys for the same secret key.
 
-        @warning generate(const BigPoly&, int) is not thread safe.
+        @warning generate(const BigPoly&, std::uint64_t) is not thread safe.
         @param[in] secret_key The secret key
         @param[in] power The power to raise the secret key to, defaults to 1
         @throws std::invalid_argument if secret key is not valid
-        @throws std::invalid_argument if power is not positive
+        @throws std::invalid_argument if power is zero
         @see secret_key() to read the specified secret key, raised to the specified power.
         @see public_key() to read generated public key.
         @see evaluation_keys() to read generated evaluation keys.
         */
-        void generate(const BigPoly &secret_key, int power = 1);
+        void generate(const BigPoly &secret_key, std::uint64_t power = 1);
 
         /**
         Returns the generated secret key after a generate() invocation, or the specified secret key raised to the specified

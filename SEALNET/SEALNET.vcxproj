@@ -192,6 +192,7 @@
     <ClCompile Include="EvaluationKeysWrapper.cpp" />
     <ClCompile Include="EvaluatorWrapper.cpp" />
     <ClCompile Include="KeyGeneratorWrapper.cpp" />
+    <ClCompile Include="PolyCRTWrapper.cpp" />
     <ClCompile Include="SimulatorWrapper.cpp" />
     <ClCompile Include="UtilitiesWrapper.cpp" />
   </ItemGroup>
@@ -208,6 +209,7 @@
     <ClInclude Include="EvaluationKeysWrapper.h" />
     <ClInclude Include="EvaluatorWrapper.h" />
     <ClInclude Include="KeyGeneratorWrapper.h" />
+    <ClInclude Include="PolyCRTWrapper.h" />
     <ClInclude Include="SimulatorWrapper.h" />
     <ClInclude Include="UtilitiesWrapper.h" />
   </ItemGroup>

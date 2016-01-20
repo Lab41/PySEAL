@@ -403,10 +403,9 @@ namespace Microsoft
                 <param name="simulation">The <see cref="Simulation"/> object to raise to a power</param>
                 <param name="exponent">The non-negative power to raise the <see cref="Simulation"/> object to</param>
                 <exception cref="System::ArgumentNullException">if simulation is null</exception>
-                <exception cref="System::ArgumentException">if the exponent is negative</exception>
                 <seealso>See Evaluator::Exponentiate() for the corresponding operation on ciphertexts.</seealso>
                 */
-                Simulation ^Exponentiate(Simulation ^simulation, int exponent);
+                Simulation ^Exponentiate(Simulation ^simulation, System::UInt64 exponent);
 
                 /**
                 <summary>Simulates inherent noise growth in Evaluator::Negate() and returns the result.</summary>

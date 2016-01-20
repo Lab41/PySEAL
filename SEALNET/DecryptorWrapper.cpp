@@ -27,6 +27,8 @@ namespace Microsoft
                 try
                 {
                     decryptor_ = new seal::Decryptor(parms->GetParameters(), secretKey->GetPolynomial());
+                    GC::KeepAlive(parms);
+                    GC::KeepAlive(secretKey);
                 }
                 catch (const exception &e)
                 {
@@ -38,7 +40,7 @@ namespace Microsoft
                 }
             }
 
-            Decryptor::Decryptor(EncryptionParameters ^parms, BigPoly ^secretKey, int power) : decryptor_(nullptr)
+            Decryptor::Decryptor(EncryptionParameters ^parms, BigPoly ^secretKey, UInt64 power) : decryptor_(nullptr)
             {
                 if (parms == nullptr)
                 {
@@ -51,6 +53,8 @@ namespace Microsoft
                 try
                 {
                     decryptor_ = new seal::Decryptor(parms->GetParameters(), secretKey->GetPolynomial(), power);
+                    GC::KeepAlive(parms);
+                    GC::KeepAlive(secretKey);
                 }
                 catch (const exception &e)
                 {
@@ -88,6 +92,8 @@ namespace Microsoft
                 try
                 {
                     decryptor_->decrypt(encrypted->GetPolynomial(), destination->GetPolynomial());
+                    GC::KeepAlive(encrypted);
+                    GC::KeepAlive(destination);
                 }
                 catch (const exception &e)
                 {
@@ -111,7 +117,9 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew BigPoly(decryptor_->decrypt(encrypted->GetPolynomial()));
+                    auto result = gcnew BigPoly(decryptor_->decrypt(encrypted->GetPolynomial()));
+                    GC::KeepAlive(encrypted);
+                    return result;
                 }
                 catch (const exception &e)
                 {

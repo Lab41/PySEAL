@@ -253,7 +253,7 @@ namespace seal
             multiply_poly_poly_coeffmod(operand1, operand2, coeff_count, modulus, intermediate.get(), pool);
 
             // Perform modulo operation.
-            modulo_poly_inplace(intermediate.get(), intermediate_coeff_count, poly_modulus, modulus, pool);
+                modulo_poly_inplace(intermediate.get(), intermediate_coeff_count, poly_modulus, modulus, pool);
 
             // Copy to result.
             set_poly_poly(intermediate.get(), coeff_count, coeff_uint64_count, result);

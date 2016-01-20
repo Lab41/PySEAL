@@ -4,7 +4,10 @@
 #include "util/polyarithmod.h"
 #include "util/polyextras.h"
 #include "util/polycore.h"
+#include "util/polyarith.h"
 #include "util/uintextras.h"
+#include "util/modulus.h"
+#include "util/polymodulus.h"
 #include "decryptor.h"
 #include "simulator.h"
 
@@ -259,8 +262,41 @@ namespace seal
         }
     }
 
-    void exponentiate_uint(const BigUInt &operand, int exponent, BigUInt &result)
+    void exponentiate_uint_mod(const BigUInt &operand, const BigUInt &exponent, 
+        const BigUInt &modulus, BigUInt &destination)
     {
+        if (operand.significant_bit_count() > modulus.significant_bit_count())
+        {
+            throw invalid_argument("operand is not reduced");
+        }
+        if (operand.is_zero() && exponent == 0)
+        {
+            throw invalid_argument("undefined operation");
+        }
+        if (operand.is_zero())
+        {
+            destination.set_zero();
+            return;
+        }
+
+        if (destination.bit_count() != modulus.significant_bit_count())
+        {
+            destination.resize(modulus.significant_bit_count());
+        }
+
+        MemoryPool pool;
+        ConstPointer operand_ptr = duplicate_uint_if_needed(operand, modulus.uint64_count(), false, pool);
+        util::exponentiate_uint_mod(operand_ptr.get(), exponent.pointer(), exponent.uint64_count(), Modulus(modulus.pointer(), modulus.uint64_count(), pool), destination.pointer(), pool);
+    }
+
+    void exponentiate_poly_polymod_coeffmod(const BigPoly &operand, const BigUInt &exponent, 
+        const BigPoly &poly_modulus, const BigUInt &coeff_modulus, BigPoly &destination)
+    {
+        if (operand.significant_coeff_count() > poly_modulus.coeff_count() ||
+            operand.significant_coeff_bit_count() > coeff_modulus.significant_bit_count())
+        {
+            throw invalid_argument("operand is not reduced");
+        }
         if (exponent < 0)
         {
             throw invalid_argument("exponent must be a non-negative integer");
@@ -271,90 +307,168 @@ namespace seal
         }
         if (operand.is_zero())
         {
-            result.set_zero();
+            destination.set_zero();
             return;
         }
 
-        int result_bit_count = exponent * operand.significant_bit_count() + 1;
-        if (result.bit_count() < result_bit_count)
+        if (destination.coeff_bit_count() != coeff_modulus.significant_bit_count() || 
+            destination.coeff_count() != poly_modulus.coeff_count())
         {
-            result.resize(result_bit_count);
+            destination.resize(poly_modulus.coeff_count(), coeff_modulus.significant_bit_count());
         }
 
         MemoryPool pool;
-        util::exponentiate_uint(operand.pointer(), operand.uint64_count(), exponent, result.uint64_count(), result.pointer(), pool);
+        ConstPointer operand_ptr = duplicate_poly_if_needed(operand, poly_modulus.coeff_count(), coeff_modulus.uint64_count(), false, pool);
+        util::exponentiate_poly_polymod_coeffmod(operand_ptr.get(), exponent.pointer(), exponent.uint64_count(),
+            PolyModulus(poly_modulus.pointer(), poly_modulus.coeff_count(), poly_modulus.uint64_count()), 
+            Modulus(coeff_modulus.pointer(), coeff_modulus.uint64_count(), pool), 
+            destination.pointer(), pool);
     }
 
-    BigUInt exponentiate_uint(const BigUInt &operand, int exponent)
-    {
-        BigUInt result;
-        exponentiate_uint(operand, exponent, result);
-        return result;
-    }
-
-    void exponentiate_poly(const BigPoly &operand, int exponent, BigPoly &result)
-    {
-        if (exponent < 0)
-        {
-            throw invalid_argument("exponent must be a non-negative integer");
-        }
-        if (operand.is_zero() && exponent == 0)
-        {
-            throw invalid_argument("undefined operation");
-        }
-        if (operand.is_zero())
-        {
-            result.set_zero();
-            return;
-        }
-
-        int max_coeff_bit_count = operand.significant_coeff_bit_count();
-        int result_coeff_count = exponent * (operand.significant_coeff_count() - 1) + 1;
-        int result_coeff_bit_count = exponent * max_coeff_bit_count + 1;
-
-        if (result.coeff_bit_count() < result_coeff_bit_count || result.coeff_count() < result_coeff_count)
-        {
-            result.resize(result_coeff_count, result_coeff_bit_count);
-        }
-
-        MemoryPool pool;
-        util::exponentiate_poly(operand.pointer(), operand.significant_coeff_count(), operand.coeff_uint64_count(),
-            exponent, result.coeff_count(), result.coeff_uint64_count(), result.pointer(), pool);
-    }
-
-    BigPoly exponentiate_poly(const BigPoly &operand, int exponent)
-    {
-        BigPoly result;
-        exponentiate_poly(operand, exponent, result);
-        return result;
-    }
-
-    BigPoly poly_eval_poly(const BigPoly &poly_to_evaluate, const BigPoly &poly_to_evaluate_at)
+    void poly_eval_poly(const BigPoly &poly_to_evaluate, const BigPoly &poly_to_evaluate_at, BigPoly &destination)
     {
         int poly_to_eval_coeff_uint64_count = divide_round_up(poly_to_evaluate.coeff_bit_count(), bits_per_uint64);
         int value_coeff_uint64_count = divide_round_up(poly_to_evaluate_at.coeff_bit_count(), bits_per_uint64);
 
         if (poly_to_evaluate.is_zero())
         {
-            return BigPoly();
+            destination.set_zero();
+            return;
         }
         if (poly_to_evaluate_at.is_zero())
         {
-            BigPoly result(1, poly_to_evaluate.coeff_bit_count());
-            set_uint_uint(poly_to_evaluate.pointer(), poly_to_eval_coeff_uint64_count, result.pointer());
-            return result;
+            destination.resize(1, poly_to_evaluate.coeff_bit_count());
+            set_uint_uint(poly_to_evaluate.pointer(), poly_to_eval_coeff_uint64_count, destination.pointer());
+            return;
         }
 
         int result_coeff_count = (poly_to_evaluate.significant_coeff_count() - 1) * (poly_to_evaluate_at.significant_coeff_count() - 1) + 1;
         int result_coeff_bit_count = poly_to_evaluate.coeff_bit_count() + (poly_to_evaluate.coeff_count() - 1) * poly_to_evaluate_at.coeff_bit_count();
         int result_coeff_uint64_count = divide_round_up(result_coeff_bit_count, bits_per_uint64);
-        BigPoly result(result_coeff_count, result_coeff_bit_count);
+        destination.resize(result_coeff_count, result_coeff_bit_count);
 
         MemoryPool pool;
-        util::poly_eval_poly(poly_to_evaluate.pointer(), poly_to_evaluate.coeff_count(), poly_to_eval_coeff_uint64_count, poly_to_evaluate_at.pointer(), poly_to_evaluate_at.coeff_count(),
-            value_coeff_uint64_count, result_coeff_count, result_coeff_uint64_count, result.pointer(), pool);
+        poly_eval_poly(poly_to_evaluate.pointer(), poly_to_evaluate.coeff_count(), poly_to_eval_coeff_uint64_count, 
+            poly_to_evaluate_at.pointer(), poly_to_evaluate_at.coeff_count(), value_coeff_uint64_count, 
+            result_coeff_count, result_coeff_uint64_count, destination.pointer(), pool);
+    }
 
+    BigPoly poly_eval_poly(const BigPoly &poly_to_evaluate, const BigPoly &poly_to_evaluate_at)
+    {
+        BigPoly result;
+        poly_eval_poly(poly_to_evaluate, poly_to_evaluate_at, result);
         return result;
     }
 
+    void poly_eval_poly_polymod_coeffmod(const BigPoly &poly_to_evaluate, const BigPoly &poly_to_evaluate_at, 
+        const BigPoly &poly_modulus, const BigUInt &coeff_modulus, BigPoly &destination)
+    {
+        if (poly_to_evaluate.significant_coeff_count() > poly_modulus.coeff_count() ||
+            poly_to_evaluate.significant_coeff_bit_count() > coeff_modulus.significant_bit_count())
+        {
+            throw invalid_argument("poly_to_evaluate is not reduced");
+        }
+        if (poly_to_evaluate_at.significant_coeff_count() > poly_modulus.coeff_count() ||
+            poly_to_evaluate_at.significant_coeff_bit_count() > coeff_modulus.significant_bit_count())
+        {
+            throw invalid_argument("poly_to_evaluate_at is not reduced");
+        }
+
+        int poly_to_eval_coeff_uint64_count = poly_to_evaluate.coeff_uint64_count();
+        int coeff_modulus_bit_count = coeff_modulus.significant_bit_count();
+
+        if (poly_to_evaluate.is_zero())
+        {
+            destination.set_zero();
+        }
+
+        MemoryPool pool;
+
+        if (poly_to_evaluate_at.is_zero())
+        {
+            destination.resize(1, coeff_modulus_bit_count);
+            modulo_uint(poly_to_evaluate.pointer(), poly_to_eval_coeff_uint64_count, 
+                Modulus(coeff_modulus.pointer(), coeff_modulus.uint64_count(), pool), 
+                destination.pointer(), pool);
+            return;
+        }
+
+        ConstPointer poly_to_eval_ptr = duplicate_poly_if_needed(poly_to_evaluate, poly_modulus.coeff_count(), coeff_modulus.uint64_count(), false, pool);
+        ConstPointer poly_to_eval_at_ptr = duplicate_poly_if_needed(poly_to_evaluate_at, poly_modulus.coeff_count(), coeff_modulus.uint64_count(), false, pool);
+
+        destination.resize(poly_modulus.coeff_count(), coeff_modulus_bit_count);
+
+        util::poly_eval_poly_polymod_coeffmod(poly_to_eval_ptr.get(), poly_to_eval_at_ptr.get(),
+            PolyModulus(poly_modulus.pointer(), poly_modulus.coeff_count(), poly_modulus.coeff_uint64_count()), 
+            Modulus(coeff_modulus.pointer(), coeff_modulus.uint64_count(), pool),
+            destination.pointer(), pool);
+    }
+
+    BigPoly poly_eval_poly_polymod_coeffmod(const BigPoly &poly_to_evaluate, const BigPoly &poly_to_evaluate_at, 
+        const BigPoly &poly_modulus, const BigUInt &coeff_modulus)
+    {
+        BigPoly result;
+        poly_eval_poly_polymod_coeffmod(poly_to_evaluate, poly_to_evaluate_at, poly_modulus, coeff_modulus, result);
+        return result;
+    }
+
+    void poly_eval_uint_mod(const BigPoly &poly_to_evaluate, const BigUInt &value, const BigUInt &modulus, BigUInt &destination)
+    {
+        if (poly_to_evaluate.significant_coeff_bit_count() > modulus.significant_bit_count())
+        {
+            throw invalid_argument("poly_to_evaluate is not reduced");
+        }
+        if (value.significant_bit_count() > modulus.significant_bit_count())
+        {
+            throw invalid_argument("value is not reduced");
+        }
+
+        int poly_to_eval_coeff_uint64_count = poly_to_evaluate.coeff_uint64_count();
+        int modulus_bit_count = modulus.significant_bit_count();
+
+        if (poly_to_evaluate.is_zero())
+        {
+            destination.set_zero();
+        }
+
+        MemoryPool pool;
+
+        if (value.is_zero())
+        {
+            destination.resize(modulus_bit_count);
+            modulo_uint(poly_to_evaluate.pointer(), poly_to_eval_coeff_uint64_count,
+                Modulus(modulus.pointer(), modulus.uint64_count(), pool), 
+                destination.pointer(), pool);
+            return;
+        }
+
+        ConstPointer value_ptr = duplicate_uint_if_needed(value, modulus.uint64_count(), false, pool);
+
+        destination.resize(modulus_bit_count);
+
+        util::poly_eval_uint_mod(poly_to_evaluate.pointer(), poly_to_eval_coeff_uint64_count, value_ptr.get(), 
+            Modulus(modulus.pointer(), modulus.uint64_count(), pool), destination.pointer(), pool);
+    }
+
+    BigUInt poly_eval_uint_mod(const BigPoly &poly_to_evaluate, const BigUInt &value, const BigUInt &modulus)
+    {
+        BigUInt result;
+        poly_eval_uint_mod(poly_to_evaluate, value, modulus, result);
+        return result;
+    }
+
+    BigUInt exponentiate_uint_mod(const BigUInt &operand, const BigUInt &exponent, const BigUInt &modulus)
+    {
+        BigUInt result(modulus.significant_bit_count());
+        exponentiate_uint_mod(operand, exponent, modulus, result);
+        return result;
+    }
+
+    BigPoly exponentiate_poly_polymod_coeffmod(const BigPoly &operand, const BigUInt &exponent,
+        const BigPoly &poly_modulus, const BigUInt &coeff_modulus)
+    {
+        BigPoly result(poly_modulus.coeff_count(), coeff_modulus.significant_bit_count());
+        exponentiate_poly_polymod_coeffmod(operand, exponent, poly_modulus, coeff_modulus, result);
+        return result;
+    }
 }

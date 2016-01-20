@@ -223,12 +223,8 @@ namespace seal
         return simulations[simulations.size() - 1];
     }
 
-    Simulation SimulationEvaluator::exponentiate(const Simulation &simulation, int exponent)
+    Simulation SimulationEvaluator::exponentiate(const Simulation &simulation, uint64_t exponent)
     {
-        if (exponent < 0)
-        {
-            throw invalid_argument("exponent must be non-negative");
-        }
         if (exponent == 0)
         {
             return Simulation(BigUInt(1, static_cast<uint64_t>(0)), simulation.max_noise_, simulation.coeff_modulus_, simulation.plain_modulus_, simulation.poly_modulus_coeff_count_, simulation.noise_standard_deviation_, simulation.noise_max_deviation_, simulation.decomposition_bit_count_);

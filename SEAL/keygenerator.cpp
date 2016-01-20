@@ -99,16 +99,16 @@ namespace seal
         }
     }
 
-    void KeyGenerator::generate(const BigPoly &secret_key, int power)
+    void KeyGenerator::generate(const BigPoly &secret_key, uint64_t power)
     {
         // Validate arguments.
         if (secret_key.is_zero())
         {
             throw invalid_argument("secret_key cannot be zero");
         }
-        if (power <= 0)
+        if (power == 0)
         {
-            throw invalid_argument("power must be positive");
+            throw invalid_argument("power cannot be zero");
         }
 
         // Handle test-mode case.
@@ -147,7 +147,7 @@ namespace seal
         // Raise level of secret key.
         if (power > 1)
         {
-            exponentiate_poly(secret_key_.pointer(), power, polymod_, mod_, secret_key_.pointer(), pool_);
+            exponentiate_poly_polymod_coeffmod(secret_key_.pointer(), &power, 1, polymod_, mod_, secret_key_.pointer(), pool_);
         }
 
         // Attempt to invert secret_key.

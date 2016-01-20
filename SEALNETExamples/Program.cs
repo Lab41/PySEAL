@@ -31,6 +31,9 @@ namespace SEALNETExamples
             // Example: Automatic Parameter Selection
             ExampleParameterSelection();
 
+            // Example: Batching using CRT
+            ExampleBatching();
+
             // Wait for ENTER before closing screen.
             Console.WriteLine("Press ENTER to exit");
             Console.ReadLine();
@@ -50,23 +53,37 @@ namespace SEALNETExamples
             i.e. a polynomial of the form "1x^(power-of-2) + 1". We recommend using polynomials of
             degree at least 1024.
             */
-            parms.PolyModulus.Set("1x^4096 + 1");
+            parms.PolyModulus.Set("1x^2048 + 1");
 
             /*
             Next choose the coefficient modulus. The values we recommend to be used are:
 
-            [ degree(poly_modulus), coeff_modulus ]
-            [ 1024, "FFFFFFFFC001" ],
-            [ 2048, "7FFFFFFFFFFFFFFFFFFF001"],
-            [ 4096, "7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"],
-            [ 8192, "1FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFC000001"],
+            [ degree(PolyModulus), CoeffModulus ]
+            [ 1024, "FFFFFFF00001" ],
+            [ 2048, "3FFFFFFFFFFFFFFFFFF00001"],
+            [ 4096, "3FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFC0000001"],
+            [ 8192, "7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFE00000001"],
             [ 16384, "7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00000000000001"].
-
+            
             These can be conveniently accessed using ChooserEvaluator.DefaultParameterOptions(),
             which returns the above list of options as a Dictionary, keyed by the degree of the polynomial modulus.
+            
+            The user can also relatively easily choose their custom coefficient modulus. It should be a prime number
+            of the form 2^A - 2^B + 1, where A > B > degree(PolyModulus). Moreover, B should be as small as possible
+            for improved efficiency in modular reduction. For security, we recommend strictly adhering to the following 
+            size bounds: (see Lepoint-Naehrig (2014) [https://eprint.iacr.org/2014/062])
+            /-----------------------------------\
+            | PolyModulus  | CoeffModulus bound |
+            | -------------|--------------------|
+            | 1x^1024 + 1  | 48 bits            |
+            | 1x^2048 + 1  | 96 bits            |
+            | 1x^4096 + 1  | 192 bits           |
+            | 1x^8192 + 1  | 384 bits           |
+            | 1x^16384 + 1 | 768 bits           |
+            \-----------------------------------/
             */
-            parms.CoeffModulus.Set(ChooserEvaluator.DefaultParameterOptions[4096]);
-
+            parms.CoeffModulus.Set(ChooserEvaluator.DefaultParameterOptions[2048]);
+            
             /*
             Now we set the plaintext modulus. This can be any integer, even though here we take it to be a power of two.
             A larger plaintext modulus causes the noise to grow faster in homomorphic multiplication, and
@@ -74,7 +91,7 @@ namespace SEALNETExamples
             On the other hand, a larger plaintext modulus typically allows for better homomorphic integer arithmetic,
             although this depends strongly on which encoder is used to encode integers into plaintext polynomials.
             */
-            parms.PlainModulus.Set(1 << 10);
+            parms.PlainModulus.Set(1 << 8);
 
             /*
             The decomposition bit count affects the behavior of the relinearization (key switch) operation,
@@ -91,8 +108,11 @@ namespace SEALNETExamples
             */
             parms.NoiseStandardDeviation = ChooserEvaluator.DefaultNoiseStandardDeviation;
 
-            // For the bound on the error distribution we can take for instance 5 * standard_deviation.
-            parms.NoiseMaxDeviation = 5 * parms.NoiseStandardDeviation;
+            /*
+            For the bound on the error distribution we can also use a constant default value
+            which is in fact 5 * ChooserEvaluator.DefaultNoiseStandardDeviation
+            */
+            parms.NoiseMaxDeviation = ChooserEvaluator.DefaultNoiseMaxDeviation;
 
             Console.WriteLine("Encryption parameters specify {0} coefficients with {1} bits per coefficient",
                 parms.PolyModulus.GetSignificantCoeffCount(), parms.CoeffModulus.GetSignificantBitCount());
@@ -184,16 +204,21 @@ namespace SEALNETExamples
             // Create encryption parameters.
             var parms = new EncryptionParameters();
 
-            parms.PolyModulus.Set("1x^2048 + 1");
-            parms.CoeffModulus.Set(ChooserEvaluator.DefaultParameterOptions[2048]);
+            parms.PolyModulus.Set("1x^1024 + 1");
+            parms.CoeffModulus.Set(ChooserEvaluator.DefaultParameterOptions[1024]);
             parms.PlainModulus.Set(1 << 8);
 
-            // Since we are not doing any encrypted*encrypted multiplication in this example,
-            // the decomposition bit count has no practical significance.
-            parms.DecompositionBitCount= 32;
+            /*
+            Since we are not doing any encrypted*encrypted multiplication in this example,
+            the decomposition bit count has no practical significance. We set it to the largest
+            possible value to make key generation as fast as possible. However, such a large 
+            decomposition bit count can not be used to perform any encrypted*encrypted multiplication.
+            */
+            parms.DecompositionBitCount = parms.CoeffModulus.BitCount;
 
+            // Set to standard values
             parms.NoiseStandardDeviation = ChooserEvaluator.DefaultNoiseStandardDeviation;
-            parms.NoiseMaxDeviation = 5 * parms.NoiseStandardDeviation;
+            parms.NoiseMaxDeviation = ChooserEvaluator.DefaultNoiseMaxDeviation;
 
             Console.WriteLine("Encryption parameters specify {0} coefficients with {1} bits per coefficient",
                 parms.PolyModulus.GetSignificantCoeffCount(), parms.CoeffModulus.GetSignificantBitCount());
@@ -226,13 +251,8 @@ namespace SEALNETExamples
             {
                 var encodedNumber = encoder.Encode(rationalNumbers[i]);
                 encryptedRationals.Add(encryptor.Encrypt(encodedNumber));
-                Console.Write(rationalNumbers[i]);
-                if (i < 9)
-                {
-                    Console.Write(", ");
-                }
+                Console.Write(rationalNumbers[i].ToString() + ((i < 9) ? ", " : ".\n"));
             }
-            Console.WriteLine(".");
 
             // Next we encode the coefficients. There is no reason to encrypt these since they are not private data.
             Console.Write("Encoding ... ");
@@ -240,13 +260,8 @@ namespace SEALNETExamples
             for (int i = 0; i < 10; ++i)
             {
                 encodedCoefficients.Add(encoder.Encode(coefficients[i]));
-                Console.Write(coefficients[i]);
-                if (i < 9)
-                {
-                    Console.Write(", ");
-                }
+                Console.Write(coefficients[i].ToString() + ((i < 9) ? ", " : ".\n"));
             }
-            Console.WriteLine(".");
 
             // We also need to encode 0.1. We will multiply the result by this to perform division by 10.
             var divByTen = encoder.Encode(0.1);
@@ -306,9 +321,11 @@ namespace SEALNETExamples
             var chooserEncoder = new ChooserEncoder();
             var chooserEvaluator = new ChooserEvaluator();
 
-            // First create a ChooserPoly representing the input data. You can think of this modeling a freshly
-            // encrypted cipheretext of a plaintext polynomial with length at most 10 coefficients, where the
-            // coefficients have absolute value at most 1.
+            /*
+            First create a ChooserPoly representing the input data. You can think of this modeling a freshly
+            encrypted cipheretext of a plaintext polynomial with length at most 10 coefficients, where the
+            coefficients have absolute value at most 1.
+            */
             var cinput = new ChooserPoly(10, 1);
 
             // Compute the first term
@@ -391,11 +408,190 @@ namespace SEALNETExamples
             Console.WriteLine("done.");
 
             // Finally print the result
-            Console.WriteLine("Polynomial 42x^3-27x+1 evaluated at x=12345: {0}", encoder.DecodeUInt64(plainResult));
+            Console.WriteLine("Polynomial 42x^3-27x+1 evaluated at x=12345: {0}", encoder.DecodeInt64(plainResult));
 
             // How much noise did we end up with?
             Console.WriteLine("Noise in the result: {0}/{1} bits", Utilities.InherentNoise(result, optimalParms, secretKey).GetSignificantBitCount(),
                 Utilities.InherentNoiseMax(optimalParms).GetSignificantBitCount());
+        }
+
+        static void ExampleBatching()
+        {
+            PrintExampleBanner("Example: Batching using CRT");
+
+            // Create encryption parameters
+            var parms = new EncryptionParameters();
+
+            /*
+            For PolyCRTBuilder we need to use a plain modulus congruent to 1 modulo 2*degree(PolyModulus).
+            We could use the following parameters:
+
+            parms.PolyModulus.Set("1x^4096 + 1");
+            parms.CoeffModulus.Set(ChooserEvaluator.DefaultParameterOptions[4096]);
+            parms.PlainModulus.Set(1073153);
+
+            However, the primes suggested by ChooserEvaluator.DefaultParameterOptions are highly non-optimal 
+            for PolyCRTBuilder. The problem is that the noise in a freshly encrypted ciphertext will contain 
+            an additive term of the size (CoeffModulus % PlainModulus)*(largest coeff of plaintext).
+            In the case of PolyCRTBuilder, the message polynomials typically have very large coefficients
+            (of the size PlainModulus) and for a prime PlainModulus the remainder CoeffModulus % PlainModulus
+            is typically also of the size of PlainModulus. Thus we get a term of size PlainModulus^2 to
+            the noise of a freshly encrypted ciphertext! This is very bad, as normally the initial noise
+            is close to size PlainModulus.
+
+            Thus, for improved performance when using PolyCRTBuilder, we recommend the user to use their own 
+            custom CoeffModulus. The prime should be of the form 2^A - D, where D is as small as possible. 
+            The PlainModulus should be simultaneously chosen to be a prime so that CoeffModulus % PlainModulus == 1, 
+            and that it is congruent to 1 modulo 2*degree(PolyModulus). Finally, CoeffModulus should be bounded 
+            by the following strict upper bounds to ensure security:
+            /-----------------------------------\
+            | PolyModulus  | CoeffModulus bound |
+            | -------------|--------------------|
+            | 1x^1024 + 1  | 48 bits            |
+            | 1x^2048 + 1  | 96 bits            |
+            | 1x^4096 + 1  | 192 bits           |
+            | 1x^8192 + 1  | 384 bits           |
+            | 1x^16384 + 1 | 768 bits           |
+            \-----------------------------------/
+
+            However, one issue with using such primes is that they are never NTT primes, i.e. not congruent 
+            to 1 modulo 2*degree(poly_modulus), and hence might not allow for certain optimizations to be 
+            used in polynomial arithmetic. Another issue is that the search-to-decision reduction of RLWE 
+            does not apply to non-NTT primes, but this is not known to result in any concrete reduction
+            in the security level.
+
+            In this example we use the prime 2^190 - 42385533 as our coefficient modulus. The user should 
+            try switching between this and ChooserEvaluator::default_parameter_options().at(4096) to see 
+            the significant difference in the noise level at the end of the computation.
+            */
+            parms.PolyModulus.Set("1x^4096 + 1");
+            parms.CoeffModulus.Set("3FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFD793F83");
+            //parms.CoeffModulus.Set(ChooserEvaluator.DefaultParameterOptions[4096]);
+            parms.PlainModulus.Set(1073153);
+
+            parms.DecompositionBitCount = 32;
+            parms.NoiseStandardDeviation = ChooserEvaluator.DefaultNoiseStandardDeviation;
+            parms.NoiseMaxDeviation = ChooserEvaluator.DefaultNoiseMaxDeviation;
+
+            Console.WriteLine("Encryption parameters specify {0} coefficients with {1} bits per coefficient",
+                parms.PolyModulus.GetSignificantCoeffCount(), parms.CoeffModulus.GetSignificantBitCount());
+
+            // Create the PolyCRTBuilder
+            var crtbuilder = new PolyCRTBuilder(parms.PlainModulus, parms.PolyModulus);
+            int slotCount = crtbuilder.SlotCount;
+
+            // Create a list of values that are to be stored in the slots. We initialize all values to 0 at this point.
+            var values = new List<BigUInt>(slotCount);
+            for(int i = 0; i< slotCount; ++i)
+            {
+                values.Add(new BigUInt(parms.PlainModulus.BitCount, 0));
+            }
+
+            // Set the first few entries of the values list to be non-zero
+            values[0].Set(2);
+            values[1].Set(3);
+            values[2].Set(5);
+            values[3].Set(7);
+            values[4].Set(11);
+            values[5].Set(13);
+
+            // Now compose these into one polynomial using PolyCRTBuilder
+            Console.Write("Plaintext slot contents (slot, value): ");
+            for (int i = 0; i < 6; ++i)
+            {
+                string toWrite = "(" + i.ToString() + ", " + values[i].ToDecimalString() + ")";
+                toWrite += (i != 5) ? ", " : "\n";
+                Console.Write(toWrite);
+            }
+            var plainComposedPoly = crtbuilder.Compose(values);
+
+            // Let's do some homomorphic operations now. First we need all the encryption tools.
+            // Generate keys.
+            Console.WriteLine("Generating keys...");
+            var generator = new KeyGenerator(parms);
+            generator.Generate();
+            Console.WriteLine("... key generation completed");
+            var publicKey = generator.PublicKey;
+            var secretKey = generator.SecretKey;
+            var evaluationKeys = generator.EvaluationKeys;
+
+            // Create the encryption tools
+            var encryptor = new Encryptor(parms, publicKey);
+            var evaluator = new Evaluator(parms, evaluationKeys);
+            var decryptor = new Decryptor(parms, secretKey);
+
+            // Encrypt plainComposed_poly
+            Console.Write("Encrypting ... ");
+            var encryptedComposedPoly = encryptor.Encrypt(plainComposedPoly);
+            Console.WriteLine("done.");
+
+            // Let's square and then decrypt the encryptedComposedPoly
+            Console.Write("Squaring the encrypted polynomial ... ");
+            var encryptedSquare = evaluator.Exponentiate(encryptedComposedPoly, 2);
+            Console.WriteLine("done.");
+
+            Console.Write("Decrypting the squared polynomial ... ");
+            var plainSquare = decryptor.Decrypt(encryptedSquare);
+            Console.WriteLine("done.");
+
+            // Print the squared slots
+            Console.Write("Squared slot contents (slot, value): ");
+            for (int i = 0; i < 6; ++i)
+            {
+                string toWrite = "(" + i.ToString() + ", " + crtbuilder.GetSlot(plainSquare, i).ToDecimalString() + ")";
+                toWrite += (i != 5) ? ", " : "\n";
+                Console.Write(toWrite);
+            }
+
+            // Now let's try to multiply the squares with the plaintext coefficients (3, 1, 4, 1, 5, 9, 0, 0, ..., 0).
+            // First create the coefficient list
+            var plainCoeffList = new List<BigUInt>(slotCount);
+            for (int i = 0; i < slotCount; ++i)
+            {
+                plainCoeffList.Add(new BigUInt(parms.PlainModulus.BitCount, 0));
+            }
+
+            plainCoeffList[0].Set(3);
+            plainCoeffList[1].Set(1);
+            plainCoeffList[2].Set(4);
+            plainCoeffList[3].Set(1);
+            plainCoeffList[4].Set(5);
+            plainCoeffList[5].Set(9);
+
+            // Use PolyCRTBuilder to compose plainCoeffList into a polynomial
+            var plainCoeffPoly = crtbuilder.Compose(plainCoeffList);
+
+            // Print the coefficient list
+            Console.Write("Coefficient slot contents (slot, value): ");
+            for (int i = 0; i < 6; ++i)
+            {
+                string toWrite = "(" + i.ToString() + ", " + crtbuilder.GetSlot(plainCoeffPoly, i).ToDecimalString() + ")";
+                toWrite += (i != 5) ? ", " : "\n";
+                Console.Write(toWrite);
+            }
+
+            // Now use MultiplyPlain to multiply each encrypted slot with the corresponding coefficient
+            Console.Write("Multiplying squared slots with the coefficients ... ");
+            var encryptedScaledSquare = evaluator.MultiplyPlain(encryptedSquare, plainCoeffPoly);
+            Console.WriteLine(" done.");
+
+            // Decrypt it
+            Console.Write("Decrypting the scaled squared polynomial ... ");
+            var plainScaledSquare = decryptor.Decrypt(encryptedScaledSquare);
+            Console.WriteLine("done.");
+
+            // Print the scaled squared slots
+            Console.Write("Scaled squared slot contents (slot, value): ");
+            for (int i = 0; i < 6; ++i)
+            {
+                string toWrite = "(" + i.ToString() + ", " + crtbuilder.GetSlot(plainScaledSquare, i).ToDecimalString() + ")";
+                toWrite += (i != 5) ? ", " : "\n";
+                Console.Write(toWrite);
+            }
+
+            // How much noise did we end up with?
+            Console.WriteLine("Noise in the result: {0}/{1} bits", Utilities.InherentNoise(encryptedScaledSquare, parms, secretKey).GetSignificantBitCount(),
+                Utilities.InherentNoiseMax(parms).GetSignificantBitCount());
         }
     }
 }
