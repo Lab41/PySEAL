@@ -480,12 +480,14 @@ namespace Microsoft
                 {
                     throw gcnew ObjectDisposedException("BigUInt is disposed");
                 }
-                int byte_count = biguint_->byte_count();
+                int byte_count = biguint_->byte_count() + 1;
                 array<Byte> ^bytes = gcnew array<Byte>(byte_count);
-                for (int i = 0; i < byte_count; i++)
+                for (int i = 0; i < byte_count - 1; i++)
                 {
                     bytes[i] = (*biguint_)[i];
                 }
+                bytes[byte_count - 1] = 0;
+
                 return gcnew BigInteger(bytes);
             }
 
