@@ -3,29 +3,26 @@
 
 #include <memory>
 #include "encryptionparams.h"
-#include "evaluationkeys.h"
-#include "util/mempool.h"
 #include "util/modulus.h"
 #include "util/polymodulus.h"
+#include "evaluationkeys.h"
 
 namespace seal
 {
     /**
     Generates matching secret key, public key, and evaluation keys for encryption, decryption, and evaluation functions.
-    Constructing a KeyGenerator requires the encryption parameters (set through an EncryptionParameters object). Invoking
+    
+    Constructing an KeyGenerator requires the encryption parameters (set through an EncryptionParameters object). Invoking
     the generate() function will generate a new secret key (which can be read from secret_key()), public key (which can
-    be read from public_key()), and evaluation keys (which can be read from evaluation_keys()). Invoking the
-    generate(const BigPoly&, int) variant will generate new public key and evaluation keys for a specified secret key,
-    raised to an optional power.
-
-    @warning The generate() functions are not thread safe and a separate KeyGenerator instance is needed for each potentially
-    concurrent key generation operation.
+    be read from public_key()), and evaluation keys (which can be read from evaluation_keys()). 
+    
+    @warning KeyGenerator is not thread-safe and a separate instance is needed for each potentially concurrent usage.
     */
     class KeyGenerator
     {
     public:
         /**
-        Creates a KeyGenerator instance initialized with the specified encryption parameters.
+        Creates an KeyGenerator instance initialized with the specified encryption parameters.
 
         @param[in] parms The encryption parameters
         @throws std::invalid_argument if encryption parameters are not valid
@@ -34,66 +31,88 @@ namespace seal
         KeyGenerator(const EncryptionParameters &parms);
 
         /**
-        Generates new matching secret key, public key, and evaluation keys.
+        Creates an KeyGenerator instance initialized with the specified encryption parameters and specified
+        previously generated keys. This can be used to increase the number of evaluation keys (using GenerateEvaluationKeys()) 
+        from what had earlier been generated. If no evaluation keys had been generated earlier, one can simply pass a newly 
+        created empty instance of EvaluationKeys to the function.
 
-        @warning generate() is not thread safe.
-        @see secret_key() to read generated secret key.
-        @see public_key() to read generated public key.
-        @see evaluation_keys() to read generated evaluation keys.
+        @param[in] parms The encryption parameters
+        @param[in] secret_key A previously generated secret key
+        @param[in] public_key A previously generated public key
+        @param[in] evaluation_keys A previously generated set of evaluation keys
+        @throws std::invalid_argument if encryption parameters are not valid
+        @throws std::invalid_argument if secret, public or evaluation keys are not valid
+        @see EncryptionParameters for more details on valid encryption parameters.
         */
-        void generate();
+        KeyGenerator(const EncryptionParameters &parms, const BigPoly &secret_key, const BigPolyArray &public_key, EvaluationKeys &evaluation_keys);
 
         /**
-        Generates new matching public key and evaluation keys for a specified secret key, raised to an optional power. The
-        optional power parameter raises the secret key to the specified power prior to generating the keys. Raising the secret
-        key to a power enables more efficient operations in some advanced cases. Note that due to randomness during the
-        generation process, the generated public key and evaluation keys may not match prior generated public key and
-        evaluation keys for the same secret key.
+        Generates new matching set of secret key, public key, and any number of evaluation keys.
+        The number of evaluation keys that will be generated can be specified by the input
+        parameter evaluation_keys_count, which defaults to 0.
 
-        @warning generate(const BigPoly&, std::uint64_t) is not thread safe.
-        @param[in] secret_key The secret key
-        @param[in] power The power to raise the secret key to, defaults to 1
-        @throws std::invalid_argument if secret key is not valid
-        @throws std::invalid_argument if power is zero
-        @see secret_key() to read the specified secret key, raised to the specified power.
-        @see public_key() to read generated public key.
-        @see evaluation_keys() to read generated evaluation keys.
+        @param[in] count The number of evaluation keys to generate
+        @see secret_key() to read generated secret key
+        @see public_key() to read generated public key
+        @see evaluation_keys() to read generated evaluation keys
+        @throws std::invalid_argument if evaluation keys cannot be generated for specified encryption parameters
         */
-        void generate(const BigPoly &secret_key, std::uint64_t power = 1);
+        void generate(int evaluation_keys_count = 0);
 
         /**
-        Returns the generated secret key after a generate() invocation, or the specified secret key raised to the specified
-        power after a generate(const BigPoly&, int) invocation.
+        Generates evaluation keys so that there are count many in total. Each key is added as a new entry to the std::vector of evaluation keys. 
+        This function is automatically called by generate() to generate evaluation keys, but can be later called by the user to increase
+        the number of evaluation keys on top of what has already been generated. An error is thrown if the user tries to generate evaluation 
+        keys before a secret key and public key have been generated.
+        
+        @param[in] count The total number of evaluation keys to have been generated.
+        @throws std::invalid_argument if count is less than 0
+        @throws std::invalid_argument if evaluation keys cannot be generated for specified encryption parameters
+        @throws std::logic_error if called before the secret key and public key have been generated
+        @see evaluation_keys() to read generated evaluation keys.
+        @see generated() to see if the secret and public keys have already been generated.
         */
-        const BigPoly &secret_key() const
+        void generate_evaluation_keys(int count);
+
+        /**
+        Returns true or false depending on whether secret key and public key have been generated.
+        */
+        bool generated()
         {
-            return secret_key_;
+            return is_generated_;
         }
+
+        /**
+        Returns the generated secret key after a generate() invocation.
+        @throws std::logic_error if encryption keys have not been generated
+        */
+        const BigPoly &secret_key() const;
 
         /**
         Returns the generated public key after a generate() invocation.
+        @throws std::logic_error if encryption keys have not been generated
         */
-        const BigPoly &public_key() const
-        {
-            return public_key_;
-        }
+        const BigPolyArray &public_key() const;
 
         /**
-        Returns the generated evaluation keys after a generate() invocation.
+        Returns evaluation keys after a generate_evaluation_keys() or generate() invocation.
+        @throws std::logic_error if encryption keys have not been generated
+        @throws std::logic_error if evaluation keys have not been generated
         */
-        const EvaluationKeys &evaluation_keys() const
-        {
-            return evaluation_keys_;
-        }
+        const EvaluationKeys &evaluation_keys() const;
 
     private:
         KeyGenerator(const KeyGenerator &copy) = delete;
 
         KeyGenerator &operator =(const KeyGenerator &assign) = delete;
 
-        void set_poly_coeffs_zero_one_negone(uint64_t *poly) const;
+        void set_poly_coeffs_zero_one_negone(uint64_t *poly, UniformRandomGenerator *random) const;
 
-        void set_poly_coeffs_normal(uint64_t *poly) const;
+        void set_poly_coeffs_normal(uint64_t *poly, UniformRandomGenerator *random) const;
+
+        void set_poly_coeffs_uniform(uint64_t *poly, UniformRandomGenerator *random);
+
+        void populate_evaluation_factors();
 
         BigPoly poly_modulus_;
 
@@ -103,7 +122,7 @@ namespace seal
 
         BigUInt coeff_modulus_minus_one_;
 
-        BigPoly public_key_;
+        BigPolyArray public_key_; 
 
         BigPoly secret_key_;
 
@@ -113,17 +132,18 @@ namespace seal
 
         int decomposition_bit_count_;
 
-        EncryptionMode mode_;
-
-        std::unique_ptr<UniformRandomGenerator> random_generator_;
+        UniformRandomGeneratorFactory *random_generator_;
 
         EvaluationKeys evaluation_keys_;
 
-        util::MemoryPool pool_;
+        std::vector<BigUInt> evaluation_factors_;
 
         util::PolyModulus polymod_;
 
         util::Modulus mod_;
+
+        bool is_generated_;
+
     };
 }
 

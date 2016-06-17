@@ -4,7 +4,6 @@
 #include <cstdint>
 #include <vector>
 #include <set>
-#include "util/mempool.h"
 #include "util/modulus.h"
 #include "util/polymodulus.h"
 #include "bigpoly.h"
@@ -15,7 +14,7 @@ namespace seal
     /**
     Provides functionality for encrypting several plaintext numbers into one ciphertext
     for improved memory efficiency and efficient vector operations (SIMD). Multiplying and 
-    adding such polynomials together performs the respective operation on each of the slots 
+    adding such ciphertexts together performs the respective operation on each of the slots 
     independently and simultaneously.
 
     Mathematically speaking, if poly_modulus is x^n+1 and plain_modulus is a prime number t such
@@ -81,7 +80,7 @@ namespace seal
         void prepare_all_slots();
 
         /**
-        Writes a given vector of values (represented by BigUInt) into the slots of a given polynomial.
+        Writes a given vector of values (represented by BigUInt) into the slots of a given plaintext polynomial.
         If the vector contains non-zero entries for which the corresponding slots have not already
         been prepared using prepare_slot(), they will be prepared before the value is set. This function
         runs on a single thread, and for improved performance the user might instead want to call the
@@ -101,7 +100,7 @@ namespace seal
         a different destination polynomial.
 
         @param[in] values The vector of values to write into the slots
-        @param[out] destination The polynomial to overwrite with the result
+        @param[out] destination The plaintext polynomial to overwrite with the result
         @throws std::invalid_argument if the values vector has incorrect size (see Format of Parameters)
         @throws std::invalid_argument if the entries in the values vector have incorrect size (see Format of Parameters)
         @see add_to_slot() for adding numbers to the slots from multiple threads.
@@ -110,7 +109,7 @@ namespace seal
         void compose(const std::vector<BigUInt> &values, BigPoly &destination);
 
         /**
-        Writes a given vector of values (represented by BigUInt) into the slots of a polynomial
+        Writes a given vector of values (represented by BigUInt) into the slots of a plaintext polynomial
         and returns it. If the vector contains non-zero entries for which the corresponding slots have 
         not already been prepared using prepare_slot(), they will be prepared before the value is set. 
         This function runs on a single thread, and for improved performance the user might instead want 
@@ -144,13 +143,13 @@ namespace seal
         }
 
         /**
-        Reads the values in the slots of a given polynomial and writes them as the entries of 
+        Reads the values in the slots of a given plaintext polynomial and writes them as the entries of 
         a given vector. This is the inverse of what compose() does. This function runs on a single 
         thread, and for improved performance the user might instead want to call the function get_slot()
         from multiple threads.
 
         @par Format of Parameters
-        The polynomial poly must have the same number of coefficients as the polynomial modulus,
+        The plaintext polynomial poly must have the same number of coefficients as the polynomial modulus,
         and its coefficients must have bit_count() equal to that of the slot modulus. Moreover, poly is
         expected to be already reduced modulo the polynomial modulus, and its coefficients are expected
         to be already reduced modulo the slot modulus. The destination vector will be automatically
@@ -158,7 +157,7 @@ namespace seal
         to the number of slots, and the elements themselves will all have bit_count() equal to that 
         of the slot modulus and be reduced modulo the slot modulus.
 
-        @param[in] poly The polynomial from which the slots will be read
+        @param[in] poly The plaintext polynomial from which the slots will be read
         @param[out] destination The vector to be overwritten with the values of the slots
         @throws std::invalid_argument if poly has incorrect size (see Format of Parameters)
         @see get_slot() for reading from the slots from multiple threads.
@@ -166,20 +165,20 @@ namespace seal
         void decompose(const BigPoly &poly, std::vector<BigUInt> &destination);
 
         /**
-        Reads the values in the slots of a given polynomial and writes them as the entries of
+        Reads the values in the slots of a given plaintext polynomial and writes them as the entries of
         a vector which is returned. This is the inverse of what compose() does. This function runs on 
         a single thread, and for improved performance the user might instead want to call the function 
         get_slot() from multiple threads.
 
         @par Format of Parameters
-        The polynomial poly must have the same number of coefficients as the polynomial modulus,
+        The plaintext polynomial poly must have the same number of coefficients as the polynomial modulus,
         and its coefficients must have bit_count() equal to that of the slot modulus. Moreover, poly is
         expected to be already reduced modulo the polynomial modulus, and its coefficients are expected
         to be already reduced modulo the slot modulus. The number of elements in the returned
         vector will be equal to the number of slots, and the elements themselves will all have 
         bit_count() equal to that of the slot modulus and be reduced modulo the slot modulus.
 
-        @param[in] poly The polynomial from which the slots will be read
+        @param[in] poly The plaintext polynomial from which the slots will be read
         @throws std::invalid_argument if poly has incorrect size (see Format of Parameters)
         @see get_slot() for reading from the slots from multiple threads.
         */
@@ -192,14 +191,14 @@ namespace seal
         }
 
         /**
-        Reads the value from a given slot of a given polynomial and writes it to a BigUInt
+        Reads the value from a given slot of a given plaintext polynomial and writes it to a BigUInt
         given by reference.
 
         This function is particularly useful when the user wants to use multithreading to speed up
         reading values from slots of a polynomial.
         
         @par Format of Parameters
-        The polynomial poly must have the same number of coefficients as the polynomial modulus,
+        The plaintext polynomial poly must have the same number of coefficients as the polynomial modulus,
         and its coefficients must have bit_count() equal to that of the slot modulus. Moreover, poly is
         expected to be already reduced modulo the polynomial modulus, and its coefficients are expected
         to be already reduced modulo the slot modulus. The destination BigUInt will automatically
@@ -210,7 +209,7 @@ namespace seal
         This function is thread-safe as long as other threads are not mutating poly and destination
         while get_slot() is accessing them, as mutating a BigPoly or a BigUInt is not thread-safe.
 
-        @param[in] poly The polynomial from which the slot is read
+        @param[in] poly The plaintext polynomial from which the slot is read
         @param[in] index The index of the slot to be read
         @param[out] destination The BigUInt to be overwritten with the content of the slot
         @throws std::invalid_argument if index is larger than or equal to the number of slots
@@ -226,7 +225,7 @@ namespace seal
         reading values from slots of a polynomial.
 
         @par Format of Parameters
-        The polynomial poly must have the same number of coefficients as the polynomial modulus,
+        The plaintext polynomial poly must have the same number of coefficients as the polynomial modulus,
         and its coefficients must have bit_count() equal to that of the slot modulus. Moreover, poly is
         expected to be already reduced modulo the polynomial modulus, and its coefficients are expected
         to be already reduced modulo the slot modulus. The returned BigUInt will have
@@ -237,7 +236,7 @@ namespace seal
         This function is thread-safe as long as other threads are not mutating poly while get_slot() 
         is accessing it, as mutating a BigPoly is not thread-safe.
 
-        @param[in] poly The polynomial from which the slot is read
+        @param[in] poly The plaintext polynomial from which the slot is read
         @param[in] index The index of the slot to be read
         @throws std::invalid_argument if index is larger than or equal to the number of slots
         @throws std::invalid_argument if the poly has incorrect size (see Format of Parameters)
@@ -252,18 +251,18 @@ namespace seal
         }
 
         /**
-        Adds a value (modulo the slot modulus) to the current value in a given slot of a polynomial. 
+        Adds a value (modulo the slot modulus) to the current value in a given slot of a plaintext polynomial. 
 
         This function is particularly useful when the user wants to use multithreading to speed up
         writing values to the slots. It is faster than set_slot() and achieves the exact same thing
-        then the polynomial is guaranteed to have a value of zero in the particular slot that is being
+        when the polynomial is guaranteed to have a value of zero in the particular slot that is being
         written to. If the slot to be added to has not already been prepared using prepare_slot(), 
         that will be done first. 
 
         @par Format of Parameters
         The value BigUInt must have have bit_count() equal to that of the slot modulus, and its value
         is expected to be reduced modulo the slot modulus.
-        The polynomial destination must have the same number of coefficients as the polynomial modulus,
+        The plaintext polynomial destination must have the same number of coefficients as the polynomial modulus,
         and its coefficients must have bit_count() equal to that of the slot modulus. Moreover, destination is
         expected to be already reduced modulo the polynomial modulus, and its coefficients are expected
         to be already reduced modulo the slot modulus.
@@ -274,7 +273,7 @@ namespace seal
 
         @param[in] value The value to be added to the slot
         @param[in] index The index of the slot
-        @param[out] destination The BigPoly whose slot the value is added to
+        @param[out] destination The plaintext polynomial whose slot the value is added to
         @throws std::invalid_argument if index is larger than or equal to the number of slots
         @throws std::invalid_argument if value has incorrect size (see Format of Parameters)
         @throws std::invalid_argument if destination has incorrect size (see Format of Parameters)
@@ -285,7 +284,7 @@ namespace seal
         void add_to_slot(const BigUInt &value, std::size_t index, BigPoly &destination);
 
         /**
-        Sets the value in a given slot of a polynomial to a given value.
+        Sets the value in a given slot of a plaintext polynomial to a given value.
         
         This function is particularly useful when the user wants to use multithreading to speed up
         writing values to the slots. It is slower than add_to_slot(), but can be used even if the slot
@@ -295,7 +294,7 @@ namespace seal
         @par Format of Parameters
         The value BigUInt must have have bit_count() equal to that of the slot modulus, and its value
         is expected to be reduced modulo the slot modulus.
-        The polynomial destination must have the same number of coefficients as the polynomial modulus,
+        The plaintext polynomial destination must have the same number of coefficients as the polynomial modulus,
         and its coefficients must have bit_count() equal to that of the slot modulus. Moreover, destination is
         expected to be already reduced modulo the polynomial modulus, and its coefficients are expected
         to be already reduced modulo the slot modulus.
@@ -306,7 +305,7 @@ namespace seal
 
         @param[in] value The value the slot is set to
         @param[in] index The index of the slot
-        @param[out] destination The BigPoly whose slot is set to value
+        @param[out] destination The plaintext polynomial whose slot is set to value
         @throws std::invalid_argument if index is larger than or equal to the number of slots
         @throws std::invalid_argument if value has incorrect size (see Format of Parameters)
         @throws std::invalid_argument if destination has incorrect size (see Format of Parameters)
@@ -319,7 +318,7 @@ namespace seal
         /**
         Returns the number of slots.
         */
-        std::size_t get_slot_count()
+        std::uint64_t get_slot_count()
         {
             return slots_;
         }
@@ -361,13 +360,11 @@ namespace seal
             return (crt_base_polys_[index] != nullptr);
         }
 
-        void prepare_slot(std::size_t index, util::MemoryPool &pool);
+        void get_slot(const std::uint64_t *poly, std::size_t index, std::uint64_t *destination);
 
-        void get_slot(const std::uint64_t *poly, std::size_t index, std::uint64_t *destination, util::MemoryPool &pool);
+        void add_to_slot(const std::uint64_t *value, std::size_t index, std::uint64_t *destination);
 
-        void add_to_slot(const std::uint64_t *value, std::size_t index, std::uint64_t *destination, util::MemoryPool &pool);
-
-        void set_slot(const std::uint64_t *value, std::size_t index, std::uint64_t *destination, util::MemoryPool &pool);
+        void set_slot(const std::uint64_t *value, std::size_t index, std::uint64_t *destination);
         
         PolyCRTBuilder(const PolyCRTBuilder &copy) = delete;
 
@@ -377,9 +374,7 @@ namespace seal
 
         util::PolyModulus poly_modulus_;
 
-        std::size_t slots_;
-
-        util::MemoryPool pool_;
+        std::uint64_t slots_;
 
         std::vector<util::ConstPointer> roots_of_unity_;
 

@@ -33,9 +33,6 @@
     <ClCompile Include="encryptor.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="evaluationkeys.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="evaluator.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -92,6 +89,15 @@
     </ClCompile>
     <ClCompile Include="util\uintcore.cpp">
       <Filter>Source Files\util</Filter>
+    </ClCompile>
+    <ClCompile Include="bigpolyarray.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="util\locks.cpp">
+      <Filter>Source Files\util</Filter>
+    </ClCompile>
+    <ClCompile Include="evaluationkeys.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

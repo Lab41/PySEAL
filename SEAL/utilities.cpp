@@ -66,7 +66,7 @@ namespace seal
         int poly_coeff_bit_count = poly.coeff_bit_count();
         int poly_coeff_uint64_count = divide_round_up(poly_coeff_bit_count, bits_per_uint64);
 
-        MemoryPool pool;
+        MemoryPool &pool = *MemoryPool::default_pool();
         Modulus mod(modulus.pointer(), modulus.uint64_count(), pool);
         BigUInt result(modulus.significant_bit_count());
         util::poly_infty_norm_coeffmod(poly.pointer(), poly_coeff_count, poly_coeff_uint64_count, mod, result.pointer(), pool);
@@ -74,7 +74,7 @@ namespace seal
         return result;
     }
 
-    BigUInt inherent_noise(const BigPoly &encrypted, const BigPoly &plain, const EncryptionParameters &parms, const BigPoly &secret_key)
+    BigUInt inherent_noise(const BigPolyArray &encrypted, const BigPoly &plain, const EncryptionParameters &parms, const BigPoly &secret_key)
     {
         int coeff_count = parms.poly_modulus().coeff_count();
         int coeff_bit_count = parms.coeff_modulus().significant_bit_count();
@@ -83,7 +83,7 @@ namespace seal
         return result;
     }
 
-    void inherent_noise(const BigPoly &encrypted, const BigPoly &plain, const EncryptionParameters &parms, const BigPoly &secret_key, BigUInt &result)
+    void inherent_noise(const BigPolyArray &encrypted, const BigPoly &plain, const EncryptionParameters &parms, const BigPoly &secret_key, BigUInt &result)
     {
         // Verify encryption parameters are non-zero and non-nullptr.
         if (parms.poly_modulus().is_zero())
@@ -119,19 +119,23 @@ namespace seal
         const BigPoly &poly_modulus = parms.poly_modulus();
         const BigUInt &coeff_modulus = parms.coeff_modulus();
         const BigUInt &plain_modulus = parms.plain_modulus();
+        int encrypted_count = encrypted.size();
         int coeff_count = poly_modulus.coeff_count();
         int coeff_bit_count = coeff_modulus.significant_bit_count();
         int coeff_uint64_count = coeff_modulus.uint64_count();
 
         // Verify parameters.
-        if (encrypted.coeff_count() != coeff_count || encrypted.coeff_bit_count() != coeff_bit_count)
+        if (encrypted.coeff_count() != coeff_count || encrypted.coeff_bit_count() != coeff_bit_count || encrypted_count < 2)
         {
             throw invalid_argument("encrypted is not a valid ciphertext");
         }
 #ifdef _DEBUG
-        if (encrypted.significant_coeff_count() == coeff_count || !are_poly_coefficients_less_than(encrypted, coeff_modulus))
+        for (int i = 0; i < encrypted.size(); ++i)
         {
-            throw invalid_argument("encrypted is not valid for encryption parameters");
+            if (encrypted[i].significant_coeff_count() == coeff_count || !are_poly_coefficients_less_than(encrypted[i], coeff_modulus))
+            {
+                throw invalid_argument("encrypted is not valid for encryption parameters");
+            }
         }
         if (plain.significant_coeff_count() >= coeff_count || !are_poly_coefficients_less_than(plain, plain_modulus))
         {
@@ -149,7 +153,7 @@ namespace seal
         }
 
         // Resize plaintext modulus.
-        MemoryPool pool;
+        MemoryPool &pool = *MemoryPool::default_pool();
         ConstPointer plain_modulus_ptr = duplicate_uint_if_needed(plain_modulus, coeff_uint64_count, false, pool);
 
         // Compute floor of coeff_modulus/plain_modulus.
@@ -157,16 +161,33 @@ namespace seal
         Pointer remainder(allocate_uint(coeff_uint64_count, pool));
         divide_uint_uint(coeff_modulus.pointer(), plain_modulus_ptr.get(), coeff_uint64_count, coeff_div_plain_modulus.get(), remainder.get(), pool);
 
-        // Resize plaintext to accomodate coeff_modulus size coefficients and have the full number of coefficients.
+        // Resize plaintext to accommodate coeff_modulus size coefficients and have the full number of coefficients.
         ConstPointer plain_ptr = duplicate_poly_if_needed(plain, coeff_count, coeff_uint64_count, false, pool);
 
-        // Resize poly_modulus to accomodate coeff_modulus size coefficients and have the full number of coefficients.
+        // Resize poly_modulus to accommodate coeff_modulus size coefficients and have the full number of coefficients.
         ConstPointer poly_modulus_ptr = duplicate_poly_if_needed(poly_modulus, coeff_count, coeff_uint64_count, false, pool);
 
         BigPoly noise_poly(coeff_count, coeff_bit_count);
         PolyModulus polymod(poly_modulus_ptr.get(), coeff_count, coeff_uint64_count);
         Modulus mod(coeff_modulus.pointer(), coeff_uint64_count, pool);
-        multiply_poly_poly_polymod_coeffmod(encrypted.pointer(), secret_key.pointer(), polymod, mod, noise_poly.pointer(), pool);
+
+        // YASHE
+        //multiply_poly_poly_polymod_coeffmod(encrypted.pointer(), secret_key.pointer(), polymod, mod, noise_poly.pointer(), pool);
+
+        // FV [see Decryptor::decrypt(...)]
+        BigPolyArray secret_key_array(encrypted_count, coeff_count, coeff_bit_count);
+        set_poly_poly(secret_key.pointer(), coeff_count, coeff_uint64_count, secret_key_array.pointer(0));
+        int poly_ptr_increment = coeff_count * coeff_uint64_count;
+        uint64_t *prev_poly_ptr = secret_key_array.pointer(0);
+        uint64_t *next_poly_ptr = prev_poly_ptr + poly_ptr_increment;
+        for (int i = 1; i < encrypted_count-1; ++i)
+        {
+            multiply_poly_poly_polymod_coeffmod(prev_poly_ptr, secret_key.pointer(), polymod, mod, next_poly_ptr, pool);
+            prev_poly_ptr = next_poly_ptr;
+            next_poly_ptr += poly_ptr_increment;
+        }
+        dot_product_bigpolyarray_polymod_coeffmod(encrypted.pointer(1), secret_key_array.pointer(0), encrypted_count - 1, polymod, mod, noise_poly.pointer(), pool);
+        add_poly_poly_coeffmod(noise_poly.pointer(), encrypted[0].pointer(), coeff_count, coeff_modulus.pointer(), coeff_uint64_count, noise_poly.pointer());
 
         Pointer temp(allocate_uint(coeff_uint64_count, pool));
         const uint64_t *plain_coeff_ptr = plain_ptr.get();
@@ -178,11 +199,10 @@ namespace seal
             plain_coeff_ptr += coeff_uint64_count;
             noise_coeff_ptr += coeff_uint64_count;
         }
-
         result = poly_infty_norm_coeffmod(noise_poly, coeff_modulus);
     }
 
-    BigUInt inherent_noise(const BigPoly &encrypted, const EncryptionParameters &parms, const BigPoly &secret_key)
+    BigUInt inherent_noise(const BigPolyArray &encrypted, const EncryptionParameters &parms, const BigPoly &secret_key)
     {
         Decryptor decryptor(parms, secret_key);
         BigPoly plain = decryptor.decrypt(encrypted);
@@ -228,7 +248,7 @@ namespace seal
         int coeff_uint64_count = coeff_modulus.uint64_count();
 
         // Resize plaintext modulus.
-        MemoryPool pool;
+        MemoryPool &pool = *MemoryPool::default_pool();
         ConstPointer plain_modulus_ptr = duplicate_uint_if_needed(plain_modulus, coeff_uint64_count, false, pool);
 
         BigUInt result(coeff_bit_count);
@@ -284,7 +304,7 @@ namespace seal
             destination.resize(modulus.significant_bit_count());
         }
 
-        MemoryPool pool;
+        MemoryPool &pool = *MemoryPool::default_pool();
         ConstPointer operand_ptr = duplicate_uint_if_needed(operand, modulus.uint64_count(), false, pool);
         util::exponentiate_uint_mod(operand_ptr.get(), exponent.pointer(), exponent.uint64_count(), Modulus(modulus.pointer(), modulus.uint64_count(), pool), destination.pointer(), pool);
     }
@@ -317,7 +337,7 @@ namespace seal
             destination.resize(poly_modulus.coeff_count(), coeff_modulus.significant_bit_count());
         }
 
-        MemoryPool pool;
+        MemoryPool &pool = *MemoryPool::default_pool();
         ConstPointer operand_ptr = duplicate_poly_if_needed(operand, poly_modulus.coeff_count(), coeff_modulus.uint64_count(), false, pool);
         util::exponentiate_poly_polymod_coeffmod(operand_ptr.get(), exponent.pointer(), exponent.uint64_count(),
             PolyModulus(poly_modulus.pointer(), poly_modulus.coeff_count(), poly_modulus.uint64_count()), 
@@ -347,7 +367,7 @@ namespace seal
         int result_coeff_uint64_count = divide_round_up(result_coeff_bit_count, bits_per_uint64);
         destination.resize(result_coeff_count, result_coeff_bit_count);
 
-        MemoryPool pool;
+        MemoryPool &pool = *MemoryPool::default_pool();
         poly_eval_poly(poly_to_evaluate.pointer(), poly_to_evaluate.coeff_count(), poly_to_eval_coeff_uint64_count, 
             poly_to_evaluate_at.pointer(), poly_to_evaluate_at.coeff_count(), value_coeff_uint64_count, 
             result_coeff_count, result_coeff_uint64_count, destination.pointer(), pool);
@@ -382,14 +402,15 @@ namespace seal
             destination.set_zero();
         }
 
-        MemoryPool pool;
-
+        MemoryPool &pool = *MemoryPool::default_pool();
+        Pointer big_alloc(allocate_uint(3 * poly_to_eval_coeff_uint64_count, pool));
+        
         if (poly_to_evaluate_at.is_zero())
         {
             destination.resize(1, coeff_modulus_bit_count);
             modulo_uint(poly_to_evaluate.pointer(), poly_to_eval_coeff_uint64_count, 
                 Modulus(coeff_modulus.pointer(), coeff_modulus.uint64_count(), pool), 
-                destination.pointer(), pool);
+                destination.pointer(), pool, big_alloc.get());
             return;
         }
 
@@ -431,14 +452,15 @@ namespace seal
             destination.set_zero();
         }
 
-        MemoryPool pool;
+        MemoryPool &pool = *MemoryPool::default_pool();
+        Pointer big_alloc(allocate_uint(3 * poly_to_eval_coeff_uint64_count, pool));
 
         if (value.is_zero())
         {
             destination.resize(modulus_bit_count);
             modulo_uint(poly_to_evaluate.pointer(), poly_to_eval_coeff_uint64_count,
                 Modulus(modulus.pointer(), modulus.uint64_count(), pool), 
-                destination.pointer(), pool);
+                destination.pointer(), pool, big_alloc.get());
             return;
         }
 

@@ -2,11 +2,13 @@
 #include "util/uintcore.h"
 #include "util/polycore.h"
 #include "util/polyarith.h"
+#include "bigpolyarray.h"
 #include <cstdint>
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 using namespace seal::util;
 using namespace std;
+using namespace seal;
 
 namespace SEALTest
 {
@@ -17,7 +19,7 @@ namespace SEALTest
         public:
             TEST_METHOD(ModuloPolyCoeffs)
             {
-                MemoryPool pool;
+                MemoryPool &pool = *MemoryPool::default_pool();
                 Pointer poly(allocate_zero_poly(3, 2, pool));
                 Pointer modulus(allocate_uint(2, pool));
                 poly[0] = 2;
@@ -39,7 +41,7 @@ namespace SEALTest
             {
                 negate_poly(nullptr, 0, 0, nullptr);
 
-                MemoryPool pool;
+                MemoryPool &pool = *MemoryPool::default_pool();
                 Pointer ptr(allocate_zero_poly(3, 2, pool));
                 ptr[0] = 2;
                 ptr[2] = 3;
@@ -55,7 +57,7 @@ namespace SEALTest
 
             TEST_METHOD(NegatePolyCoeffMod)
             {
-                MemoryPool pool;
+                MemoryPool &pool = *MemoryPool::default_pool();
                 Pointer poly(allocate_zero_poly(3, 2, pool));
                 Pointer modulus(allocate_uint(2, pool));
                 poly[0] = 2;
@@ -89,7 +91,7 @@ namespace SEALTest
             {
                 add_poly_poly(nullptr, nullptr, 0, 0, nullptr);
 
-                MemoryPool pool;
+                MemoryPool &pool = *MemoryPool::default_pool();
                 Pointer poly1(allocate_zero_poly(3, 2, pool));
                 Pointer poly2(allocate_zero_poly(3, 2, pool));
                 poly1[0] = 2;
@@ -113,7 +115,7 @@ namespace SEALTest
             {
                 sub_poly_poly(nullptr, nullptr, 0, 0, nullptr);
 
-                MemoryPool pool;
+                MemoryPool &pool = *MemoryPool::default_pool();
                 Pointer poly1(allocate_zero_poly(3, 2, pool));
                 Pointer poly2(allocate_zero_poly(3, 2, pool));
                 poly1[0] = 5;
@@ -135,7 +137,7 @@ namespace SEALTest
 
             TEST_METHOD(AddPolyPolyCoeffMod)
             {
-                MemoryPool pool;
+                MemoryPool &pool = *MemoryPool::default_pool();
                 Pointer poly1(allocate_zero_poly(3, 2, pool));
                 Pointer poly2(allocate_zero_poly(3, 2, pool));
                 Pointer modulus(allocate_uint(2, pool));
@@ -158,7 +160,7 @@ namespace SEALTest
 
             TEST_METHOD(SubPolyPolyCoeffMod)
             {
-                MemoryPool pool;
+                MemoryPool &pool = *MemoryPool::default_pool();
                 Pointer poly1(allocate_zero_poly(3, 2, pool));
                 Pointer poly2(allocate_zero_poly(3, 2, pool));
                 Pointer modulus(allocate_uint(2, pool));
@@ -181,7 +183,7 @@ namespace SEALTest
 
             TEST_METHOD(MultiplyPolyScalarCoeffMod)
             {
-                MemoryPool pool;
+                MemoryPool &pool = *MemoryPool::default_pool();
                 Pointer poly(allocate_zero_poly(3, 2, pool));
                 Pointer scalar(allocate_uint(2, pool));
                 Pointer modulus(allocate_uint(2, pool));
@@ -204,7 +206,7 @@ namespace SEALTest
 
             TEST_METHOD(MultiplyPolyPoly)
             {
-                MemoryPool pool;
+                MemoryPool &pool = *MemoryPool::default_pool();
                 Pointer poly1(allocate_zero_poly(3, 2, pool));
                 Pointer poly2(allocate_zero_poly(3, 2, pool));
                 Pointer result(allocate_zero_poly(5, 2, pool));
@@ -250,7 +252,7 @@ namespace SEALTest
 
             TEST_METHOD(MultiplyPolyPolyCoeffMod)
             {
-                MemoryPool pool;
+                MemoryPool &pool = *MemoryPool::default_pool();
                 Pointer poly1(allocate_zero_poly(3, 2, pool));
                 Pointer poly2(allocate_zero_poly(3, 2, pool));
                 Pointer result(allocate_zero_poly(5, 2, pool));
@@ -325,7 +327,7 @@ namespace SEALTest
 
             TEST_METHOD(DividePolyPolyCoeffMod)
             {
-                MemoryPool pool;
+                MemoryPool &pool = *MemoryPool::default_pool();
                 Pointer poly1(allocate_zero_poly(5, 2, pool));
                 Pointer poly2(allocate_zero_poly(5, 2, pool));
                 Pointer result(allocate_zero_poly(5, 2, pool));
@@ -415,6 +417,86 @@ namespace SEALTest
                 Assert::AreEqual(static_cast<uint64_t>(0), result[7]);
                 Assert::AreEqual(static_cast<uint64_t>(0), result[8]);
                 Assert::AreEqual(static_cast<uint64_t>(0), result[9]);
+            }
+
+
+            TEST_METHOD(AddBigPolyArrayCoeffmod)
+            {
+                MemoryPool &pool = *MemoryPool::default_pool();
+                int coeff_uint64_count = divide_round_up(7, bits_per_uint64);
+                BigUInt coeff_modulus("10");
+                Modulus mod(coeff_modulus.pointer(), coeff_uint64_count, pool);
+                
+                // testing just addition, no mod reduction
+                BigPolyArray result1(2, 5, 7);
+                BigPolyArray arr1(2, 5, 7);
+                BigPolyArray arr2(2, 5, 7);
+                arr1[0] = "1x^1";
+                arr1[1] = "1x^3";
+                arr2[0] = "1";
+                arr2[1] = "2x^1";
+                add_bigpolyarray_coeffmod(arr1.pointer(0), arr2.pointer(0), 2, 5, mod, result1.pointer(0));
+                Assert::IsTrue(result1[0].to_string() == "1x^1 + 1");
+                Assert::IsTrue(result1[1].to_string() == "1x^3 + 2x^1");
+
+                // expecting mod reduction
+                BigPolyArray result2(3, 5, 7);
+                BigPolyArray arr3(3, 5, 7);
+                BigPolyArray arr4(3, 5, 7);
+                arr3[0] = "1x^4 + A";
+                arr3[1] = "3x^2 + 2x^1";
+                arr3[2] = "Cx^1 + D";
+                arr4[0] = "2x^4 + B";
+                arr4[1] = "Fx^2 + 5x^1 + E";
+                arr4[2] = "7x^1 + 8";
+                add_bigpolyarray_coeffmod(arr3.pointer(0), arr4.pointer(0), 3, 5, mod, result2.pointer(0));
+                Assert::IsTrue(result2[0].to_string() == "3x^4 + 5");
+                Assert::IsTrue(result2[1].to_string() == "2x^2 + 7x^1 + E");
+                Assert::IsTrue(result2[2].to_string() == "3x^1 + 5");
+
+                // testing BPA's with only one entry, expecting mod reduction
+                BigPolyArray result3(1, 5, 7);
+                BigPolyArray singlepoly1(1, 5, 7);
+                BigPolyArray singlepoly2(1, 5, 7);
+                singlepoly1[0] = "Ax^3 + Bx^2 + Cx^1 + D";
+                singlepoly2[0] = "1x^3 + 2x^1 + 3";
+                add_bigpolyarray_coeffmod(singlepoly1.pointer(0), singlepoly2.pointer(0), 1, 5, mod, result3.pointer(0));
+                Assert::IsTrue(result3[0].to_string() == "Bx^3 + Bx^2 + Ex^1");
+
+                // testing addition of zero BPA
+                BigPolyArray result4(2, 5, 7);
+                BigPolyArray testzero1(2, 5, 7);
+                BigPolyArray testzero2(2, 5, 7);
+                testzero1[0] = "1x^2 + 2x^1 + 3";
+                testzero1[1] = "8x^3 + 9x^2 + Ax^1 + B";
+                testzero2[0].set_zero();
+                testzero2[1].set_zero();
+                add_bigpolyarray_coeffmod(testzero1.pointer(0), testzero2.pointer(0), 2, 5, mod, result4.pointer(0));
+                Assert::IsTrue(result4[0].to_string() == "1x^2 + 2x^1 + 3");
+                Assert::IsTrue(result4[1].to_string() == "8x^3 + 9x^2 + Ax^1 + B");
+
+                // addition of both BPAs zero
+                BigPolyArray result5(3, 5, 7);
+                BigPolyArray testbothzero1(3, 5, 7);
+                BigPolyArray testbothzero2(3, 5, 7);
+                testbothzero1[0].set_zero();
+                testbothzero1[1].set_zero();
+                testbothzero1[2].set_zero();
+                testbothzero2[0].set_zero();
+                testbothzero2[1].set_zero();
+                testbothzero2[2].set_zero();
+                add_bigpolyarray_coeffmod(testbothzero1.pointer(0), testbothzero2.pointer(0), 3, 5, mod, result5.pointer(0));
+                Assert::IsTrue(result5[0].to_string() == "0");
+                Assert::IsTrue(result5[1].to_string() == "0");
+
+                //  testing BPA's with only one entry, no mod reduction
+                BigPolyArray result6(1, 5, 7);
+                BigPolyArray singlepoly3(1, 5, 7);
+                BigPolyArray singlepoly4(1, 5, 7);
+                singlepoly3[0] = "1x^3 + 2x^2 + 3x^1 + 4";
+                singlepoly4[0] = "5x^3 + 6x^1 + 7";
+                add_bigpolyarray_coeffmod(singlepoly3.pointer(0), singlepoly4.pointer(0), 1, 5, mod, result6.pointer(0));
+                Assert::IsTrue(result6[0].to_string() == "6x^3 + 2x^2 + 9x^1 + B");
             }
         };
     }

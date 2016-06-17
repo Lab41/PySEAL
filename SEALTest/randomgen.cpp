@@ -44,11 +44,6 @@ namespace SEALTest
             {
                 return new CustomRandomEngine();
             }
-
-            UniformRandomGenerator *create(uint64_t seed) override
-            {
-                return new CustomRandomEngine();
-            }
         };
 
         int CustomRandomEngine::count_ = 0;
@@ -59,7 +54,7 @@ namespace SEALTest
     public:
         TEST_METHOD(UniformRandomCreateDefault)
         {
-            unique_ptr<UniformRandomGenerator> generator(UniformRandomGeneratorFactory::default_factory()->create(0));
+            unique_ptr<UniformRandomGenerator> generator(UniformRandomGeneratorFactory::default_factory()->create());
             bool lower_half = false;
             bool upper_half = false;
             bool even = false;

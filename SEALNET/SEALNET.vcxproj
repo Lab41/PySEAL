@@ -181,6 +181,7 @@
   <ItemGroup>
     <ClCompile Include="AssemblyInfo.cpp" />
     <ClCompile Include="BigPolyArithWrapper.cpp" />
+    <ClCompile Include="BigPolyArrayWrapper.cpp" />
     <ClCompile Include="BigPolyWrapper.cpp" />
     <ClCompile Include="BigUIntWrapper.cpp" />
     <ClCompile Include="ChooserWrapper.cpp" />
@@ -198,6 +199,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BigPolyArithWrapper.h" />
+    <ClInclude Include="BigPolyArrayWrapper.h" />
     <ClInclude Include="BigPolyWrapper.h" />
     <ClInclude Include="BigUIntWrapper.h" />
     <ClInclude Include="ChooserWrapper.h" />

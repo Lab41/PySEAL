@@ -4,7 +4,6 @@
 #include <cstdint>
 #include "biguint.h"
 #include "bigpoly.h"
-#include "util/mempool.h"
 
 namespace seal
 {
@@ -26,10 +25,6 @@ namespace seal
     that represent them modulo the plaintext modulus. Thus, for example, a coefficient of -1
     would be stored as a polynomial coefficient plain_modulus-1.
   
-    @par Thread Safety
-    The BinaryEncoder class is not thread-safe and a separate BinaryEncoder instance is
-    needed for each potentially concurrent usage.
-
     @see BinaryFractionalEncoder for encoding real numbers.
     @see BalancedEncoder for encoders using other than binary representations for more compact encodings.
     */
@@ -231,8 +226,6 @@ namespace seal
 
         BigUInt neg_one_;
 
-        util::MemoryPool pool_;
-
         BinaryEncoder(const BinaryEncoder &copy) = delete;
 
         BinaryEncoder &operator =(const BinaryEncoder &assign) = delete;
@@ -264,10 +257,6 @@ namespace seal
     digits in their balanced base-b representation. Negative coefficients are stored in the
     plaintext polynomials as unsigned integers that represent them modulo the plaintext modulus.
     Thus, for example, a coefficient of -1 would be stored as a polynomial coefficient plain_modulus-1.
-
-    @par Thread Safety
-    The BalancedEncoder class is not thread-safe and a separate BalancedEncoder instance is
-    needed for each potentially concurrent usage.
 
     @see BalancedFractionalEncoder for encoding real numbers.
     @see BinaryEncoder for encoding using the binary representation.
@@ -487,8 +476,6 @@ namespace seal
 
         BigUInt coeff_neg_threshold_;
 
-        util::MemoryPool pool_;
-
         BalancedEncoder(const BalancedEncoder &copy) = delete;
 
         BalancedEncoder &operator =(const BalancedEncoder &assign) = delete;
@@ -526,10 +513,6 @@ namespace seal
     and the negative coefficients are stored in the plaintext polynomials as unsigned integers
     that represent them modulo the plaintext modulus. Thus, for example, a coefficient of -1
     would be stored as a polynomial coefficient plain_modulus-1.
-
-    @par Thread Safety
-    The BinaryFractionalEncoder class is not thread-safe and a separate BinaryFractionalEncoder
-    instance is needed for each potentially concurrent usage.
 
     @see BinaryEncoder for encoding integers.
     @see BalancedFractionalEncoder for encoders using other than binary representations for more compact encodings.
@@ -589,8 +572,6 @@ namespace seal
 
         BinaryEncoder encoder_;
 
-        util::MemoryPool pool_;
-
         int fraction_coeff_count_;
 
         int integer_coeff_count_;
@@ -629,10 +610,6 @@ namespace seal
     digits in their balanced base-b representation. Negative coefficients are stored in the
     plaintext polynomials as unsigned integers that represent them modulo the plaintext modulus.
     Thus, for example, a coefficient of -1 would be stored as a polynomial coefficient plain_modulus-1.
-
-    @par Thread Safety
-    The BalancedFractionalEncoder class is not thread-safe and a separate BalancedFractionalEncoder
-    instance is needed for each potentially concurrent usage.
 
     @see BalancedEncoder for encoding integers.
     @see BinaryFractionalEncoder for encoding using the binary representation.
@@ -702,8 +679,6 @@ namespace seal
         BalancedFractionalEncoder &operator =(const BalancedFractionalEncoder &assign) = delete;
 
         BalancedEncoder encoder_;
-
-        util::MemoryPool pool_;
 
         int fraction_coeff_count_;
 

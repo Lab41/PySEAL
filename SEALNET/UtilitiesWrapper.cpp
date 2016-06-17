@@ -13,7 +13,7 @@ namespace Microsoft
     {
         namespace SEAL
         {
-            BigUInt ^Utilities::InherentNoise(BigPoly ^encrypted, BigPoly ^plain, EncryptionParameters ^parms, BigPoly ^secretKey)
+            BigUInt ^Utilities::InherentNoise(BigPolyArray ^encrypted, BigPoly ^plain, EncryptionParameters ^parms, BigPoly ^secretKey)
             {
                 if (encrypted == nullptr)
                 {
@@ -33,7 +33,7 @@ namespace Microsoft
                 }
                 try
                 {
-                    auto result = gcnew BigUInt(seal::inherent_noise(encrypted->GetPolynomial(), plain->GetPolynomial(), parms->GetParameters(), secretKey->GetPolynomial()));
+                    auto result = gcnew BigUInt(seal::inherent_noise(encrypted->GetArray(), plain->GetPolynomial(), parms->GetParameters(), secretKey->GetPolynomial()));
                     GC::KeepAlive(encrypted);
                     GC::KeepAlive(plain);
                     GC::KeepAlive(parms);
@@ -51,7 +51,7 @@ namespace Microsoft
                 throw gcnew Exception("Unexpected exception");
             }
 
-            BigUInt ^Utilities::InherentNoise(BigPoly ^encrypted, EncryptionParameters ^parms, BigPoly ^secretKey)
+            BigUInt ^Utilities::InherentNoise(BigPolyArray ^encrypted, EncryptionParameters ^parms, BigPoly ^secretKey)
             {
                 if (encrypted == nullptr)
                 {
@@ -67,7 +67,7 @@ namespace Microsoft
                 }
                 try
                 {
-                    auto result = gcnew BigUInt(seal::inherent_noise(encrypted->GetPolynomial(), parms->GetParameters(), secretKey->GetPolynomial()));
+                    auto result = gcnew BigUInt(seal::inherent_noise(encrypted->GetArray(), parms->GetParameters(), secretKey->GetPolynomial()));
                     GC::KeepAlive(encrypted);
                     GC::KeepAlive(parms);
                     GC::KeepAlive(secretKey);
@@ -84,7 +84,7 @@ namespace Microsoft
                 throw gcnew Exception("Unexpected exception");
             }
 
-            void Utilities::InherentNoise(BigPoly ^encrypted, BigPoly ^plain, EncryptionParameters ^parms, BigPoly ^secretKey, BigUInt ^result)
+            void Utilities::InherentNoise(BigPolyArray ^encrypted, BigPoly ^plain, EncryptionParameters ^parms, BigPoly ^secretKey, BigUInt ^result)
             {
                 if (encrypted == nullptr)
                 {
@@ -108,7 +108,7 @@ namespace Microsoft
                 }
                 try
                 {
-                    seal::inherent_noise(encrypted->GetPolynomial(), plain->GetPolynomial(), parms->GetParameters(), secretKey->GetPolynomial(), result->GetUInt());
+                    seal::inherent_noise(encrypted->GetArray(), plain->GetPolynomial(), parms->GetParameters(), secretKey->GetPolynomial(), result->GetUInt());
                     GC::KeepAlive(encrypted);
                     GC::KeepAlive(plain);
                     GC::KeepAlive(parms);

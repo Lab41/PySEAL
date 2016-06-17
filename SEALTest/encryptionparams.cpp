@@ -26,7 +26,6 @@ namespace SEALTest
             poly_modulus.resize(64, 1);
             poly_modulus[0] = 1;
             poly_modulus[63] = 1;
-            parms.mode() = TEST_MODE;
             parms.random_generator() = UniformRandomGeneratorFactory::default_factory();
 
             Assert::AreEqual(4, parms.decomposition_bit_count());
@@ -36,13 +35,6 @@ namespace SEALTest
             Assert::IsTrue("40" == parms.plain_modulus().to_string());
             Assert::IsTrue("1x^63 + 1" == parms.poly_modulus().to_string());
             Assert::IsTrue(parms.random_generator() == UniformRandomGeneratorFactory::default_factory());
-            Assert::IsTrue(TEST_MODE == parms.mode());
-        }
-
-        TEST_METHOD(EncryptionParamsDefaultToNormalMode)
-        {
-            EncryptionParameters parms;
-            Assert::IsTrue(NORMAL_MODE == parms.mode());
         }
 
         TEST_METHOD(SaveLoadEncryptionParams)

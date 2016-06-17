@@ -641,4 +641,37 @@ namespace seal
         resize(value.coeff_count_, value.coeff_bit_count_);
         *this = value;
     }
+
+    BigPoly &BigPoly::operator =(BigPoly &&assign) noexcept
+    {
+        // Do nothing if same thing.
+        if (&assign == this)
+        {
+            return *this;
+        }
+
+        // Deallocate any memory allocated.
+        reset();
+
+        // Copy all member variables
+        coeff_count_ = assign.coeff_count_;
+        coeff_bit_count_ = assign.coeff_bit_count_;
+        coeffs_ = assign.coeffs_;
+        value_ = assign.value_;
+        is_alias_ = assign.is_alias_;
+
+        // Pointers in assign have been taken over so set them to nullptr
+        assign.value_ = nullptr;
+        assign.coeffs_ = nullptr;
+        assign.is_alias_ = false;
+        assign.coeff_count_ = 0;
+        assign.coeff_bit_count_ = 0;
+
+        return *this;
+    }
+
+    BigPoly::BigPoly(BigPoly &&source) noexcept : value_(nullptr), coeffs_(nullptr), coeff_count_(0), coeff_bit_count_(0), is_alias_(false)
+    {
+        operator =(move(source));
+    }
 }

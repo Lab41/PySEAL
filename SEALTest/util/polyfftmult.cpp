@@ -29,7 +29,7 @@ namespace SEALTest
                 poly2[0] = 7;
                 poly2[1] = 7;
                 poly2[3] = 2;
-                MemoryPool pool;
+                MemoryPool &pool = *MemoryPool::default_pool();
                 fftmultiply_poly_poly_polymod(poly1.pointer(), poly2.pointer(), 2, 2, 2, result.pointer(), pool);
                 Assert::IsTrue("57x^3 + Cx^2 + 24x^1 + FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFE9" == result.to_string());
 
@@ -64,7 +64,7 @@ namespace SEALTest
                 }
                 polymod[0] = 1;
                 polymod[coeff_count - 1] = 1;
-                MemoryPool pool;
+                MemoryPool &pool = *MemoryPool::default_pool();
                 multiply_poly_poly(poly1.pointer(), coeff_count, 2, poly2.pointer(), coeff_count, 2, 2 * coeff_count, 2, correct.pointer(), pool);
                 for (int i = coeff_count - 1; i < 2 * coeff_count; ++i)
                 {

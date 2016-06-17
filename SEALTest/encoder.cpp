@@ -4,7 +4,6 @@
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 using namespace seal;
-using namespace seal::util;
 using namespace std;
 
 namespace SEALTest

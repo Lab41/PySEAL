@@ -150,20 +150,25 @@ namespace seal
         absolute values of the coefficients. For decryption to work correctly, these bounds must be
         small enough to be supported by the encryption parameters. Additionally, the encryption parameters
         must be large enough to support inherent noise growth in the performed operations.
+
+        The noise_gap parameter can be used to leave a certain number of bits between the
+        simulated noise and the noise ceiling to guarantee decryption to work despite probabilistic effects.
         
         The return value is true or false depending on whether given encryption parameters are large enough
         to support the operations in the operation history of the current ChooserPoly.
 
         @param[in] parms The encryption parameters
+        @param[in] noise_gap The number of bits left between the simulated noise and the noise ceiling
         @throws std::logic_error if the current operation history is null, i.e. the current ChooserPoly models a plaintext polynomial
         @throws std::invalid_argument if encryption parameters are not valid
+        @throws std::invalid_argument if noise_gap is negative
         @see EncryptionParameters for more details on valid encryption parameters.
         @see Simulation for more details on the inherent noise growth simulation.
         */
-        bool test_parameters(const EncryptionParameters &parms) const
+        bool test_parameters(const EncryptionParameters &parms, int noise_gap = 0) const
         {
             return (parms.plain_modulus().significant_bit_count() >= max_abs_value_.significant_bit_count() &&
-                parms.poly_modulus().significant_coeff_count() > max_coeff_count_ && simulate(parms).decrypts());
+                parms.poly_modulus().significant_coeff_count() > max_coeff_count_ && simulate(parms).decrypts(noise_gap));
         }
 
         /**
@@ -197,85 +202,6 @@ namespace seal
         @see max_abs_value() to set the bound on the absolute value of coefficients of the modeled plaintext polynomial.
         */
         void set_fresh();
-
-        /**
-        Returns the estimated value of inherent noise (represented by BigUInt) in a ciphertext which is a result of
-        the operations in the operation history of the current ChooserPoly.
-
-        @param[in] parms The encryption parameters
-        @throws std::logic_error if operation history is null, i.e. the current ChooserPoly models a plaintext polynomial
-        @throws std::invalid_argument if encryption parameters are not valid
-        @see EncryptionParameters for more details on valid encryption parameters.
-        @see simulate() to return the full Simulation object instead.
-        */
-        BigUInt noise(const EncryptionParameters &parms) const
-        {
-            return simulate(parms).noise();
-        }
-
-        /**
-        Returns the maximal value of inherent noise (represented by BigUInt) supported by the given encryption parameters.
-        The encryption parameters are not large enough if the value returned by noise() is larger than the value
-        returned by max_noise().
-
-        @param[in] parms The encryption parameters
-        @throws std::logic_error if operation history is null, i.e. the current ChooserPoly models a plaintext polynomial
-        @throws std::invalid_argument if encryption parameters are not valid
-        @see EncryptionParameters for more details on valid encryption parameters.
-        */
-        BigUInt max_noise(const EncryptionParameters &parms) const
-        {
-            return Simulation(parms).max_noise();
-        }
-
-        /**
-        Returns the bit length of the estimated value of inherent noise (represented by BigUInt) in a ciphertext on
-        which the operations in the operation history of the current ChooserPoly have been performed.
-
-        @param[in] parms The encryption parameters
-        @throws std::logic_error if operation history is null, i.e. the current ChooserPoly models a plaintext polynomial
-        @throws std::invalid_argument if encryption parameters are not valid
-        @see EncryptionParameters for more details on valid encryption parameters.
-        @see noise() to return the estimated value of inherent noise as a BigUInt instead.
-        @see simulate() to return the full Simulation object instead.
-        */
-        int noise_bits(const EncryptionParameters &parms) const
-        {
-            return simulate(parms).noise_bits();
-        }
-
-        /**
-        Returns the difference between the bit lengths of the return values of max_noise() and of noise(). This gives
-        the user a convenient tool for estimating how many, if any, arithmetic operations can still be performed on the
-        encrypted data before it becomes too noisy to be decrypted. If the return value is negative, the encryption
-        parameters used are not large enough to support the performed arithmetic operations.
-
-        @param[in] parms The encryption parameters
-        @throws std::logic_error if operation history is null, i.e. the current ChooserPoly models a plaintext polynomial
-        @throws std::invalid_argument if encryption parameters are not valid
-        @see EncryptionParameters for more details on valid encryption parameters.
-        @see noise() to return the estimated value of inherent noise as a BigUInt instead.
-        @see simulate() to return the full Simulation object instead.
-        */
-        int noise_bits_left(const EncryptionParameters &parms) const
-        {
-            return simulate(parms).noise_bits_left();
-        }
-
-        /**
-        Returns true or false depending on whether the encryption parameters were large enough to support inherent
-        noise growth in the performed arithmetic operations.
-
-        @param[in] parms The encryption parameters
-        @throws std::logic_error if operation history is null, i.e. the current ChooserPoly models a plaintext polynomial
-        @throws std::invalid_argument if encryption parameters are not valid
-        @see EncryptionParameters for more details on valid encryption parameters.
-        @see simulate() to return the full Simulation object instead.
-        */
-        bool decrypts(const EncryptionParameters &parms) const
-        {
-            return simulate(parms).decrypts();
-        }
 
     private:
         int max_coeff_count_;
@@ -312,10 +238,6 @@ namespace seal
     largest absolute value that Simulation is simulating, and that we will call the "noise", the "inherent noise",
     or the "error", in this documentation. The reader is referred to the description of the encryption scheme for more details.
 
-    @par Thread Safety
-    The ChooserEvaluator class is not thread-safe and a separate ChooserEvaluator instance is needed for each
-    potentially concurrent usage.
-
     @see ChooserPoly for the object modeling encrypted/plaintext data for automatic parameter selection.
     @see ChooserEncoder for modeling the behavior of encoding with ChooserPoly objects.
     @see ChooserEncryptor for modeling the behavior of encryption with ChooserPoly objects.
@@ -343,7 +265,7 @@ namespace seal
         @see Evaluator::multiply_many() for the corresponding operation on ciphertexts.
         @see SimulationEvaluator::multiply_many() for the corresponding operation on Simulation objects.
         */
-        ChooserPoly multiply_many(const std::vector<ChooserPoly> &operands);
+        ChooserPoly multiply_many(const std::vector<ChooserPoly> &operands) const;
 
         /**
         Performs an operation modeling Evaluator::add() on ChooserPoly objects. This operation
@@ -357,7 +279,7 @@ namespace seal
         @see Evaluator::add() for the corresponding operation on ciphertexts.
         @see SimulationEvaluator::add() for the corresponding operation on Simulation objects.
         */
-        ChooserPoly add(const ChooserPoly &operand1, const ChooserPoly &operand2);
+        ChooserPoly add(const ChooserPoly &operand1, const ChooserPoly &operand2) const;
 
         /**
         Performs an operation modeling Evaluator::add_many() on ChooserPoly objects. This operation
@@ -370,7 +292,7 @@ namespace seal
         @see Evaluator::add_many() for the corresponding operation on ciphertexts.
         @see SimulationEvaluator::add_many() for the corresponding operation on Simulation objects.
         */
-        ChooserPoly add_many(const std::vector<ChooserPoly> &operands);
+        ChooserPoly add_many(const std::vector<ChooserPoly> &operands) const;
 
         /**
         Performs an operation modeling Evaluator::sub() on ChooserPoly objects. This operation
@@ -384,7 +306,7 @@ namespace seal
         @see Evaluator::sub() for the corresponding operation on ciphertexts.
         @see SimulationEvaluator::sub() for the corresponding operation on Simulation objects.
         */
-        ChooserPoly sub(const ChooserPoly &operand1, const ChooserPoly &operand2);
+        ChooserPoly sub(const ChooserPoly &operand1, const ChooserPoly &operand2) const;
 
         /**
         Performs an operation modeling Evaluator::multiply() on ChooserPoly objects. This operation
@@ -398,25 +320,7 @@ namespace seal
         @see Evaluator::multiply() for the corresponding operation on ciphertexts.
         @see SimulationEvaluator::multiply() for the corresponding operation on Simulation objects.
         */
-        ChooserPoly multiply(const ChooserPoly &operand1, const ChooserPoly &operand2);
-
-        /**
-        Performs an operation modeling Evaluator::multiply_norelin() on ChooserPoly objects. This operation
-        creates a new ChooserPoly with updated bounds on the degree of the corresponding plaintext polynomial
-        and on the absolute values of the coefficients based on the inputs, and sets the operation history
-        accordingly.
-
-        @par THIS FUNCTION IS BROKEN
-        This function is broken and does not work correctly, except when used together with relinearize().
-        See Simulator::multiply_norelin() for more details.
-
-        @param[in] operand1 The first ChooserPoly object to multiply
-        @param[in] operand2 The second ChooserPoly object to multiply
-        @throws std::invalid_argument if either operand1 or operand2 is not correctly initialized
-        @see Evaluator::multiply_norelin() for the corresponding operation on ciphertexts.
-        @see SimulationEvaluator::multiply_norelin() for the corresponding operation on Simulation objects.
-        */
-        //ChooserPoly multiply_norelin(const ChooserPoly &operand1, const ChooserPoly &operand2);
+        ChooserPoly multiply(const ChooserPoly &operand1, const ChooserPoly &operand2) const;
 
         /**
         Performs an operation modeling Evaluator::relinearize() on ChooserPoly objects. This operation
@@ -424,16 +328,17 @@ namespace seal
         and on the absolute values of the coefficients as the input, but sets the operation history
         to include the relinearization operation.
 
-        @par THIS FUNCTION IS BROKEN
-        This function is broken and does not work correctly, except when used together with multiply_norelin().
-        See Simulator::relinearize() for more details.
+        The parameter destination_size is not verified for correctness in this function. Instead,
+        if an impossible value is given, simulating the noise growth in the returned ChooserPoly
+        will throw an exception.
 
         @param[in] operand The ChooserPoly object to relinearize
+        @param[in] destination_size The size of the output ciphertext that is being modeled (defaults to 2)
         @throws std::invalid_argument if operand is not correctly initialized
         @see Evaluator::relinearize() for the corresponding operation on ciphertexts.
         @see SimulationEvaluator::relinearize() for the corresponding operation on Simulation objects.
         */
-        //ChooserPoly relinearize(const ChooserPoly &operand);
+        ChooserPoly relinearize(const ChooserPoly &operand, int destination_size = 2) const;
 
         /**
         Performs an operation modeling Evaluator::multiply_plain() on ChooserPoly objects. This operation
@@ -446,10 +351,11 @@ namespace seal
         @param[in] plain_max_abs_value Bound on the absolute value of coefficients of the plaintext polynomial to multiply
         @throws std::invalid_argument if operand is not correctly initialized
         @throws std::invalid_argument if plain_max_coeff_count is not positive
+        @throws std::invalid_argument if plain_max_abs_value is zero
         @see Evaluator::multiply_plain() for the corresponding operation on ciphertexts.
         @see SimulationEvaluator::multiply_plain() for the corresponding operation on Simulation objects.
         */
-        ChooserPoly multiply_plain(const ChooserPoly &operand, int plain_max_coeff_count, const BigUInt &plain_max_abs_value);
+        ChooserPoly multiply_plain(const ChooserPoly &operand, int plain_max_coeff_count, const BigUInt &plain_max_abs_value) const;
 
         /**
         Performs an operation modeling Evaluator::multiply_plain() on ChooserPoly objects. This operation
@@ -462,10 +368,11 @@ namespace seal
         @param[in] plain_max_abs_value Bound on the absolute value of coefficients of the plaintext polynomial to multiply
         @throws std::invalid_argument if operand is not correctly initialized
         @throws std::invalid_argument if plain_max_coeff_count is not positive
+        @throws std::invalid_argument if plain_max_abs_value is zero
         @see Evaluator::multiply_plain() for the corresponding operation on ciphertexts.
         @see SimulationEvaluator::multiply_plain() for the corresponding operation on Simulation objects.
         */
-        ChooserPoly multiply_plain(const ChooserPoly &operand, int plain_max_coeff_count, uint64_t plain_max_abs_value);
+        ChooserPoly multiply_plain(const ChooserPoly &operand, int plain_max_coeff_count, uint64_t plain_max_abs_value) const;
 
         /**
         Performs an operation modeling Evaluator::multiply_plain() on ChooserPoly objects. This operation
@@ -481,15 +388,13 @@ namespace seal
         @param[in] operand The ChooserPoly object to multiply
         @param[in] plain_chooser_poly The plaintext polynomial to multiply represented by a ChooserPoly
         @throws std::invalid_argument if operand is not correctly initialized
-        @throws std::invalid_argument if plain_chooser_poly has a non-positive bound on the number of non-zero coefficients
+        @throws std::invalid_argument if plain_chooser_poly is not correctly initialized
+        @throws std::invalid_argument if plain_chooser_poly models a zero plaintext
         @see Evaluator::multiply_plain() for the corresponding operation on ciphertexts.
         @see SimulationEvaluator::multiply_plain() for the corresponding operation on Simulation objects.
         @see ChooserEncoder for constructing a ChooserPoly representing the plaintext multiplier.
         */
-        ChooserPoly multiply_plain(const ChooserPoly &operand, const ChooserPoly &plain_chooser_poly)
-        {
-            return multiply_plain(operand, plain_chooser_poly.max_coeff_count_, plain_chooser_poly.max_abs_value_);
-        }
+        ChooserPoly multiply_plain(const ChooserPoly &operand, const ChooserPoly &plain_chooser_poly) const;
 
         /**
         Performs an operation modeling Evaluator::add_plain() on ChooserPoly objects. This operation
@@ -521,7 +426,7 @@ namespace seal
         @see Evaluator::add_plain() for the corresponding operation on ciphertexts.
         @see SimulationEvaluator::add_plain() for the corresponding operation on Simulation objects.
         */
-        ChooserPoly add_plain(const ChooserPoly &operand, int plain_max_coeff_count, uint64_t plain_max_abs_value);
+        ChooserPoly add_plain(const ChooserPoly &operand, int plain_max_coeff_count, uint64_t plain_max_abs_value) const;
 
         /**
         Performs an operation modeling Evaluator::add_plain() on ChooserPoly objects. This operation
@@ -537,15 +442,13 @@ namespace seal
         @param[in] operand The ChooserPoly object to add
         @param[in] plain_chooser_poly The plaintext polynomial to add represented by a ChooserPoly
         @throws std::invalid_argument if operand is not correctly initialized
+        @throws std::invalid_argument if plain_chooser_poly is not correctly initialized
         @throws std::invalid_argument if plain_chooser_poly has a non-positive bound on the number of non-zero coefficients
         @see Evaluator::add_plain() for the corresponding operation on ciphertexts.
         @see SimulationEvaluator::add_plain() for the corresponding operation on Simulation objects.
         @see ChooserEncoder for constructing the ChooserPoly for the plaintext to add.
         */
-        ChooserPoly add_plain(const ChooserPoly &operand, const ChooserPoly &plain_chooser_poly)
-        {
-            return add_plain(operand, plain_chooser_poly.max_coeff_count_, plain_chooser_poly.max_abs_value_);
-        }
+        ChooserPoly add_plain(const ChooserPoly &operand, const ChooserPoly &plain_chooser_poly) const;
 
         /**
         Performs an operation modeling Evaluator::sub_plain() on ChooserPoly objects. This operation
@@ -561,7 +464,7 @@ namespace seal
         @see Evaluator::sub_plain() for the corresponding operation on ciphertexts.
         @see SimulationEvaluator::sub_plain() for the corresponding operation on Simulation objects.
         */
-        ChooserPoly sub_plain(const ChooserPoly &operand, int plain_max_coeff_count, const BigUInt &plain_max_abs_value);
+        ChooserPoly sub_plain(const ChooserPoly &operand, int plain_max_coeff_count, const BigUInt &plain_max_abs_value) const;
 
         /**
         Performs an operation modeling Evaluator::sub_plain() on ChooserPoly objects. This operation
@@ -577,7 +480,7 @@ namespace seal
         @see Evaluator::sub_plain() for the corresponding operation on ciphertexts.
         @see SimulationEvaluator::sub_plain() for the corresponding operation on Simulation objects.
         */
-        ChooserPoly sub_plain(const ChooserPoly &operand, int plain_max_coeff_count, uint64_t plain_max_abs_value);
+        ChooserPoly sub_plain(const ChooserPoly &operand, int plain_max_coeff_count, uint64_t plain_max_abs_value) const;
 
         /**
         Performs an operation modeling Evaluator::sub_plain() on ChooserPoly objects. This operation
@@ -593,15 +496,13 @@ namespace seal
         @param[in] operand The ChooserPoly object to subtract from
         @param[in] plain_chooser_poly The plaintext polynomial to subtract represented by a ChooserPoly
         @throws std::invalid_argument if operand is not correctly initialized
+        @throws std::invalid_argument if plain_chooser_poly is not correctly initialized
         @throws std::invalid_argument if plain_chooser_poly has a non-positive bound on the number of non-zero coefficients
         @see Evaluator::sub_plain() for the corresponding operation on ciphertexts.
         @see SimulationEvaluator:sub_plain() for the corresponding operation on Simulation objects.
         @see ChooserEncoder for constructing the ChooserPoly for the plaintext to subtract.
         */
-        ChooserPoly sub_plain(const ChooserPoly &operand, const ChooserPoly &plain_chooser_poly)
-        {
-            return sub_plain(operand, plain_chooser_poly.max_coeff_count_, plain_chooser_poly.max_abs_value_);
-        }
+        ChooserPoly sub_plain(const ChooserPoly &operand, const ChooserPoly &plain_chooser_poly) const;
 
         /**
         Performs an operation modeling Evaluator::exponentiate() on ChooserPoly objects. This operation
@@ -610,13 +511,13 @@ namespace seal
         accordingly.
 
         @param[in] operand The ChooserPoly object to raise to a power
-        @param[in] exponent The non-negative power to raise the ChooserPoly object to
+        @param[in] exponent The power to raise the ChooserPoly object to
         @throws std::invalid_argument if operand is not correctly initialized
-        @throws std::invalid_argument if operand models a zero polynomial and exponent is zero
+        @throws std::invalid_argument if exponent is zero
         @see Evaluator::exponentiate() for the corresponding operation on ciphertexts.
         @see SimulationEvaluator::exponentiate() for the corresponding operation on Simulation objects.
         */
-        ChooserPoly exponentiate(const ChooserPoly &operand, std::uint64_t exponent);
+        ChooserPoly exponentiate(const ChooserPoly &operand, std::uint64_t exponent) const;
 
         /**
         Performs an operation modeling Evaluator::negate() on ChooserPoly objects. This operation
@@ -629,7 +530,7 @@ namespace seal
         @see Evaluator::negate() for the corresponding operation on ciphertexts.
         @see SimulationEvaluator::negate() for the corresponding operation on Simulation objects.
         */
-        ChooserPoly negate(const ChooserPoly &operand);
+        ChooserPoly negate(const ChooserPoly &operand) const;
 
         /**
         Provides the user with optimized encryption parameters that are large enough to support the
@@ -648,7 +549,7 @@ namespace seal
         @see default_noise_max_deviation() for the default maximal noise deviation.
         @see default_parameter_options() for the default set of parameter options.
         */
-        bool select_parameters(const ChooserPoly &operand, EncryptionParameters &destination);
+        bool select_parameters(const ChooserPoly &operand, EncryptionParameters &destination) const;
 
         /**
         Provides the user with optimized encryption parameters that are large enough to support the
@@ -668,7 +569,7 @@ namespace seal
         @see default_noise_max_deviation() for the default maximal noise deviation.
         @see default_parameter_options() for the default set of parameter options.
         */
-        bool select_parameters(const std::vector<ChooserPoly> &operands, EncryptionParameters &destination);
+        bool select_parameters(const std::vector<ChooserPoly> &operands, EncryptionParameters &destination) const;
 
         /**
         Provides the user with optimized encryption parameters that are large enough to support the
@@ -696,7 +597,7 @@ namespace seal
         @see default_noise_max_deviation() for the default maximal noise deviation.
         @see default_parameter_options() for the default set of parameter options.
         */
-        bool select_parameters(const ChooserPoly &operand, double noise_standard_deviation, double noise_max_deviation, const std::map<int, BigUInt> &parameter_options, EncryptionParameters &destination);
+        bool select_parameters(const ChooserPoly &operand, double noise_standard_deviation, double noise_max_deviation, const std::map<int, BigUInt> &parameter_options, EncryptionParameters &destination) const;
 
         /**
         Provides the user with optimized encryption parameters that are large enough to support the
@@ -725,7 +626,7 @@ namespace seal
         @see default_noise_max_deviation() for the default maximal noise deviation.
         @see default_parameter_options() for the default set of parameter options.
         */
-        bool select_parameters(const std::vector<ChooserPoly> &operands, double noise_standard_deviation, double noise_max_deviation, const std::map<int, BigUInt> &parameter_options, EncryptionParameters &destination);
+        bool select_parameters(const std::vector<ChooserPoly> &operands, double noise_standard_deviation, double noise_max_deviation, const std::map<int, BigUInt> &parameter_options, EncryptionParameters &destination) const;
 
         /**
         Returns the default set of (degree(polynomial modulus),coeff_modulus)-pairs.
@@ -761,8 +662,6 @@ namespace seal
 
         ChooserEvaluator &operator =(const ChooserEvaluator &copy) = delete;
 
-        seal::util::MemoryPool pool_;
-
         static const std::map<int, BigUInt> default_parameter_options_;
 
         static const double default_noise_standard_deviation_;
@@ -777,10 +676,6 @@ namespace seal
     ChooserEvaluator::sub_plain() representing plaintext operands. Only the balanced odd base encodings
     (those provided by BalancedEncoder) are supported by ChooserEncoder. This class is a part of the
     automatic parameter selection module.
-
-    @par Thread Safety
-    The ChooserEncoder class is not thread-safe and a separate ChooserEncoder instance is needed for each
-    potentially concurrent usage.
 
     @see ChooserPoly for the object modeling encrypted/plaintext data for automatic parameter selection.
     @see ChooserEvaluator for manipulating instances of ChooserPoly.

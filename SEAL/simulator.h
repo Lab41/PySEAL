@@ -4,7 +4,6 @@
 #include "encryptionparams.h"
 #include "bigpoly.h"
 #include "biguint.h"
-#include "util/mempool.h"
 #include <string>
 #include <vector>
 
@@ -49,11 +48,13 @@ namespace seal
 
         @param[in] parms The encryption parameters
         @param[in] noise The inherent noise in the created ciphertext
+        @param[in] ciphertext_size The size of the created ciphertext
         @throws std::invalid_argument if encryption parameters are not valid
         @throws std::invalid_argument if noise is bigger than the given coefficient modulus
+        @throws std::invalid_argument if ciphertext_size is less than 2
         @see EncryptionParameters for more details on valid encryption parameters.
         */
-        Simulation(const EncryptionParameters &parms, const BigUInt &noise);
+        Simulation(const EncryptionParameters &parms, const BigUInt &noise, int ciphertext_size);
 
         /**
         Returns a reference to the value of inherent noise (represented by BigUInt) that is being simulated. If the
@@ -106,14 +107,23 @@ namespace seal
 
         /**
         Returns true or false depending on whether the encryption parameters were large enough to support the performed
-        homomorphic operations.
+        homomorphic operations. The noise_gap parameter can be used to leave a certain number of bits between the
+        simulated noise and the noise ceiling to guarantee decryption to work despite probabilistic effects.
 
         @warning The average-case estimates used by the simulator are typically conservative, so the amount of noise tends
         to be overestimated, and decryption might work even if decrypts() returns false.
+        @param[in] noise_gap The number of bits left between the simulated noise and the noise ceiling
+        @throws std::invalid_argument if noise_gap is negative
         */
-        bool decrypts() const
+        bool decrypts(int noise_gap = 0) const;
+
+        /**
+        Returns the size of the ciphertext whose noise is modeled by the simulation.
+        @see BigPolyArray::size() for the corresponding function on BigPolyArray objects.
+        */
+        int size() const
         {
-            return (noise_bits_left() >= 0);
+            return ciphertext_size_;
         }
 
         /**
@@ -134,7 +144,7 @@ namespace seal
 
     private:
         Simulation(const BigUInt &noise, const BigUInt &max_noise, const BigUInt &coeff_modulus, const BigUInt &plain_modulus, int poly_modulus_coeff_count,
-            double noise_standard_deviation, double noise_max_deviation, int decomposition_bit_count);
+            double noise_standard_deviation, double noise_max_deviation, int decomposition_bit_count, int ciphertext_size_);
 
         /**
         Compares the encryption parameters given in the constructor to those of the argument simulation.
@@ -166,6 +176,8 @@ namespace seal
         double noise_max_deviation_;
 
         int decomposition_bit_count_;
+
+        int ciphertext_size_;
 
         friend class SimulationEvaluator;
     };
@@ -208,19 +220,10 @@ namespace seal
         @param[in] simulations The vector of Simulation objects to multiply
         @throws std::invalid_argument if the simulations vector is empty
         @throws std::invalid_argument if at least two of the elements in the simulations vector were constructed with different encryption parameters
+        @throws std::invalid_argument if any of elements in the simulations vector has size() less than 2
         @see Evaluator::multiply_many() for the corresponding operation on ciphertexts.
         */
         Simulation multiply_many(std::vector<Simulation> simulations);
-
-        /**
-        Simulates inherent noise growth in Evaluator::multiply() and returns the result.
-
-        @param[in] simulation1 The first Simulation object to multiply
-        @param[in] simulation2 The second Simulation object to multiply
-        @throws std::invalid_argument if simulation1 and simulation2 were constructed with different encryption parameters
-        @see Evaluator::multiply() for the corresponding operation on ciphertexts.
-        */
-        Simulation multiply(const Simulation &simulation1, const Simulation &simulation2);
 
         /**
         Simulates inherent noise growth in Evaluator::add() and returns the result.
@@ -228,6 +231,7 @@ namespace seal
         @param[in] simulation1 The first Simulation object to add
         @param[in] simulation2 The second Simulation object to add
         @throws std::invalid_argument if simulation1 and simulation2 were constructed with different encryption parameters
+        @throws std::invalid_argument if simulation1 or simulation2 has size() less than 2
         @see Evaluator::add() for the corresponding operation on ciphertexts.
         */
         Simulation add(const Simulation &simulation1, const Simulation &simulation2);
@@ -238,6 +242,7 @@ namespace seal
         @param[in] simulations The simulations to add
         @throws std::invalid_argument if simulations is empty
         @throws std::invalid_argument if not all elements of simulations were constructed with the same encryption parameters
+        @throws std::invalid_argument if any of the elements in the simulations vector has size() less than 2
         @see Evaluator::add_many() for the corresponding operation on ciphertexts.
         */
         Simulation add_many(const std::vector<Simulation> &simulations);
@@ -248,6 +253,7 @@ namespace seal
         @param[in] simulation1 The Simulation object to subtract from
         @param[in] simulation2 The Simulation object to subtract
         @throws std::invalid_argument if simulation1 and simulation2 were constructed with different encryption parameters
+        @throws std::invalid_argument if simulation1 or simulation2 has size() less than 2
         @see Evaluator::sub() for the corresponding operation on ciphertexts.
         */
         Simulation sub(const Simulation &simulation1, const Simulation &simulation2);
@@ -261,6 +267,8 @@ namespace seal
         @param[in] plain_max_coeff_count An upper bound on the number of non-zero coefficients in the plain polynomial to multiply
         @param[in] plain_max_abs_value An upper bound (represented by BigUInt) on the absolute value of coefficients in the plain polynomial to multiply
         @throws std::invalid_argument if plain_max_coeff_count is out of range
+        @throws std::invalid_argument if plain_max_coeff_count or plain_max_abs_value is zero
+        @throws std::invalid_argument if simulation has size() less than 2
         @see Evaluator::multiply_plain() for the corresponding operation on ciphertexts.
         */
         Simulation multiply_plain(const Simulation &simulation, int plain_max_coeff_count, const BigUInt &plain_max_abs_value);
@@ -274,6 +282,8 @@ namespace seal
         @param[in] plain_max_coeff_count An upper bound on the number of non-zero coefficients in the plain polynomial to multiply
         @param[in] plain_max_abs_value An upper bound (represented by std::uint64_t) on the absolute value of coefficients in the plain polynomial to multiply
         @throws std::invalid_argument if plain_max_coeff_count is out of range
+        @throws std::invalid_argument if plain_max_coeff_count or plain_max_abs_value is zero
+        @throws std::invalid_argument if simulation has size() less than 2
         @see Evaluator::multiply_plain() for the corresponding operation on ciphertexts.
         */
         Simulation multiply_plain(const Simulation &simulation, int plain_max_coeff_count, uint64_t plain_max_abs_value);
@@ -282,6 +292,7 @@ namespace seal
         Simulates inherent noise growth in Evaluator::add_plain() and returns the result.
 
         @param[in] simulation The Simulation object to add to
+        @throws std::invalid_argument if simulation has size() less than 2
         @see Evaluator::add_plain() for the corresponding operation on ciphertexts.
         */
         Simulation add_plain(const Simulation &simulation);
@@ -290,6 +301,7 @@ namespace seal
         Simulates inherent noise growth in Evaluator::sub_plain() and returns the result.
 
         @param[in] simulation The Simulation object to subtract from
+        @throws std::invalid_argument if simulation has size() less than 2
         @see Evaluator::sub_plain() for the corresponding operation on ciphertexts.
         */
         Simulation sub_plain(const Simulation &simulation);
@@ -298,8 +310,9 @@ namespace seal
         Simulates inherent noise growth in Evaluator::exponentiate() and returns the result.
 
         @param[in] simulation The Simulation object to raise to a power
-        @param[in] exponent The non-negative power to raise the Simulation object to
-        @throws std::invalid_argument if the exponent is negative
+        @param[in] exponent The power to raise the Simulation object to
+        @throws std::invalid_argument if exponent is zero
+        @throws std::invalid_argument if simulation has size() less than 2
         @see Evaluator::exponentiate() for the corresponding operation on ciphertexts.
         */
         Simulation exponentiate(const Simulation &simulation, std::uint64_t exponent);
@@ -308,42 +321,32 @@ namespace seal
         Simulates inherent noise growth in Evaluator::negate() and returns the result.
 
         @param[in] simulation The Simulation object to negate
+        @throws std::invalid_argument if simulation has size() less than 2
         @see Evaluator::negate() for the corresponding operation on ciphertexts.
         */
         Simulation negate(const Simulation &simulation);
 
-    private:
-        seal::util::MemoryPool pool_;
-
         /**
-        Simulates inherent noise growth in Evaluator::multiply_norelin() and returns the result.
-
-        @par THIS FUNCTION IS BROKEN
-        This function is broken and can not be used except together with relinearize().
-        The problem is that multiplication without relinearization also adds an additive term,
-        which this function omits, and that additive term depends on under what powers of
-        the key the ciphertexts decrypt.
+        Simulates inherent noise growth in Evaluator::multiply() and returns the result.
 
         @param[in] simulation1 The first Simulation object to multiply
         @param[in] simulation2 The second Simulation object to multiply
         @throws std::invalid_argument if simulation1 and simulation2 were constructed with different encryption parameters
-        @see Evaluator::multiply_norelin() for the corresponding operation on ciphertexts.
+        @throws std::invalid_argument if simulation1 or simulation2 has size() less than 2
+        @see Evaluator::multiply() for the corresponding operation on ciphertexts.
         */
-        Simulation multiply_norelin(const Simulation &simulation1, const Simulation &simulation2);
+        Simulation multiply(const Simulation &simulation1, const Simulation &simulation2);
 
         /**
         Simulates inherent noise growth in Evaluator::relinearize() and returns the result.
 
-        @par THIS FUNCTION IS BROKEN
-        This function is broken and can not be used except together with multiply_norelin().
-        The problem is that relinearization adds additive terms that may be significant
-        depending on under what power of the secret key the result decrypts.
-        This function omits those terms.
-
         @param[in] simulation The Simulation object to relinearize
+        @param[in] destination_size The size of the ciphertext (represented by the output simulation) after relinearization, defaults to 2
+        @throws std::invalid_argument if destination_size is less than 2 or greater than that of the ciphertext represented by simulation 
+        @throws std::invalid_argument if simulation has size() less than 2
         @see Evaluator::relinearize() for the corresponding operation on ciphertexts.
         */
-        Simulation relinearize(const Simulation &simulation);
+        Simulation relinearize(const Simulation &simulation, int destination_size = 2);
     };
 }
 

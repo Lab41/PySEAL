@@ -16,7 +16,6 @@ namespace SEALNETTest
                 DecompositionBitCount = 4,
                 NoiseStandardDeviation = 3.19,
                 NoiseMaxDeviation = 35.06,
-                Mode = EncryptionMode.Test
             };
             var coeffModulus = parms.CoeffModulus;
             coeffModulus.Resize(48);
@@ -35,14 +34,12 @@ namespace SEALNETTest
             Assert.AreEqual("FFFFFFFFC001", parms.CoeffModulus.ToString());
             Assert.AreEqual("40", parms.PlainModulus.ToString());
             Assert.AreEqual("1x^63 + 1", parms.PolyModulus.ToString());
-            Assert.AreEqual(EncryptionMode.Test, parms.Mode);
         }
 
         [TestMethod]
         public void EncryptionParamsDefaultToNormalModeNET()
         {
             var parms = new EncryptionParameters();
-            Assert.AreEqual(EncryptionMode.Normal, parms.Mode);
         }
 
         [TestMethod]

@@ -3,6 +3,7 @@
 
 #include "biguint.h"
 #include "bigpoly.h"
+#include "bigpolyarray.h"
 #include "encryptionparams.h"
 #include "keygenerator.h"
 #include "encryptor.h"

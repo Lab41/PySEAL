@@ -577,8 +577,10 @@ namespace seal
             }
         }
 
-        void divide_uint_uint_inplace(uint64_t *numerator, const uint64_t *denominator, int uint64_count, uint64_t *quotient, MemoryPool &pool)
+        void divide_uint_uint_inplace(uint64_t *numerator, const uint64_t *denominator, int uint64_count, uint64_t *quotient, MemoryPool &pool, uint64_t *alloc_ptr)
         {
+            // alloc_ptr should point to 2 x uint64_count memory
+
 #ifdef _DEBUG
             if (numerator == nullptr && uint64_count > 0)
             {
@@ -635,14 +637,34 @@ namespace seal
             }
 
             // Create temporary space to store mutable copy of denominator.
-            Pointer shifted_denominator(allocate_uint(uint64_count, pool));
+            // Set shifted_denominator to point to either an existing allocation given as parameter,
+            // or else to a new allocation from the memory pool.
+            Pointer shifted_denominator_anchor;
+            uint64_t *shifted_denominator = alloc_ptr;
+            if (alloc_ptr == nullptr)
+            {
+                shifted_denominator_anchor = allocate_uint(uint64_count, pool);
+                shifted_denominator = shifted_denominator_anchor.get();
+            }
+            else
+            {
+                alloc_ptr += uint64_count;
+            }
 
             // Create temporary space to store difference calculation.
-            Pointer difference(allocate_uint(uint64_count, pool));
+            // Set difference to point to either an existing allocation given as parameter,
+            // or else to a new allocation from the memory pool.
+            Pointer difference_anchor;
+            uint64_t *difference = alloc_ptr;
+            if (alloc_ptr == nullptr)
+            {
+                difference_anchor = allocate_uint(uint64_count, pool);
+                difference = difference_anchor.get();
+            }
 
             // Shift denominator to bring MSB in alignment with MSB of numerator.
             int denominator_shift = numerator_bits - denominator_bits;
-            left_shift_uint(denominator, denominator_shift, uint64_count, shifted_denominator.get());
+            left_shift_uint(denominator, denominator_shift, uint64_count, shifted_denominator);
             denominator_bits += denominator_shift;
 
             // Perform bit-wise division algorithm.
@@ -652,7 +674,7 @@ namespace seal
                 // NOTE: MSBs of numerator and denominator are aligned.
 
                 // Subtract numerator and denominator.
-                bool difference_is_negative = sub_uint_uint(numerator, shifted_denominator.get(), uint64_count, difference.get());
+                bool difference_is_negative = sub_uint_uint(numerator, shifted_denominator, uint64_count, difference);
 
                 // Even though MSB of numerator and denominator are aligned, still possible numerator < shifted_denominator.
                 if (difference_is_negative)
@@ -665,7 +687,7 @@ namespace seal
                     }
 
                     // Effectively shift numerator left by 1 by instead adding numerator to difference (to prevent overflow in numerator).
-                    add_uint_uint(difference.get(), numerator, uint64_count, difference.get());
+                    add_uint_uint(difference, numerator, uint64_count, difference);
 
                     // Adjust quotient and remaining shifts as a result of shifting numerator.
                     left_shift_uint(quotient, 1, uint64_count, quotient);
@@ -677,7 +699,7 @@ namespace seal
                 quotient[0] |= 1;
 
                 // Determine amount to shift numerator to bring MSB in alignment with denominator.
-                numerator_bits = get_significant_bit_count_uint(difference.get(), uint64_count);
+                numerator_bits = get_significant_bit_count_uint(difference, uint64_count);
                 int numerator_shift = denominator_bits - numerator_bits;
                 if (numerator_shift > remaining_shifts)
                 {
@@ -688,7 +710,7 @@ namespace seal
                 // Shift and update numerator.
                 if (numerator_bits > 0)
                 {
-                    left_shift_uint(difference.get(), numerator_shift, uint64_count, numerator);
+                    left_shift_uint(difference, numerator_shift, uint64_count, numerator);
                     numerator_bits += numerator_shift;
                 }
                 else

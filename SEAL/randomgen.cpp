@@ -6,5 +6,5 @@ using namespace std;
 
 namespace seal
 {
-    UniformRandomGeneratorFactory *UniformRandomGeneratorFactory::default_factory_ = new StandardRandomAdapterFactory<default_random_engine>();
+    UniformRandomGeneratorFactory *UniformRandomGeneratorFactory::default_factory_ = new StandardRandomAdapterFactory<random_device>();
 }

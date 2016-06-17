@@ -151,8 +151,9 @@ namespace seal
         // Determine plain_modulus width.
         int plain_modulus_bits = plain_modulus_.significant_bit_count();
 
+        MemoryPool &pool = *MemoryPool::default_pool();
         int sig_uint64_count = divide_round_up(plain_modulus_bits, bits_per_uint64);
-        Pointer pos_value(allocate_uint(sig_uint64_count, pool_));
+        Pointer pos_value(allocate_uint(sig_uint64_count, pool));
 
         // Determine coefficient threshold for negative numbers.
         int coeff_neg_threshold_bits = coeff_neg_threshold_.significant_bit_count();
@@ -222,8 +223,9 @@ namespace seal
         // Determine plain_modulus width.
         int plain_modulus_bits = plain_modulus_.significant_bit_count();
 
+        MemoryPool &pool = *MemoryPool::default_pool();
         int sig_uint64_count = divide_round_up(plain_modulus_bits, bits_per_uint64);
-        Pointer pos_value(allocate_uint(sig_uint64_count, pool_));
+        Pointer pos_value(allocate_uint(sig_uint64_count, pool));
 
         // Determine coefficient threshold for negative numbers.
         int coeff_neg_threshold_bits = coeff_neg_threshold_.significant_bit_count();
@@ -323,8 +325,9 @@ namespace seal
         // Determine plain_modulus width.
         int plain_modulus_bits = plain_modulus_.significant_bit_count();
 
+        MemoryPool &pool = *MemoryPool::default_pool();
         int sig_uint64_count = divide_round_up(plain_modulus_bits, bits_per_uint64);
-        Pointer pos_value(allocate_uint(sig_uint64_count, pool_));
+        Pointer pos_value(allocate_uint(sig_uint64_count, pool));
 
         // Determine coefficient threshold for negative numbers.
         int coeff_neg_threshold_bits = coeff_neg_threshold_.significant_bit_count();
@@ -537,20 +540,21 @@ namespace seal
         int dest_coeff_uint64_count = destination.coeff_uint64_count();
         destination.set_zero();
 
-        Pointer base_uint(allocate_uint(encode_uint64_count, pool_));
+        MemoryPool &pool = *MemoryPool::default_pool();
+        Pointer base_uint(allocate_uint(encode_uint64_count, pool));
         set_uint(base_, encode_uint64_count, base_uint.get());
-        Pointer base_div_two_uint(allocate_uint(encode_uint64_count, pool_));
+        Pointer base_div_two_uint(allocate_uint(encode_uint64_count, pool));
         right_shift_uint(base_uint.get(), 1, encode_uint64_count, base_div_two_uint.get());
-        Pointer mod_minus_base(allocate_uint(dest_coeff_uint64_count, pool_));
+        Pointer mod_minus_base(allocate_uint(dest_coeff_uint64_count, pool));
         sub_uint_uint(plain_modulus_.pointer(), plain_modulus_.uint64_count(), base_uint.get(), encode_uint64_count, false, dest_coeff_uint64_count, mod_minus_base.get());
 
-        Pointer quotient(allocate_uint(encode_uint64_count, pool_));
-        Pointer remainder(allocate_uint(encode_uint64_count, pool_));
+        Pointer quotient(allocate_uint(encode_uint64_count, pool));
+        Pointer remainder(allocate_uint(encode_uint64_count, pool));
 
         int coeff_index = 0;
         while (!value.is_zero())
         {
-            divide_uint_uint(value.pointer(), base_uint.get(), encode_uint64_count, quotient.get(), remainder.get(), pool_);
+            divide_uint_uint(value.pointer(), base_uint.get(), encode_uint64_count, quotient.get(), remainder.get(), pool);
             uint64_t *dest_coeff = get_poly_coeff(destination.pointer(), coeff_index, dest_coeff_uint64_count);
             if (is_greater_than_uint_uint(remainder.get(), base_div_two_uint.get(), encode_uint64_count))
             {
@@ -561,7 +565,7 @@ namespace seal
                 set_uint_uint(remainder.get(), encode_uint64_count, dest_coeff_uint64_count, dest_coeff);
             }
             add_uint_uint(value.pointer(), base_div_two_uint.get(), encode_uint64_count, value.pointer());
-            divide_uint_uint(value.pointer(), base_uint.get(), encode_uint64_count, quotient.get(), remainder.get(), pool_);
+            divide_uint_uint(value.pointer(), base_uint.get(), encode_uint64_count, quotient.get(), remainder.get(), pool);
             set_uint_uint(quotient.get(), encode_uint64_count, value.pointer());
 
             ++coeff_index;
@@ -605,8 +609,9 @@ namespace seal
         // Determine plain_modulus width.
         int plain_modulus_bits = plain_modulus_.significant_bit_count();
 
+        MemoryPool &pool = *MemoryPool::default_pool();
         int sig_uint64_count = divide_round_up(plain_modulus_bits, bits_per_uint64);
-        Pointer pos_value(allocate_uint(sig_uint64_count, pool_));
+        Pointer pos_value(allocate_uint(sig_uint64_count, pool));
 
         // Determine coefficient threshold for negative numbers.
         int coeff_neg_threshold_bits = coeff_neg_threshold_.significant_bit_count();
@@ -626,7 +631,7 @@ namespace seal
             }
 
             // Get sign/magnitude of coefficient.
-            int coeff_bit_count = coeff.significant_bit_count();
+           int coeff_bit_count = coeff.significant_bit_count();
             if (coeff_bit_count > plain_modulus_bits)
             {
                 // Coefficient has more bits than plain_modulus.
@@ -677,8 +682,9 @@ namespace seal
         // Determine plain_modulus width.
         int plain_modulus_bits = plain_modulus_.significant_bit_count();
 
+        MemoryPool &pool = *MemoryPool::default_pool();
         int sig_uint64_count = divide_round_up(plain_modulus_bits, bits_per_uint64);
-        Pointer pos_value(allocate_uint(sig_uint64_count, pool_));
+        Pointer pos_value(allocate_uint(sig_uint64_count, pool));
 
         // Determine coefficient threshold for negative numbers.
         int coeff_neg_threshold_bits = coeff_neg_threshold_.significant_bit_count();
@@ -784,8 +790,9 @@ namespace seal
         // Determine plain_modulus width.
         int plain_modulus_bits = plain_modulus_.significant_bit_count();
 
+        MemoryPool &pool = *MemoryPool::default_pool();
         int sig_uint64_count = divide_round_up(plain_modulus_bits, bits_per_uint64);
-        Pointer pos_value(allocate_uint(sig_uint64_count, pool_));
+        Pointer pos_value(allocate_uint(sig_uint64_count, pool));
 
         // Determine coefficient threshold for negative numbers.
         int coeff_neg_threshold_bits = coeff_neg_threshold_.significant_bit_count();
@@ -924,7 +931,8 @@ namespace seal
         bool is_negative = value < 0;
 
         //Extract the fractional part
-        Pointer encoded_fract(allocate_zero_poly(poly_modulus_.coeff_count(), plain_uint64_count, pool_));
+        MemoryPool &pool = *MemoryPool::default_pool();
+        Pointer encoded_fract(allocate_zero_poly(poly_modulus_.coeff_count(), plain_uint64_count, pool));
         for (int i = 0; i < fraction_coeff_count_; ++i)
         {
             value *= 2;
@@ -1039,7 +1047,8 @@ namespace seal
         int plain_uint64_count = divide_round_up(encoder_.plain_modulus().significant_bit_count(), bits_per_uint64);
 
         // Extract the fractional part
-        Pointer encoded_fract(allocate_zero_poly(poly_modulus_.coeff_count(), plain_uint64_count, pool_));
+        MemoryPool &pool = *MemoryPool::default_pool();
+        Pointer encoded_fract(allocate_zero_poly(poly_modulus_.coeff_count(), plain_uint64_count, pool));
         for (int i = 0; i < fraction_coeff_count_; ++i)
         {
             value *= encoder_.base();

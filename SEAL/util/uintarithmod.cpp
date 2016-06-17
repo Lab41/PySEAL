@@ -9,8 +9,10 @@ namespace seal
 {
     namespace util
     {
-        void modulo_uint_inplace(uint64_t *value, int value_uint64_count, const Modulus &modulus, MemoryPool &pool)
+        void modulo_uint_inplace(uint64_t *value, int value_uint64_count, const Modulus &modulus, MemoryPool &pool, uint64_t *alloc_ptr)
         {
+            // alloc_ptr should point to 2 x value_uint64_count memory
+
 #ifdef _DEBUG
             if (value == nullptr && value_uint64_count > 0)
             {
@@ -63,12 +65,21 @@ namespace seal
             int modulo_power_min_one = modulus.power_of_two_minus_one();
             if (modulo_power_min_one >= 2)
             {
-                Pointer shifted(allocate_uint(uint64_count, pool));
+                // Set shifted_ptr to point to either an existing allocation given as parameter,
+                // or else to a new allocation from the memory pool.
+                Pointer shifted;
+                uint64_t *shifted_ptr = alloc_ptr;
+                if (alloc_ptr == nullptr)
+                {
+                    shifted = allocate_uint(uint64_count, pool);
+                    shifted_ptr = shifted.get();
+                }
+
                 while (value_bits > modulus_bits + 1)
                 {
-                    right_shift_uint(value, modulo_power_min_one, uint64_count, shifted.get());
+                    right_shift_uint(value, modulo_power_min_one, uint64_count, shifted_ptr);
                     filter_highbits_uint(value, uint64_count, modulo_power_min_one);
-                    add_uint_uint(value, shifted.get(), uint64_count, value);
+                    add_uint_uint(value, shifted_ptr, uint64_count, value);
                     value_bits = get_significant_bit_count_uint(value, uint64_count);
                     uint64_count = divide_round_up(value_bits, bits_per_uint64);
                 }
@@ -89,14 +100,37 @@ namespace seal
             if (invmodulus != nullptr)
             {
                 // Iterate to shorten value.
-                Pointer shifted(allocate_uint(uint64_count, pool));
-                Pointer product(allocate_uint(uint64_count, pool));
+
+                // Set shifted_ptr to point to either an existing allocation given as parameter,
+                // or else to a new allocation from the memory pool.
+                Pointer shifted;
+                uint64_t *shifted_ptr = alloc_ptr;
+                if (alloc_ptr == nullptr)
+                {
+                    shifted = allocate_uint(uint64_count, pool);
+                    shifted_ptr = shifted.get();
+                }
+                else
+                {
+                    alloc_ptr += uint64_count;
+                }
+
+                // Set shifted_ptr to point to either an existing allocation given as parameter,
+                // or else to a new allocation from the memory pool.
+                Pointer product;
+                uint64_t *product_ptr = alloc_ptr;
+                if (alloc_ptr == nullptr)
+                {
+                    product = allocate_uint(uint64_count, pool);
+                    product_ptr = product.get();
+                }
+
                 while (value_bits > modulus_bits + 1)
                 {
-                    right_shift_uint(value, modulus_bits, uint64_count, shifted.get());
+                    right_shift_uint(value, modulus_bits, uint64_count, shifted_ptr);
                     filter_highbits_uint(value, uint64_count, modulus_bits);
-                    multiply_uint_uint(shifted.get(), uint64_count, invmodulus, modulus_uint64_count, uint64_count, product.get());
-                    add_uint_uint(value, product.get(), uint64_count, value);
+                    multiply_uint_uint(shifted_ptr, uint64_count, invmodulus, modulus_uint64_count, uint64_count, product_ptr);
+                    add_uint_uint(value, product_ptr, uint64_count, value);
                     value_bits = get_significant_bit_count_uint(value, uint64_count);
                     uint64_count = divide_round_up(value_bits, bits_per_uint64);
                 }
@@ -115,15 +149,36 @@ namespace seal
             }
 
             // Create temporary space to store mutable copy of modulus.
-            Pointer shifted_modulus(allocate_uint(uint64_count, pool));
-            set_uint_uint(modulusptr, modulus_uint64_count, uint64_count, shifted_modulus.get());
+
+            // Set shifted_modulus_ptr to point to either an existing allocation given as parameter,
+            // or else to a new allocation from the memory pool.
+            Pointer shifted_modulus;
+            uint64_t *shifted_modulus_ptr = alloc_ptr;
+            if (alloc_ptr == nullptr)
+            {
+                shifted_modulus = allocate_uint(uint64_count, pool);
+                shifted_modulus_ptr = shifted_modulus.get();
+            }
+            else
+            {
+                alloc_ptr += uint64_count;
+            }
+            set_uint_uint(modulusptr, modulus_uint64_count, uint64_count, shifted_modulus_ptr);
 
             // Create temporary space to store difference calculation.
-            Pointer difference(allocate_uint(uint64_count, pool));
+            // Set difference_ptr to point to either an existing allocation given as parameter,
+            // or else to a new allocation from the memory pool.
+            Pointer difference;
+            uint64_t *difference_ptr = alloc_ptr;
+            if (alloc_ptr == nullptr)
+            {
+                difference = allocate_uint(uint64_count, pool);
+                difference_ptr = difference.get();
+            }
 
             // Shift modulus to bring MSB in alignment with MSB of value.
             int modulus_shift = value_bits - modulus_bits;
-            left_shift_uint(shifted_modulus.get(), modulus_shift, uint64_count, shifted_modulus.get());
+            left_shift_uint(shifted_modulus_ptr, modulus_shift, uint64_count, shifted_modulus_ptr);
             modulus_bits += modulus_shift;
 
             // Perform bit-wise division algorithm.
@@ -133,7 +188,7 @@ namespace seal
                 // NOTE: MSBs of value and shifted modulus are aligned.
 
                 // Subtract value and modulus.
-                bool difference_is_negative = sub_uint_uint(value, shifted_modulus.get(), uint64_count, difference.get());
+                bool difference_is_negative = sub_uint_uint(value, shifted_modulus_ptr, uint64_count, difference_ptr);
 
                 // Even though MSB of value and modulus are aligned, still possible value < shifted_modulus.
                 if (difference_is_negative)
@@ -146,7 +201,7 @@ namespace seal
                     }
 
                     // Effectively shift value left by 1 by instead adding value to difference (to prevent overflow in value).
-                    add_uint_uint(difference.get(), value, uint64_count, difference.get());
+                    add_uint_uint(difference_ptr, value, uint64_count, difference_ptr);
 
                     // Adjust remaining shifts as a result of shifting value.
                     remaining_shifts--;
@@ -154,7 +209,7 @@ namespace seal
                 // Difference is the new value with modulus subtracted.
 
                 // Determine amount to shift value to bring MSB in alignment with modulus.
-                value_bits = get_significant_bit_count_uint(difference.get(), uint64_count);
+                value_bits = get_significant_bit_count_uint(difference_ptr, uint64_count);
                 int value_shift = modulus_bits - value_bits;
                 if (value_shift > remaining_shifts)
                 {
@@ -165,7 +220,7 @@ namespace seal
                 // Shift and update value.
                 if (value_bits > 0)
                 {
-                    left_shift_uint(difference.get(), value_shift, uint64_count, value);
+                    left_shift_uint(difference_ptr, value_shift, uint64_count, value);
                     value_bits += value_shift;
                 }
                 else
@@ -182,8 +237,10 @@ namespace seal
             right_shift_uint(value, modulus_shift, uint64_count, value);
         }
 
-        void modulo_uint(const std::uint64_t *value, int value_uint64_count, const Modulus &modulus, std::uint64_t *result, MemoryPool &pool)
+        void modulo_uint(const std::uint64_t *value, int value_uint64_count, const Modulus &modulus, std::uint64_t *result, MemoryPool &pool, uint64_t *alloc_ptr)
         {
+            // alloc_ptr should point to 3 x value_uint64_count memory
+
 #ifdef _DEBUG
             if (value == nullptr && value_uint64_count > 0)
             {
@@ -214,10 +271,24 @@ namespace seal
                 }
                 return;
             }
-            Pointer value_copy(allocate_uint(value_uint64_count, pool));
-            set_uint_uint(value, value_uint64_count, value_copy.get());
-            modulo_uint_inplace(value_copy.get(), value_uint64_count, modulus, pool);
-            set_uint_uint(value_copy.get(), value_uint64_count, modulus.uint64_count(), result);
+
+            // Set value_copy to point to either an existing allocation given as parameter,
+            // or else to a new allocation from the memory pool.
+            Pointer value_copy_anchor;
+            uint64_t *value_copy = alloc_ptr;
+            if (alloc_ptr == nullptr)
+            {
+                value_copy_anchor = allocate_uint(value_uint64_count, pool);
+                value_copy = value_copy_anchor.get();
+            }
+            else
+            {
+                alloc_ptr += value_uint64_count;
+            }
+            set_uint_uint(value, value_uint64_count, value_copy);
+
+            modulo_uint_inplace(value_copy, value_uint64_count, modulus, pool, alloc_ptr);
+            set_uint_uint(value_copy, value_uint64_count, modulus.uint64_count(), result);
         }
 
         void increment_uint_mod(const uint64_t *operand, const uint64_t *modulus, int uint64_count, uint64_t *result)
@@ -455,8 +526,10 @@ namespace seal
             }
         }
 
-        void multiply_uint_uint_mod(const uint64_t *operand1, const uint64_t *operand2, const Modulus &modulus, uint64_t *result, MemoryPool &pool)
+        void multiply_uint_uint_mod(const uint64_t *operand1, const uint64_t *operand2, const Modulus &modulus, uint64_t *result, MemoryPool &pool, uint64_t *alloc_ptr)
         {
+            // alloc_ptr should point to 4 x modulus.uint64_count() memory
+
 #ifdef _DEBUG
             if (operand1 == nullptr)
             {
@@ -490,14 +563,16 @@ namespace seal
             multiply_uint_uint(operand1, operand2, uint64_count, intermediate.get());
 
             // Perform modulo operation.
-            modulo_uint_inplace(intermediate.get(), intermediate_uint64_count, modulus, pool);
+            modulo_uint_inplace(intermediate.get(), intermediate_uint64_count, modulus, pool, alloc_ptr);
 
             // Copy to result.
             set_uint_uint(intermediate.get(), uint64_count, result);
         }
 
-        void multiply_uint_uint_mod_inplace(const uint64_t *operand1, const uint64_t *operand2, const Modulus &modulus, uint64_t *result, MemoryPool &pool)
+        void multiply_uint_uint_mod_inplace(const uint64_t *operand1, const uint64_t *operand2, const Modulus &modulus, uint64_t *result, MemoryPool &pool, uint64_t *alloc_ptr)
         {
+            // alloc_ptr should point to 4 x modulus.uint64_count() memory
+
 #ifdef _DEBUG
             if (operand1 == nullptr)
             {
@@ -530,11 +605,13 @@ namespace seal
             multiply_uint_uint(operand1, operand2, uint64_count, result);
 
             // Perform modulo operation.
-            modulo_uint_inplace(result, result_uint64_count, modulus, pool);
+            modulo_uint_inplace(result, result_uint64_count, modulus, pool, alloc_ptr);
         }
 
-        bool try_invert_uint_mod(const uint64_t *operand, const uint64_t *modulus, int uint64_count, uint64_t *result, MemoryPool &pool)
+        bool try_invert_uint_mod(const uint64_t *operand, const uint64_t *modulus, int uint64_count, uint64_t *result, MemoryPool &pool, uint64_t *alloc_ptr)
         {
+            // alloc_ptr should point to 7 x uint64_count memory
+
 #ifdef _DEBUG
             if (operand == nullptr)
             {
@@ -573,35 +650,113 @@ namespace seal
 
             // Construct a mutable copy of operand and modulus, with numerator being modulus
             // and operand being denominator. Notice that numerator > denominator.
-            Pointer numerator_anchor(allocate_uint(uint64_count, pool));
-            uint64_t *numerator = numerator_anchor.get();
+
+            // Set numerator to point to either an existing allocation given as parameter,
+            // or else to a new allocation from the memory pool.
+            Pointer numerator_anchor;
+            uint64_t *numerator = alloc_ptr;
+            if (alloc_ptr == nullptr)
+            {
+                numerator_anchor = allocate_uint(uint64_count, pool);
+                numerator = numerator_anchor.get();
+            }
+            else
+            {
+                alloc_ptr += uint64_count;
+            }
             set_uint_uint(modulus, uint64_count, numerator);
-            Pointer denominator_anchor(allocate_uint(uint64_count, pool));
-            uint64_t *denominator = denominator_anchor.get();
+            
+            // Set denominator to point to either an existing allocation given as parameter,
+            // or else to a new allocation from the memory pool.
+            Pointer denominator_anchor;
+            uint64_t *denominator = alloc_ptr;
+            if (alloc_ptr == nullptr)
+            {
+                denominator_anchor = allocate_uint(uint64_count, pool);
+                denominator = denominator_anchor.get();
+            }
+            else
+            {
+                alloc_ptr += uint64_count;
+            }
             set_uint_uint(operand, uint64_count, denominator);
 
             // Create space to store difference.
-            Pointer difference(allocate_uint(uint64_count, pool));
+            // Set difference to point to either an existing allocation given as parameter,
+            // or else to a new allocation from the memory pool.
+            Pointer difference_alloc;
+            uint64_t *difference = alloc_ptr;
+            if (alloc_ptr == nullptr)
+            {
+                difference_alloc = allocate_uint(uint64_count, pool);
+                difference = difference_alloc.get();
+            }
+            else
+            {
+                alloc_ptr += uint64_count;
+            }
 
             // Determine highest bit index of each.
             int numerator_bits = get_significant_bit_count_uint(numerator, uint64_count);
             int denominator_bits = get_significant_bit_count_uint(denominator, uint64_count);
 
             // Create space to store quotient.
-            Pointer quotient(allocate_uint(uint64_count, pool));
-
+            // Set quotient to point to either an existing allocation given as parameter,
+            // or else to a new allocation from the memory pool.
+            Pointer quotient_alloc;
+            uint64_t *quotient = alloc_ptr;
+            if (alloc_ptr == nullptr)
+            {
+                quotient_alloc = allocate_uint(uint64_count, pool);
+                quotient = quotient_alloc.get();
+            }
+            else
+            {
+                alloc_ptr += uint64_count;
+            }
             // Create three sign/magnitude values to store coefficients.
             // Initialize invert_prior to +0 and invert_curr to +1.
-            Pointer invert_prior_anchor(allocate_uint(uint64_count, pool));
-            uint64_t *invert_prior = invert_prior_anchor.get();
+            // Set invert_prior to point to either an existing allocation given as parameter,
+            // or else to a new allocation from the memory pool.
+            Pointer invert_prior_anchor;
+            uint64_t *invert_prior = alloc_ptr;
+            if (alloc_ptr == nullptr)
+            {
+                invert_prior_anchor = allocate_uint(uint64_count, pool);
+                invert_prior = invert_prior_anchor.get();
+            }
+            else
+            {
+                alloc_ptr += uint64_count;
+            }
             set_zero_uint(uint64_count, invert_prior);
             bool invert_prior_positive = true;
-            Pointer invert_curr_anchor(allocate_uint(uint64_count, pool));
-            uint64_t *invert_curr = invert_curr_anchor.get();
+
+            // Set invert_curr to point to either an existing allocation given as parameter,
+            // or else to a new allocation from the memory pool.
+            Pointer invert_curr_anchor;
+            uint64_t *invert_curr = alloc_ptr;
+            if (alloc_ptr == nullptr)
+            {
+                invert_curr_anchor = allocate_uint(uint64_count, pool);
+                invert_curr = invert_curr_anchor.get();
+            }
+            else
+            {
+                alloc_ptr += uint64_count;
+            }
             set_uint(1, uint64_count, invert_curr);
             bool invert_curr_positive = true;
-            Pointer invert_next_anchor(allocate_uint(uint64_count, pool));
-            uint64_t *invert_next = invert_next_anchor.get();
+
+            // Set invert_next to point to either an existing allocation given as parameter,
+            // or else to a new allocation from the memory pool.
+            Pointer invert_next_anchor;
+            uint64_t *invert_next = alloc_ptr;
+            if (alloc_ptr == nullptr)
+            {
+                invert_next_anchor = allocate_uint(uint64_count, pool);
+                invert_next = invert_next_anchor.get();
+            }
             bool invert_next_positive = true;
 
             // Perform extended Euclidean algorithm.
@@ -618,7 +773,7 @@ namespace seal
                 denominator_bits += denominator_shift;
 
                 // Clear quotient.
-                set_zero_uint(uint64_count, quotient.get());
+                set_zero_uint(uint64_count, quotient);
 
                 // Perform bit-wise division algorithm.
                 int remaining_shifts = denominator_shift;
@@ -627,7 +782,7 @@ namespace seal
                     // NOTE: MSBs of numerator and denominator are aligned.
 
                     // Subtract numerator and denominator.
-                    bool difference_is_negative = sub_uint_uint(numerator, denominator, division_uint64_count, difference.get());
+                    bool difference_is_negative = sub_uint_uint(numerator, denominator, division_uint64_count, difference);
 
                     // Even though MSB of numerator and denominator are aligned, still possible numerator < denominator.
                     if (difference_is_negative)
@@ -640,19 +795,19 @@ namespace seal
                         }
 
                         // Effectively shift numerator left by 1 by instead adding numerator to difference (to prevent overflow in numerator).
-                        add_uint_uint(difference.get(), numerator, division_uint64_count, difference.get());
+                        add_uint_uint(difference, numerator, division_uint64_count, difference);
 
                         // Adjust quotient and remaining shifts as a result of shifting numerator.
-                        left_shift_uint(quotient.get(), 1, division_uint64_count, quotient.get());
+                        left_shift_uint(quotient, 1, division_uint64_count, quotient);
                         remaining_shifts--;
                     }
                     // Difference is the new numerator with denominator subtracted.
 
                     // Update quotient to reflect subtraction.
-                    *quotient.get() |= 1;
+                    *quotient |= 1;
 
                     // Determine amount to shift numerator to bring MSB in alignment with denominator.
-                    numerator_bits = get_significant_bit_count_uint(difference.get(), division_uint64_count);
+                    numerator_bits = get_significant_bit_count_uint(difference, division_uint64_count);
                     int numerator_shift = denominator_bits - numerator_bits;
                     if (numerator_shift > remaining_shifts)
                     {
@@ -663,7 +818,7 @@ namespace seal
                     // Shift and update numerator.
                     if (numerator_bits > 0)
                     {
-                        left_shift_uint(difference.get(), numerator_shift, division_uint64_count, numerator);
+                        left_shift_uint(difference, numerator_shift, division_uint64_count, numerator);
                         numerator_bits += numerator_shift;
                     }
                     else
@@ -673,7 +828,7 @@ namespace seal
                     }
 
                     // Adjust quotient and remaining shifts as a result of shifting numerator.
-                    left_shift_uint(quotient.get(), numerator_shift, division_uint64_count, quotient.get());
+                    left_shift_uint(quotient, numerator_shift, division_uint64_count, quotient);
                     remaining_shifts -= numerator_shift;
                 }
 
@@ -693,7 +848,7 @@ namespace seal
 
                 // Integrate quotient with invert coefficients.
                 // Calculate: invert_prior + -quotient * invert_curr
-                multiply_truncate_uint_uint(quotient.get(), invert_curr, uint64_count, invert_next);
+                multiply_truncate_uint_uint(quotient, invert_curr, uint64_count, invert_next);
                 invert_next_positive = !invert_curr_positive;
                 if (invert_prior_positive == invert_next_positive)
                 {

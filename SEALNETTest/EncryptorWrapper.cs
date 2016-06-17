@@ -7,7 +7,7 @@ namespace SEALNETTest
     public class EncryptorWrapper
     {
         [TestMethod]
-        public void EncryptAddsNoiseNET()
+        public void FVEncryptAddsNoiseNET()
         {
             var parms = new EncryptionParameters
             {
@@ -32,9 +32,18 @@ namespace SEALNETTest
             keygen.Generate();
 
             var encryptor = new Encryptor(parms, keygen.PublicKey);
+
+            // however, this line is fine
+            Assert.AreEqual(encryptor.PublicKey[0], keygen.PublicKey[0]);
+            Assert.AreEqual(encryptor.PublicKey[1], keygen.PublicKey[1]);
+
             var encrypted1 = encryptor.Encrypt(Encoder.Encode(0x12345678));
             var encrypted2 = encryptor.Encrypt(Encoder.Encode(0x12345678));
-            Assert.AreNotEqual(encrypted1, encrypted2);
+
+            // this is what we want to check
+            Assert.AreNotEqual(encrypted1[0], encrypted2[0]);
+            Assert.AreNotEqual(encrypted1[1], encrypted2[1]);
+
 
             var decryptor = new Decryptor(parms, keygen.SecretKey);
             Assert.AreEqual(0x12345678U, Encoder.DecodeUInt32(decryptor.Decrypt(encrypted1)));
@@ -42,7 +51,7 @@ namespace SEALNETTest
         }
 
         [TestMethod]
-        public void EncryptDecryptNET()
+        public void FVEncryptDecryptNET()
         {
             var parms = new EncryptionParameters
             {
@@ -67,7 +76,10 @@ namespace SEALNETTest
             keygen.Generate();
 
             var encryptor = new Encryptor(parms, keygen.PublicKey);
-            Assert.AreEqual(encryptor.PublicKey, keygen.PublicKey);
+
+            Assert.AreEqual(encryptor.PublicKey[0], keygen.PublicKey[0]);
+            Assert.AreEqual(encryptor.PublicKey[1], keygen.PublicKey[1]);
+
             var decryptor = new Decryptor(parms, keygen.SecretKey);
             Assert.AreEqual(decryptor.SecretKey, keygen.SecretKey);
 
@@ -90,73 +102,6 @@ namespace SEALNETTest
             Assert.AreEqual(0x7FFFFFFFFFFFFFFEUL, Encoder.DecodeUInt64(decryptor.Decrypt(encrypted)));
 
             encrypted = encryptor.Encrypt(Encoder.Encode(0x7FFFFFFFFFFFFFFFUL));
-            Assert.AreEqual(0x7FFFFFFFFFFFFFFFUL, Encoder.DecodeUInt64(decryptor.Decrypt(encrypted)));
-        }
-
-        [TestMethod]
-        public void EncryptDecryptTestModeNET()
-        {
-            var parms = new EncryptionParameters
-            {
-                DecompositionBitCount = 4,
-                NoiseStandardDeviation = 3.19,
-                NoiseMaxDeviation = 35.06,
-                Mode = EncryptionMode.Test
-            };
-            var coeffModulus = parms.CoeffModulus;
-            coeffModulus.Resize(48);
-            coeffModulus.Set("FFFFFFFFC001");
-            var plainModulus = parms.PlainModulus;
-            plainModulus.Resize(7);
-            plainModulus.Set(1 << 6);
-            var polyModulus = parms.PolyModulus;
-            polyModulus.Resize(64, 1);
-            polyModulus[0].Set(1);
-            polyModulus[63].Set(1);
-
-            var Encoder = new BinaryEncoder(parms.PlainModulus);
-
-            var keygen = new KeyGenerator(parms);
-            keygen.Generate();
-
-            var encryptor = new Encryptor(parms, keygen.PublicKey);
-            Assert.AreEqual(encryptor.PublicKey, keygen.PublicKey);
-            var decryptor = new Decryptor(parms, keygen.SecretKey);
-            Assert.AreEqual(decryptor.SecretKey, keygen.SecretKey);
-
-            var plain = Encoder.Encode(0x12345678);
-            var encrypted = encryptor.Encrypt(plain);
-            Assert.AreEqual(plain, encrypted);
-            Assert.AreEqual(0x12345678U, Encoder.DecodeUInt32(decryptor.Decrypt(encrypted)));
-
-            plain = Encoder.Encode(0);
-            encrypted = encryptor.Encrypt(plain);
-            Assert.AreEqual(plain, encrypted);
-            Assert.AreEqual(0U, Encoder.DecodeUInt32(decryptor.Decrypt(encrypted)));
-
-            plain = Encoder.Encode(1);
-            encrypted = encryptor.Encrypt(plain);
-            Assert.AreEqual(plain, encrypted);
-            Assert.AreEqual(1U, Encoder.DecodeUInt32(decryptor.Decrypt(encrypted)));
-
-            plain = Encoder.Encode(2);
-            encrypted = encryptor.Encrypt(plain);
-            Assert.AreEqual(plain, encrypted);
-            Assert.AreEqual(2U, Encoder.DecodeUInt32(decryptor.Decrypt(encrypted)));
-
-            plain = Encoder.Encode(0x7FFFFFFFFFFFFFFDUL);
-            encrypted = encryptor.Encrypt(plain);
-            Assert.AreEqual(plain, encrypted);
-            Assert.AreEqual(0x7FFFFFFFFFFFFFFDUL, Encoder.DecodeUInt64(decryptor.Decrypt(encrypted)));
-
-            plain = Encoder.Encode(0x7FFFFFFFFFFFFFFEUL);
-            encrypted = encryptor.Encrypt(plain);
-            Assert.AreEqual(plain, encrypted);
-            Assert.AreEqual(0x7FFFFFFFFFFFFFFEUL, Encoder.DecodeUInt64(decryptor.Decrypt(encrypted)));
-
-            plain = Encoder.Encode(0x7FFFFFFFFFFFFFFFUL);
-            encrypted = encryptor.Encrypt(plain);
-            Assert.AreEqual(plain, encrypted);
             Assert.AreEqual(0x7FFFFFFFFFFFFFFFUL, Encoder.DecodeUInt64(decryptor.Decrypt(encrypted)));
         }
     }

@@ -404,6 +404,7 @@ namespace seal
         and the value of the given BigPoly are set to be exactly the same as in the current one.
 
         @param[out] destination The BigPoly to overwrite with the duplicate
+        @throws std::logic_error If the destination BigPoly is an alias
         */
         void duplicate_to(BigPoly &destination) const;
 
@@ -412,8 +413,23 @@ namespace seal
         and the value of the current BigPoly are set to be exactly the same as in the given one.
 
         @param[in] value The BigPoly to duplicate
+        @throws std::logic_error If the current BigPoly is an alias
         */
         void duplicate_from(const BigPoly &value);
+
+        /**
+        Moves an old BigPoly to the current one.
+
+        @param[in] assign The BigPoly to move from
+        */
+        BigPoly &operator =(BigPoly &&assign) noexcept;
+
+        /**
+        Creates a new BigPoly by moving an old one.
+
+        @param[in] source The BigPoly to move from
+        */
+        BigPoly(BigPoly &&source) noexcept;
 
     private:
         /**

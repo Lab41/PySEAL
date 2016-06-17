@@ -9,6 +9,7 @@ namespace Microsoft
         namespace SEAL
         {
             ref class BigUInt;
+
             ref class BigPolyArithmetic;
 
             /**
@@ -457,6 +458,31 @@ namespace Microsoft
                 seal::BigPoly &GetPolynomial();
 
                 /**
+                <summary>Duplicates the current BigPoly.</summary>
+                <remarks>
+                Duplicates the current BigPoly. The coefficient count, the coefficient bit count, and the value of the given BigPoly
+                are set to be exactly the same as in the current one.
+                </remarks>
+                <param name="destination">The BigPoly to overwrite with the duplicate</param>
+                <exception cref="System::ArgumentNullException">if destination is null</exception>
+                <exception cref="System::InvalidOperationException">if the destination BigPoly is an alias</exception>
+                */
+                void DuplicateTo(BigPoly ^destination);
+
+                /**
+                <summary>Duplicates a given BigPoly.</summary>
+                <remarks>
+                Duplicates a given BigPoly. The coefficient count, the coefficient bit count,
+                and the value of the current BigPoly are set to be exactly the same as in the given one.
+                </remarks>
+                <param name="value">The BigPoly to duplicate</param>
+                <exception cref="System::ArgumentNullException">if value is null</exception>
+                <exception cref="System::InvalidOperationException">if the current BigPoly is an alias</exception>
+                */
+                void DuplicateFrom(BigPoly ^value);
+
+            internal:
+                /**
                 <summary>Creates a deep copy of a C++ BigPoly.</summary>
                 <remarks>
                 Creates a deep copy of a C++ BigPoly. The created BigPoly will have the same coefficient count, coefficient bit count,
@@ -477,30 +503,6 @@ namespace Microsoft
                 <param name="value">The BigPoly to use as the backing BigPoly</param>
                 */
                 BigPoly(seal::BigPoly *value);
-
-                /**
-                <summary>Duplicates the current BigPoly.</summary>
-                <remarks>
-                Duplicates the current BigPoly. The coefficient count, the coefficient bit count, and the value of the given BigPoly
-                are set to be exactly the same as in the current one.
-                </remarks>
-                <param name="destination">The BigPoly to overwrite with the duplicate</param>
-                <exception cref="System::ArgumentNullException">if destination is null</exception>
-                */
-                void DuplicateTo(BigPoly ^destination);
-
-                /**
-                <summary>Duplicates a given BigPoly.</summary>
-                <remarks>
-                Duplicates a given BigPoly. The coefficient count, the coefficient bit count,
-                and the value of the current BigPoly are set to be exactly the same as in the given one.
-                </remarks>
-                <param name="value">The BigPoly to duplicate</param>
-                <exception cref="System::ArgumentNullException">if value is null</exception>
-                */
-                void DuplicateFrom(BigPoly ^value);
-
-            internal:
 
             private:
                 seal::BigPoly *bigpoly_;

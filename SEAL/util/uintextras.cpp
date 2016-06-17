@@ -55,12 +55,12 @@ namespace seal
             set_uint_uint(exponent, exponent_uint64_count, exponent_copy.get());
 
             // Perform binary exponentiation.
-            Pointer power(allocate_uint(result_uint64_count, pool));
-            Pointer temp1(allocate_uint(result_uint64_count, pool));
-            Pointer temp2(allocate_uint(result_uint64_count, pool));
-            uint64_t *powerptr = power.get();
-            uint64_t *productptr = temp1.get();
-            uint64_t *intermediateptr = temp2.get();
+            Pointer big_alloc(allocate_uint(result_uint64_count + result_uint64_count + result_uint64_count, pool));
+
+            uint64_t *powerptr = big_alloc.get();
+            uint64_t *productptr = powerptr + result_uint64_count;
+            uint64_t *intermediateptr = productptr + result_uint64_count;
+
             set_uint_uint(operand, operand_uint64_count, result_uint64_count, powerptr);
             set_uint(1, result_uint64_count, intermediateptr);
 
@@ -117,7 +117,8 @@ namespace seal
                 return;
             }
 
-            modulo_uint(operand, modulus_uint64_count, modulus, result, pool);
+            Pointer big_alloc(allocate_uint(3*modulus_uint64_count + modulus_uint64_count + modulus_uint64_count + modulus_uint64_count + 4 * modulus_uint64_count, pool));
+            modulo_uint(operand, modulus_uint64_count, modulus, result, pool, big_alloc.get());
 
             if (is_equal_uint(exponent, exponent_uint64_count, 1))
             {
@@ -129,12 +130,11 @@ namespace seal
             set_uint_uint(exponent, exponent_uint64_count, exponent_copy.get());
 
             // Perform binary exponentiation.
-            Pointer power(allocate_uint(modulus_uint64_count, pool));
-            Pointer temp1(allocate_uint(modulus_uint64_count, pool));
-            Pointer temp2(allocate_uint(modulus_uint64_count, pool));
-            uint64_t *powerptr = power.get();
-            uint64_t *productptr = temp1.get();
-            uint64_t *intermediateptr = temp2.get();
+            uint64_t *powerptr = big_alloc.get() + 3*modulus_uint64_count;
+            uint64_t *productptr = powerptr + modulus_uint64_count;
+            uint64_t *intermediateptr = productptr + modulus_uint64_count;
+            uint64_t *alloc_ptr = intermediateptr + modulus_uint64_count;
+
             set_uint_uint(result, modulus_uint64_count, modulus_uint64_count, powerptr);
             set_uint(1, modulus_uint64_count, intermediateptr);
 
@@ -143,7 +143,7 @@ namespace seal
             {
                 if ((*exponent_copy.get() % 2) == 1)
                 {
-                    multiply_uint_uint_mod(powerptr, intermediateptr, modulus, productptr, pool);
+                    multiply_uint_uint_mod(powerptr, intermediateptr, modulus, productptr, pool, alloc_ptr);
                     swap(productptr, intermediateptr);
                 }
                 right_shift_uint(exponent_copy.get(), 1, exponent_uint64_count, exponent_copy.get());
@@ -151,7 +151,7 @@ namespace seal
                 {
                     break;
                 }
-                multiply_uint_uint_mod(powerptr, powerptr, modulus, productptr, pool);
+                multiply_uint_uint_mod(powerptr, powerptr, modulus, productptr, pool, alloc_ptr);
                 swap(productptr, powerptr);
             }
             set_uint_uint(intermediateptr, modulus_uint64_count, result);

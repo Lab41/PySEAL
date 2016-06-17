@@ -73,7 +73,7 @@ namespace SEALTest
             poly_modulus[0] = 1;
             poly_modulus[63] = 1;
 
-            Assert::AreEqual(1, estimate_level_max(parms));
+            Assert::AreEqual(2, estimate_level_max(parms));
         }
 
         TEST_METHOD(PolyEvalPoly)

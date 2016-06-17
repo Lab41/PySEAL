@@ -1,11 +1,14 @@
 #include "encryptionparams.h"
+#include "chooser.h"
 
 using namespace std;
 
 namespace seal
 {
     EncryptionParameters::EncryptionParameters() :
-        noise_standard_deviation_(0), noise_max_deviation_(0), decomposition_bit_count_(1), mode_(NORMAL_MODE), random_generator_(nullptr)
+        noise_standard_deviation_(ChooserEvaluator::default_noise_standard_deviation()), 
+        noise_max_deviation_(ChooserEvaluator::default_noise_max_deviation()),
+        decomposition_bit_count_(0), random_generator_(nullptr)
     {
     }
 

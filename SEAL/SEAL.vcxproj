@@ -21,6 +21,7 @@
   <ItemGroup>
     <ClInclude Include="bigpoly.h" />
     <ClInclude Include="bigpolyarith.h" />
+    <ClInclude Include="bigpolyarray.h" />
     <ClInclude Include="biguint.h" />
     <ClInclude Include="chooser.h" />
     <ClInclude Include="decryptor.h" />
@@ -38,6 +39,7 @@
     <ClInclude Include="util\clipnormal.h" />
     <ClInclude Include="util\common.h" />
     <ClInclude Include="util\computation.h" />
+    <ClInclude Include="util\locks.h" />
     <ClInclude Include="util\mempool.h" />
     <ClInclude Include="util\modulus.h" />
     <ClInclude Include="util\polyarith.h" />
@@ -56,6 +58,7 @@
   <ItemGroup>
     <ClCompile Include="bigpoly.cpp" />
     <ClCompile Include="bigpolyarith.cpp" />
+    <ClCompile Include="bigpolyarray.cpp" />
     <ClCompile Include="biguint.cpp" />
     <ClCompile Include="chooser.cpp" />
     <ClCompile Include="decryptor.cpp" />
@@ -72,6 +75,7 @@
     <ClCompile Include="util\clipnormal.cpp" />
     <ClCompile Include="util\common.cpp" />
     <ClCompile Include="util\computation.cpp" />
+    <ClCompile Include="util\locks.cpp" />
     <ClCompile Include="util\mempool.cpp" />
     <ClCompile Include="util\modulus.cpp" />
     <ClCompile Include="util\polyarith.cpp" />

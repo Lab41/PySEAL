@@ -9,34 +9,6 @@
 namespace seal
 {
     /**
-    Enumeration of the different modes for the library. Mode is set through EncryptionParameters::mode(). NORMAL_MODE
-    performs all encryption, evaluation, and decryption operations as normal. TEST_MODE disables actual encryption
-    while allowing the API to still function for the application. TEST_MODE enables significantly faster library
-    calls and may be very useful for testing and debugging applications.
-
-    @warning TEST_MODE disables actual encryption in the library, so only use TEST_MODE for testing and debugging
-    purposes when no security is required.
-    @see EncryptionParameters to set mode for the library.
-    */
-    enum EncryptionMode
-    {
-        /**
-        NORMAL_MODE enables encryption and the normal functioning of the library.
-        */
-        NORMAL_MODE,
-
-        /**
-        TEST_MODE disables encryption in the library. The benefit of TEST_MODE is that most library functions
-        (e.g., Encryptor::encrypt(), Decryptor::decrypt(), all Evaluator functions) complete significantly faster as
-        they are not secure. This mode is useful when testing and debugging applications when security is not important.
-
-        @warning TEST_MODE disables actual encryption in the library, so only use TEST_MODE for testing and debugging
-        purposes when no security is required.
-        */
-        TEST_MODE
-    };
-
-    /**
     Represents the user-customizable encryption scheme settings. Several settings (e.g., poly_modulus(), coeff_modulus(),
     plain_modulus()) significantly affect the performance, capabilities, and security of the encryption scheme. KeyGenerator,
     Encryptor, Decryptor, Evaluator, and other objects in the library all require the EncryptionParameters object to specify
@@ -50,8 +22,8 @@ namespace seal
     external documentation to determine the best parameters.
 
     @par Thread Safety
-    In general, reading from EncryptionParameters is thread-safe while mutating is not. Refer to the thread safety of
-    individual parameter types to assess their thread safety.
+    In general, reading from EncryptionParameters is thread-safe while mutating is not. Refer to the thread-safety of
+    individual parameter types to assess their thread-safety.
 
     @warning Choosing inappropriate EncryptionParameters may load to an encryption scheme that is not secure, does not perform
     well, and/or does not support the input and computation of the application.
@@ -186,30 +158,6 @@ namespace seal
         }
 
         /**
-        Returns a reference to the operating mode of the library, which is set to either NORMAL_MODE or TEST_MODE.
-        Setting the mode to TEST_MODE disables all encryption but may significantly improve performance for cases where
-        security is not important (e.g., testing and debugging).
-
-        @warning Only set the mode to TEST_MODE when security is not important.
-        */
-        EncryptionMode &mode()
-        {
-            return mode_;
-        }
-
-        /**
-        Returns the operating mode of the library, which is set to either NORMAL_MODE or TEST_MODE. Setting the mode
-        to TEST_MODE disables all encryption but may significantly improve performance for cases where security is not
-        important (e.g., testing and debugging).
-
-        @warning Only set the mode to TEST_MODE when security is not important.
-        */
-        EncryptionMode mode() const
-        {
-            return mode_;
-        }
-
-        /**
         Saves the EncryptionParameters to an output stream. The output is in binary format and is not human-readable. The
         output stream must have the "Binary" flag set.
 
@@ -258,8 +206,6 @@ namespace seal
         double noise_max_deviation_;
 
         int decomposition_bit_count_;
-
-        EncryptionMode mode_;
 
         UniformRandomGeneratorFactory *random_generator_;
     };

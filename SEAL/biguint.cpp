@@ -102,8 +102,7 @@ namespace seal
     string BigUInt::to_dec_string() const
     {
         int uint64_count = divide_round_up(bit_count_, bits_per_uint64);
-        MemoryPool pool;
-        return uint64_to_dec_string(value_, uint64_count, pool);
+        return uint64_to_dec_string(value_, uint64_count, *MemoryPool::default_pool());
     }
 
     bool BigUInt::is_zero() const
@@ -386,7 +385,7 @@ namespace seal
         }
         BigUInt result(result_bits);
         BigUInt remainder(result_bits);
-        MemoryPool pool;
+        MemoryPool &pool = *MemoryPool::default_pool();
         int uint64_count = divide_round_up(result_bits, bits_per_uint64);
         if (uint64_count > operand2.uint64_count())
         {
@@ -407,7 +406,7 @@ namespace seal
         {
             throw invalid_argument("operand2 must be positive");
         }
-        MemoryPool pool;
+        MemoryPool &pool = *MemoryPool::default_pool();
         Modulus modulus(operand2.pointer(), operand2.uint64_count(), pool);
         int result_bits = significant_bit_count();
         BigUInt result(result_bits);
@@ -602,7 +601,7 @@ namespace seal
         {
             throw invalid_argument("operand2 must be positive");
         }
-        MemoryPool pool;
+        MemoryPool &pool = *MemoryPool::default_pool();
         Modulus modulus(operand2.pointer(), operand2.uint64_count(), pool);
         modulo_uint_inplace(value_, uint64_count(), modulus, pool);
         return *this;
@@ -681,7 +680,7 @@ namespace seal
             BigUInt zero;
             return zero;
         }
-        MemoryPool pool;
+        MemoryPool &pool = *MemoryPool::default_pool();
         BigUInt quotient(result_bits);
         int uint64_count = remainder.uint64_count();
         if (uint64_count > operand2.uint64_count())
@@ -708,7 +707,7 @@ namespace seal
         {
             throw invalid_argument("modulus must be greater than BigUInt");
         }
-        MemoryPool pool;
+        MemoryPool &pool = *MemoryPool::default_pool();
         BigUInt result(result_bits);
         result = *this;
         if (!try_invert_uint_mod(result.pointer(), modulus.pointer(), result.uint64_count(), result.pointer(), pool))
@@ -734,7 +733,7 @@ namespace seal
             inverse.resize(result_bits);
         }
         inverse = *this;
-        MemoryPool pool;
+        MemoryPool &pool = *MemoryPool::default_pool();
         return try_invert_uint_mod(inverse.pointer(), modulus.pointer(), inverse.uint64_count(), inverse.pointer(), pool);
     }
 
@@ -787,5 +786,34 @@ namespace seal
     {
         this->resize(value.bit_count_);
         *this = value;
+    }
+
+    BigUInt &BigUInt::operator =(BigUInt &&assign) noexcept
+    {
+        // Do nothing if same thing.
+        if (&assign == this)
+        {
+            return *this;
+        }
+
+        // Deallocate any memory allocated.
+        reset();
+
+        // Copy all member variables
+        bit_count_ = assign.bit_count_;
+        value_ = assign.value_;
+        is_alias_ = assign.is_alias_;
+
+        // Pointer in assign has been taken over so set it to nullptr
+        assign.value_ = nullptr;
+        assign.is_alias_ = false;
+        assign.bit_count_ = 0;
+
+        return *this;
+    }
+
+    BigUInt::BigUInt(BigUInt &&source) noexcept : value_(nullptr), bit_count_(0), is_alias_(false)
+    {
+        operator =(move(source));
     }
 }

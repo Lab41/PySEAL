@@ -1,10 +1,11 @@
-#include "Common.h"
 #include "EvaluationKeysWrapper.h"
-#include "BigPolyWrapper.h"
+#include "Common.h"
 
 using namespace System;
-using namespace System::IO;
 using namespace std;
+
+using namespace System::Collections::Generic;
+using namespace System::IO;
 
 namespace Microsoft
 {
@@ -12,7 +13,37 @@ namespace Microsoft
     {
         namespace SEAL
         {
-            EvaluationKeys::EvaluationKeys() : keys_(nullptr), owned_(true)
+            EvaluationKeys::EvaluationKeys(List<System::Tuple<BigPolyArray^, BigPolyArray^> ^> ^keys) : keys_(nullptr)
+            {
+                if (keys == nullptr)
+                {
+                    throw gcnew ArgumentNullException("keys cannot be null");
+                }
+                try
+                {
+                    vector < std::pair<seal::BigPolyArray, seal::BigPolyArray> > v_keys;
+                    for each(System::Tuple<BigPolyArray^, BigPolyArray^> ^key in keys)
+                    {
+                        if (key == nullptr)
+                        {
+                            throw gcnew ObjectDisposedException("keys cannot be null");
+                        }
+                        v_keys.push_back(make_pair(key->Item1->GetArray(), key->Item2->GetArray()));
+                        GC::KeepAlive(key);
+                    }
+                    keys_ = new seal::EvaluationKeys(v_keys);
+                }
+                catch (const exception &e)
+                {
+                    HandleException(&e);
+                }
+                catch (...)
+                {
+                    HandleException(nullptr);
+                }
+            }
+
+            EvaluationKeys::EvaluationKeys() : keys_(nullptr)
             {
                 try
                 {
@@ -28,53 +59,16 @@ namespace Microsoft
                 }
             }
 
-            EvaluationKeys::EvaluationKeys(int count) : keys_(nullptr), owned_(true)
-            {
-                try
-                {
-                    keys_ = new seal::EvaluationKeys(count);
-                }
-                catch (const exception &e)
-                {
-                    HandleException(&e);
-                }
-                catch (...)
-                {
-                    HandleException(nullptr);
-                }
-            }
-
-            EvaluationKeys::EvaluationKeys(EvaluationKeys ^copy) : keys_(nullptr), owned_(true)
-            {
-                if (copy == nullptr)
-                {
-                    throw gcnew ArgumentNullException("copy cannot be null");
-                }
-                try
-                {
-                    keys_ = new seal::EvaluationKeys(copy->GetKeys());
-                    GC::KeepAlive(copy);
-                }
-                catch (const exception &e)
-                {
-                    HandleException(&e);
-                }
-                catch (...)
-                {
-                    HandleException(nullptr);
-                }
-            }
-
-            int EvaluationKeys::Count::get()
+            int EvaluationKeys::Size::get()
             {
                 if (keys_ == nullptr)
                 {
                     throw gcnew ObjectDisposedException("EvaluationKeys is disposed");
                 }
-                return keys_->count();
+                return static_cast<int>(keys_->size());
             }
 
-            BigPoly ^EvaluationKeys::default::get(int poly_index)
+            System::Tuple<BigPolyArray^, BigPolyArray^> ^EvaluationKeys::default::get(int index)
             {
                 if (keys_ == nullptr)
                 {
@@ -82,7 +76,7 @@ namespace Microsoft
                 }
                 try
                 {
-                    return gcnew BigPoly(&keys_->operator[](poly_index));
+                    return gcnew System::Tuple<BigPolyArray^, BigPolyArray^>(gcnew BigPolyArray(&keys_->operator[](index).first), gcnew BigPolyArray(&keys_->operator[](index).second));
                 }
                 catch (const exception &e)
                 {
@@ -95,15 +89,24 @@ namespace Microsoft
                 throw gcnew Exception("Unexpected exception");
             }
 
-            void EvaluationKeys::Resize(int count)
+            List<System::Tuple<BigPolyArray^, BigPolyArray^> ^> ^ EvaluationKeys::Keys::get()
             {
                 if (keys_ == nullptr)
                 {
                     throw gcnew ObjectDisposedException("EvaluationKeys is disposed");
                 }
-                try
+                try 
                 {
-                    keys_->resize(count);
+                    List<System::Tuple<BigPolyArray^, BigPolyArray^> ^> ^output = gcnew List<System::Tuple<BigPolyArray^, BigPolyArray^> ^>;
+                    for (int i = 0; i < Size; ++i) 
+                    {
+                        if (default[i] == nullptr) 
+                        {
+                            throw gcnew ObjectDisposedException("evaluation keys cannot be null");
+                        }
+                        output->Add(default[i]);
+                    }
+                    return output;
                 }
                 catch (const exception &e)
                 {
@@ -113,40 +116,7 @@ namespace Microsoft
                 {
                     HandleException(nullptr);
                 }
-            }
-
-            void EvaluationKeys::Clear()
-            {
-                if (keys_ == nullptr)
-                {
-                    throw gcnew ObjectDisposedException("EvaluationKeys is disposed");
-                }
-                keys_->clear();
-            }
-
-            void EvaluationKeys::Set(EvaluationKeys ^assign)
-            {
-                if (keys_ == nullptr)
-                {
-                    throw gcnew ObjectDisposedException("EvaluationKeys is disposed");
-                }
-                if (assign == nullptr)
-                {
-                    throw gcnew ArgumentNullException("assign cannot be null");
-                }
-                try
-                {
-                    *keys_ = assign->GetKeys();
-                    GC::KeepAlive(assign);
-                }
-                catch (const exception &e)
-                {
-                    HandleException(&e);
-                }
-                catch (...)
-                {
-                    HandleException(nullptr);
-                }
+                throw gcnew Exception("Unexpected exception");
             }
 
             void EvaluationKeys::Save(Stream ^stream)
@@ -161,13 +131,18 @@ namespace Microsoft
                 }
                 try
                 {
-                    int32_t count32 = static_cast<int32_t>(keys_->count());
-                    Write(stream, reinterpret_cast<const char*>(&count32), sizeof(int32_t));
-                    for (int i = 0; i < keys_->count(); ++i)
+                    // save the size of keys_
+                    int32_t size32 = static_cast<int32_t> (keys_->size());
+                    Write(stream, reinterpret_cast<const char*>(&size32), sizeof(int32_t));
+
+                    // loop over entries in the list, calling Save of BigPolyArray
+                    for (int i = 0; i < (keys_->size()) ; ++i)
                     {
-                        BigPoly ^key = gcnew BigPoly(&keys_->operator[](i));
-                        key->Save(stream);
+                        default[i]->Item1->Save(stream);
+                        default[i]->Item2->Save(stream);
                     }
+
+                    GC::KeepAlive(stream);
                 }
                 catch (const exception &e)
                 {
@@ -195,17 +170,27 @@ namespace Microsoft
                 }
                 try
                 {
-                    int32_t count32 = 0;
-                    Read(stream, reinterpret_cast<char*>(&count32), sizeof(int32_t));
-                    if (keys_->count() != count32)
+                    // Make sure keys_ is empty before reading
+                    keys_->clear();
+
+                    // Read the size
+                    int32_t readKeysSize = 0;
+                    Read(stream, reinterpret_cast<char*>(&readKeysSize), sizeof(int32_t));
+
+                    auto first = gcnew BigPolyArray();
+                    auto second = gcnew BigPolyArray();
+
+                    seal::BigPolyArray &first_underlying = first->GetArray();
+                    seal::BigPolyArray &second_underlying = second->GetArray();
+
+                    //loop, reading consecutive BigPolyArrays as pairs.
+                    for (int i = 0; i < readKeysSize; ++i)
                     {
-                        keys_->resize(static_cast<int>(count32));
+                        first->Load(stream);
+                        second->Load(stream);
+                        keys_->keys().push_back(make_pair(first_underlying, second_underlying));
                     }
-                    for (int i = 0; i < keys_->count(); ++i)
-                    {
-                        BigPoly ^key = gcnew BigPoly(&keys_->operator[](i));
-                        key->Load(stream);
-                    }
+                    GC::KeepAlive(stream);
                 }
                 catch (const exception &e)
                 {
@@ -223,10 +208,6 @@ namespace Microsoft
 
             seal::EvaluationKeys &EvaluationKeys::GetKeys()
             {
-                if (keys_ == nullptr)
-                {
-                    throw gcnew ObjectDisposedException("EvaluationKeys is disposed");
-                }
                 return *keys_;
             }
 
@@ -239,19 +220,16 @@ namespace Microsoft
             {
                 if (keys_ != nullptr)
                 {
-                    if (owned_)
-                    {
-                        delete keys_;
-                    }
+                    delete keys_;
                     keys_ = nullptr;
                 }
             }
 
-            EvaluationKeys::EvaluationKeys(const seal::EvaluationKeys &keys) : keys_(nullptr), owned_(true)
+            EvaluationKeys::EvaluationKeys(const seal::EvaluationKeys &value) : keys_(nullptr)
             {
                 try
                 {
-                    keys_ = new seal::EvaluationKeys(keys);
+                    keys_ = new seal::EvaluationKeys(value);
                 }
                 catch (const exception &e)
                 {
@@ -261,10 +239,6 @@ namespace Microsoft
                 {
                     HandleException(nullptr);
                 }
-            }
-
-            EvaluationKeys::EvaluationKeys(seal::EvaluationKeys *keys) : keys_(keys), owned_(false)
-            {
             }
         }
     }

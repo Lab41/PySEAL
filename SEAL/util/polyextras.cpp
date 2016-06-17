@@ -39,9 +39,10 @@ namespace seal
             set_zero_uint(modulus_uint64_count, result);
             Pointer coeff_moded(allocate_uint(modulus_uint64_count, pool));
             uint64_t *coeffmodedptr = coeff_moded.get();
+            Pointer big_alloc(allocate_uint(3 * poly_coeff_uint64_count, pool));
             for (int coeff_index = 0; coeff_index < poly_coeff_count; ++coeff_index)
             {
-                modulo_uint(poly, poly_coeff_uint64_count, modulus, coeffmodedptr, pool);
+                modulo_uint(poly, poly_coeff_uint64_count, modulus, coeffmodedptr, pool, big_alloc.get());
                 if (is_greater_than_or_equal_uint_uint(coeffmodedptr, modulusthresholdptr, modulus_uint64_count))
                 {
                     sub_uint_uint(modulusptr, coeffmodedptr, modulus_uint64_count, coeffmodedptr);
@@ -255,12 +256,12 @@ namespace seal
             set_uint_uint(exponent, exponent_uint64_count, exponent_copy.get());
 
             // Perform binary exponentiation.
-            Pointer power(allocate_poly(result_coeff_count, result_coeff_uint64_count, pool));
-            Pointer temp1(allocate_poly(result_coeff_count, result_coeff_uint64_count, pool));
-            Pointer temp2(allocate_poly(result_coeff_count, result_coeff_uint64_count, pool));
-            uint64_t *powerptr = power.get();
-            uint64_t *productptr = temp1.get();
-            uint64_t *intermediateptr = temp2.get();
+            Pointer big_alloc(allocate_poly(result_coeff_count + result_coeff_count + result_coeff_count, result_coeff_uint64_count, pool));
+
+            uint64_t *powerptr = big_alloc.get();
+            uint64_t *productptr = get_poly_coeff(powerptr, result_coeff_count, result_coeff_uint64_count);
+            uint64_t *intermediateptr = get_poly_coeff(productptr, result_coeff_count, result_coeff_uint64_count);
+
             set_poly_poly(poly, poly_coeff_count, poly_coeff_uint64_count, result_coeff_count, result_coeff_uint64_count, powerptr);
             set_zero_poly(result_coeff_count, result_coeff_uint64_count, intermediateptr);
             *intermediateptr = 1;
@@ -339,12 +340,12 @@ namespace seal
             set_uint_uint(exponent, exponent_uint64_count, exponent_copy.get());
 
             // Perform binary exponentiation.
-            Pointer power(allocate_poly(poly_modulus_coeff_count, coeff_modulus_uint64_count, pool));
-            Pointer temp1(allocate_poly(poly_modulus_coeff_count, coeff_modulus_uint64_count, pool));
-            Pointer temp2(allocate_poly(poly_modulus_coeff_count, coeff_modulus_uint64_count, pool));
-            uint64_t *powerptr = power.get();
-            uint64_t *productptr = temp1.get();
-            uint64_t *intermediateptr = temp2.get();
+            Pointer big_alloc(allocate_poly(poly_modulus_coeff_count + poly_modulus_coeff_count + poly_modulus_coeff_count, coeff_modulus_uint64_count, pool));
+
+            uint64_t *powerptr = big_alloc.get();
+            uint64_t *productptr = get_poly_coeff(powerptr, poly_modulus_coeff_count, coeff_modulus_uint64_count);
+            uint64_t *intermediateptr = get_poly_coeff(productptr, poly_modulus_coeff_count, coeff_modulus_uint64_count);
+
             set_poly_poly(result, poly_modulus_coeff_count, coeff_modulus_uint64_count, powerptr);
             set_zero_poly(poly_modulus_coeff_count, coeff_modulus_uint64_count, intermediateptr);
             *intermediateptr = 1;

@@ -11,7 +11,7 @@ namespace SEALTest
     TEST_CLASS(KeyGeneratorTest)
     {
     public:
-        TEST_METHOD(KeyGeneration)
+        TEST_METHOD(FVKeyGeneration)
         {
             EncryptionParameters parms;
             BigUInt &coeff_modulus = parms.coeff_modulus();
@@ -29,28 +29,38 @@ namespace SEALTest
             poly_modulus[63] = 1;
 
             KeyGenerator keygen(parms);
-            Assert::IsTrue(keygen.public_key().is_zero());
-            Assert::IsTrue(keygen.secret_key().is_zero());
-            Assert::AreEqual(12, keygen.evaluation_keys().count());
-            for (int i = 0; i < 12; ++i)
-            {
-                Assert::IsTrue(keygen.evaluation_keys()[i].is_zero());
-            }
-
-            keygen.generate();
-            Assert::IsFalse(keygen.public_key().is_zero());
+            keygen.generate(1);
+            Assert::IsFalse(keygen.public_key()[0].is_zero());
+            Assert::IsFalse(keygen.public_key()[1].is_zero());
             Assert::IsFalse(keygen.secret_key().is_zero());
-            Assert::AreEqual(12, keygen.evaluation_keys().count());
+            Assert::AreEqual(12, keygen.evaluation_keys()[0].first.size());
+            Assert::AreEqual(12, keygen.evaluation_keys()[0].second.size());
             for (int i = 0; i < 12; ++i)
             {
-                Assert::IsFalse(keygen.evaluation_keys()[i].is_zero());
+                Assert::IsFalse(keygen.evaluation_keys()[0].first[i].is_zero());
+                Assert::IsFalse(keygen.evaluation_keys()[0].second[i].is_zero());
             }
 
-            BigPoly public_key = keygen.public_key();
+            BigPolyArray public_key = keygen.public_key();
             BigPoly secret_key = keygen.secret_key();
-            keygen.generate();
-            Assert::IsTrue(public_key != keygen.public_key());
+            keygen.generate(1);
+            Assert::IsTrue(public_key[0] != keygen.public_key()[0]);
+            Assert::IsTrue(public_key[1] != keygen.public_key()[1]);
             Assert::IsTrue(secret_key != keygen.secret_key());
+
+            keygen.generate_evaluation_keys(2);
+            Assert::AreEqual(12, keygen.evaluation_keys()[0].first.size());
+            Assert::AreEqual(12, keygen.evaluation_keys()[0].second.size());
+            Assert::AreEqual(12, keygen.evaluation_keys()[1].first.size());
+            Assert::AreEqual(12, keygen.evaluation_keys()[1].second.size());
+
+            for (int i = 0; i < 12; ++i)
+            {
+                Assert::IsFalse(keygen.evaluation_keys()[0].first[i].is_zero());
+                Assert::IsFalse(keygen.evaluation_keys()[0].second[i].is_zero());
+                Assert::IsFalse(keygen.evaluation_keys()[1].first[i].is_zero());
+                Assert::IsFalse(keygen.evaluation_keys()[1].second[i].is_zero());
+            }
         }
     };
 }

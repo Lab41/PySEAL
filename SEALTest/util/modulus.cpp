@@ -17,7 +17,7 @@ namespace SEALTest
         public:
             TEST_METHOD(ModulusTest)
             {
-                MemoryPool pool;
+                MemoryPool &pool = *MemoryPool::default_pool();
                 Modulus mod;
                 Assert::IsFalse(mod.is_power_of_two_minus_one());
                 Assert::IsFalse(mod.has_inverse());

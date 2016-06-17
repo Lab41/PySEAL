@@ -16,7 +16,7 @@ namespace SEALTest
         public:
             TEST_METHOD(ModuloUInt)
             {
-                MemoryPool pool;
+                MemoryPool &pool = *MemoryPool::default_pool();
                 Pointer value(allocate_uint(4, pool));
                 Pointer modulus(allocate_uint(2, pool));
                 Pointer result(allocate_uint(2, pool));
@@ -160,7 +160,7 @@ namespace SEALTest
 
             TEST_METHOD(IncrementUIntMod)
             {
-                MemoryPool pool;
+                MemoryPool &pool = *MemoryPool::default_pool();
                 Pointer value(allocate_uint(2, pool));
                 Pointer modulus(allocate_uint(2, pool));
                 value[0] = 0;
@@ -194,7 +194,7 @@ namespace SEALTest
 
             TEST_METHOD(DecrementUIntMod)
             {
-                MemoryPool pool;
+                MemoryPool &pool = *MemoryPool::default_pool();
                 Pointer value(allocate_uint(2, pool));
                 Pointer modulus(allocate_uint(2, pool));
                 value[0] = 2;
@@ -228,7 +228,7 @@ namespace SEALTest
 
             TEST_METHOD(NegateUIntMod)
             {
-                MemoryPool pool;
+                MemoryPool &pool = *MemoryPool::default_pool();
                 Pointer value(allocate_uint(2, pool));
                 Pointer modulus(allocate_uint(2, pool));
                 value[0] = 0;
@@ -264,7 +264,7 @@ namespace SEALTest
 
             TEST_METHOD(AddUIntUIntMod)
             {
-                MemoryPool pool;
+                MemoryPool &pool = *MemoryPool::default_pool();
                 Pointer value1(allocate_uint(2, pool));
                 Pointer value2(allocate_uint(2, pool));
                 Pointer modulus(allocate_uint(2, pool));
@@ -321,7 +321,7 @@ namespace SEALTest
 
             TEST_METHOD(SubUIntUIntMod)
             {
-                MemoryPool pool;
+                MemoryPool &pool = *MemoryPool::default_pool();
                 Pointer value1(allocate_uint(2, pool));
                 Pointer value2(allocate_uint(2, pool));
                 Pointer modulus(allocate_uint(2, pool));
@@ -378,7 +378,7 @@ namespace SEALTest
 
             TEST_METHOD(MultiplyUIntUIntMod)
             {
-                MemoryPool pool;
+                MemoryPool &pool = *MemoryPool::default_pool();
                 Pointer value1(allocate_uint(2, pool));
                 Pointer value2(allocate_uint(2, pool));
                 Pointer modulus(allocate_uint(2, pool));
@@ -437,7 +437,7 @@ namespace SEALTest
 
             TEST_METHOD(TryInvertUIntMod)
             {
-                MemoryPool pool;
+                MemoryPool &pool = *MemoryPool::default_pool();
                 Pointer value(allocate_uint(2, pool));
                 Pointer modulus(allocate_uint(2, pool));
                 value[0] = 0;

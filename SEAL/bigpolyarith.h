@@ -2,7 +2,6 @@
 #define SEAL_BIGPOLY_ARITH_H
 
 #include "bigpoly.h"
-#include "util/mempool.h"
 
 namespace seal
 {
@@ -479,9 +478,6 @@ namespace seal
         @warning all functions in BigPolyArith are not thread-safe
         */
         bool try_invert(const BigPoly &poly, const BigPoly &poly_mod, const BigUInt &coeff_mod, BigPoly &result);
-
-    private:
-        util::MemoryPool pool_;
     };
 }
 

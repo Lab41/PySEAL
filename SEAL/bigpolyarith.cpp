@@ -16,14 +16,14 @@ namespace seal
 {
     namespace
     {
-        ConstPointer duplicate_poly_if_needed(const BigPoly &poly, int new_coeff_count, int new_coeff_uint64_count, bool force, MemoryPool &pool_)
+        ConstPointer duplicate_poly_if_needed(const BigPoly &poly, int new_coeff_count, int new_coeff_uint64_count, bool force, MemoryPool &pool)
         {
-            return util::duplicate_poly_if_needed(poly.pointer(), poly.coeff_count(), poly.coeff_uint64_count(), new_coeff_count, new_coeff_uint64_count, force, pool_);
+            return util::duplicate_poly_if_needed(poly.pointer(), poly.coeff_count(), poly.coeff_uint64_count(), new_coeff_count, new_coeff_uint64_count, force, pool);
         }
 
-        ConstPointer duplicate_poly_if_needed(const BigPoly &poly, bool force, MemoryPool &pool_)
+        ConstPointer duplicate_poly_if_needed(const BigPoly &poly, bool force, MemoryPool &pool)
         {
-            return util::duplicate_if_needed(poly.pointer(), poly.coeff_count() * poly.coeff_uint64_count(), force, pool_);
+            return util::duplicate_if_needed(poly.pointer(), poly.coeff_count() * poly.coeff_uint64_count(), force, pool);
         }
 
         void resize_destination_if_needed(BigPoly &destination, int coeff_count, int coeff_bit_count)
@@ -62,7 +62,8 @@ namespace seal
         }
 
         // Get pointer to inputs (duplicated and resized if needed).
-        ConstPointer polyptr = duplicate_poly_if_needed(poly, coeff_count, coeff_uint64_count, false, pool_);
+        MemoryPool &pool = *MemoryPool::default_pool();
+        ConstPointer polyptr = duplicate_poly_if_needed(poly, coeff_count, coeff_uint64_count, false, pool);
 
         // Verify destination size.
         resize_destination_if_needed(result, coeff_count, coeff_bit_count);
@@ -103,8 +104,9 @@ namespace seal
         }
 
         // Get pointer to inputs (duplicated and resized if needed).
-        ConstPointer poly1ptr = duplicate_poly_if_needed(poly1, coeff_count, coeff_uint64_count, false, pool_);
-        ConstPointer poly2ptr = duplicate_poly_if_needed(poly2, coeff_count, coeff_uint64_count, false, pool_);
+        MemoryPool &pool = *MemoryPool::default_pool();
+        ConstPointer poly1ptr = duplicate_poly_if_needed(poly1, coeff_count, coeff_uint64_count, false, pool);
+        ConstPointer poly2ptr = duplicate_poly_if_needed(poly2, coeff_count, coeff_uint64_count, false, pool);
 
         // Verify destination size.
         resize_destination_if_needed(result, coeff_count, coeff_bit_count);
@@ -133,8 +135,9 @@ namespace seal
         }
 
         // Get pointer to inputs (duplicated and resized if needed).
-        ConstPointer poly1ptr = duplicate_poly_if_needed(poly1, coeff_count, coeff_uint64_count, false, pool_);
-        ConstPointer poly2ptr = duplicate_poly_if_needed(poly2, coeff_count, coeff_uint64_count, false, pool_);
+        MemoryPool &pool = *MemoryPool::default_pool();
+        ConstPointer poly1ptr = duplicate_poly_if_needed(poly1, coeff_count, coeff_uint64_count, false, pool);
+        ConstPointer poly2ptr = duplicate_poly_if_needed(poly2, coeff_count, coeff_uint64_count, false, pool);
 
         // Verify destination size.
         resize_destination_if_needed(result, coeff_count, coeff_bit_count);
@@ -151,8 +154,9 @@ namespace seal
         int coeff_uint64_count = divide_round_up(coeff_bit_count, bits_per_uint64);
 
         // Get pointer to inputs (duplicated and resized if needed).
-        ConstPointer poly1ptr = duplicate_poly_if_needed(poly1, coeff_count, coeff_uint64_count, false, pool_);
-        ConstPointer poly2ptr = duplicate_poly_if_needed(poly2, coeff_count, coeff_uint64_count, false, pool_);
+        MemoryPool &pool = *MemoryPool::default_pool();
+        ConstPointer poly1ptr = duplicate_poly_if_needed(poly1, coeff_count, coeff_uint64_count, false, pool);
+        ConstPointer poly2ptr = duplicate_poly_if_needed(poly2, coeff_count, coeff_uint64_count, false, pool);
 
         // Verify destination size.
         resize_destination_if_needed(result, coeff_count, coeff_bit_count);
@@ -169,8 +173,9 @@ namespace seal
         int coeff_uint64_count = divide_round_up(coeff_bit_count, bits_per_uint64);
 
         // Get pointer to inputs (duplicated and resized if needed).
-        ConstPointer poly1ptr = duplicate_poly_if_needed(poly1, coeff_count, coeff_uint64_count, false, pool_);
-        ConstPointer poly2ptr = duplicate_poly_if_needed(poly2, coeff_count, coeff_uint64_count, false, pool_);
+        MemoryPool &pool = *MemoryPool::default_pool();
+        ConstPointer poly1ptr = duplicate_poly_if_needed(poly1, coeff_count, coeff_uint64_count, false, pool);
+        ConstPointer poly2ptr = duplicate_poly_if_needed(poly2, coeff_count, coeff_uint64_count, false, pool);
 
         // Verify destination size.
         resize_destination_if_needed(result, coeff_count, coeff_bit_count);
@@ -207,17 +212,18 @@ namespace seal
         }
 
         // Get pointer to inputs (duplicated and resized if needed).
-        ConstPointer poly1ptr = duplicate_poly_if_needed(poly1, coeff_count, coeff_uint64_count, poly1.pointer() == result.pointer(), pool_);
-        ConstPointer poly2ptr = duplicate_poly_if_needed(poly2, coeff_count, coeff_uint64_count, poly2.pointer() == result.pointer(), pool_);
-        ConstPointer polymodptr = duplicate_poly_if_needed(poly_mod, coeff_count, coeff_uint64_count, poly_mod.pointer() == result.pointer(), pool_);
+        MemoryPool &pool = *MemoryPool::default_pool();
+        ConstPointer poly1ptr = duplicate_poly_if_needed(poly1, coeff_count, coeff_uint64_count, poly1.pointer() == result.pointer(), pool);
+        ConstPointer poly2ptr = duplicate_poly_if_needed(poly2, coeff_count, coeff_uint64_count, poly2.pointer() == result.pointer(), pool);
+        ConstPointer polymodptr = duplicate_poly_if_needed(poly_mod, coeff_count, coeff_uint64_count, poly_mod.pointer() == result.pointer(), pool);
 
         // Verify destination size.
         resize_destination_if_needed(result, coeff_count, coeff_bit_count);
 
         // Multiply polynomials.
-        Modulus modulus(coeff_mod.pointer(), coeff_uint64_count, pool_);
+        Modulus modulus(coeff_mod.pointer(), coeff_uint64_count, pool);
         PolyModulus polymod(polymodptr.get(), coeff_count, coeff_uint64_count);
-        multiply_poly_poly_polymod_coeffmod(poly1ptr.get(), poly2ptr.get(), polymod, modulus, result.pointer(), pool_);
+        multiply_poly_poly_polymod_coeffmod(poly1ptr.get(), poly2ptr.get(), polymod, modulus, result.pointer(), pool);
     }
 
     void BigPolyArith::multiply(const BigPoly &poly1, const BigPoly &poly2, const BigUInt &coeff_mod, BigPoly &result)
@@ -240,15 +246,16 @@ namespace seal
         }
 
         // Get pointer to inputs (duplicated and resized if needed).
-        ConstPointer poly1ptr = duplicate_poly_if_needed(poly1, poly1.pointer() == result.pointer(), pool_);
-        ConstPointer poly2ptr = duplicate_poly_if_needed(poly2, poly2.pointer() == result.pointer(), pool_);
+        MemoryPool &pool = *MemoryPool::default_pool();
+        ConstPointer poly1ptr = duplicate_poly_if_needed(poly1, poly1.pointer() == result.pointer(), pool);
+        ConstPointer poly2ptr = duplicate_poly_if_needed(poly2, poly2.pointer() == result.pointer(), pool);
 
         // Verify destination size.
         resize_destination_if_needed(result, coeff_count, coeff_bit_count);
 
         // Multiply polynomials.
-        Modulus modulus(coeff_mod.pointer(), coeff_uint64_count, pool_);
-        multiply_poly_poly_coeffmod(poly1ptr.get(), poly1.coeff_count(), poly1.coeff_uint64_count(), poly2ptr.get(), poly2.coeff_count(), poly2.coeff_uint64_count(), modulus, coeff_count, result.pointer(), pool_);
+        Modulus modulus(coeff_mod.pointer(), coeff_uint64_count, pool);
+        multiply_poly_poly_coeffmod(poly1ptr.get(), poly1.coeff_count(), poly1.coeff_uint64_count(), poly2ptr.get(), poly2.coeff_count(), poly2.coeff_uint64_count(), modulus, coeff_count, result.pointer(), pool);
     }
 
     void BigPolyArith::multiply(const BigPoly &poly1, const BigPoly &poly2, BigPoly &result)
@@ -259,14 +266,15 @@ namespace seal
         int coeff_uint64_count = divide_round_up(coeff_bit_count, bits_per_uint64);
 
         // Get pointer to inputs (duplicated and resized if needed).
-        ConstPointer poly1ptr = duplicate_poly_if_needed(poly1, poly1.pointer() == result.pointer(), pool_);
-        ConstPointer poly2ptr = duplicate_poly_if_needed(poly2, poly2.pointer() == result.pointer(), pool_);
+        MemoryPool &pool = *MemoryPool::default_pool();
+        ConstPointer poly1ptr = duplicate_poly_if_needed(poly1, poly1.pointer() == result.pointer(), pool);
+        ConstPointer poly2ptr = duplicate_poly_if_needed(poly2, poly2.pointer() == result.pointer(), pool);
 
         // Verify destination size.
         resize_destination_if_needed(result, coeff_count, coeff_bit_count);
 
         // Multiply polynomials.
-        multiply_poly_poly(poly1ptr.get(), poly1.coeff_count(), poly1.coeff_uint64_count(), poly2ptr.get(), poly2.coeff_count(), poly2.coeff_uint64_count(), coeff_count, coeff_uint64_count, result.pointer(), pool_);
+        multiply_poly_poly(poly1ptr.get(), poly1.coeff_count(), poly1.coeff_uint64_count(), poly2ptr.get(), poly2.coeff_count(), poly2.coeff_uint64_count(), coeff_count, coeff_uint64_count, result.pointer(), pool);
     }
 
     void BigPolyArith::multiply(const BigPoly &poly1, const BigUInt &uint2, const BigUInt &coeff_mod, BigPoly &result)
@@ -292,22 +300,25 @@ namespace seal
         resize_destination_if_needed(result, coeff_count, coeff_bit_count);
 
         // Multiply polynomial and uint.
+        MemoryPool &pool = *MemoryPool::default_pool();
         int temp_bit_count = poly1.significant_coeff_bit_count() + uint2.significant_bit_count();
         int temp_uint64_count = divide_round_up(temp_bit_count, bits_per_uint64);
-        Pointer temp_ptr = allocate_uint(temp_uint64_count, pool_);
+        Pointer temp_ptr = allocate_uint(temp_uint64_count, pool);
         int sig_coeff_count = poly1.significant_coeff_count();
         const uint64_t *poly1_coeff = poly1.pointer();
         int poly1_uint64_count = poly1.coeff_uint64_count();
         const uint64_t *uint2ptr = uint2.pointer();
         int uint2_uint64_count = uint2.uint64_count();
         uint64_t *result_coeff = result.pointer();
-        Modulus modulus(coeff_mod.pointer(), coeff_uint64_count, pool_);
+        Modulus modulus(coeff_mod.pointer(), coeff_uint64_count, pool);
+
+        Pointer big_alloc(allocate_uint(3 * temp_uint64_count, pool));
         for (int i = 0; i < coeff_count; ++i)
         {
             if (i < sig_coeff_count)
             {
                 multiply_uint_uint(poly1_coeff, poly1_uint64_count, uint2ptr, uint2_uint64_count, temp_uint64_count, temp_ptr.get());
-                modulo_uint(temp_ptr.get(), temp_uint64_count, modulus, result_coeff, pool_);
+                modulo_uint(temp_ptr.get(), temp_uint64_count, modulus, result_coeff, pool, big_alloc.get());
             }
             else
             {
@@ -326,7 +337,8 @@ namespace seal
         int coeff_uint64_count = divide_round_up(coeff_bit_count, bits_per_uint64);
 
         // Get pointer to inputs (duplicated and resized if needed).
-        ConstPointer poly1ptr = duplicate_poly_if_needed(poly1, poly1.pointer() == result.pointer(), pool_);
+        MemoryPool &pool = *MemoryPool::default_pool();
+        ConstPointer poly1ptr = duplicate_poly_if_needed(poly1, poly1.pointer() == result.pointer(), pool);
 
         // Verify destination size.
         resize_destination_if_needed(result, coeff_count, coeff_bit_count);
@@ -381,16 +393,17 @@ namespace seal
         }
 
         // Get pointer to inputs (duplicated and resized if needed).
-        ConstPointer numptr = duplicate_poly_if_needed(numerator, coeff_count, coeff_uint64_count, false, pool_);
-        ConstPointer denomptr = duplicate_poly_if_needed(denominator, coeff_count, coeff_uint64_count, denominator.pointer() == quotient.pointer(), pool_);
+        MemoryPool &pool = *MemoryPool::default_pool();
+        ConstPointer numptr = duplicate_poly_if_needed(numerator, coeff_count, coeff_uint64_count, false, pool);
+        ConstPointer denomptr = duplicate_poly_if_needed(denominator, coeff_count, coeff_uint64_count, denominator.pointer() == quotient.pointer(), pool);
 
         // Verify destination size.
         resize_destination_if_needed(quotient, coeff_count, coeff_bit_count);
         resize_destination_if_needed(remainder, coeff_count, coeff_bit_count);
 
         // Divide polynomials.
-        Modulus modulus(coeff_mod.pointer(), coeff_uint64_count, pool_);
-        divide_poly_poly_coeffmod(numptr.get(), denomptr.get(), coeff_count, modulus, quotient.pointer(), remainder.pointer(), pool_);
+        Modulus modulus(coeff_mod.pointer(), coeff_uint64_count, pool);
+        divide_poly_poly_coeffmod(numptr.get(), denomptr.get(), coeff_count, modulus, quotient.pointer(), remainder.pointer(), pool);
     }
 
     void BigPolyArith::modulo(const BigPoly &numerator, const BigPoly &denominator, const BigUInt &coeff_mod, BigPoly &remainder)
@@ -417,16 +430,17 @@ namespace seal
         }
 
         // Get pointer to inputs (duplicated and resized if needed).
-        ConstPointer numptr = duplicate_poly_if_needed(numerator, numerator.coeff_count(), coeff_uint64_count, numerator.pointer() == remainder.pointer(), pool_);
-        ConstPointer denomptr = duplicate_poly_if_needed(denominator, coeff_count, coeff_uint64_count, denominator.pointer() == remainder.pointer(), pool_);
+        MemoryPool &pool = *MemoryPool::default_pool();
+        ConstPointer numptr = duplicate_poly_if_needed(numerator, numerator.coeff_count(), coeff_uint64_count, numerator.pointer() == remainder.pointer(), pool);
+        ConstPointer denomptr = duplicate_poly_if_needed(denominator, coeff_count, coeff_uint64_count, denominator.pointer() == remainder.pointer(), pool);
 
         // Verify destination size.
         resize_destination_if_needed(remainder, coeff_count, coeff_bit_count);
 
         // Divide polynomials.
-        Modulus modulus(coeff_mod.pointer(), coeff_uint64_count, pool_);
+        Modulus modulus(coeff_mod.pointer(), coeff_uint64_count, pool);
         PolyModulus polymod(denomptr.get(), coeff_count, coeff_uint64_count);
-        modulo_poly(numptr.get(), numerator.coeff_count(), polymod, modulus, remainder.pointer(), pool_);
+        modulo_poly(numptr.get(), numerator.coeff_count(), polymod, modulus, remainder.pointer(), pool);
     }
 
     bool BigPolyArith::try_invert(const BigPoly &poly, const BigPoly &poly_mod, const BigUInt &coeff_mod, BigPoly &result)
@@ -453,14 +467,15 @@ namespace seal
         }
 
         // Get pointer to inputs (duplicated and resized if needed).
-        ConstPointer polyptr = duplicate_poly_if_needed(poly, coeff_count, coeff_uint64_count, poly.pointer() == result.pointer(), pool_);
-        ConstPointer polymodptr = duplicate_poly_if_needed(poly_mod, coeff_count, coeff_uint64_count, poly_mod.pointer() == result.pointer(), pool_);
+        MemoryPool &pool = *MemoryPool::default_pool();
+        ConstPointer polyptr = duplicate_poly_if_needed(poly, coeff_count, coeff_uint64_count, poly.pointer() == result.pointer(), pool);
+        ConstPointer polymodptr = duplicate_poly_if_needed(poly_mod, coeff_count, coeff_uint64_count, poly_mod.pointer() == result.pointer(), pool);
 
         // Verify destination size.
         resize_destination_if_needed(result, coeff_count, coeff_bit_count);
 
         // Invert polynomial.
-        Modulus modulus(coeff_mod.pointer(), coeff_uint64_count, pool_);
-        return try_invert_poly_coeffmod(polyptr.get(), polymodptr.get(), coeff_count, modulus, result.pointer(), pool_);
+        Modulus modulus(coeff_mod.pointer(), coeff_uint64_count, pool);
+        return try_invert_poly_coeffmod(polyptr.get(), polymodptr.get(), coeff_count, modulus, result.pointer(), pool);
     }
 }

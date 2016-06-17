@@ -89,7 +89,7 @@ namespace SEALTest
 
             TEST_METHOD(PointerTests)
             {
-                MemoryPool pool;
+                MemoryPool &pool = *MemoryPool::default_pool();
                 Pointer p1;
                 Assert::IsFalse(p1.is_set());
                 Assert::IsTrue(p1.get() == nullptr);

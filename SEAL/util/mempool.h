@@ -5,6 +5,7 @@
 #include <vector>
 #include <stdexcept>
 #include "util/common.h"
+#include "util/locks.h"
 
 namespace seal
 {
@@ -66,7 +67,7 @@ namespace seal
         class MemoryPoolHead
         {
         public:
-            MemoryPoolHead(int uint64_count) : uint64_count_(uint64_count), first_item_(nullptr)
+            MemoryPoolHead(int uint64_count) : uint64_count_(uint64_count), first_item_(nullptr), item_count_(0), locked_(false)
             {
 #ifdef _DEBUG
                 if (uint64_count < 0)
@@ -81,31 +82,19 @@ namespace seal
                 return uint64_count_;
             }
 
-            int item_count() const;
+            int item_count() const
+            {
+                return item_count_;
+            }
 
             bool is_empty() const
             {
-                return first_item_ == nullptr;
+                return item_count_ == 0;
             }
 
-            MemoryPoolItem *get()
-            {
-                MemoryPoolItem *old_first = first_item_;
-                if (old_first == nullptr)
-                {
-                    return new MemoryPoolItem(uint64_count_);
-                }
-                first_item_ = old_first->next();
-                old_first->next() = nullptr;
-                return old_first;
-            }
+            MemoryPoolItem *get();
 
-            void add(MemoryPoolItem *new_first)
-            {
-                MemoryPoolItem *old_first = first_item_;
-                new_first->next() = old_first;
-                first_item_ = new_first;
-            }
+            void add(MemoryPoolItem *new_first);
 
             void free_items();
 
@@ -114,9 +103,13 @@ namespace seal
 
             MemoryPoolHead &operator =(const MemoryPoolHead &assign) = delete;
 
-            int uint64_count_;
+            volatile int uint64_count_;
 
-            MemoryPoolItem* first_item_;
+            MemoryPoolItem* volatile first_item_;
+
+            volatile int item_count_;
+
+            mutable std::atomic<bool> locked_;
         };
 
         class ConstPointer;
@@ -143,7 +136,7 @@ namespace seal
                 pointer_ = item_->pointer();
             }
 
-            Pointer(Pointer &&move) : head_(move.head_), item_(move.item_), pointer_(move.pointer_), alias_(move.alias_)
+            Pointer(Pointer &&move) noexcept : head_(move.head_), item_(move.item_), pointer_(move.pointer_), alias_(move.alias_)
             {
                 move.item_ = nullptr;
                 move.head_ = nullptr;
@@ -276,7 +269,7 @@ namespace seal
                 pointer_ = item_->pointer();
             }
 
-            ConstPointer(ConstPointer &&move) : head_(move.head_), item_(move.item_), pointer_(move.pointer_), alias_(move.alias_)
+            ConstPointer(ConstPointer &&move) noexcept : head_(move.head_), item_(move.item_), pointer_(move.pointer_), alias_(move.alias_)
             {
                 move.item_ = nullptr;
                 move.head_ = nullptr;
@@ -284,7 +277,7 @@ namespace seal
                 move.alias_ = false;
             }
 
-            ConstPointer(Pointer &&move) : head_(move.head_), item_(move.item_), pointer_(move.pointer_), alias_(move.alias_)
+            ConstPointer(Pointer &&move) noexcept : head_(move.head_), item_(move.item_), pointer_(move.pointer_), alias_(move.alias_)
             {
                 move.item_ = nullptr;
                 move.head_ = nullptr;
@@ -427,6 +420,7 @@ namespace seal
 
             int pool_count() const
             {
+                ReaderLock lock = pools_locker_.acquire_read();
                 return static_cast<int>(pools_.size());
             }
 
@@ -439,12 +433,21 @@ namespace seal
                 free_all();
             }
 
+            static MemoryPool *default_pool()
+            {
+                return default_pool_;
+            }
+
         private:
             MemoryPool(const MemoryPool &copy) = delete;
 
             MemoryPool &operator =(const MemoryPool &assign) = delete;
 
             std::vector<MemoryPoolHead*> pools_;
+
+            mutable ReaderWriterLocker pools_locker_;
+
+            static MemoryPool *default_pool_;
         };
 
         Pointer duplicate_if_needed(uint64_t *original, int uint64_count, bool condition, MemoryPool &pool);

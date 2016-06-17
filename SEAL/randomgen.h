@@ -43,19 +43,10 @@ namespace seal
     {
     public:
         /**
-        Creates a new random number generator (of type RNG) with the default seed.
+        Creates a new random number generator (of type RNG).
         */
         StandardRandomAdapter()
         {
-        }
-
-        /**
-        Creates a new random number generator (of type RNG) with the specified seed.
-        @param seed the random number generator seed
-        */
-        StandardRandomAdapter(std::uint32_t seed)
-        {
-            generator_.seed(seed);
         }
 
         /**
@@ -134,12 +125,6 @@ namespace seal
         virtual UniformRandomGenerator *create() = 0;
 
         /**
-        Creates a new uniform random number generator with the specified seed. The caller of create needs to ensure the returned
-        instance is destroyed once it is no longer in-use to prevent a memory leak.
-        */
-        virtual UniformRandomGenerator *create(std::uint64_t seed) = 0;
-
-        /**
         Destroys the random number generator factory.
         */
         virtual ~UniformRandomGeneratorFactory()
@@ -172,14 +157,6 @@ namespace seal
         UniformRandomGenerator *create() override
         {
             return new StandardRandomAdapter<RNG>();
-        }
-
-        /**
-        Creates a new uniform random number generator with the specified seed.
-        */
-        UniformRandomGenerator *create(std::uint64_t seed) override
-        {
-            return new StandardRandomAdapter<RNG>(static_cast<std::uint32_t>(seed));
         }
     };
 }

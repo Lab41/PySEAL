@@ -994,6 +994,7 @@ namespace seal
         are set to be exactly the same as in the current one.
 
         @param[out] destination The BigUInt to overwrite with the duplicate
+        @throws std::logic_error If the destination BigPoly is an alias
         */
         void duplicate_to(BigUInt &destination) const;
 
@@ -1002,8 +1003,23 @@ namespace seal
         are set to be exactly the same as in the given one.
 
         @param[in] value The BigUInt to duplicate
+        @throws std::logic_error If the current BigPoly is an alias
         */
         void duplicate_from(const BigUInt &value);
+        
+        /**
+        Moves an old BigUInt to the current one.
+
+        @param[in] assign The BigUInt to move from
+        */
+        BigUInt &operator =(BigUInt &&assign) noexcept;
+
+        /**
+        Creates a new BigUInt by moving an old one.
+
+        @param[in] source The BigUInt to move from
+        */
+        BigUInt(BigUInt &&source) noexcept;
 
     private:
         /**

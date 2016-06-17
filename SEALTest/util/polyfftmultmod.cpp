@@ -18,7 +18,7 @@ namespace SEALTest
         public:
             TEST_METHOD(FFTMultiplyPolyPolyPolyModCoeffModBase)
             {
-                MemoryPool pool;
+                MemoryPool &pool = *MemoryPool::default_pool();
                 BigPoly poly1(5, 128);
                 BigPoly poly2(5, 128);
                 BigPoly result(5, 128);
@@ -40,7 +40,7 @@ namespace SEALTest
             {
                 const int coeff_power = 8;
                 const int coeff_count = (1 << coeff_power) + 1;
-                MemoryPool pool;
+                MemoryPool &pool = *MemoryPool::default_pool();
                 BigPoly poly1(coeff_count, 128);
                 BigPoly poly2(coeff_count, 128);
                 BigPoly polymod(coeff_count, 128);

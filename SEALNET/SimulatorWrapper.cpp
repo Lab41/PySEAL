@@ -35,7 +35,6 @@ namespace Microsoft
                 }
             }
 
-            /*
             Simulation ^SimulationEvaluator::Relinearize(Simulation ^simulation)
             {
                 if (simulationEvaluator_ == nullptr)
@@ -59,28 +58,22 @@ namespace Microsoft
                     HandleException(nullptr);
                 }
                 throw gcnew Exception("Unexpected exception");
-            }
 
-            Simulation ^SimulationEvaluator::MultiplyNoRelin(Simulation ^simulation1, Simulation ^simulation2)
+            }
+            
+            Simulation ^SimulationEvaluator::Relinearize(Simulation ^simulation, int destinationSize)
             {
                 if (simulationEvaluator_ == nullptr)
                 {
                     throw gcnew ObjectDisposedException("SimulationEvaluator is disposed");
                 }
-                if (simulation1 == nullptr)
+                if (simulation == nullptr)
                 {
-                    throw gcnew ArgumentNullException("simulation1 cannot be null");
-                }
-                if (simulation2 == nullptr)
-                {
-                    throw gcnew ArgumentNullException("simulation2 cannot be null");
+                    throw gcnew ArgumentNullException("simulation cannot be null");
                 }
                 try
                 {
-                    auto result = gcnew Simulation(simulationEvaluator_->multiply_norelin(simulation1->GetSimulation(), simulation2->GetSimulation()));
-                    GC::KeepAlive(simulation1);
-                    GC::KeepAlive(simulation2);
-                    return result;
+                    return gcnew Simulation(simulationEvaluator_->relinearize(simulation->GetSimulation(), destinationSize));
                 }
                 catch (const exception &e)
                 {
@@ -92,7 +85,6 @@ namespace Microsoft
                 }
                 throw gcnew Exception("Unexpected exception");
             }
-            */
 
             Simulation ^SimulationEvaluator::Multiply(Simulation ^simulation1, Simulation ^simulation2)
             {
@@ -124,6 +116,7 @@ namespace Microsoft
                     HandleException(nullptr);
                 }
                 throw gcnew Exception("Unexpected exception");
+
             }
 
             Simulation ^SimulationEvaluator::Add(Simulation ^simulation1, Simulation ^simulation2)
@@ -483,19 +476,16 @@ namespace Microsoft
                 {
                     throw gcnew ObjectDisposedException("Simulation is disposed");
                 }
-                try
+                return simulation_->noise_bits_left();
+            }
+
+            int Simulation::Size::get()
+            {
+                if (simulation_ == nullptr)
                 {
-                    return simulation_->noise_bits_left();
+                    throw gcnew ObjectDisposedException("Simulation is disposed");
                 }
-                catch (const exception &e)
-                {
-                    HandleException(&e);
-                }
-                catch (...)
-                {
-                    HandleException(nullptr);
-                }
-                throw gcnew Exception("Unexpected exception");
+                return simulation_->size();
             }
 
             BigUInt ^Simulation::CoeffModulus::get()
@@ -537,6 +527,27 @@ namespace Microsoft
                 throw gcnew Exception("Unexpected exception");
             }
 
+            bool Simulation::Decrypts(int noiseGap)
+            {
+                if (simulation_ == nullptr)
+                {
+                    throw gcnew ObjectDisposedException("Simulation is disposed");
+                }
+                try
+                {
+                    return simulation_->decrypts(noiseGap);
+                }
+                catch (const exception &e)
+                {
+                    HandleException(&e);
+                }
+                catch (...)
+                {
+                    HandleException(nullptr);
+                }
+                throw gcnew Exception("Unexpected exception");
+            }
+
             Simulation::Simulation(EncryptionParameters ^parms) : simulation_(nullptr)
             {
                 if (parms == nullptr)
@@ -558,7 +569,7 @@ namespace Microsoft
                 }
             }
 
-            Simulation::Simulation(EncryptionParameters ^parms, BigUInt ^noise)
+            Simulation::Simulation(EncryptionParameters ^parms, BigUInt ^noise, int ciphertextSize)
             {
                 if (parms == nullptr)
                 {
@@ -570,7 +581,7 @@ namespace Microsoft
                 }
                 try
                 {
-                    simulation_ = new seal::Simulation(parms->GetParameters(), noise->GetUInt());
+                    simulation_ = new seal::Simulation(parms->GetParameters(), noise->GetUInt(), ciphertextSize);
                     GC::KeepAlive(parms);
                     GC::KeepAlive(noise);
                 }

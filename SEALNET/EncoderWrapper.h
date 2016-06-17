@@ -12,8 +12,6 @@ namespace Microsoft
 
             ref class BigUInt;
 
-            ref class Encryptor;
-
             ref class BinaryFractionalEncoder;
 
             ref class BalancedFractionalEncoder;
@@ -24,7 +22,7 @@ namespace Microsoft
             <summary>Encodes integers into plaintext polynomials that Encryptor can encrypt.</summary>
             <remarks>
             <para>
-            Encodes integers into plaintext polynomials that <see cref="Encryptor"/> can encrypt. An instance of the BinaryEncoder class converts
+            Encodes integers into plaintext polynomials that Encryptor can encrypt. An instance of the BinaryEncoder class converts
             an integer into a plaintext polynomial by placing its binary digits as the coefficients of the polynomial. Decoding the
             integer amounts to evaluating the plaintext polynomial at X=2.
             </para>
@@ -38,10 +36,6 @@ namespace Microsoft
             Negative integers are represented by using -1 instead of 1 in the binary representation, and the negative coefficients
             are stored in the plaintext polynomials as unsigned integers that represent them modulo the plaintext modulus. Thus,
             for example, a coefficient of -1 would be stored as a polynomial coefficient plainModulus-1.
-            </para>
-            <para>
-            The BinaryEncoder class is not thread-safe and a separate BinaryEncoder instance is needed for each potentially
-            concurrent usage.
             </para>
             </remarks>
             <seealso cref="BinaryFractionalEncoder">See BinaryFractionalEncoder for encoding real numbers.</seealso>
@@ -283,7 +277,7 @@ namespace Microsoft
             <summary>Encodes integers into plaintext polynomials that Encryptor can encrypt.</summary>
             <remarks>
             <para>
-            Encodes integers into plaintext polynomials that <see cref="Encryptor"/> can encrypt. An instance of the BalancedEncoder class
+            Encodes integers into plaintext polynomials that Encryptor can encrypt. An instance of the BalancedEncoder class
             converts an integer into a plaintext polynomial by placing its digits in balanced base-b representation as the
             coefficients of the polynomial. We restrict to values of the base b to be odd positive integers and at least 3 (which
             is the default value). Digits in such a balanced representation are integers in the range -(b-1)/2,...,(b-1)/2. The
@@ -303,10 +297,6 @@ namespace Microsoft
             positive and negative integers can have both positive and negative digits in their balanced base-b representation.
             Negative coefficients are stored in the plaintext polynomials as unsigned integers that represent them modulo the
             plaintext modulus. Thus, for example, a coefficient of -1 would be stored as a polynomial coefficient plainModulus-1.
-            </para>
-            <para>
-            The BalancedEncoder class is not thread-safe and a separate BalancedEncoder instance is needed for each potentially
-            concurrent usage.
             </para>
             </remarks>
             <seealso cref="BalancedFractionalEncoder">See BalancedFractionalEncoder for encoding real numbers.</seealso>
@@ -575,7 +565,7 @@ namespace Microsoft
             <summary>Encodes floating point numbers into plaintext polynomials that Encryptor can encrypt.</summary>
             <remarks>
             <para>
-            Encodes floating point numbers into plaintext polynomials that <see cref="Encryptor"/> can encrypt. An instance of the
+            Encodes floating point numbers into plaintext polynomials that Encryptor can encrypt. An instance of the
             BinaryFractionalEncoder class converts a double-precision floating-point number into a plaintext polynomial by
             computing its binary representation, encoding the integral part as in <see cref="BinaryEncoder"/>, and the fractional part as the
             highest degree terms of the plaintext polynomial, with signs inverted. Decoding the polynomial back into a double
@@ -601,10 +591,6 @@ namespace Microsoft
             Negative integers are represented by using -1 instead of 1 in the binary representation, and the negative coefficients
             are stored in the plaintext polynomials as unsigned integers that represent them modulo the plaintext modulus. Thus,
             for example, a coefficient of -1 would be stored as a polynomial coefficient plainModulus-1.
-            </para>
-            <para>
-            The BinaryFractionalEncoder class is not thread-safe and a separate BinaryFractionalEncoder instance is needed for each
-            potentially concurrent usage.
             </para>
             </remarks>
             <seealso cref="BinaryEncoder">See BinaryEncoder for encoding integers.</seealso>
@@ -682,7 +668,7 @@ namespace Microsoft
             <summary>Encodes floating point numbers into plaintext polynomials that Encryptor can encrypt.</summary>
             <remarks>
             <para>
-            Encodes floating point numbers into plaintext polynomials that <see cref="Encryptor"/> can encrypt. An instance of the
+            Encodes floating point numbers into plaintext polynomials that Encryptor can encrypt. An instance of the
             BalancedFractionalEncoder class converts a double-precision floating-point number into a plaintext polynomial by
             computing its balanced base-b representation, encoding the integral part as in <see cref="BalancedEncoder"/>, and the fractional
             part as the highest degree terms of the plaintext polynomial, with signs inverted. Decoding the polynomial back into a
@@ -709,10 +695,6 @@ namespace Microsoft
             positive and negative integers can have both positive and negative digits in their balanced base-b representation.
             Negative coefficients are stored in the plaintext polynomials as unsigned integers that represent them modulo the
             plaintext modulus. Thus, for example, a coefficient of -1 would be stored as a polynomial coefficient plainModulus-1.
-            </para>
-            <para>
-            The BalancedFractionalEncoder class is not thread-safe and a separate BalancedFractionalEncoder instance is needed for
-            each potentially concurrent usage.
             </para>
             </remarks>
             <seealso cref="BalancedEncoder">See BalancedEncoder for encoding integers.</seealso>

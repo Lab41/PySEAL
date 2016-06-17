@@ -48,9 +48,6 @@
     <ClInclude Include="encryptor.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="evaluationkeys.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="evaluator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -120,6 +117,15 @@
     <ClInclude Include="polycrt.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="bigpolyarray.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="util\locks.h">
+      <Filter>Header Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="evaluationkeys.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="bigpoly.cpp">
@@ -144,9 +150,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="encryptor.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="evaluationkeys.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="evaluator.cpp">
@@ -213,6 +216,15 @@
       <Filter>Source Files\util</Filter>
     </ClCompile>
     <ClCompile Include="polycrt.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="bigpolyarray.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="util\locks.cpp">
+      <Filter>Source Files\util</Filter>
+    </ClCompile>
+    <ClCompile Include="evaluationkeys.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

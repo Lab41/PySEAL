@@ -58,12 +58,14 @@ namespace seal
             multiply_uint_uint(operand1, uint64_count, operand2, uint64_count, uint64_count, result);
         }
 
-        void divide_uint_uint_inplace(std::uint64_t *numerator, const std::uint64_t *denominator, int uint64_count, std::uint64_t *quotient, MemoryPool &pool);
+        void divide_uint_uint_inplace(std::uint64_t *numerator, const std::uint64_t *denominator, int uint64_count, std::uint64_t *quotient, MemoryPool &pool, std::uint64_t *alloc_ptr = nullptr);
 
-        inline void divide_uint_uint(const std::uint64_t *numerator, const std::uint64_t *denominator, int uint64_count, std::uint64_t *quotient, std::uint64_t *remainder, MemoryPool &pool)
+        inline void divide_uint_uint(const std::uint64_t *numerator, const std::uint64_t *denominator, int uint64_count, std::uint64_t *quotient, std::uint64_t *remainder, MemoryPool &pool, std::uint64_t *alloc_ptr = nullptr)
         {
+            // alloc_ptr should point to 2 x uint64_count memory
+
             set_uint_uint(numerator, uint64_count, remainder);
-            divide_uint_uint_inplace(remainder, denominator, uint64_count, quotient, pool);
+            divide_uint_uint_inplace(remainder, denominator, uint64_count, quotient, pool, alloc_ptr);
         }
     }
 }

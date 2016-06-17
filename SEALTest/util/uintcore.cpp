@@ -15,7 +15,7 @@ namespace SEALTest
         public:
             TEST_METHOD(AllocateUInt)
             {
-                MemoryPool pool;
+                MemoryPool &pool = *MemoryPool::default_pool();
                 Pointer ptr(allocate_uint(0, pool));
                 Assert::IsTrue(nullptr == ptr.get());
 
@@ -30,7 +30,7 @@ namespace SEALTest
             {
                 set_zero_uint(0, nullptr);
 
-                MemoryPool pool;
+                MemoryPool &pool = *MemoryPool::default_pool();
                 Pointer ptr(allocate_uint(1, pool));
                 ptr[0] = 0x1234567812345678;
                 set_zero_uint(1, ptr.get());
@@ -46,7 +46,7 @@ namespace SEALTest
 
             TEST_METHOD(AllocateZeroUInt)
             {
-                MemoryPool pool;
+                MemoryPool &pool = *MemoryPool::default_pool();
                 Pointer ptr(allocate_zero_uint(0, pool));
                 Assert::IsTrue(nullptr == ptr.get());
 
@@ -62,7 +62,7 @@ namespace SEALTest
 
             TEST_METHOD(SetUInt)
             {
-                MemoryPool pool;
+                MemoryPool &pool = *MemoryPool::default_pool();
                 Pointer ptr(allocate_uint(1, pool));
                 ptr[0] = 0xFFFFFFFFFFFFFFFF;
                 set_uint(1, 1, ptr.get());
@@ -90,7 +90,7 @@ namespace SEALTest
             {
                 set_uint_uint(nullptr, 0, nullptr);
 
-                MemoryPool pool;
+                MemoryPool &pool = *MemoryPool::default_pool();
                 Pointer ptr1(allocate_uint(1, pool));
                 ptr1[0] = 0x1234567887654321;
                 Pointer ptr2(allocate_uint(1, pool));
@@ -123,7 +123,7 @@ namespace SEALTest
             {
                 set_uint_uint(nullptr, 0, 0, nullptr);
 
-                MemoryPool pool;
+                MemoryPool &pool = *MemoryPool::default_pool();
                 Pointer ptr1(allocate_uint(1, pool));
                 ptr1[0] = 0x1234567887654321;
                 set_uint_uint(nullptr, 0, 1, ptr1.get());
@@ -176,7 +176,7 @@ namespace SEALTest
             {
                 Assert::IsTrue(is_zero_uint(nullptr, 0));
 
-                MemoryPool pool;
+                MemoryPool &pool = *MemoryPool::default_pool();
                 Pointer ptr(allocate_uint(1, pool));
                 ptr[0] = 1;
                 Assert::IsFalse(is_zero_uint(ptr.get(), 1));
@@ -200,7 +200,7 @@ namespace SEALTest
 
             TEST_METHOD(IsEqualUInt)
             {
-                MemoryPool pool;
+                MemoryPool &pool = *MemoryPool::default_pool();
                 Pointer ptr(allocate_uint(1, pool));
                 ptr[0] = 1;
                 Assert::IsTrue(is_equal_uint(ptr.get(), 1, 1));
@@ -222,7 +222,7 @@ namespace SEALTest
 
             TEST_METHOD(IsBitSetUInt)
             {
-                MemoryPool pool;
+                MemoryPool &pool = *MemoryPool::default_pool();
                 Pointer ptr(allocate_uint(2, pool));
                 ptr[0] = 0;
                 ptr[1] = 0;
@@ -254,7 +254,7 @@ namespace SEALTest
 
             TEST_METHOD(IsHighBitSetUInt)
             {
-                MemoryPool pool;
+                MemoryPool &pool = *MemoryPool::default_pool();
                 Pointer ptr(allocate_uint(2, pool));
                 ptr[0] = 0;
                 ptr[1] = 0;
@@ -275,7 +275,7 @@ namespace SEALTest
 
             TEST_METHOD(SetBitUInt)
             {
-                MemoryPool pool;
+                MemoryPool &pool = *MemoryPool::default_pool();
                 Pointer ptr(allocate_uint(2, pool));
                 ptr[0] = 0;
                 ptr[1] = 0;
@@ -304,7 +304,7 @@ namespace SEALTest
             {
                 Assert::AreEqual(0, get_significant_bit_count_uint(nullptr, 0));
 
-                MemoryPool pool;
+                MemoryPool &pool = *MemoryPool::default_pool();
                 Pointer ptr(allocate_uint(2, pool));
                 ptr[0] = 0;
                 ptr[1] = 0;
@@ -355,7 +355,7 @@ namespace SEALTest
             {
                 Assert::AreEqual(0, get_significant_uint64_count_uint(nullptr, 0));
 
-                MemoryPool pool;
+                MemoryPool &pool = *MemoryPool::default_pool();
                 Pointer ptr(allocate_uint(2, pool));
                 ptr[0] = 0;
                 ptr[1] = 0;
@@ -392,7 +392,7 @@ namespace SEALTest
 
             TEST_METHOD(GetPowerOfTwoUInt)
             {
-                MemoryPool pool;
+                MemoryPool &pool = *MemoryPool::default_pool();
                 Pointer ptr(allocate_zero_uint(2, pool));
                 Assert::AreEqual(-1, get_power_of_two_uint(ptr.get(), 1));
                 Assert::AreEqual(-1, get_power_of_two_uint(ptr.get(), 2));
@@ -434,7 +434,7 @@ namespace SEALTest
 
             TEST_METHOD(GetPowerOfTwoMinusOneUInt)
             {
-                MemoryPool pool;
+                MemoryPool &pool = *MemoryPool::default_pool();
                 Pointer ptr(allocate_zero_uint(2, pool));
                 Assert::AreEqual(0, get_power_of_two_minus_one_uint(ptr.get(), 1));
                 Assert::AreEqual(0, get_power_of_two_minus_one_uint(ptr.get(), 2));
@@ -486,7 +486,7 @@ namespace SEALTest
             {
                 filter_highbits_uint(nullptr, 0, 0);
 
-                MemoryPool pool;
+                MemoryPool &pool = *MemoryPool::default_pool();
                 Pointer ptr(allocate_uint(2, pool));
                 ptr[0] = 0xFFFFFFFFFFFFFFFF;
                 ptr[1] = 0xFFFFFFFFFFFFFFFF;
@@ -536,7 +536,7 @@ namespace SEALTest
                 Assert::IsTrue(is_greater_than_or_equal_uint_uint(nullptr, nullptr, 0));
                 Assert::IsTrue(is_less_than_or_equal_uint_uint(nullptr, nullptr, 0));
 
-                MemoryPool pool;
+                MemoryPool &pool = *MemoryPool::default_pool();
                 Pointer ptr1(allocate_uint(2, pool));
                 Pointer ptr2(allocate_uint(2, pool));
                 ptr1[0] = 0;

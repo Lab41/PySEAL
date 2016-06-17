@@ -91,7 +91,7 @@ namespace SEALTest
             {
                 uint64_t number[] = { 0, 0, 0 };
                 string correct = "0";
-                MemoryPool pool;
+                MemoryPool &pool = *MemoryPool::default_pool();
                 Assert::AreEqual(correct, uint64_to_dec_string(number, 3, pool));
                 Assert::AreEqual(correct, uint64_to_dec_string(number, 1, pool));
                 Assert::AreEqual(correct, uint64_to_dec_string(number, 0, pool));

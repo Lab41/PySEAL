@@ -1,6 +1,7 @@
 #pragma once
 
 #include "decryptor.h"
+#include "BigPolyArrayWrapper.h"
 
 namespace Microsoft
 {
@@ -13,17 +14,13 @@ namespace Microsoft
             ref class BigPoly;
 
             /**
-            <summary>Decrypts encrypted polynomials (represented by BigPoly) into plain-text polynomials.</summary>
+            <summary>Decrypts BigPolyArray objects into BigPoly objects.</summary>
 
             <remarks>
             <para>
-            Decrypts encrypted polynomials (represented by <see cref="BigPoly"/>) into plain-text polynomials. Constructing a
+            Decrypts <see cref="BigPolyArray" /> objects into <see cref="BigPoly" /> objects. Constructing a
             Decryptor requires the encryption parameters (set through an <see cref="EncryptionParameters"/> object) and the
             secret key polynomial. The public and evaluation keys are not needed for decryption.
-            </para>
-            <para>
-            The Decrypt() functions are not thread safe and a separate Decryptor instance is needed for each potentially concurrent
-            decrypt operation.
             </para>
             </remarks>
             */
@@ -34,31 +31,12 @@ namespace Microsoft
                 <summary>Creates a Decryptor instance initialized with the specified encryption parameters and secret key.</summary>
                 <param name="parms">The encryption parameters</param>
                 <param name="secretKey">The secret key</param>
-                <exception cref="System::ArgumentNullException">If parms or secretKey is null</exception>
+                <exception cref="System::ArgumentNullException">if parms or secretKey is null</exception>
                 <exception cref="System::ArgumentException">if encryption parameters or secret key are not valid</exception>
                 <seealso cref="EncryptionParameters">See EncryptionParameters for more details on valid encryption
                 parameters.</seealso>
                 */
                 Decryptor(EncryptionParameters ^parms, BigPoly ^secretKey);
-
-                /**
-                <summary>Creates a Decryptor instance initialized with the specified encryption parameters and secret key.</summary>
-
-                <remarks>
-                Creates a Decryptor instance initialized with the specified encryption parameters and secret key. The power
-                parameter raises the secret key to the specified power during initialization. Raising the secret key to a power
-                enables more efficient operations in some advanced cases.
-                </remarks>
-                <param name="parms">The encryption parameters</param>
-                <param name="secretKey">The secret key</param>
-                <param name="power">The power to raise the secret key to</param>
-                <exception cref="System::ArgumentNullException">If parms or secretKey is null</exception>
-                <exception cref="System::ArgumentException">if encryption parameters or secret key are not valid</exception>
-                <exception cref="System::ArgumentException">if power is zero</exception>
-                <seealso cref="EncryptionParameters">See EncryptionParameters for more details on valid encryption
-                parameters.</seealso>
-                */
-                Decryptor(EncryptionParameters ^parms, BigPoly ^secretKey, System::UInt64 power);
 
                 /**
                 <summary>Returns the secret key used by the Decryptor.</summary>
@@ -68,29 +46,28 @@ namespace Microsoft
                 }
 
                 /**
-                <summary>Decrypts an encrypted polynomial and stores the result in the destination parameter.</summary>
+                <summary>Decrypts an BigPolyArray and stores the result in the destination parameter.</summary>
 
                 <remarks>
-                Decrypts an encrypted polynomial and stores the result in the destination parameter. The destination parameter is
-                resized if and only if its coefficient count or coefficient bit count does not match the encryption parameters.
+                Decrypts an BigPolyArray and stores the result in the destination parameter.
                 </remarks>
-                <param name="encrypted">The encrypted polynomial to decrypt</param>
-                <param name="destination">The polynomial to overwrite with the plain-text polynomial</param>
-                <exception cref="System::ArgumentNullException">If encrypted or destination is null</exception>
-                <exception cref="System::ArgumentException">if the encrypted polynomial is not a valid encrypted polynomial for the
+                <param name="encrypted">The ciphertext to decrypt</param>
+                <param name="destination">The plaintext to overwrite with the decrypted ciphertext</param>
+                <exception cref="System::ArgumentNullException">if encrypted or destination is null</exception>
+                <exception cref="System::ArgumentException">if the ciphertext is not a valid ciphertext for the
                 encryption parameters</exception>
                 <exception cref="System::InvalidOperationException">If destination is an alias but needs to be resized</exception>
                 */
-                void Decrypt(BigPoly ^encrypted, BigPoly ^destination);
+                void Decrypt(BigPolyArray ^encrypted, BigPoly ^destination);
 
                 /**
-                <summary>Decrypts an encrypted polynomial and returns the result.</summary>
-                <param name="encrypted">The encrypted polynomial to decrypt</param>
-                <exception cref="System::ArgumentNullException">If encrypted is null</exception>
-                <exception cref="System::ArgumentException">if the encrypted polynomial is not a valid encrypted polynomial for the
+                <summary>Decrypts an BigPolyArray and returns the result.</summary>
+                <param name="encrypted">The ciphertext to decrypt</param>
+                <exception cref="System::ArgumentNullException">if encrypted is null</exception>
+                <exception cref="System::ArgumentException">if the ciphertext is not a valid ciphertext for the
                 encryption parameters</exception>
                 */
-                BigPoly ^Decrypt(BigPoly ^encrypted);
+                BigPoly ^Decrypt(BigPolyArray ^encrypted);
 
                 /**
                 <summary>Destroys the Decryptor.</summary>
@@ -112,6 +89,10 @@ namespace Microsoft
             private:
                 seal::Decryptor *decryptor_;
             };
+
+
+
+
         }
     }
 }

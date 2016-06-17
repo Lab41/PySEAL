@@ -2,57 +2,47 @@
 #define SEAL_DECRYPTOR_H
 
 #include "encryptionparams.h"
-#include "util/mempool.h"
 #include "util/modulus.h"
 #include "util/polymodulus.h"
+#include "bigpolyarray.h"
 
 namespace seal
 {
     /**
-    Decrypts encrypted polynomials (represented by BigPoly) into plain-text polynomials. Constructing a Decryptor requires the encryption
-    parameters (set through an EncryptionParameters object) and the secret key polynomial. The public and evaluation keys are not needed
+    Decrypts BigPolyArray objects into BigPoly objects. Constructing an Decryptor requires the encryption
+    parameters (set through an EncryptionParameters object) and the secret key. The public and evaluation keys are not needed
     for decryption.
-
-    @warning The decrypt() function is not thread safe and a separate Decryptor instance is needed for each potentially concurrent decrypt
-    operation.
     */
     class Decryptor
     {
     public:
         /**
-        Creates a Decryptor instance initialized with the specified encryption parameters and secret key. The optional power parameter
-        raises the secret key to the specified power during initialization. Raising the secret key to a power enables more efficient
-        operations in some advanced cases.
+        Creates an Decryptor instance initialized with the specified encryption parameters and secret key.
 
         @param[in] parms The encryption parameters
         @param[in] secret_key The secret key
-        @param[in] power The power to raise the secret key to, defaults to 1
         @throws std::invalid_argument if encryption parameters or secret key are not valid
-        @throws std::invalid_argument if power is zero
         @see EncryptionParameters for more details on valid encryption parameters.
         */
-        Decryptor(const EncryptionParameters &parms, const BigPoly &secret_key, std::uint64_t power = 1);
+        Decryptor(const EncryptionParameters &parms, const BigPoly &secret_key);
 
         /**
-        Decrypts an encrypted polynomial and stores the result in the destination parameter. The destination parameter is resized if
-        and only if its coefficient count or coefficient bit count does not match the encryption parameters.
-
-        @warning decrypt() is not thread safe.
-        @param[in] encrypted The encrypted polynomial to decrypt
-        @param[out] destination The polynomial to overwrite with the plain-text polynomial
-        @throws std::invalid_argument if the encrypted polynomial is not a valid encrypted polynomial for the encryption parameters
+        Decrypts an FV ciphertext and stores the result in the destination parameter. 
+        
+        @param[in] encrypted The ciphertext to decrypt
+        @param[out] destination The plaintext to overwrite with the decrypted ciphertext
+        @throws std::invalid_argument if the ciphertext is not a valid ciphertext for the encryption parameters
         @throws std::logic_error If destination is an alias but needs to be resized
         */
-        void decrypt(const BigPoly &encrypted, BigPoly &destination);
+        void decrypt(const BigPolyArray &encrypted, BigPoly &destination);
 
         /**
-        Decrypts an encrypted polynomial and returns the result.
+        Decrypts an BigPolyArray and returns the result.
 
-        @warning decrypt() is not thread safe.
-        @param[in] encrypted The encrypted polynomial to decrypt
-        @throws std::invalid_argument if the encrypted polynomial is not a valid encrypted polynomial for the encryption parameters
+        @param[in] encrypted The ciphertext to decrypt
+        @throws std::invalid_argument if the ciphertext is not a valid ciphertext for the encryption parameters
         */
-        BigPoly decrypt(const BigPoly &encrypted)
+        BigPoly decrypt(const BigPolyArray &encrypted)
         {
             BigPoly result;
             decrypt(encrypted, result);
@@ -72,6 +62,8 @@ namespace seal
 
         Decryptor &operator =(const Decryptor &assign) = delete;
 
+        void compute_secret_key_array(int max_power);
+
         BigPoly poly_modulus_;
 
         BigUInt coeff_modulus_;
@@ -88,15 +80,13 @@ namespace seal
 
         BigPoly secret_key_;
 
-        EncryptionMode mode_;
-
         int orig_plain_modulus_bit_count_;
-
-        util::MemoryPool pool_;
 
         util::PolyModulus polymod_;
 
         util::Modulus mod_;
+
+        BigPolyArray secret_key_array_;
     };
 }
 

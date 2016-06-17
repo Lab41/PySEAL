@@ -36,12 +36,12 @@ namespace seal
                 return generator_->generate();
             }
 
-            static result_type min()
+            static constexpr result_type min()
             {
                 return 0;
             }
 
-            static result_type max()
+            static constexpr result_type max()
             {
                 return UINT32_MAX;
             }

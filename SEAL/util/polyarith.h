@@ -53,6 +53,8 @@ namespace seal
             set_poly_poly(numerator, coeff_count, coeff_uint64_count, remainder);
             divide_poly_poly_coeffmod_inplace(remainder, denominator, coeff_count, modulus, quotient, pool);
         }
+
+        void add_bigpolyarray_coeffmod(const std::uint64_t *array1, const std::uint64_t *array2, int count, int coeff_count, const Modulus &modulus, std::uint64_t *result);
     }
 }
 #endif // SEAL_UTIL_POLYARITH_H

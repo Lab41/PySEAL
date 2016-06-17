@@ -35,9 +35,10 @@ namespace seal
         uint64_t *poly_modulus_ptr = new uint64_t[poly_modulus.coeff_count() * coeff_uint64_count];
 
         // Set slot_modulus_ and poly_modulus_
+        MemoryPool &pool = *MemoryPool::default_pool();
         set_uint_uint(slot_modulus.pointer(), coeff_uint64_count, slot_modulus_ptr);
         set_poly_poly(poly_modulus.pointer(), poly_modulus.coeff_count(), poly_modulus.coeff_uint64_count(), poly_coeff_count, coeff_uint64_count, poly_modulus_ptr);
-        slot_modulus_ = Modulus(slot_modulus_ptr, coeff_uint64_count, pool_);
+        slot_modulus_ = Modulus(slot_modulus_ptr, coeff_uint64_count, pool);
         poly_modulus_ = PolyModulus(poly_modulus_ptr, poly_modulus.coeff_count(), coeff_uint64_count);
 
         // Check that slots_ is a power of two
@@ -48,8 +49,8 @@ namespace seal
 
         // Test if integers modulo slot_modulus contains a primitive 2*deg(poly_modulus)-th root
         --slot_modulus;
-        size_t cyclic_size = 2 * slots_;
-        modulo_uint_inplace(slot_modulus.pointer(), coeff_uint64_count, Modulus(&cyclic_size, 1, pool_), pool_);
+        uint64_t cyclic_size = 2 * slots_;
+        modulo_uint_inplace(slot_modulus.pointer(), coeff_uint64_count, Modulus(&cyclic_size, 1, pool), pool);
         if (!slot_modulus.is_zero())
         {
             throw invalid_argument("integers modulo slot_modulus do not contain a valid primitive root of unity");
@@ -59,7 +60,7 @@ namespace seal
         roots_of_unity_.reserve(slots_);
 
         // Find a minimal primitive (2*slots_)-th root of unity in integers modulo slot_modulus_.
-        Pointer generator(allocate_uint(coeff_uint64_count, pool_));
+        Pointer generator(allocate_uint(coeff_uint64_count, pool));
         find_generator(generator.get());
 
         // Fill the vector of roots of unity with all distinct odd powers of generator.
@@ -85,24 +86,31 @@ namespace seal
     {
         int coeff_uint64_count = slot_modulus_.uint64_count();
 
-        Pointer current_root(allocate_uint(coeff_uint64_count, pool_));
+        MemoryPool &pool = *MemoryPool::default_pool();
+        Pointer current_root(allocate_uint(coeff_uint64_count, pool));
         set_uint_uint(generator, coeff_uint64_count, current_root.get());
 
-        Pointer generator_sq(allocate_uint(coeff_uint64_count, pool_));
-        multiply_uint_uint_mod(generator, generator, slot_modulus_, generator_sq.get(), pool_);
+        Pointer generator_sq(allocate_uint(coeff_uint64_count, pool));
+        multiply_uint_uint_mod(generator, generator, slot_modulus_, generator_sq.get(), pool);
 
         ConstPointer current_root_copy;
         for (size_t i = 0; i < slots_; ++i)
         {
-            roots_of_unity_.push_back(duplicate_uint_if_needed(current_root.get(), coeff_uint64_count, coeff_uint64_count, true, pool_));
+            roots_of_unity_.push_back(duplicate_uint_if_needed(current_root.get(), coeff_uint64_count, coeff_uint64_count, true, pool));
 
-            current_root_copy = duplicate_uint_if_needed(current_root.get(), coeff_uint64_count, coeff_uint64_count, true, pool_);
-            multiply_uint_uint_mod(current_root_copy.get(), generator_sq.get(), slot_modulus_, current_root.get(), pool_);
+            current_root_copy = duplicate_uint_if_needed(current_root.get(), coeff_uint64_count, coeff_uint64_count, true, pool);
+            multiply_uint_uint_mod(current_root_copy.get(), generator_sq.get(), slot_modulus_, current_root.get(), pool);
         }
     }
 
-    void PolyCRTBuilder::prepare_slot(size_t index, MemoryPool &pool)
+    void PolyCRTBuilder::prepare_slot(size_t index)
     {
+        // Validate input parameters
+        if (index > slots_ - 1)
+        {
+            throw invalid_argument("index out of bounds");
+        }
+
         // Is the pointer at the index-th slot already set? In that case do nothing.
         if (is_slot_prepared(index))
         {
@@ -128,7 +136,7 @@ namespace seal
         // Set normalize_polys to false to instead prepare the slots in a way that allows for very fast addition of slots
         // by simply looking at the top coefficient of the composed polynomial.
         bool normalize_polys = true;
-
+        MemoryPool &pool = *MemoryPool::default_pool();
         if (normalize_polys)
         {
             Pointer temp_uint(allocate_uint(coeff_uint64_count, pool));
@@ -163,23 +171,11 @@ namespace seal
         }
     }
 
-    void PolyCRTBuilder::prepare_slot(std::size_t index)
-    {
-        // Validate input parameters
-        if (index > slots_ - 1)
-        {
-            throw invalid_argument("index out of bounds");
-        }
-
-        MemoryPool local_pool;
-        prepare_slot(index, local_pool);
-    }
-
     void PolyCRTBuilder::prepare_all_slots()
     {
         for (size_t i = 0; i < slots_; ++i)
         {
-            prepare_slot(i, pool_);
+            prepare_slot(i);
         }
     }
 
@@ -194,8 +190,9 @@ namespace seal
 
         // We check if root is a 2*slots_-th root of unity in integers modulo slot_modulus_.
         // It suffices to check that root^slots_ is -1 modulo slot_modulus_.
-        Pointer power(allocate_uint(coeff_uint64_count, pool_));
-        exponentiate_uint_mod(root, &slots_, 1, slot_modulus_, power.get(), pool_);
+        MemoryPool &pool = *MemoryPool::default_pool();
+        Pointer power(allocate_uint(coeff_uint64_count, pool));
+        exponentiate_uint_mod(root, &slots_, 1, slot_modulus_, power.get(), pool);
         increment_uint_mod(power.get(), slot_modulus_.get(), coeff_uint64_count, power.get());
 
         return is_zero_uint(power.get(), coeff_uint64_count);
@@ -211,17 +208,19 @@ namespace seal
             *random_int_ptr++ = rand();
         }
 
-        modulo_uint_inplace(destination, coeff_uint64_count, slot_modulus_, pool_);
+        MemoryPool &pool = *MemoryPool::default_pool();
+        modulo_uint_inplace(destination, coeff_uint64_count, slot_modulus_, pool);
     }
 
     void PolyCRTBuilder::find_minimal_generator(const uint64_t *generator, uint64_t *destination)
     {
         int coeff_uint64_count = slot_modulus_.uint64_count();
 
-        Pointer generator_sq(allocate_uint(coeff_uint64_count, pool_));
-        multiply_uint_uint_mod(generator, generator, slot_modulus_, generator_sq.get(), pool_);
+        MemoryPool &pool = *MemoryPool::default_pool();
+        Pointer generator_sq(allocate_uint(coeff_uint64_count, pool));
+        multiply_uint_uint_mod(generator, generator, slot_modulus_, generator_sq.get(), pool);
 
-        Pointer current_generator(allocate_uint(coeff_uint64_count, pool_));
+        Pointer current_generator(allocate_uint(coeff_uint64_count, pool));
         set_uint_uint(generator, coeff_uint64_count, current_generator.get());
 
         // destination is going to contain always the smallest generator found
@@ -236,34 +235,35 @@ namespace seal
             }
 
             // Then move on to the next generator
-            ConstPointer current_generator_copy(duplicate_uint_if_needed(current_generator.get(), coeff_uint64_count, coeff_uint64_count, true, pool_));
-            multiply_uint_uint_mod(current_generator_copy.get(), generator_sq.get(), slot_modulus_, current_generator.get(), pool_);
+            ConstPointer current_generator_copy(duplicate_uint_if_needed(current_generator.get(), coeff_uint64_count, coeff_uint64_count, true, pool));
+            multiply_uint_uint_mod(current_generator_copy.get(), generator_sq.get(), slot_modulus_, current_generator.get(), pool);
         }
     }
 
     void PolyCRTBuilder::find_generator(uint64_t *destination)
     {
+        MemoryPool &pool = *MemoryPool::default_pool();
         int coeff_uint64_count = slot_modulus_.uint64_count();
-        Pointer random_ptr(allocate_uint(coeff_uint64_count, pool_));
+        Pointer random_ptr(allocate_uint(coeff_uint64_count, pool));
 
         // We need to divide slot_modulus_-1 by 2*slots_ to get the size of the quotient group
-        Pointer size_entire_group(allocate_uint(coeff_uint64_count, pool_));
+        Pointer size_entire_group(allocate_uint(coeff_uint64_count, pool));
         decrement_uint(slot_modulus_.get(), coeff_uint64_count, size_entire_group.get());
 
-        Pointer divisor(allocate_uint(coeff_uint64_count, pool_));
+        Pointer divisor(allocate_uint(coeff_uint64_count, pool));
         set_uint(slots_, coeff_uint64_count, divisor.get());
         left_shift_uint(divisor.get(), 1, coeff_uint64_count, divisor.get());
 
         // Compute size of quotient group
-        Pointer size_quotient_group(allocate_uint(coeff_uint64_count, pool_));
-        divide_uint_uint_inplace(size_entire_group.get(), divisor.get(), coeff_uint64_count, size_quotient_group.get(), pool_);
+        Pointer size_quotient_group(allocate_uint(coeff_uint64_count, pool));
+        divide_uint_uint_inplace(size_entire_group.get(), divisor.get(), coeff_uint64_count, size_quotient_group.get(), pool);
 
         while (true)
         {
             set_random(random_ptr.get());
 
             // Raise the random number to power the size of the quotient to get rid of irrelevant part
-            exponentiate_uint_mod(random_ptr.get(), size_quotient_group.get(), coeff_uint64_count, slot_modulus_, random_ptr.get(), pool_);
+            exponentiate_uint_mod(random_ptr.get(), size_quotient_group.get(), coeff_uint64_count, slot_modulus_, random_ptr.get(), pool);
 
             // Now test if we have a generator of the cyclic group of 2*slots_ elements
             if (is_generator(random_ptr.get()))
@@ -293,7 +293,6 @@ namespace seal
         }
         destination.set_zero();
 
-        MemoryPool local_pool;
         for (size_t i = 0; i < slots_; ++i)
         {
             // Validate the i-th input
@@ -303,7 +302,7 @@ namespace seal
             }
 
             // We use the local memory pool here
-            add_to_slot(values[i].pointer(), i, destination.pointer(), local_pool);
+            add_to_slot(values[i].pointer(), i, destination.pointer());
         }
     }
 
@@ -324,11 +323,11 @@ namespace seal
         // Read each of the slots by evaluating the polynomial at all of the primitive roots
         for (size_t i = 0; i < slots_; ++i)
         {
-            get_slot(poly.pointer(), i, destination[i].pointer(), pool_);
+            get_slot(poly.pointer(), i, destination[i].pointer());
         }
     }
 
-    void PolyCRTBuilder::get_slot(const uint64_t *poly, size_t index, uint64_t *destination, MemoryPool &pool)
+    void PolyCRTBuilder::get_slot(const uint64_t *poly, size_t index, uint64_t *destination)
     {
         int coeff_uint64_count = slot_modulus_.uint64_count();
         int poly_coeff_count = poly_modulus_.coeff_count();
@@ -353,6 +352,7 @@ namespace seal
 #endif
 
         // Evaluate poly at the particular root of unity to recover the slot
+        MemoryPool &pool = *MemoryPool::default_pool();
         poly_eval_uint_mod(poly, poly_coeff_count, roots_of_unity_[index].get(), slot_modulus_, destination, pool);
     }
 
@@ -378,11 +378,10 @@ namespace seal
         }
 
         // Evaluate poly at the particular root of unity to recover the slot
-        MemoryPool local_pool;
-        get_slot(poly.pointer(), index, destination.pointer(), local_pool);
+        get_slot(poly.pointer(), index, destination.pointer());
     }
 
-    void PolyCRTBuilder::add_to_slot(const uint64_t *value, size_t index, uint64_t *destination, MemoryPool &pool)
+    void PolyCRTBuilder::add_to_slot(const uint64_t *value, size_t index, uint64_t *destination)
     {
         int coeff_uint64_count = slot_modulus_.uint64_count();
         int poly_coeff_count = poly_modulus_.coeff_count();
@@ -416,16 +415,16 @@ namespace seal
             return;
         }
 
+        MemoryPool &pool = *MemoryPool::default_pool();
         Pointer poly_crt_term(allocate_poly(poly_coeff_count, coeff_uint64_count, pool));
 
-        prepare_slot(index, pool);
+        prepare_slot(index);
         multiply_poly_scalar_coeffmod(crt_base_polys_[index], poly_coeff_count, value, slot_modulus_, poly_crt_term.get(), pool);
         add_poly_poly_coeffmod(destination, poly_crt_term.get(), poly_coeff_count, slot_modulus_.get(), coeff_uint64_count, destination);
     }
 
     void PolyCRTBuilder::add_to_slot(const BigUInt &value, std::size_t index, BigPoly &destination)
     {
-        int value_uint64_count = value.uint64_count();
         int coeff_bit_count = slot_modulus_.significant_bit_count();
         int poly_coeff_count = poly_modulus_.coeff_count();
 
@@ -438,12 +437,11 @@ namespace seal
             throw invalid_argument("value has incorrect size");
         }
 
-        MemoryPool local_pool;
-        add_to_slot(value.pointer(), index, destination.pointer(), local_pool);
+        add_to_slot(value.pointer(), index, destination.pointer());
     }
 
 
-    void PolyCRTBuilder::set_slot(const uint64_t *value, size_t index, uint64_t *destination, MemoryPool &pool)
+    void PolyCRTBuilder::set_slot(const uint64_t *value, size_t index, uint64_t *destination)
     {
         int coeff_uint64_count = slot_modulus_.uint64_count();
         int poly_coeff_count = poly_modulus_.coeff_count();
@@ -470,7 +468,7 @@ namespace seal
             throw invalid_argument("destination is larger than slot_modulus and poly_modulus allow");
         }
 #endif
-
+        MemoryPool &pool = *MemoryPool::default_pool();
         Pointer diff_slot_content(allocate_uint(coeff_uint64_count, pool));
 
         // First read off the old slot content
@@ -486,7 +484,7 @@ namespace seal
         }
 
         // Now old_slot_content holds the difference betwen the new and old contents so add it to the slot
-        add_to_slot(diff_slot_content.get(), index, destination, pool);
+        add_to_slot(diff_slot_content.get(), index, destination);
     }
 
     void PolyCRTBuilder::set_slot(const BigUInt &value, std::size_t index, BigPoly &destination)
@@ -502,9 +500,8 @@ namespace seal
         {
             throw invalid_argument("value has incorrect size");
         }
-        
-        util::MemoryPool local_pool;
-        set_slot(value.pointer(), index, destination.pointer(), local_pool);
+
+        set_slot(value.pointer(), index, destination.pointer());
     }
 
     BigPoly PolyCRTBuilder::get_slot_sum_scaling_poly(set<size_t> indices)
@@ -516,11 +513,12 @@ namespace seal
         vector<BigUInt> slot_sum_scaling_vector(slots_, BigUInt(coeff_bit_count, static_cast<uint64_t>(0)));
         
         // Then set those given as argument to the correct value
+        MemoryPool &pool = *MemoryPool::default_pool();
         for (auto iter = indices.begin(); iter != indices.end(); ++iter)
         {
             prepare_slot(*iter);
 
-            if (!try_invert_uint_mod(crt_base_polys_[*iter], slot_modulus_.get(), coeff_uint64_count, slot_sum_scaling_vector[*iter].pointer(), pool_))
+            if (!try_invert_uint_mod(crt_base_polys_[*iter], slot_modulus_.get(), coeff_uint64_count, slot_sum_scaling_vector[*iter].pointer(), pool))
             {
                 // Perhaps slot_modulus_ is not prime?
                 throw logic_error("inversion modulo slot_modulus_ failed");
@@ -542,9 +540,10 @@ namespace seal
         prepare_all_slots();
 
         // Then set those given as argument to the correct value
+        MemoryPool &pool = *MemoryPool::default_pool();
         for (size_t i = 0; i < slots_; ++i)
         {
-            if (!try_invert_uint_mod(crt_base_polys_[i], slot_modulus_.get(), coeff_uint64_count, slot_sum_scaling_vector[i].pointer(), pool_))
+            if (!try_invert_uint_mod(crt_base_polys_[i], slot_modulus_.get(), coeff_uint64_count, slot_sum_scaling_vector[i].pointer(), pool))
             {
                 // Perhaps slot_modulus_ is not prime?
                 throw logic_error("inversion modulo slot_modulus_ failed");

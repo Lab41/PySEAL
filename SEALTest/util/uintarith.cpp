@@ -17,7 +17,7 @@ namespace SEALTest
             {
                 Assert::IsTrue(increment_uint(nullptr, 0, nullptr));
 
-                MemoryPool pool;
+                MemoryPool &pool = *MemoryPool::default_pool();
                 Pointer ptr(allocate_uint(2, pool));
                 ptr[0] = 0;
                 ptr[1] = 0;
@@ -63,7 +63,7 @@ namespace SEALTest
             {
                 Assert::IsTrue(decrement_uint(nullptr, 0, nullptr));
 
-                MemoryPool pool;
+                MemoryPool &pool = *MemoryPool::default_pool();
                 Pointer ptr(allocate_uint(2, pool));
                 ptr[0] = 2;
                 ptr[1] = 2;
@@ -115,7 +115,7 @@ namespace SEALTest
             {
                 negate_uint(nullptr, 0, nullptr);
 
-                MemoryPool pool;
+                MemoryPool &pool = *MemoryPool::default_pool();
                 Pointer ptr(allocate_uint(2, pool));
                 ptr[0] = 0;
                 ptr[1] = 0;
@@ -173,7 +173,7 @@ namespace SEALTest
             {
                 left_shift_uint(nullptr, 0, 0, nullptr);
 
-                MemoryPool pool;
+                MemoryPool &pool = *MemoryPool::default_pool();
                 Pointer ptr(allocate_uint(2, pool));
                 Pointer ptr2(allocate_uint(2, pool));
                 ptr[0] = 0;
@@ -231,7 +231,7 @@ namespace SEALTest
             {
                 right_shift_uint(nullptr, 0, 0, nullptr);
 
-                MemoryPool pool;
+                MemoryPool &pool = *MemoryPool::default_pool();
                 Pointer ptr(allocate_uint(2, pool));
                 Pointer ptr2(allocate_uint(2, pool));
                 ptr[0] = 0;
@@ -289,7 +289,7 @@ namespace SEALTest
             {
                 right_shift_sign_extend_uint(nullptr, 0, 0, nullptr);
 
-                MemoryPool pool;
+                MemoryPool &pool = *MemoryPool::default_pool();
                 Pointer ptr(allocate_uint(2, pool));
                 Pointer ptr2(allocate_uint(2, pool));
                 ptr[0] = 0;
@@ -368,7 +368,7 @@ namespace SEALTest
             {
                 half_round_up_uint(nullptr, 0, nullptr);
 
-                MemoryPool pool;
+                MemoryPool &pool = *MemoryPool::default_pool();
                 Pointer ptr(allocate_uint(2, pool));
                 Pointer ptr2(allocate_uint(2, pool));
                 ptr[0] = 0;
@@ -436,7 +436,7 @@ namespace SEALTest
             {
                 not_uint(nullptr, 0, nullptr);
 
-                MemoryPool pool;
+                MemoryPool &pool = *MemoryPool::default_pool();
                 Pointer ptr(allocate_uint(2, pool));
                 ptr[0] = 0xFFFFFFFFFFFFFFFF;
                 ptr[1] = 0;
@@ -455,7 +455,7 @@ namespace SEALTest
             {
                 and_uint_uint(nullptr, nullptr, 0, nullptr);
 
-                MemoryPool pool;
+                MemoryPool &pool = *MemoryPool::default_pool();
                 Pointer ptr(allocate_uint(2, pool));
                 Pointer ptr2(allocate_uint(2, pool));
                 Pointer ptr3(allocate_uint(2, pool));
@@ -487,7 +487,7 @@ namespace SEALTest
             {
                 or_uint_uint(nullptr, nullptr, 0, nullptr);
 
-                MemoryPool pool;
+                MemoryPool &pool = *MemoryPool::default_pool();
                 Pointer ptr(allocate_uint(2, pool));
                 Pointer ptr2(allocate_uint(2, pool));
                 Pointer ptr3(allocate_uint(2, pool));
@@ -519,7 +519,7 @@ namespace SEALTest
             {
                 xor_uint_uint(nullptr, nullptr, 0, nullptr);
 
-                MemoryPool pool;
+                MemoryPool &pool = *MemoryPool::default_pool();
                 Pointer ptr(allocate_uint(2, pool));
                 Pointer ptr2(allocate_uint(2, pool));
                 Pointer ptr3(allocate_uint(2, pool));
@@ -551,7 +551,7 @@ namespace SEALTest
             {
                 Assert::IsFalse(add_uint_uint(nullptr, nullptr, 0, nullptr));
 
-                MemoryPool pool;
+                MemoryPool &pool = *MemoryPool::default_pool();
                 Pointer ptr(allocate_uint(2, pool));
                 Pointer ptr2(allocate_uint(2, pool));
                 Pointer ptr3(allocate_uint(2, pool));
@@ -636,7 +636,7 @@ namespace SEALTest
             {
                 Assert::IsFalse(sub_uint_uint(nullptr, nullptr, 0, nullptr));
 
-                MemoryPool pool;
+                MemoryPool &pool = *MemoryPool::default_pool();
                 Pointer ptr(allocate_uint(2, pool));
                 Pointer ptr2(allocate_uint(2, pool));
                 Pointer ptr3(allocate_uint(2, pool));
@@ -734,7 +734,7 @@ namespace SEALTest
             {
                 multiply_uint_uint(nullptr, nullptr, 0, nullptr);
 
-                MemoryPool pool;
+                MemoryPool &pool = *MemoryPool::default_pool();
                 Pointer ptr(allocate_uint(2, pool));
                 Pointer ptr2(allocate_uint(2, pool));
                 Pointer ptr3(allocate_uint(4, pool));
@@ -867,7 +867,7 @@ namespace SEALTest
 
             TEST_METHOD(DivideUIntUInt)
             {
-                MemoryPool pool;
+                MemoryPool &pool = *MemoryPool::default_pool();
                 divide_uint_uint_inplace(nullptr, nullptr, 0, nullptr, pool);
                 divide_uint_uint(nullptr, nullptr, 0, nullptr, nullptr, pool);
 

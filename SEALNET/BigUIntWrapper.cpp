@@ -61,6 +61,7 @@ namespace Microsoft
                 try
                 {
                     biguint_ = new seal::BigUInt(bitCount, context->marshal_as<const char*>(hexString));
+                    GC::KeepAlive(hexString);
                 }
                 catch (const exception &e)
                 {
@@ -107,6 +108,7 @@ namespace Microsoft
                     {
                         (*biguint_)[i] = bytes[i];
                     }
+                    GC::KeepAlive(bigInteger);
                 }
                 catch (const exception &e)
                 {
@@ -128,6 +130,7 @@ namespace Microsoft
                 try
                 {
                     biguint_ = new seal::BigUInt(context->marshal_as<const char*>(hexString));
+                    GC::KeepAlive(hexString);
                 }
                 catch (const exception &e)
                 {
@@ -307,6 +310,7 @@ namespace Microsoft
                 try
                 {
                     *biguint_ = context->marshal_as<const char*>(assign);
+                    GC::KeepAlive(assign);
                 }
                 catch (const exception &e)
                 {
@@ -367,6 +371,8 @@ namespace Microsoft
                     Write(stream, reinterpret_cast<const char*>(&bit_count32), sizeof(int32_t));
                     int uint64_count = divide_round_up(biguint_->bit_count(), bits_per_uint64);
                     Write(stream, reinterpret_cast<const char*>(biguint_->pointer()), uint64_count * bytes_per_uint64);
+
+                    GC::KeepAlive(stream);
                 }
                 catch (const exception &e)
                 {
@@ -410,6 +416,8 @@ namespace Microsoft
                     {
                         set_zero_uint(uint64_count - read_uint64_count, biguint_->pointer() + read_uint64_count);
                     }
+
+                    GC::KeepAlive(stream);
                 }
                 catch (const exception &e)
                 {

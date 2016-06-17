@@ -56,7 +56,7 @@ namespace seal
                 throw invalid_argument("inputs can not be empty");
             }
 #endif
-            for (vector<Computation*>::size_type i = 0; i < inputs.size(); ++i)
+            for (size_t i = 0; i < inputs.size(); ++i)
             {
 #ifdef _DEBUG
                 if (inputs[i] == nullptr)
@@ -70,7 +70,7 @@ namespace seal
 
         AddManyComputation::~AddManyComputation()
         {
-            for (vector<Computation*>::size_type i = 0; i < inputs_.size(); ++i)
+            for (size_t i = 0; i < inputs_.size(); ++i)
             {
                 delete inputs_[i];
             }
@@ -79,7 +79,7 @@ namespace seal
         Simulation AddManyComputation::simulate(const EncryptionParameters &parms)
         {
             vector<Simulation> inputs;
-            for (vector<Computation*>::size_type i = 0; i < inputs_.size(); ++i)
+            for (size_t i = 0; i < inputs_.size(); ++i)
             {
                 inputs.push_back(inputs_[i]->simulate(parms));
             }
@@ -135,32 +135,10 @@ namespace seal
             return new MultiplyComputation(*input1_, *input2_);
         }
 
-        /*
-        MultiplyNoRelinComputation::MultiplyNoRelinComputation(Computation &input1, Computation &input2)
-        {
-            input1_ = input1.clone();
-            input2_ = input2.clone();
-        }
-
-        MultiplyNoRelinComputation::~MultiplyNoRelinComputation()
-        {
-            delete input1_;
-            delete input2_;
-        }
-
-        Simulation MultiplyNoRelinComputation::simulate(const EncryptionParameters &parms)
-        {
-            return simulation_evaluator_.multiply_norelin(input1_->simulate(parms), input2_->simulate(parms));
-        }
-
-        MultiplyNoRelinComputation *MultiplyNoRelinComputation::clone()
-        {
-            return new MultiplyNoRelinComputation(*input1_, *input2_);
-        }
-
-        RelinearizeComputation::RelinearizeComputation(Computation &input)
+        RelinearizeComputation::RelinearizeComputation(Computation &input, int destination_size)
         {
             input_ = input.clone();
+            destination_size_ = destination_size;
         }
 
         RelinearizeComputation::~RelinearizeComputation()
@@ -170,14 +148,13 @@ namespace seal
 
         Simulation RelinearizeComputation::simulate(const EncryptionParameters &parms)
         {
-            return simulation_evaluator_.relinearize(input_->simulate(parms));
+            return simulation_evaluator_.relinearize(input_->simulate(parms), destination_size_);
         }
 
         RelinearizeComputation *RelinearizeComputation::clone()
         {
-            return new RelinearizeComputation(*input_);
+            return new RelinearizeComputation(*input_, destination_size_);
         }
-        */
 
         MultiplyPlainComputation::MultiplyPlainComputation(Computation &input, int plain_max_coeff_count, const BigUInt &plain_max_abs_value) :
             plain_max_coeff_count_(plain_max_coeff_count), plain_max_abs_value_(plain_max_abs_value)
@@ -188,7 +165,6 @@ namespace seal
                 throw invalid_argument("plain_max_coeff_count");
             }
 #endif
-
             input_ = input.clone();
         }
 
@@ -201,7 +177,6 @@ namespace seal
                 throw invalid_argument("plain_max_coeff_count");
             }
 #endif
-
             BigUInt plain_max_abs_value_uint;
             plain_max_abs_value_uint = plain_max_abs_value;
             plain_max_abs_value_ = plain_max_abs_value_uint;
@@ -312,7 +287,7 @@ namespace seal
                 throw invalid_argument("inputs can not be empty");
             }
 #endif
-            for (vector<Computation*>::size_type i = 0; i < inputs.size(); ++i)
+            for (size_t i = 0; i < inputs.size(); ++i)
             {
 #ifdef _DEBUG
                 if (inputs[i] == nullptr)
@@ -326,7 +301,7 @@ namespace seal
 
         MultiplyManyComputation::~MultiplyManyComputation()
         {
-            for (vector<Computation*>::size_type i = 0; i < inputs_.size(); ++i)
+            for (size_t i = 0; i < inputs_.size(); ++i)
             {
                 delete inputs_[i];
             }
@@ -335,7 +310,7 @@ namespace seal
         Simulation MultiplyManyComputation::simulate(const EncryptionParameters &parms)
         {
             vector<Simulation> inputs;
-            for (vector<Computation*>::size_type i = 0; i < inputs_.size(); ++i)
+            for (size_t i = 0; i < inputs_.size(); ++i)
             {
                 inputs.push_back(inputs_[i]->simulate(parms));
             }

@@ -9,6 +9,7 @@ namespace Microsoft
         namespace SEAL
         {
             ref class BigUInt;
+
             ref class BigPoly;
 
             /**

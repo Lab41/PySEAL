@@ -16,8 +16,6 @@ namespace Microsoft
             
             ref class SimulationEvaluator;
 
-            ref class Evaluator;
-
             /**
             <summary>Models the inherent noise in a ciphertext based on given EncryptionParameters object.</summary>
 
@@ -30,7 +28,7 @@ namespace Microsoft
             parameters accordingly.
             </para>
             <para>
-            Instances of Simulation can be manipulated using <see cref="SimulationEvaluator"/>, which has a public API similar to <see cref="Evaluator"/>,
+            Instances of Simulation can be manipulated using <see cref="SimulationEvaluator"/>, which has a public API similar to Evaluator,
             making existing code easy to run on simulations instead of running it on actual encrypted data. In other words, using
             <see cref="SimulationEvaluator"/>, simulations can be added, multiplied, subtracted, negated, etc., and the result is always a new
             Simulation object whose inherent noise is obtained using average-case analysis of the noise behavior in the encryption
@@ -63,13 +61,15 @@ namespace Microsoft
                 noise.</summary>
                 <param name="parms">The encryption parameters</param>
                 <param name="noise">The inherent noise in the created ciphertext</param>
+                <param name="ciphertextSize">The inherent noise in the created ciphertext</param>
                 <exception cref="System::ArgumentNullException">if parms or noise is null</exception>
                 <exception cref="System::ArgumentException">if encryption parameters are not valid</exception>
                 <exception cref="System::ArgumentException">if noise is bigger than the given coefficient modulus</exception>
+                <exception cref="System::ArgumentException">if ciphertextSize is less than 2</exception>
                 <seealso cref="EncryptionParameters">See EncryptionParameters for more details on valid encryption
                 parameters.</seealso>
                 */
-                Simulation(EncryptionParameters ^parms, BigUInt ^noise);
+                Simulation(EncryptionParameters ^parms, BigUInt ^noise, int ciphertextSize);
 
                 /**
                 <summary>Creates a copy of a C++ Simulation.</summary>
@@ -161,6 +161,15 @@ namespace Microsoft
                 }
 
                 /**
+                <summary>Returns the size of the ciphertext whose noise is modeled by the simulation.</summary>
+                <seealso>See BigPolyArray::Size for the corresponding property on BigPolyArray objects.</seealso>
+                */
+                property int Size
+                {
+                    int get();
+                }
+
+                /**
                 <summary>Returns a reference to the coefficient modulus.</summary>
                 */
                 property BigUInt ^CoeffModulus
@@ -193,6 +202,25 @@ namespace Microsoft
                 bool Decrypts();
 
                 /**
+                <summary>Returns true or false depending on whether the encryption parameters were large enough to support the
+                performed homomorphic operations.</summary>
+                <remarks>
+                <para>
+                Returns true or false depending on whether the encryption parameters were large enough to support the performed
+                homomorphic operations. The noiseGap parameter can be used to leave a certain number of bits between the
+                simulated noise and the noise ceiling to guarantee decryption to work despite probabilistic effects.
+                </para>
+                <para>
+                The average-case estimates used by the simulator are typically conservative, so the amount of noise tends to be
+                overestimated, and decryption might work even if Decrypts() returns false.
+                </para>
+                </remarks>
+                <param name="noiseGap">The number of bits left between the simulated noise and the noise ceiling</param>
+                <exception cref="System::ArgumentException">if noiseGap is negative</exception>
+                */
+                bool Decrypts(int noiseGap);
+
+                /**
                 <summary>Destroys the Simulation.</summary>
                 */
                 ~Simulation();
@@ -214,12 +242,11 @@ namespace Microsoft
             };
 
             /**
-            <summary>Manipulates instances of Simulation with a public API similar to how Evaluator manipulates ciphertexts
-            (represented by BigPoly).</summary>
+            <summary>Manipulates instances of Simulation with a public API similar to how Evaluator manipulates ciphertexts.</summary>
             <remarks>
             <para>
-            Manipulates instances of <see cref="Simulation"/> with a public API similar to how <see cref="Evaluator"/> manipulates ciphertexts (represented by
-            <see cref="BigPoly"/>). This makes existing code easy to run on Simulation objects instead of running it on actual encrypted data.
+            Manipulates instances of <see cref="Simulation"/> with a public API similar to how Evaluator manipulates ciphertexts.
+            This makes existing code easy to run on Simulation objects instead of running it on actual encrypted data.
             </para>
             <para>
             Simulation objects model the inherent noise in a ciphertext based on given encryption parameters. When performing
@@ -268,48 +295,37 @@ namespace Microsoft
                 !SimulationEvaluator();
 
                 /**
+                <summary>Simulates inherent noise growth in Evaluator::Relinearize() and returns the result.</summary>
+                <param name="simulation">The <see cref="Simulation"/> object to relinearize</param>
+                <exception cref="System::ArgumentNullException">if simulation is null</exception>
+                <exception cref="System::ArgumentException">if simulation has Size less than 2</exception>
+                <seealso>See Evaluator::Relinearize() for the corresponding operation on ciphertexts.</seealso>
+                */
+                Simulation ^Relinearize(Simulation ^simulation);
+
+                /**
+                <summary>Simulates inherent noise growth in Evaluator::Relinearize() when a ciphertext is relinearized to a specified size and returns the result.</summary>
+                <param name="simulation">The <see cref="Simulation"/> object to relinearize</param>
+                <param name="destinationSize"> The size of the ciphertext (represented by the output simulation) after relinearization, defaults to 2
+                <exception cref="System::ArgumentException">if destinationSize is less than 2 or greater than that of the ciphertext represented by simulation</exception>
+                <exception cref="System::ArgumentNullException">if simulation is null</exception>
+                <exception cref="System::ArgumentException">if simulation has Size less than 2</exception>
+                <seealso>See Evaluator::Relinearize() for the corresponding operation on ciphertexts.</seealso>
+                */
+                Simulation ^Relinearize(Simulation ^simulation, int destinationSize);
+
+                /**
                 <summary>Simulates inherent noise growth in Evaluator::Multiply() and returns the result.</summary>
                 <param name="simulation1">The first <see cref="Simulation"/> object to multiply</param>
                 <param name="simulation2">The second <see cref="Simulation"/> object to multiply</param>
                 <exception cref="System::ArgumentNullException">if simulation1 or simulation2 is null</exception>
                 <exception cref="System::ArgumentException">if simulation1 and simulation2 were constructed with different encryption
                 parameters</exception>
+                <exception cref="System::ArgumentException">if simulation1 or simulation2 has Size less than 2</exception>
                 <seealso>See Evaluator::Multiply() for the corresponding operation on ciphertexts.</seealso>
                 */
                 Simulation ^Multiply(Simulation ^simulation1, Simulation ^simulation2);
-
-                /*
-                <summary>Simulates inherent noise growth in Evaluator::Relinearize() and returns the result.</summary>
-                <para>
-                THIS FUNCTION IS BROKEN This function is broken and can not be used except together with MultiplyNoRelin().
-                The problem is that relinearization adds additive terms that may be significant
-                depending on under what power of the secret key the result decrypts.
-                This function omits those terms.
-                </para>
-                <param name="simulation">The <see cref="Simulation"/> object to relinearize</param>
-                <exception cref="System::ArgumentNullException">if simulation is null</exception>
-                <seealso>See Evaluator::Relinearize() for the corresponding operation on ciphertexts.</seealso>
                 
-                Simulation ^Relinearize(Simulation ^simulation);
-
-                
-                <summary>Simulates inherent noise growth in Evaluator::MultiplyNoRelin() and returns the result.</summary>
-                <para>
-                THIS FUNCTION IS BROKEN and can not be used except together with Relinearize().
-                The problem is that multiplication without relinearization also adds an additive term,
-                which this function omits, and that additive term depends on under what powers of
-                the key the ciphertexts decrypt.
-                </para>
-                <param name="simulation1">The first <see cref="Simulation"/> object to multiply</param>
-                <param name="simulation2">The second <see cref="Simulation"/> object to multiply</param>
-                <exception cref="System::ArgumentNullException">if simulation1 or simulation2 is null</exception>
-                <exception cref="System::ArgumentException">if simulation1 and simulation2 were constructed with different encryption
-                parameters</exception>
-                <seealso>See Evaluator::MultiplyNoRelin() for the corresponding operation on ciphertexts.</seealso>
-                
-                Simulation ^MultiplyNoRelin(Simulation ^simulation1, Simulation ^simulation2);
-                */
-
                 /**
                 <summary>Simulates inherent noise growth in Evaluator::Add() and returns the result.</summary>
                 <param name="simulation1">The first <see cref="Simulation"/> object to add</param>
@@ -317,6 +333,7 @@ namespace Microsoft
                 <exception cref="System::ArgumentNullException">if simulation1 or simulation2 is null</exception>
                 <exception cref="System::ArgumentException">if simulation1 and simulation2 were constructed with different encryption
                 parameters</exception>
+                <exception cref="System::ArgumentException">if simulation1 or simulation2 has Size less than 2</exception>
                 <seealso>See Evaluator::Add() for the corresponding operation on ciphertexts.</seealso>
                 */
                 Simulation ^Add(Simulation ^simulation1, Simulation ^simulation2);
@@ -328,6 +345,7 @@ namespace Microsoft
                 <exception cref="System::ArgumentException">if simulations is empty</exception>
                 <exception cref="System::ArgumentException">if not all elements of simulations were constructed with the same
                 encryption parameters</exception>
+                <exception cref="System::ArgumentException">if any of the elements in the simulation list has Size less than 2</exception>
                 <seealso>See Evaluator::AddMany() for the corresponding operation on ciphertexts.</seealso>
                 */
                 Simulation ^AddMany(System::Collections::Generic::List<Simulation^> ^simulations);
@@ -339,6 +357,7 @@ namespace Microsoft
                 <exception cref="System::ArgumentNullException">if simulation1 or simulation2 is null</exception>
                 <exception cref="System::ArgumentException">if simulation1 and simulation2 were constructed with different encryption
                 parameters</exception>
+                <exception cref="System::ArgumentException">if simulation1 or simulation2 has Size less than 2</exception>
                 <seealso>See Evaluator::Sub() for the corresponding operation on ciphertexts.</seealso>
                 */
                 Simulation ^Sub(Simulation ^simulation1, Simulation ^simulation2);
@@ -352,7 +371,9 @@ namespace Microsoft
                 <param name="plainMaxAbsValue">An upper bound (represented by <see cref="BigUInt"/>) on the absolute value of coefficients in the
                 plain polynomial to multiply</param>
                 <exception cref="System::ArgumentNullException">if simulation or plainMaxAbsValue is null</exception>
+                <exception cref="System::ArgumentException">if simulation has Size less than 2</exception>
                 <exception cref="System::ArgumentException">if plainMaxCoeffCount is out of range</exception>
+                <exception cref="System::ArgumentException">if plainMaxCoeffCount or plainMaxAbsValue is zero</exception>
                 <seealso>See Evaluator::MultiplyPlain() for the corresponding operation on ciphertexts.</seealso>
                 */
                 Simulation ^MultiplyPlain(Simulation ^simulation, int plainMaxCoeffCount, BigUInt ^plainMaxAbsValue);
@@ -366,7 +387,9 @@ namespace Microsoft
                 <param name="plainMaxAbsValue">An upper bound (represented by <see cref="System::UInt64"/>) on the absolute value of coefficients in the
                 plain polynomial to multiply</param>
                 <exception cref="System::ArgumentNullException">if simulation is null</exception>
+                <exception cref="System::ArgumentException">if simulation has Size less than 2</exception>
                 <exception cref="System::ArgumentException">if plainMaxCoeffCount is out of range</exception>
+                <exception cref="System::ArgumentException">if plainMaxCoeffCount or plainMaxAbsValue is zero</exception>
                 <seealso>See Evaluator::MultiplyPlain() for the corresponding operation on ciphertexts.</seealso>
                 */
                 Simulation ^MultiplyPlain(Simulation ^simulation, int plainMaxCoeffCount, System::UInt64 plainMaxAbsValue);
@@ -375,6 +398,7 @@ namespace Microsoft
                 <summary>Simulates inherent noise growth in Evaluator::AddPlain() and returns the result.</summary>
                 <param name="simulation">The <see cref="Simulation"/> object to add to</param>
                 <exception cref="System::ArgumentNullException">if simulation is null</exception>
+                <exception cref="System::ArgumentException">if simulation has Size less than 2</exception>
                 <seealso>See Evaluator::AddPlain() for the corresponding operation on ciphertexts.</seealso>
                 */
                 Simulation ^AddPlain(Simulation ^simulation);
@@ -383,6 +407,7 @@ namespace Microsoft
                 <summary>Simulates inherent noise growth in Evaluator::SubPlain() and returns the result.</summary>
                 <param name="simulation">The <see cref="Simulation"/> object to subtract from</param>
                 <exception cref="System::ArgumentNullException">if simulation is null</exception>
+                <exception cref="System::ArgumentException">if simulation has Size less than 2</exception>
                 <seealso>See Evaluator::SubPlain() for the corresponding operation on ciphertexts.</seealso>
                 */
                 Simulation ^SubPlain(Simulation ^simulation);
@@ -401,8 +426,10 @@ namespace Microsoft
                 /**
                 <summary>Simulates inherent noise growth in Evaluator::Exponentiate() and returns the result.</summary>
                 <param name="simulation">The <see cref="Simulation"/> object to raise to a power</param>
-                <param name="exponent">The non-negative power to raise the <see cref="Simulation"/> object to</param>
+                <param name="exponent">The power to raise the <see cref="Simulation"/> object to</param>
                 <exception cref="System::ArgumentNullException">if simulation is null</exception>
+                <exception cref="System::ArgumentException">if simulation has Size less than 2</exception>
+                <exception cref="System::ArgumentException">if exponent is zero</exception>
                 <seealso>See Evaluator::Exponentiate() for the corresponding operation on ciphertexts.</seealso>
                 */
                 Simulation ^Exponentiate(Simulation ^simulation, System::UInt64 exponent);
@@ -411,6 +438,7 @@ namespace Microsoft
                 <summary>Simulates inherent noise growth in Evaluator::Negate() and returns the result.</summary>
                 <param name="simulation">The <see cref="Simulation"/> object to negate</param>
                 <exception cref="System::ArgumentNullException">if simulation is null</exception>
+                <exception cref="System::ArgumentException">if simulation has Size less than 2</exception>
                 <seealso>See Evaluator::Negate() for the corresponding operation on ciphertexts.</seealso>
                 */
                 Simulation ^Negate(Simulation ^simulation);

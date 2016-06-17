@@ -16,7 +16,7 @@ namespace SEALTest
         public:
             TEST_METHOD(AllocatePoly)
             {
-                MemoryPool pool;
+                MemoryPool &pool = *MemoryPool::default_pool();
                 Pointer ptr(allocate_poly(0, 0, pool));
                 Assert::IsTrue(nullptr == ptr.get());
 
@@ -37,7 +37,7 @@ namespace SEALTest
             {
                 set_zero_poly(0, 0, nullptr);
 
-                MemoryPool pool;
+                MemoryPool &pool = *MemoryPool::default_pool();
                 Pointer ptr(allocate_poly(1, 1, pool));
                 ptr[0] = 0x1234567812345678;
                 set_zero_poly(1, 1, ptr.get());
@@ -57,7 +57,7 @@ namespace SEALTest
 
             TEST_METHOD(AllocateZeroPoly)
             {
-                MemoryPool pool;
+                MemoryPool &pool = *MemoryPool::default_pool();
                 Pointer ptr(allocate_zero_poly(0, 0, pool));
                 Assert::IsTrue(nullptr == ptr.get());
 
@@ -75,7 +75,7 @@ namespace SEALTest
 
             TEST_METHOD(GetPolyCoeff)
             {
-                MemoryPool pool;
+                MemoryPool &pool = *MemoryPool::default_pool();
                 Pointer ptr(allocate_zero_poly(2, 3, pool));
                 *get_poly_coeff(ptr.get(), 0, 3) = 1;
                 *get_poly_coeff(ptr.get(), 1, 3) = 2;
@@ -87,7 +87,7 @@ namespace SEALTest
 
             TEST_METHOD(SetPolyPoly)
             {
-                MemoryPool pool;
+                MemoryPool &pool = *MemoryPool::default_pool();
                 Pointer ptr1(allocate_poly(2, 3, pool));
                 Pointer ptr2(allocate_zero_poly(2, 3, pool));
                 for (int i = 0; i < 6; ++i)
@@ -137,7 +137,7 @@ namespace SEALTest
             {
                 Assert::IsTrue(is_zero_poly(nullptr, 0, 0));
 
-                MemoryPool pool;
+                MemoryPool &pool = *MemoryPool::default_pool();
                 Pointer ptr(allocate_poly(2, 3, pool));
                 for (int i = 0; i < 6; ++i)
                 {
@@ -156,7 +156,7 @@ namespace SEALTest
             {
                 Assert::IsTrue(is_equal_poly_poly(nullptr, nullptr, 0, 0));
 
-                MemoryPool pool;
+                MemoryPool &pool = *MemoryPool::default_pool();
                 Pointer ptr1(allocate_poly(2, 3, pool));
                 Pointer ptr2(allocate_poly(2, 3, pool));
                 for (int i = 0; i < 6; ++i)
@@ -176,7 +176,7 @@ namespace SEALTest
             {
                 Assert::IsFalse(is_one_zero_one_poly(nullptr, 0, 0));
 
-                MemoryPool pool;
+                MemoryPool &pool = *MemoryPool::default_pool();
                 Pointer poly(allocate_zero_poly(4, 2, pool));
                 Assert::IsFalse(is_one_zero_one_poly(poly.get(), 0, 2));
                 Assert::IsFalse(is_one_zero_one_poly(poly.get(), 1, 2));
@@ -221,7 +221,7 @@ namespace SEALTest
             {
                 Assert::AreEqual(0, get_significant_coeff_count_poly(nullptr, 0, 0));
 
-                MemoryPool pool;
+                MemoryPool &pool = *MemoryPool::default_pool();
                 Pointer ptr(allocate_zero_poly(3, 2, pool));
                 Assert::AreEqual(0, get_significant_coeff_count_poly(ptr.get(), 3, 2));
                 ptr[0] = 1;
@@ -239,7 +239,7 @@ namespace SEALTest
             {
                 Assert::AreEqual(0, get_significant_coeff_count_poly(nullptr, 0, 0));
 
-                MemoryPool pool;
+                MemoryPool &pool = *MemoryPool::default_pool();
                 Pointer poly(allocate_poly(3, 2, pool));
                 for (int i = 0; i < 6; i++)
                 {
@@ -269,7 +269,7 @@ namespace SEALTest
 
             TEST_METHOD(ArePolyCoeffsLessThan)
             {
-                MemoryPool pool;
+                MemoryPool &pool = *MemoryPool::default_pool();
                 Pointer poly(allocate_zero_poly(3, 2, pool));
                 poly[0] = 3;
                 poly[2] = 5;

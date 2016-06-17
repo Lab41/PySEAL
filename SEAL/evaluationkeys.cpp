@@ -1,145 +1,64 @@
-#include <algorithm>
-#include <stdexcept>
 #include "evaluationkeys.h"
 
-using namespace std;
 
 namespace seal
 {
-    EvaluationKeys::EvaluationKeys() : polys_(nullptr), count_(0)
+    const std::pair<BigPolyArray, BigPolyArray> &EvaluationKeys::operator[](int key_index) const
     {
-    }
-
-    EvaluationKeys::EvaluationKeys(int count) : polys_(nullptr), count_(0)
-    {
-        resize(count);
-    }
-
-    EvaluationKeys::EvaluationKeys(const EvaluationKeys &copy) : polys_(nullptr), count_(0)
-    {
-        operator =(copy);
-    }
-
-    EvaluationKeys::~EvaluationKeys()
-    {
-        reset();
-    }
-
-    const BigPoly& EvaluationKeys::operator[](int poly_index) const
-    {
-        if (poly_index < 0 || poly_index >= count_)
+        if (key_index >= keys_.size() || key_index < 0)
         {
-            throw out_of_range("poly_index must be within [0, count)");
+            throw out_of_range("key_index must be nonnegative and less than number of keys");
         }
-        return polys_[poly_index];
+        return keys_[key_index];
     }
 
-    BigPoly& EvaluationKeys::operator[](int poly_index)
+    std::pair<BigPolyArray, BigPolyArray> &EvaluationKeys::operator[](int key_index)
     {
-        if (poly_index < 0 || poly_index >= count_)
+        if (key_index >= keys_.size() || key_index < 0)
         {
-            throw out_of_range("poly_index must be within [0, count)");
+            throw out_of_range("key_index must be nonnegative and less than number of keys");
         }
-        return polys_[poly_index];
+        return keys_[key_index];
     }
 
-    void EvaluationKeys::resize(int count)
+    void EvaluationKeys::save(std::ostream &stream) const
     {
-        if (count < 0)
+        // save the size of keys_
+        int32_t keys_size_32 = static_cast<int32_t>(keys_.size());
+        stream.write(reinterpret_cast<const char*>(&keys_size_32), sizeof(int32_t));
+
+        // loop over entries in the std::vector
+        for (int i = 0; i < keys_.size(); ++i) 
         {
-            throw invalid_argument("count must be non-negative");
+            // loop over BigPolyArrays in the std::pair
+            keys_[i].first.save(stream);
+            keys_[i].second.save(stream);
         }
-        if (count == count_)
+    }
+
+    void EvaluationKeys::load(std::istream &stream)
+    {
+        // make sure keys_ is empty before reading
+        clear();
+
+        // read in the eventual size of keys_
+        int32_t read_keys_size = 0;
+        stream.read(reinterpret_cast<char*>(&read_keys_size), sizeof(int32_t));
+     
+        BigPolyArray first;
+        BigPolyArray second;
+
+        // loop over entries in the std::vector
+        for (int i = 0; i < read_keys_size; ++i)
         {
-            return;
+            first.load(stream);
+            second.load(stream);
+            keys_.push_back(std::pair<BigPolyArray, BigPolyArray>(first, second));
         }
-
-        // Allocate new space.
-        BigPoly *new_polys = count > 0 ? new BigPoly[count] : nullptr;
-
-        // Copy over old values.
-        int copy_count = min(count_, count);
-        for (int i = 0; i < copy_count; ++i)
-        {
-            BigPoly &to_poly = new_polys[i];
-            const BigPoly &from_poly = polys_[i];
-            to_poly.resize(from_poly.coeff_count(), from_poly.coeff_bit_count());
-            to_poly = from_poly;
-        }
-
-        // Deallocate old space.
-        reset();
-
-        // Update class.
-        polys_ = new_polys;
-        count_ = count;
     }
 
     void EvaluationKeys::clear()
     {
-        reset();
+        keys_.clear();
     }
-
-    EvaluationKeys& EvaluationKeys::operator=(const EvaluationKeys& assign)
-    {
-        // Do nothing if same thing.
-        if (&assign == this)
-        {
-            return *this;
-        }
-
-        // Resize array if needed.
-        int count = assign.count();
-        if (count != count_)
-        {
-            reset();
-            resize(count);
-        }
-
-        // Copy polys over.
-        for (int i = 0; i < count; ++i)
-        {
-            BigPoly &to_poly = polys_[i];
-            const BigPoly &from_poly = assign[i];
-            to_poly.resize(from_poly.coeff_count(), from_poly.coeff_bit_count());
-            to_poly = from_poly;
-        }
-
-        return *this;
-    }
-
-    void EvaluationKeys::save(ostream &stream) const
-    {
-        int32_t count32 = static_cast<int32_t>(count_);
-        stream.write(reinterpret_cast<const char*>(&count32), sizeof(int32_t));
-        for (int i = 0; i < count_; ++i)
-        {
-            polys_[i].save(stream);
-        }
-    }
-
-    void EvaluationKeys::load(istream &stream)
-    {
-        int32_t count32 = 0;
-        stream.read(reinterpret_cast<char*>(&count32), sizeof(int32_t));
-        if (count_ != count32)
-        {
-            resize(static_cast<int>(count32));
-        }
-        for (int i = 0; i < count_; ++i)
-        {
-            polys_[i].load(stream);
-        }
-    }
-
-    void EvaluationKeys::reset()
-    {
-        if (polys_ != nullptr)
-        {
-            delete[] polys_;
-        }
-        polys_ = nullptr;
-        count_ = 0;
-    }
-
 }

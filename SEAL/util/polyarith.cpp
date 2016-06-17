@@ -22,10 +22,12 @@ namespace seal
                 throw invalid_argument("coeff_count");
             }
 #endif
+
             int coeff_uint64_count = modulus.uint64_count();
+            Pointer big_alloc(allocate_uint(2 * coeff_uint64_count, pool));
             for (int i = 0; i < coeff_count; ++i)
             {
-                modulo_uint_inplace(poly, coeff_uint64_count, modulus, pool);
+                modulo_uint_inplace(poly, coeff_uint64_count, modulus, pool, big_alloc.get());
                 poly += coeff_uint64_count;
             }
         }
@@ -253,9 +255,10 @@ namespace seal
             int coeff_uint64_count = modulus.uint64_count();
             int intermediate_uint64_count = coeff_uint64_count * 2;
             Pointer intermediate(allocate_uint(intermediate_uint64_count, pool));
+            Pointer big_alloc(allocate_uint(4 * coeff_uint64_count, pool));
             for (int i = 0; i < coeff_count; ++i)
             {
-                multiply_uint_uint_mod_inplace(poly, scalar, modulus, intermediate.get(), pool);
+                multiply_uint_uint_mod_inplace(poly, scalar, modulus, intermediate.get(), pool, big_alloc.get());
                 set_uint_uint(intermediate.get(), coeff_uint64_count, result);
                 poly += coeff_uint64_count;
                 result += coeff_uint64_count;
@@ -375,7 +378,9 @@ namespace seal
             }
 #endif
             int intermediate_uint64_count = operand1_coeff_uint64_count + operand2_coeff_uint64_count;
-            Pointer intermediate(allocate_uint(intermediate_uint64_count, pool));
+            Pointer big_alloc(allocate_uint(intermediate_uint64_count + 2 * intermediate_uint64_count, pool));
+            uint64_t *intermediate = big_alloc.get();
+            uint64_t *alloc_ptr = intermediate + intermediate_uint64_count;
 
             // Clear product.
             int result_coeff_uint64_count = modulus.uint64_count();
@@ -408,10 +413,10 @@ namespace seal
                         continue;
                     }
 
-                    multiply_uint_uint(operand1_coeff, operand1_coeff_uint64_count, operand2_coeff, operand2_coeff_uint64_count, intermediate_uint64_count, intermediate.get());
-                    modulo_uint_inplace(intermediate.get(), intermediate_uint64_count, modulus, pool);
+                    multiply_uint_uint(operand1_coeff, operand1_coeff_uint64_count, operand2_coeff, operand2_coeff_uint64_count, intermediate_uint64_count, intermediate);
+                    modulo_uint_inplace(intermediate, intermediate_uint64_count, modulus, pool, alloc_ptr);
                     uint64_t *result_coeff = get_poly_coeff(result, product_coeff_index, result_coeff_uint64_count);
-                    add_uint_uint_mod(result_coeff, intermediate.get(), modulusptr, result_coeff_uint64_count, result_coeff);
+                    add_uint_uint_mod(result_coeff, intermediate, modulusptr, result_coeff_uint64_count, result_coeff);
                 }
             }
         }
@@ -462,19 +467,24 @@ namespace seal
                 return;
             }
 
+            int intermediate_uint64_count = coeff_uint64_count * 2;
+            Pointer big_alloc(allocate_uint(coeff_uint64_count + intermediate_uint64_count + intermediate_uint64_count + 7 * coeff_uint64_count, pool));
+
             // Create scalar to store value that makes denominator monic.
-            Pointer monic_denominator_scalar(allocate_uint(coeff_uint64_count, pool));
+            uint64_t *monic_denominator_scalar = big_alloc.get();
 
             // Create temporary scalars used during calculation of quotient.
             // Both are purposely twice as wide to store intermediate product prior to modulo operation.
-            int intermediate_uint64_count = coeff_uint64_count * 2;
-            Pointer temp_quotient(allocate_uint(intermediate_uint64_count, pool));
-            Pointer subtrahend(allocate_uint(intermediate_uint64_count, pool));
+            uint64_t *temp_quotient = monic_denominator_scalar + coeff_uint64_count;
+            uint64_t *subtrahend = temp_quotient + intermediate_uint64_count;
 
-            // Determine scalar necesarry to make denominator monic.
+            // We still have 7 x coeff_uint64_count of memory left in the big allocation
+            uint64_t *alloc_ptr = subtrahend + intermediate_uint64_count;
+
+            // Determine scalar necessary to make denominator monic.
             const uint64_t *modulusptr = modulus.get();
             const uint64_t *leading_denominator_coeff = get_poly_coeff(denominator, denominator_coeffs - 1, coeff_uint64_count);
-            if (!try_invert_uint_mod(leading_denominator_coeff, modulusptr, coeff_uint64_count, monic_denominator_scalar.get(), pool))
+            if (!try_invert_uint_mod(leading_denominator_coeff, modulusptr, coeff_uint64_count, monic_denominator_scalar, pool, alloc_ptr))
             {
                 throw invalid_argument("coeff_modulus is not coprime with leading denominator coefficient");
             }
@@ -495,19 +505,19 @@ namespace seal
                     // multiplied by leading coefficient of denominator (which when subtracted will zero out the topmost
                     // denominator coefficient).
                     uint64_t *quotient_coeff = get_poly_coeff(quotient, denominator_shift, coeff_uint64_count);
-                    multiply_uint_uint_mod_inplace(monic_denominator_scalar.get(), leading_numerator_coeff, modulus, temp_quotient.get(), pool);
-                    set_uint_uint(temp_quotient.get(), coeff_uint64_count, quotient_coeff);
+                    multiply_uint_uint_mod_inplace(monic_denominator_scalar, leading_numerator_coeff, modulus, temp_quotient, pool, alloc_ptr);
+                    set_uint_uint(temp_quotient, coeff_uint64_count, quotient_coeff);
 
                     // Subtract numerator and quotient*denominator (shifted by denominator_shift).
                     for (int denominator_coeff_index = 0; denominator_coeff_index < denominator_coeffs; ++denominator_coeff_index)
                     {
                         // Multiply denominator's coefficient by quotient.
                         const uint64_t *denominator_coeff = get_poly_coeff(denominator, denominator_coeff_index, coeff_uint64_count);
-                        multiply_uint_uint_mod_inplace(temp_quotient.get(), denominator_coeff, modulus, subtrahend.get(), pool);
+                        multiply_uint_uint_mod_inplace(temp_quotient, denominator_coeff, modulus, subtrahend, pool, alloc_ptr);
 
                         // Subtract numerator with resulting product, appropriately shifted by denominator shift.
                         uint64_t *numerator_coeff = get_poly_coeff(numerator, denominator_coeff_index + denominator_shift, coeff_uint64_count);
-                        sub_uint_uint_mod(numerator_coeff, subtrahend.get(), modulusptr, coeff_uint64_count, numerator_coeff);
+                        sub_uint_uint_mod(numerator_coeff, subtrahend, modulusptr, coeff_uint64_count, numerator_coeff);
                     }
                 }
 
@@ -515,5 +525,50 @@ namespace seal
                 numerator_coeffs--;
             }
         }
+
+        void add_bigpolyarray_coeffmod(const std::uint64_t *array1, const std::uint64_t *array2, int count, int coeff_count, const Modulus &modulus, std::uint64_t *result)
+        {
+            // Check validity of inputs
+#ifdef _DEBUG
+            if (array1 == nullptr)
+            {
+                throw invalid_argument("array1");
+            }
+            if (array2 == nullptr)
+            {
+                throw invalid_argument("array2");
+            }
+            if (result == nullptr)
+            {
+                throw invalid_argument("result");
+            }
+            if (count < 1)
+            {
+                throw invalid_argument("count");
+            }
+            if (coeff_count < 1)
+            {
+                throw invalid_argument("coeff_count");
+            }
+#endif
+            // Calculate pointer increment
+            int coeff_bit_count = modulus.significant_bit_count();
+            int coeff_uint64_count = divide_round_up(coeff_bit_count, bits_per_uint64);
+            int poly_ptr_increment = coeff_count * coeff_uint64_count;
+
+            // initialise pointers for addition
+            const uint64_t *current_array1 = array1;
+            const uint64_t *current_array2 = array2;
+            uint64_t *current_result = result;
+     
+            for (int i = 0; i < count; ++i)
+            {
+                add_poly_poly_coeffmod(current_array1, current_array2, coeff_count, modulus.get(), coeff_uint64_count, current_result);
+                current_array1 += poly_ptr_increment;
+                current_array2 += poly_ptr_increment;
+                current_result += poly_ptr_increment;
+            }
+        }
+
     }
 }

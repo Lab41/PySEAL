@@ -9,56 +9,14 @@ namespace Microsoft
         namespace SEAL
         {
             ref class BigPoly;
+
             ref class BigUInt;
+
             ref class EncryptionParameters;
-            ref class Encryptor;
-            ref class Decryptor;
-            ref class Evaluator;
-            ref class KeyGenerator;
+
             ref class Chooser;
+
             ref class Simulator;
-
-            /**
-            <summary>Enumeration of the different modes for the library.</summary>
-
-            <remarks>
-            <para>
-            Enumeration of the different modes for the library. Mode is set through the Mode property of <see cref="EncryptionParameters"/>.
-            EncryptionMode::Normal performs all encryption, evaluation, and decryption operations as normal. EncryptionMode::Test disables
-            actual encryption while allowing the API to still function for the application. EncryptionMode::Test enables significantly
-            faster library calls and may be very useful for testing and debugging applications.
-            </para>
-            <para>
-            EncryptionMode::Test disables actual encryption in the library, so only use this mode for testing and debugging purposes when
-            no security is required.
-            </para>
-            </remarks>
-            <seealso cref="EncryptionParameters">See EncryptionParameters to set mode for the library.</seealso>
-            */
-            public enum struct EncryptionMode
-            {
-                /**
-                <summary>EncryptionMode::Normal enables encryption and the normal functioning of the library.</summary>
-                */
-                Normal,
-
-                /**
-                <summary>EncryptionMode::Test disables encryption in the library.</summary>
-
-                <remarks>
-                <para>
-                EncryptionMode::Test disables encryption in the library. The benefit of this mode is that most library functions
-                (e.g., encryption, decryption, all Evaluator functions) complete significantly faster as they are not secure.
-                This mode is useful when testing and debugging applications when security is not important.
-                </para>
-                <para>
-                EncryptionMode::Test disables actual encryption in the library, so only use EncryptionMode::Test for testing and
-                debugging purposes when no security is required.
-                </para>
-                </remarks>
-                */
-                Test
-            };
 
             /**
             <summary>Represents the user-customizable encryption scheme settings.</summary>
@@ -67,9 +25,8 @@ namespace Microsoft
             <para>
             Represents the user-customizable encryption scheme settings. Several settings (e.g., <see cref="PolyModulus"/>,
             <see cref="CoeffModulus"/>, <see cref="PlainModulus"/>) significantly affect the performance, capabilities, and
-            security of the encryption scheme. <see cref="KeyGenerator"/>, <see cref="Encryptor"/>, <see cref="Decryptor"/>,
-            <see cref="Evaluator"/>, and other objects in the library all require the EncryptionParameters object to specify and
-            agree on the encryption scheme settings.
+            security of the encryption scheme. KeyGenerator, Encryptor, Decryptor, Evaluator, and other objects in the library 
+            all require the EncryptionParameters object to specify and agree on the encryption scheme settings.
             </para>
             <para>
             Picking appropriate encryption parameters is essential to enable a particular application while balancing performance
@@ -81,8 +38,8 @@ namespace Microsoft
             external documentation for more details on how to determine the best parameters.
             </para>
             <para>
-            In general, reading from EncryptionParameters is thread-safe while mutating is not. Refer to the thread safety of
-            individual parameter types to assess their thread safety.
+            In general, reading from EncryptionParameters is thread-safe while mutating is not. Refer to the thread-safety of
+            individual parameter types to assess their thread-safety.
             </para>
             </remarks>
             <seealso cref="Chooser">See Chooser to help determine the best encryption parameters for an application.</seealso>
@@ -177,20 +134,20 @@ namespace Microsoft
                     void set(int value);
                 }
 
-                /**
-                <summary>Gets/sets the operating mode of the library, which is set to either EncryptionMode::Normal or
-                EncryptionMode::Test.</summary>
+                ///**
+                //<summary>Gets/sets the operating mode of the library, which is set to either EncryptionMode::Normal or
+                //EncryptionMode::Test.</summary>
 
-                <remarks>
-                Gets/sets the operating mode of the library, which is set to either EncryptionMode::Normal or EncryptionMode::Test.
-                Setting the mode to EncryptionMode::Test disables all encryption but may significantly improve performance for
-                cases where security is not important (e.g., testing and debugging).
-                </remarks>
-                */
-                property EncryptionMode Mode {
-                    EncryptionMode get();
-                    void set(EncryptionMode mode);
-                }
+                //<remarks>
+                //Gets/sets the operating mode of the library, which is set to either EncryptionMode::Normal or EncryptionMode::Test.
+                //Setting the mode to EncryptionMode::Test disables all encryption but may significantly improve performance for
+                //cases where security is not important (e.g., testing and debugging).
+                //</remarks>
+                //*/
+                //property EncryptionMode Mode {
+                //    EncryptionMode get();
+                //    void set(EncryptionMode mode);
+                //}
 
                 /**
                 <summary>Saves the EncryptionParameters to an output stream.</summary>

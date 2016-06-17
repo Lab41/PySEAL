@@ -14,7 +14,7 @@ namespace Microsoft
     {
         namespace SEAL
         {
-            Encryptor::Encryptor(EncryptionParameters ^parms, BigPoly ^publicKey) : encryptor_(nullptr)
+             Encryptor::Encryptor(EncryptionParameters ^parms, BigPolyArray ^publicKey) : encryptor_(nullptr)
             {
                 if (parms == nullptr)
                 {
@@ -26,7 +26,7 @@ namespace Microsoft
                 }
                 try
                 {
-                    encryptor_ = new seal::Encryptor(parms->GetParameters(), publicKey->GetPolynomial());
+                    encryptor_ = new seal::Encryptor(parms->GetParameters(), publicKey->GetArray());
                     GC::KeepAlive(parms);
                     GC::KeepAlive(publicKey);
                 }
@@ -40,16 +40,16 @@ namespace Microsoft
                 }
             }
 
-            BigPoly ^Encryptor::PublicKey::get()
+            BigPolyArray ^Encryptor::PublicKey::get()
             {
                 if (encryptor_ == nullptr)
                 {
                     throw gcnew ObjectDisposedException("Encryptor is disposed");
                 }
-                return gcnew BigPoly(encryptor_->public_key());
+                return gcnew BigPolyArray(encryptor_->public_key());
             }
 
-            void Encryptor::Encrypt(BigPoly ^plain, BigPoly ^destination)
+            void Encryptor::Encrypt(BigPoly ^plain, BigPolyArray ^destination)
             {
                 if (encryptor_ == nullptr)
                 {
@@ -65,7 +65,7 @@ namespace Microsoft
                 }
                 try
                 {
-                    encryptor_->encrypt(plain->GetPolynomial(), destination->GetPolynomial());
+                    encryptor_->encrypt(plain->GetPolynomial(), destination->GetArray());
                     GC::KeepAlive(plain);
                     GC::KeepAlive(destination);
                 }
@@ -79,7 +79,7 @@ namespace Microsoft
                 }
             }
 
-            BigPoly ^Encryptor::Encrypt(BigPoly ^plain)
+            BigPolyArray ^Encryptor::Encrypt(BigPoly ^plain)
             {
                 if (encryptor_ == nullptr)
                 {
@@ -91,7 +91,7 @@ namespace Microsoft
                 }
                 try
                 {
-                    auto result = gcnew BigPoly(encryptor_->encrypt(plain->GetPolynomial()));
+                    auto result = gcnew BigPolyArray(encryptor_->encrypt(plain->GetPolynomial()));
                     GC::KeepAlive(plain);
                     return result;
                 }

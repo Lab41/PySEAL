@@ -61,6 +61,7 @@ namespace Microsoft
                 try
                 {
                     bigpoly_ = new seal::BigPoly(context->marshal_as<const char*>(hexPoly));
+                    GC::KeepAlive(hexPoly);
                 }
                 catch (const exception &e)
                 {
@@ -263,6 +264,7 @@ namespace Microsoft
                 try
                 {
                     *bigpoly_ = context->marshal_as<const char*>(assign);
+                    GC::KeepAlive(assign);
                 }
                 catch (const exception &e)
                 {
@@ -323,6 +325,8 @@ namespace Microsoft
                     Write(stream, reinterpret_cast<const char*>(&coeff_bit_count32), sizeof(int32_t));
                     int coeff_uint64_count = divide_round_up(bigpoly_->coeff_bit_count(), bits_per_uint64);
                     Write(stream, reinterpret_cast<const char*>(bigpoly_->pointer()), bigpoly_->coeff_count() * coeff_uint64_count * bytes_per_uint64);
+                
+                    GC::KeepAlive(stream);
                 }
                 catch (const exception &e)
                 {
@@ -382,6 +386,8 @@ namespace Microsoft
                     {
                         set_zero_poly(bigpoly_->coeff_count() - read_coeff_count, coeff_uint64_count, bigpoly_->pointer() + read_coeff_count * coeff_uint64_count);
                     }
+
+                    GC::KeepAlive(stream);
                 }
                 catch (const exception &e)
                 {

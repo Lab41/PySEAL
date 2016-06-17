@@ -1,6 +1,7 @@
 #pragma once
 
 #include "utilities.h"
+#include "BigPolyArrayWrapper.h"
 
 namespace Microsoft
 {
@@ -33,13 +34,13 @@ namespace Microsoft
                 description of the encryption scheme for more details.
                 </para>
                 </remarks>
-                <param name="encrypted">The encrypted polynomial</param>
-                <param name="plain">The corresponding plaintext polynomial</param>
+                <param name="encrypted">The ciphertext</param>
+                <param name="plain">The corresponding plaintext</param>
                 <param name="parms">The encryption parameters</param>
                 <param name="secretKey">The secret key</param>
                 <exception cref="System::ArgumentNullException">if encrypted, plain, parms, or secretKey is null</exception>
                 <exception cref="System::ArgumentException">if encryption parameters are not valid</exception>
-                <exception cref="System::ArgumentException">if the encrypted polynomial is not a valid encrypted polynomial for the
+                <exception cref="System::ArgumentException">if the ciphertext is not a valid ciphertext for the
                 encryption parameters</exception>
                 <exception cref="System::ArgumentException">if the plain polynomial's significant coefficient count or coefficient
                 values are too large to represent with the encryption parameters</exception>
@@ -49,7 +50,7 @@ namespace Microsoft
                 <seealso>See InherentNoiseMax() for computing the maximum value of inherent noise supported
                 by given encryption parameters.</seealso>
                 */
-                static BigUInt ^InherentNoise(BigPoly ^encrypted, BigPoly ^plain, EncryptionParameters ^parms, BigPoly ^secretKey);
+                static BigUInt ^InherentNoise(BigPolyArray ^encrypted, BigPoly ^plain, EncryptionParameters ^parms, BigPoly ^secretKey);
 
                 /**
                 <summary>Computes the exact inherent noise in a ciphertext and returns it as a BigUInt.</summary>
@@ -66,12 +67,12 @@ namespace Microsoft
                 description of the encryption scheme for more details.
                 </para>
                 </remarks>
-                <param name="encrypted">The encrypted polynomial</param>
+                <param name="encrypted">The ciphertext</param>
                 <param name="parms">The encryption parameters</param>
                 <param name="secretKey">The secret key</param>
                 <exception cref="System::ArgumentNullException">if encrypted, parms, or secretKey is null</exception>
                 <exception cref="System::ArgumentException">if encryption parameters are not valid</exception>
-                <exception cref="System::ArgumentException">if the encrypted polynomial is not a valid encrypted polynomial for the
+                <exception cref="System::ArgumentException">if the ciphertext is not a valid ciphertext for the
                 encryption parameters</exception>
                 <exception cref="System::ArgumentException">if the secret key is not valid</exception>
                 <seealso cref="EncryptionParameters">See EncryptionParameters for more details on valid encryption
@@ -79,7 +80,7 @@ namespace Microsoft
                 <seealso>See InherentNoiseMax() for computing the maximum value of inherent noise supported
                 by given encryption parameters.</seealso>
                 */
-                static BigUInt ^InherentNoise(BigPoly ^encrypted, EncryptionParameters ^parms, BigPoly ^secretKey);
+                static BigUInt ^InherentNoise(BigPolyArray ^encrypted, EncryptionParameters ^parms, BigPoly ^secretKey);
 
                 /**
                 <summary>Computes the exact inherent noise in a ciphertext and stores it in a BigUInt given by reference.</summary>
@@ -95,14 +96,14 @@ namespace Microsoft
                 description of the encryption scheme for more details.
                 </para>
                 </remarks>
-                <param name="encrypted">The encrypted polynomial</param>
-                <param name="plain">The corresponding plaintext polynomial</param>
+                <param name="encrypted">The ciphertext</param>
+                <param name="plain">The corresponding plaintext</param>
                 <param name="parms">The encryption parameters</param>
                 <param name="secretKey">The secret key</param>
                 <param name="result">The <see cref="BigUInt"/> to overwrite with the inherent noise</param>
                 <exception cref="System::ArgumentNullException">if encrypted, plain, parms, secretKey, or result is null</exception>
                 <exception cref="System::ArgumentException">if encryption parameters are not valid</exception>
-                <exception cref="System::ArgumentException">if the encrypted polynomial is not a valid encrypted polynomial for the
+                <exception cref="System::ArgumentException">if the ciphertext is not a valid ciphertext for the
                 encryption parameters</exception>
                 <exception cref="System::ArgumentException">if the plain polynomial's significant coefficient count or coefficient
                 values are too large to represent with the encryption parameters</exception>
@@ -112,7 +113,7 @@ namespace Microsoft
                 <seealso>See InherentNoiseMax() for computing the maximum value of inherent noise supported
                 by given encryption parameters.</seealso>
                 */
-                static void InherentNoise(BigPoly ^encrypted, BigPoly ^plain, EncryptionParameters ^parms, BigPoly ^secretKey, BigUInt ^result);
+                static void InherentNoise(BigPolyArray ^encrypted, BigPoly ^plain, EncryptionParameters ^parms, BigPoly ^secretKey, BigUInt ^result);
 
                 /**
                 <summary>Computes the maximum value of inherent noise supported by given encryption parameters.</summary>

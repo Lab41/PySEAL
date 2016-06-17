@@ -23,6 +23,8 @@ namespace seal
         void nonfftmultiply_poly_poly_polymod_coeffmod_inplace(const std::uint64_t *operand1, const std::uint64_t *operand2, const PolyModulus &poly_modulus, const Modulus &modulus, std::uint64_t *result, MemoryPool &pool);
 
         bool try_invert_poly_coeffmod(const std::uint64_t *operand, const std::uint64_t *poly_modulus, int coeff_count, const Modulus &modulus, std::uint64_t *result, MemoryPool &pool);
+
+        void dot_product_bigpolyarray_polymod_coeffmod(const std::uint64_t *array1, const std::uint64_t *array2, int count, const PolyModulus &poly_modulus, const Modulus &modulus, std::uint64_t *result, MemoryPool &pool);
     }
 }
 #endif // SEAL_UTIL_POLYARITHMOD_H

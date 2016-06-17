@@ -118,33 +118,11 @@ namespace seal
 
             Computation *input2_;
         };
-
-        /*
-        class MultiplyNoRelinComputation : public Computation
-        {
-        public:
-            MultiplyNoRelinComputation(Computation &input1, Computation &input2);
-
-            ~MultiplyNoRelinComputation();
-
-            Simulation simulate(const EncryptionParameters &parms) override;
-
-            MultiplyNoRelinComputation *clone() override;
-
-        private:
-            MultiplyNoRelinComputation(const MultiplyComputation &copy) = delete;
-
-            MultiplyNoRelinComputation &operator =(const MultiplyNoRelinComputation &copy) = delete;
-
-            Computation *input1_;
-
-            Computation *input2_;
-        };
-
+      
         class RelinearizeComputation : public Computation
         {
         public:
-            RelinearizeComputation(Computation &input);
+            RelinearizeComputation(Computation &input, int destination_size);
 
             ~RelinearizeComputation();
 
@@ -158,8 +136,10 @@ namespace seal
             RelinearizeComputation &operator =(const RelinearizeComputation &copy) = delete;
 
             Computation *input_;
+
+            int destination_size_;
         };
-        */
+        
 
         class MultiplyPlainComputation : public Computation
         {

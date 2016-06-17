@@ -15,7 +15,7 @@ namespace SEALTest
     TEST_CLASS(EncryptorTest)
     {
     public:
-        TEST_METHOD(EncryptAddsNoise)
+        TEST_METHOD(FVEncryptAddsNoise)
         {
             EncryptionParameters parms;
             BigUInt &coeff_modulus = parms.coeff_modulus();
@@ -38,16 +38,21 @@ namespace SEALTest
             keygen.generate();
 
             Encryptor encryptor(parms, keygen.public_key());
-            BigPoly encrypted1 = encryptor.encrypt(encoder.encode(0x12345678));
-            BigPoly encrypted2 = encryptor.encrypt(encoder.encode(0x12345678));
-            Assert::IsTrue(encrypted1 != encrypted2);
+
+            Assert::IsTrue(encryptor.public_key()[0].to_string() == keygen.public_key()[0].to_string());
+            Assert::IsTrue(encryptor.public_key()[1].to_string() == keygen.public_key()[1].to_string());
+
+            BigPolyArray encrypted1 = encryptor.encrypt(encoder.encode(0x12345678));
+            BigPolyArray encrypted2 = encryptor.encrypt(encoder.encode(0x12345678));
+            Assert::IsTrue(encrypted1[0] != encrypted2[0]);
+            Assert::IsTrue(encrypted1[1] != encrypted2[1]);
 
             Decryptor decryptor(parms, keygen.secret_key());
             Assert::AreEqual(static_cast<uint64_t>(0x12345678), encoder.decode_uint64(decryptor.decrypt(encrypted1)));
             Assert::AreEqual(static_cast<uint64_t>(0x12345678), encoder.decode_uint64(decryptor.decrypt(encrypted2)));
         }
 
-        TEST_METHOD(EncryptDecrypt)
+        TEST_METHOD(FVEncryptDecrypt)
         {
             EncryptionParameters parms;
             BigUInt &coeff_modulus = parms.coeff_modulus();
@@ -70,11 +75,13 @@ namespace SEALTest
             BalancedEncoder encoder(plain_modulus);
 
             Encryptor encryptor(parms, keygen.public_key());
-            Assert::IsTrue(keygen.public_key() == encryptor.public_key());
+            Assert::IsTrue(keygen.public_key()[0] == encryptor.public_key()[0]);
+            Assert::IsTrue(keygen.public_key()[1] == encryptor.public_key()[1]);
+
             Decryptor decryptor(parms, keygen.secret_key());
             Assert::IsTrue(keygen.secret_key() == decryptor.secret_key());
 
-            BigPoly encrypted = encryptor.encrypt(encoder.encode(0x12345678));
+            BigPolyArray encrypted = encryptor.encrypt(encoder.encode(0x12345678));
             Assert::AreEqual(static_cast<uint64_t>(0x12345678), encoder.decode_uint64(decryptor.decrypt(encrypted)));
 
             encrypted = encryptor.encrypt(encoder.encode(0));
@@ -94,71 +101,9 @@ namespace SEALTest
 
             encrypted = encryptor.encrypt(encoder.encode(0x7FFFFFFFFFFFFFFF));
             Assert::AreEqual(static_cast<uint64_t>(0x7FFFFFFFFFFFFFFF), encoder.decode_uint64(decryptor.decrypt(encrypted)));
-        }
 
-        TEST_METHOD(EncryptDecryptTestMode)
-        {
-            EncryptionParameters parms;
-            BigUInt &coeff_modulus = parms.coeff_modulus();
-            BigUInt &plain_modulus = parms.plain_modulus();
-            BigPoly &poly_modulus = parms.poly_modulus();
-            parms.decomposition_bit_count() = 4;
-            parms.noise_standard_deviation() = 3.19;
-            parms.noise_max_deviation() = 35.06;
-            coeff_modulus.resize(48);
-            coeff_modulus = "FFFFFFFFC001";
-            plain_modulus.resize(7);
-            plain_modulus = 1 << 6;
-            poly_modulus.resize(64, 1);
-            poly_modulus[0] = 1;
-            poly_modulus[63] = 1;
-            parms.mode() = TEST_MODE;
-
-            BalancedEncoder encoder(plain_modulus);
-
-            KeyGenerator keygen(parms);
-            keygen.generate();
-
-            Encryptor encryptor(parms, keygen.public_key());
-            Assert::IsTrue(keygen.public_key() == encryptor.public_key());
-            Decryptor decryptor(parms, keygen.secret_key());
-            Assert::IsTrue(keygen.secret_key() == decryptor.secret_key());
-
-            BigPoly plain(64, 48);
-            plain = encoder.encode(0x12345678);
-            BigPoly encrypted = encryptor.encrypt(plain);
-            Assert::IsTrue(encrypted == plain);
-            Assert::AreEqual(static_cast<uint64_t>(0x12345678), encoder.decode_uint64(decryptor.decrypt(encrypted)));
-
-            plain = encoder.encode(0);
-            encrypted = encryptor.encrypt(plain);
-            Assert::IsTrue(encrypted == plain);
-            Assert::AreEqual(static_cast<uint64_t>(0), encoder.decode_uint64(decryptor.decrypt(encrypted)));
-
-            plain = encoder.encode(1);
-            encrypted = encryptor.encrypt(plain);
-            Assert::IsTrue(encrypted == plain);
-            Assert::AreEqual(static_cast<uint64_t>(1), encoder.decode_uint64(decryptor.decrypt(encrypted)));
-
-            plain = encoder.encode(2);
-            encrypted = encryptor.encrypt(plain);
-            Assert::IsTrue(encrypted == plain);
-            Assert::AreEqual(static_cast<uint64_t>(2), encoder.decode_uint64(decryptor.decrypt(encrypted)));
-
-            plain = encoder.encode(0x7FFFFFFFFFFFFFFD);
-            encrypted = encryptor.encrypt(plain);
-            Assert::IsTrue(encrypted == plain);
-            Assert::AreEqual(static_cast<uint64_t>(0x7FFFFFFFFFFFFFFD), encoder.decode_uint64(decryptor.decrypt(encrypted)));
-
-            plain = encoder.encode(0x7FFFFFFFFFFFFFFE);
-            encrypted = encryptor.encrypt(plain);
-            Assert::IsTrue(encrypted == plain);
-            Assert::AreEqual(static_cast<uint64_t>(0x7FFFFFFFFFFFFFFE), encoder.decode_uint64(decryptor.decrypt(encrypted)));
-
-            plain = encoder.encode(0x7FFFFFFFFFFFFFFF);
-            encrypted = encryptor.encrypt(plain);
-            Assert::IsTrue(encrypted == plain);
-            Assert::AreEqual(static_cast<uint64_t>(0x7FFFFFFFFFFFFFFF), encoder.decode_uint64(decryptor.decrypt(encrypted)));
+            encrypted = encryptor.encrypt(encoder.encode(314159265));
+            Assert::AreEqual(static_cast<uint64_t>(314159265), encoder.decode_uint64(decryptor.decrypt(encrypted)));
         }
     };
 }

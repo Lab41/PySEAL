@@ -1,6 +1,7 @@
 #pragma once
 
 #include "evaluator.h"
+#include "EvaluationKeysWrapper.h"
 
 namespace Microsoft
 {
@@ -9,29 +10,45 @@ namespace Microsoft
         namespace SEAL
         {
             ref class EncryptionParameters;
+
             ref class BigPoly;
-            ref class EvaluationKeys;
 
             /**
-            <summary>Provides arithmetic functions for operating on encrypted polynomials (represented by BigPoly's).</summary>
+            <summary>Provides arithmetic functions for operating on ciphertexts.</summary>
 
             <remarks>
             <para>
-            Provides arithmetic functions for operating on encrypted polynomials (represented by <see cref="BigPoly"/>'s). The add,
-            subtract, and multiply function variants allow both operands to be encrypted or for one operand to be plain-text with
-            the "Plain" variants.
+            Provides arithmetic functions for operating on ciphertexts. The Add, Subtract, and Multiply function variants allow
+            both operands to be encrypted. The "Plain" variants allow one of the inputs to be encrypted and the other unencrypted.
             </para>
             <para>
-            As multiplication is typically the most expensive arithmetic operation, three variants of the multiply function are
-            provided that may allow for more performance depending on the application. The Multiply() function performs full-blown
-            multiplication, which internally consists of a multiplication and relinearization step. The MultiplyNoRelin() and
-            Relinearize() functions break-up multiplication into its two steps to allow the relinearlization step to be optional.
-            Refer to documentation on the encryption scheme to determine which multiply variants may be beneficial for different
-            applications.
+            Every valid ciphertext consists of at least two polynomials. Homomorphic multiplication increases
+            the size of the ciphertext in such a way that if the input ciphertexts have size M and N, then the
+            output ciphertext will have size M+N-1. The multiplication operation will require M*N polynomial
+            multiplications to be performed. To read the current size of a ciphertext the user can use 
+            <see cref="BigPolyArray::Size"/>.
             </para>
             <para>
-            The Evaluator class is not thread-safe and a separate Evaluator instance is needed for each potentially concurrent
-            usage.
+            A relinearization operation can be used to reduce the size of a ciphertext to any smaller size
+            (but at least 2), potentially improving the performance of a subsequent multiplication using it.
+            However, relinearization grows the inherent noise in a ciphertext by an additive factor proportional
+            to 2^DBC, and relinearizing from size K to L will require 2*(K-L)*[floor(log_2(coeff_modulus)/DBC)+1]
+            polynomial multiplications. Here DBC denotes the decomposition bit count set in the encryption parameters.
+            Note that the larger the decomposition bit count is, the faster relinearization will be, but also the
+            inherent noise growth will be larger. In typical cases, however, the user might not want to relinearize
+            at all as even the computational cost of a relinearization might be larger than what might be gained
+            from a subsequent multiplication with a ciphertext of smaller size.
+            </para>
+            <para>
+            Relinearization requires the key generator to generate evaluation keys. More specifically, to relinearize
+            a ciphertext of size K down to any size smaller than K (but at least 2), at least K-2 evaluation keys will
+            be needed. These have to be given as an input parameter to the constructor of Evaluator.
+            </para>
+            <para>
+            Technically speaking, the inherent noise of a ciphertext is a polynomial, but the condition for decryption working
+            depends on the size of the largest absolute value of its coefficients. This is what we will call the "noise", the
+            "inherent noise", or the "error", in this documentation. Typically multiplication will be the most heavy operation
+            in terms of noise growth. The reader is referred to the description of the encryption scheme for more details.
             </para>
             </remarks>
             */
@@ -41,13 +58,28 @@ namespace Microsoft
                 /**
                 <summary>Creates an Evaluator instance initialized with the specified encryption parameters and evaluation
                 keys.</summary>
+                <remarks>Creates an Evaluator instance initialized with the specified encryption parameters and evaluation
+                keys. If no evaluation keys will be needed, one can simply pass a newly created empty instance of EvaluationKeys 
+                to the function.
+                </remarks>
                 <param name="parms">The encryption parameters</param>
                 <param name="evaluationKeys">The evaluation keys</param>
                 <exception cref="System::ArgumentException">if encryption parameters or evaluation keys are not valid</exception>
+                <exception cref="System::ArgumentNullException">if parms or evaluationKeys is null</exception>
                 <seealso cref="EncryptionParameters">See EncryptionParameters for more details on valid encryption
                 parameters.</seealso>
                 */
                 Evaluator(EncryptionParameters ^parms, EvaluationKeys ^evaluationKeys);
+
+                /**
+                <summary>Creates an Evaluator instance initialized with the specified encryption parameters.</summary>
+                <param name="parms">The encryption parameters</param>
+                <exception cref="System::ArgumentException">if encryption parameters are not valid</exception>
+                <exception cref="System::ArgumentNullException">if parms is null</exception>
+                <seealso cref="EncryptionParameters">See EncryptionParameters for more details on valid encryption
+                parameters.</seealso>
+                */
+                Evaluator(EncryptionParameters ^parms);
 
                 /**
                 <summary>Returns the evaluation keys used by the Evaluator.</summary>
@@ -57,398 +89,331 @@ namespace Microsoft
                 }
 
                 /**
-                <summary>Negates an encrypted polynomial and stores the result in the destination parameter.</summary>
-
-                <remarks>
-                Negates an encrypted polynomial and stores the result in the destination parameter. The destination parameter is
-                resized if and only if its coefficient count or coefficient bit count does not match the encryption parameters.
-                </remarks>
-                <param name="encrypted">The encrypted polynomial to negate</param>
-                <param name="destination">The polynomial to overwrite with the negated result</param>
-                <exception cref="System::ArgumentException">if the encrypted polynomial is not a valid for the encryption
-                parameters</exception>
-                <exception cref="System::InvalidOperationException">If destination is an alias but needs to be resized</exception>
+                <summary>Negates a ciphertext and stores the result in the destination parameter.</summary>
+                <param name="encrypted">The ciphertext to negate</param>
+                <param name="destination">The ciphertext to overwrite with the negated result</param>
+                <exception cref="System::ArgumentException">if the ciphertext is not valid for the encryption parameters</exception>
+                <exception cref="System::ArgumentNullException">if encrypted or destination is null</exception>
                 */
-                void Negate(BigPoly ^encrypted, BigPoly ^destination);
+                void Negate(BigPolyArray ^encrypted, BigPolyArray ^destination);
 
                 /**
-                <summary>Negates an encrypted polynomial and returns the result.</summary>
-                <param name="encrypted">The encrypted polynomial to negate</param>
-                <exception cref="System::ArgumentException">if the encrypted polynomial is not a valid encrypted polynomial for the
-                encryption parameters</exception>
+                <summary>Negates a ciphertext and returns the result.</summary>
+                <param name="encrypted">The ciphertext to negate</param>
+                <exception cref="System::ArgumentException">if the ciphertext is not valid for the encryption parameters</exception>
+                <exception cref="System::ArgumentNullException">if encrypted is null</exception>
                 */
-                BigPoly ^Negate(BigPoly ^encrypted);
+                BigPolyArray ^Negate(BigPolyArray ^encrypted);
 
                 /**
-                <summary>Adds two encrypted polynomials and stores the result in the destination parameter.</summary>
-                <remarks>
-                Adds two encrypted polynomials and stores the result in the destination parameter. The destination parameter is resized
-                if and only if its coefficient count or coefficient bit count does not match the encryption parameters.
-                </remarks>
-                <param name="encrypted1">The first encrypted polynomial to add</param>
-                <param name="encrypted2">The second encrypted polynomial to add</param>
-                <param name="destination">The polynomial to overwrite with the addition result</param>
-                <exception cref="System::ArgumentException">if the encrypted polynomials are not valid for the encryption
-                parameters</exception>
-                <exception cref="System::InvalidOperationException">If destination is an alias but needs to be resized</exception>
+                <summary>Adds two ciphertexts and stores the result in the destination parameter.</summary>
+                <param name="encrypted1">The first ciphertext to add</param>
+                <param name="encrypted2">The second ciphertexct to add</param>
+                <param name="destination">The ciphertext to overwrite with the addition result</param>
+                <exception cref="System::ArgumentException">if the ciphertexts are not valid for the encryption parameters</exception>
+                <exception cref="System::ArgumentNullException">if encrypted1, encrypted2, or destination is null</exception>
                 */
-                void Add(BigPoly ^encrypted1, BigPoly ^encrypted2, BigPoly ^destination);
+                void Add(BigPolyArray ^encrypted1, BigPolyArray ^encrypted2, BigPolyArray ^destination);
 
                 /**
-                <summary>Adds two encrypted polynomials and returns the result.</summary>
-                <param name="encrypted1">The first encrypted polynomial to add</param>
-                <param name="encrypted2">The second encrypted polynomial to add</param>
-                <exception cref="System::ArgumentException">if the encrypted polynomials are not valid for the encryption
-                parameters</exception>
+                <summary>Adds two ciphertexts and returns the result.</summary>
+                <param name="encrypted1">The first ciphertext to add</param>
+                <param name="encrypted2">The second ciphertexct to add</param>
+                <exception cref="System::ArgumentException">if the ciphertexts are not valid for the encryption parameters</exception>
+                <exception cref="System::ArgumentNullException">if encrypted1 or encrypted2 is null</exception>
                 */
-                BigPoly ^Add(BigPoly ^encrypted1, BigPoly ^encrypted2);
+                BigPolyArray ^Add(BigPolyArray ^encrypted1, BigPolyArray ^encrypted2);
 
                 /**
                 <summary>Adds together an number of ciphertexts stored as elements of a list and stores the result
                 in the destination parameter.</summary>
-                <remarks>
-                Adds together an number of ciphertexts stored as elements of a list and stores the result in the
-                destination parameter. The destination parameter is resized if and only if its coefficient count or coefficient bit
-                count does not match the encryption parameters.
-                </remarks>
-                <param name="encrypteds">The encrypted polynomials to add</param>
-                <param name="destination">The polynomial to overwrite with the addition result</param>
+                <param name="encrypteds">The ciphertexts to add</param>
+                <param name="destination">The ciphertext to overwrite with the addition result</param>
                 <exception cref="System::ArgumentNullException">if encrypteds or any of its elements is null</exception>
                 <exception cref="System::ArgumentException">if encrypteds is empty</exception>
-                <exception cref="System::ArgumentException">if the encrypted polynomials are not valid for the encryption parameters</exception>
-                <exception cref="System::InvalidOperationException">If destination is an alias but needs to be resized</exception>
+                <exception cref="System::ArgumentException">if the ciphertexts are not valid for the encryption parameters</exception>
                 */
-                void AddMany(System::Collections::Generic::List<BigPoly^> ^encrypteds, BigPoly ^destination);
+                void AddMany(System::Collections::Generic::List<BigPolyArray^> ^encrypteds, BigPolyArray ^destination);
 
                 /**
                 <summary>Adds together an number of ciphertexts stored as elements of a list and returns the result.</summary>
-                <param name="encrypteds">The encrypted polynomials to add</param>
+                <param name="encrypteds">The ciphertexts to add</param>
                 <exception cref="System::ArgumentNullException">if encrypteds or any of its elements is null</exception>
                 <exception cref="System::ArgumentException">if encrypteds is empty</exception>
-                <exception cref="System::ArgumentException">if the encrypted polynomials are not valid for the encryption parameters</exception>
+                <exception cref="System::ArgumentException">if the ciphertexts are not valid for the encryption parameters</exception>
                 */
-                BigPoly ^AddMany(System::Collections::Generic::List<BigPoly^> ^encrypteds);
+                BigPolyArray ^AddMany(System::Collections::Generic::List<BigPolyArray^> ^encrypteds);
 
                 /**
-                <summary>Subtracts two encrypted polynomials and stores the result in the destination parameter.</summary>
-                <remarks>
-                Subtracts two encrypted polynomials and stores the result in the destination parameter. The destination parameter is
-                resized if and only if its coefficient count or coefficient bit count does not match the encryption parameters.
-                </remarks>
-                <param name="encrypted1">The first encrypted polynomial to subtract</param>
-                <param name="encrypted2">The second encrypted polynomial to subtract</param>
-                <param name="destination">The polynomial to overwrite with the subtraction result</param>
-                <exception cref="System::ArgumentException">if the encrypted polynomials are not valid for the encryption
-                parameters</exception>
-                <exception cref="System::InvalidOperationException">If destination is an alias but needs to be resized</exception>
+                <summary>Subtracts two ciphertexts and stores the result in the destination parameter.</summary>
+                <param name="encrypted1">The ciphertext to subtract from</param>
+                <param name="encrypted2">The ciphertext to subtract</param>
+                <param name="destination">The ciphertext to overwrite with the subtraction result</param>
+                <exception cref="System::ArgumentException">if the ciphertexts are not valid for the encryption parameters</exception>
+                <exception cref="System::ArgumentNullException">if encrypted1, encrypted2, or destination is null</exception>
                 */
-                void Sub(BigPoly ^encrypted1, BigPoly ^encrypted2, BigPoly ^destination);
+                void Sub(BigPolyArray ^encrypted1, BigPolyArray ^encrypted2, BigPolyArray ^destination);
 
                 /**
-                <summary>Subtracts two encrypted polynomials and returns the result.</summary>
-                <param name="encrypted1">The first encrypted polynomial to subtract</param>
-                <param name="encrypted2">The second encrypted polynomial to subtract</param>
-                <exception cref="System::ArgumentException">if the encrypted polynomials are not valid for the encryption
-                parameters</exception>
+                <summary>Subtracts two ciphertexts and returns the result.</summary>
+                <param name="encrypted1">The ciphertext to subtract from</param>
+                <param name="encrypted2">The ciphertext to subtract</param>
+                <exception cref="System::ArgumentException">if the ciphertexts are not valid for the encryption parameters</exception>
+                <exception cref="System::ArgumentNullException">if encrypted1 or encrypted2 is null</exception>
                 */
-                BigPoly ^Sub(BigPoly ^encrypted1, BigPoly ^encrypted2);
+                BigPolyArray ^Sub(BigPolyArray ^encrypted1, BigPolyArray ^encrypted2);
 
                 /**
-                <summary>Multiplies two encrypted polynomials and stores the result in the destination parameter.</summary>
-
-                <remarks>
-                Multiplies two encrypted polynomials and stores the result in the destination parameter. The destination parameter is
-                resized if and only if its coefficient count or coefficient bit count does not match the encryption parameters.
-                </remarks>
-                <param name="encrypted1">The first encrypted polynomial to multiply</param>
-                <param name="encrypted2">The second encrypted polynomial to multiply</param>
-                <param name="destination">The polynomial to overwrite with the multiplication result</param>
-                <exception cref="System::ArgumentException">if the encrypted polynomials are not valid for the encryption
-                parameters</exception>
-                <exception cref="System::InvalidOperationException">If destination is an alias but needs to be resized</exception>
+                <summary>Multiplies two ciphertexts and stores the result in the destination parameter.</summary>
+                <param name="encrypted1">The first ciphertext to multiply</param>
+                <param name="encrypted2">The second ciphertext to multiply</param>
+                <param name="destination">The ciphertext to overwrite with the multiplication result</param>
+                <exception cref="System::ArgumentException">if the ciphertexts are not valid for the encryption parameters</exception>
+                <exception cref="System::ArgumentNullException">if encrypted1, encrypted2, or destination is null</exception>
                 */
-                void Multiply(BigPoly ^encrypted1, BigPoly ^encrypted2, BigPoly ^destination);
+                void Multiply(BigPolyArray ^encrypted1, BigPolyArray ^encrypted2, BigPolyArray ^destination);
 
                 /**
-                <summary>Multiplies two encrypted polynomials and returns the result.</summary>
-                <param name="encrypted1">The first encrypted polynomial to multiply</param>
-                <param name="encrypted2">The second encrypted polynomial to multiply</param>
-                <exception cref="System::ArgumentException">if the encrypted polynomials are not valid for the encryption
-                parameters</exception>
+                <summary>Multiplies two ciphertexts and returns the result.</summary>
+                <param name="encrypted1">The first ciphertext to multiply</param>
+                <param name="encrypted2">The second ciphertext to multiply</param>
+                <exception cref="System::ArgumentException">if the ciphertexts are not valid for the encryption parameters</exception>
+                <exception cref="System::ArgumentNullException">if encrypted1 or encrypted2 is null</exception>
                 */
-                BigPoly ^Multiply(BigPoly ^encrypted1, BigPoly ^encrypted2);
+                BigPolyArray ^Multiply(BigPolyArray ^encrypted1, BigPolyArray ^encrypted2);
 
                 /**
-                <summary>Multiplies two encrypted polynomials without performing relinearization, and stores the result in the
-                destination parameter.</summary>
-
-                <remarks>
-                Multiplies two encrypted polynomials without performing relinearization, and stores the result in the destination
-                parameter. The destination parameter is resized if and only if its coefficient count or coefficient bit count does not
-                match the encryption parameters.
-                </remarks>
-                <param name="encrypted1">The first encrypted polynomial to multiply</param>
-                <param name="encrypted2">The second encrypted polynomial to multiply</param>
-                <param name="destination">The polynomial to overwrite with the multiplication result</param>
-                <exception cref="System::ArgumentException">if the encrypted polynomials are not valid for the encryption
-                parameters</exception>
-                <exception cref="System::InvalidOperationException">If destination is an alias but needs to be resized</exception>
+                <summary>Relinearizes a ciphertext and stores the result in the destination parameter.</summary>
+                <param name="encrypted">The ciphertext to relinearize</param>
+                <param name="destination">The ciphertext to overwrite with the relinearized result</param>
+                <exception cref="System::ArgumentException">if the ciphertext is not valid for the encryption parameters</exception>
+                <exception cref="System::ArgumentException">if not enough evaluation keys have been generated</exception>
+                <exception cref="System::ArgumentNullException">if encrypted or destination is null</exception>
                 */
-                void MultiplyNoRelin(BigPoly ^encrypted1, BigPoly ^encrypted2, BigPoly ^destination);
+                void Relinearize(BigPolyArray ^encrypted, BigPolyArray ^destination);
 
                 /**
-                <summary>Multiplies two encrypted polynomials without performing relinearization, and returns the result.</summary>
-                <param name="encrypted1">The first encrypted polynomial to multiply</param>
-                <param name="encrypted2">The second encrypted polynomial to multiply</param>
-                <exception cref="System::ArgumentException">if the encrypted polynomials are not valid for the encryption
-                parameters</exception>
+                <summary>Relinearizes a ciphertext and stores the result in the destination parameter.</summary>
+                <param name="encrypted">The ciphertext to relinearize</param>
+                <param name="destination">The ciphertext to overwrite with the relinearized result</param>
+                <param name="destinationSize">The size of the output ciphertext</param>
+                <exception cref="System::ArgumentException">if the ciphertext is not valid for the encryption parameters</exception>
+                <exception cref="System::ArgumentException">if destinationSize is less than 2 or too large</exception>
+                <exception cref="System::ArgumentException">if not enough evaluation keys have been generated</exception>
+                <exception cref="System::ArgumentNullException">if encrypted or destination is null</exception>
                 */
-                BigPoly ^MultiplyNoRelin(BigPoly ^encrypted1, BigPoly ^encrypted2);
+                void Relinearize(BigPolyArray ^encrypted, BigPolyArray ^destination, int destinationSize);
 
                 /**
-                <summary>Relinearizes an encrypted polynomial and stores the result in the destination parameter.</summary>
-
-                <remarks>
-                Relinearizes an encrypted polynomial and stores the result in the destination parameter. The destination parameter is
-                resized if and only if its coefficient count or coefficient bit count does not match the encryption parameters.
-                </remarks>
-                <param name="encrypted">The encrypted polynomial to relinearize</param>
-                <param name="destination">The polynomial to overwrite with the relinearized result</param>
-                <exception cref="System::ArgumentException">if the encrypted polynomial is not valid for the encryption
-                parameters</exception>
-                <exception cref="System::InvalidOperationException">If destination is an alias but needs to be resized</exception>
+                <summary>Relinearizes a ciphertext and returns the result.</summary>
+                <param name="encrypted">The ciphertext to relinearize</param>
+                <exception cref="System::ArgumentException">if the ciphertext is not valid for the encryption parameters</exception>
+                <exception cref="System::ArgumentException">if not enough evaluation keys have been generated</exception>
+                <exception cref="System::ArgumentNullException">if encrypted is null</exception>
                 */
-                void Relinearize(BigPoly ^encrypted, BigPoly ^destination);
+                BigPolyArray ^Relinearize(BigPolyArray ^encrypted);
 
                 /**
-                <summary>Relinearizes an encrypted polynomial and returns the result.</summary>
-                <param name="encrypted">The encrypted polynomial to relinearize</param>
-                <exception cref="System::ArgumentException">if the encrypted polynomial is not valid for the encryption
-                parameters</exception>
+                <summary>Relinearizes a ciphertext and returns the result.</summary>
+                <param name="encrypted">The ciphertext to relinearize</param>
+                <exception cref="System::ArgumentException">if the ciphertext is not valid for the encryption parameters</exception>
+                <exception cref="System::ArgumentException">if destinationSize is less than 2 or too large</exception>
+                <exception cref="System::ArgumentException">if not enough evaluation keys have been generated</exception>
+                <exception cref="System::ArgumentNullException">if encrypted is null</exception>
                 */
-                BigPoly ^Relinearize(BigPoly ^encrypted);
+                BigPolyArray ^Relinearize(BigPolyArray ^encrypted, int destinationSize);
 
                 /**
-                <summary>Adds an encrypted polynomial with a plain polynomial, and stores the result in the destination
-                parameter.</summary>
+                <summary>Adds a ciphertext with a plaintext, and stores the result in the destination parameter.</summary>
 
                 <remarks>
-                Adds an encrypted polynomial with a plain polynomial, and stores the result in the destination parameter. The
-                destination parameter is resized if and only if its coefficient count or coefficient bit count does not match the
-                encryption parameters. The plain polynomial must have a significant coefficient count smaller than the coefficient
-                count specified by the encryption parameters, and with coefficient values less-than the plain modulus
-                (<see cref="EncryptionParameters::PlainModulus"/>).
+                Adds a ciphertext with a plaintext, and stores the result in the destination parameter. The plaintext must 
+                have a significant coefficient count smaller than the coefficient count specified by the encryption parameters, 
+                and with coefficient values less-than the plain modulus (<see cref="EncryptionParameters::PlainModulus"/>).
                 </remarks>
-                <param name="encrypted1">The first encrypted polynomial to add</param>
-                <param name="plain2">The second plain polynomial to add</param>
-                <param name="destination">The polynomial to overwrite with the addition result</param>
-                <exception cref="System::ArgumentException">if the encrypted1 polynomials are not valid for the encryption
-                parameters</exception>
-                <exception cref="System::ArgumentException">if the plain2 polynomial's significant coefficient count or coefficient
+                <param name="encrypted">The ciphertext to add</param>
+                <param name="plain">The plaintext to add</param>
+                <param name="destination">The ciphertext to overwrite with the addition result</param>
+                <exception cref="System::ArgumentException">if the ciphertexts are not valid for the encryption parameters</exception>
+                <exception cref="System::ArgumentException">if the plain polynomial's significant coefficient count or coefficient
                 values are too large to represent with the encryption parameters</exception>
-                <exception cref="System::InvalidOperationException">If destination is an alias but needs to be resized</exception>
+                <exception cref="System::ArgumentNullException">if encrypted, plain, or destination is null</exception>
                 */
-                void AddPlain(BigPoly ^encrypted1, BigPoly ^plain2, BigPoly ^destination);
+                void AddPlain(BigPolyArray ^encrypted, BigPoly ^plain, BigPolyArray ^destination);
 
                 /**
-                <summary>Adds an encrypted polynomial with a plain polynomial, and returns the result.</summary>
+                <summary>Adds a ciphertext with a plaintext, and returns the result.</summary>
 
                 <remarks>
-                Adds an encrypted polynomial with a plain polynomial, and returns the result. The plain polynomial must have a
+                Adds a ciphertext with a plaintext, and returns the result. The plaintext must have a
                 significant coefficient count smaller than the coefficient count specified by the encryption parameters, and with
                 coefficient values less-than the plain modulus (<see cref="EncryptionParameters::PlainModulus"/>).
                 </remarks>
-                <param name="encrypted1">The first encrypted polynomial to add</param>
-                <param name="plain2">The second plain polynomial to add</param>
-                <exception cref="System::ArgumentException">if the encrypted1 polynomials are not valid for the encryption
-                parameters</exception>
-                <exception cref="System::ArgumentException">if the plain2 polynomial's significant coefficient count or coefficient
+                <param name="encrypted">The ciphertext to add</param>
+                <param name="plain">The plaintext to add</param>
+                <exception cref="System::ArgumentException">if the ciphertexts are not valid for the encryption parameters</exception>
+                <exception cref="System::ArgumentException">if the plain polynomial's significant coefficient count or coefficient
                 values are too large to represent with the encryption parameters</exception>
+                <exception cref="System::ArgumentNullException">if encrypted or plain is null</exception>
                 */
-                BigPoly ^AddPlain(BigPoly ^encrypted1, BigPoly ^plain2);
+                BigPolyArray ^AddPlain(BigPolyArray ^encrypted, BigPoly ^plain);
 
                 /**
-                <summary>Subtracts an encrypted polynomial with a plain polynomial, and stores the result in the destination
+                <summary>Subtracts a ciphertext with a plaintext, and stores the result in the destination
                 parameter.</summary>
 
                 <remarks>
-                Subtracts an encrypted polynomial with a plain polynomial, and stores the result in the destination parameter. The
-                destination parameter is resized if and only if its coefficient count or coefficient bit count does not match the
-                encryption parameters. The plain polynomial must have a significant coefficient count smaller than the coefficient
+                Subtracts a ciphertext with a plaintext, and stores the result in the destination parameter.
+                The plaintext must have a significant coefficient count smaller than the coefficient
                 count specified by the encryption parameters, and with coefficient values less-than the plain modulus
                 (<see cref="EncryptionParameters::PlainModulus"/>).
                 </remarks>
-                <param name="encrypted1">The first encrypted polynomial to subtract</param>
-                <param name="plain2">The second plain polynomial to subtract</param>
-                <param name="destination">The polynomial to overwrite with the subtraction result</param>
-                <exception cref="System::ArgumentException">if the encrypted1 polynomials are not valid for the encryption
-                parameters</exception>
-                <exception cref="System::ArgumentException">if the plain2 polynomial's significant coefficient count or coefficient
+                <param name="encrypted">The ciphertext to subtract</param>
+                <param name="plain">The plaintext to subtract</param>
+                <param name="destination">The ciphertext to overwrite with the subtraction result</param>
+                <exception cref="System::ArgumentException">if the ciphertexts are not valid for the encryption parameters</exception>
+                <exception cref="System::ArgumentException">if the plain polynomial's significant coefficient count or coefficient
                 values are too large to represent with the encryption parameters</exception>
-                <exception cref="System::InvalidOperationException">If destination is an alias but needs to be resized</exception>
+                <exception cref="System::ArgumentNullException">if encrypted, plain, or destination is null</exception>
                 */
-                void SubPlain(BigPoly ^encrypted1, BigPoly ^plain2, BigPoly ^destination);
+                void SubPlain(BigPolyArray ^encrypted, BigPoly ^plain, BigPolyArray ^destination);
 
                 /**
-                <summary>Subtracts an encrypted polynomial with a plain polynomial, and returns the result.</summary>
+                <summary>Subtracts a ciphertext with a plaintext, and returns the result.</summary>
 
                 <remarks>
-                Subtracts an encrypted polynomial with a plain polynomial, and returns the result. The plain polynomial must have a
+                Subtracts a ciphertext with a plaintext, and returns the result. The plaintext must have a
                 significant coefficient count smaller than the coefficient count specified by the encryption parameters, and with
                 coefficient values less-than the plain modulus (<see cref="EncryptionParameters::PlainModulus"/>).
                 </remarks>
-                <param name="encrypted1">The first encrypted polynomial to subtract</param>
-                <param name="plain2">The second plain polynomial to subtract</param>
-                <exception cref="System::ArgumentException">if the encrypted1 polynomials are not valid for the encryption
-                parameters</exception>
-                <exception cref="System::ArgumentException">if the plain2 polynomial's significant coefficient count or coefficient
+                <param name="encrypted">The ciphertext to subtract</param>
+                <param name="plain">The plaintext to subtract</param>
+                <exception cref="System::ArgumentException">if the ciphertexts are not valid for the encryption parameters</exception>
+                <exception cref="System::ArgumentException">if the plain polynomial's significant coefficient count or coefficient
                 values are too large to represent with the encryption parameters</exception>
+                <exception cref="System::ArgumentNullException">if encrypted or plain is null</exception>
                 */
-                BigPoly ^SubPlain(BigPoly ^encrypted1, BigPoly ^plain2);
+                BigPolyArray ^SubPlain(BigPolyArray ^encrypted, BigPoly ^plain);
 
                 /**
-                <summary>Multiplies an encrypted polynomial with a plain polynomial, and stores the result in the destination
+                <summary>Multiplies a ciphertext with a plaintext, and stores the result in the destination
                 parameter.</summary>
 
                 <remarks>
-                Multiplies an encrypted polynomial with a plain polynomial, and stores the result in the destination parameter. The
-                destination parameter is resized if and only if its coefficient count or coefficient bit count does not match the
-                encryption parameters. The plain polynomial must have a significant coefficient count smaller than the coefficient
+                <para>
+                Multiplies a ciphertext with a plaintext, and stores the result in the destination parameter. 
+                The plaintext must have a significant coefficient count smaller than the coefficient
                 count specified by the encryption parameters, and with coefficient values less-than the plain modulus
                 (<see cref="EncryptionParameters::PlainModulus"/>).
+                </para>
+                <para>
+                Multiplying by a plaintext 0 is not allowed and will result in the library throwing an invalid
+                argument exception. The reason behind this design choice is that the result should
+                be a fresh encryption of 0, but creating fresh encryptions should not be something
+                this class does. Instead the user should separately handle the cases where the
+                plain multiplier is 0.
+                </para>
                 </remarks>
-                <param name="encrypted1">The first encrypted polynomial to multiply</param>
-                <param name="plain2">The second plain polynomial to multiply</param>
-                <param name="destination">The polynomial to overwrite with the multiplication result</param>
-                <exception cref="System::ArgumentException">if the encrypted1 polynomials are not valid for the encryption
-                parameters</exception>
-                <exception cref="System::ArgumentException">if the plain2 polynomial's significant coefficient count or coefficient
+                <param name="encrypted">The ciphertext to multiply</param>
+                <param name="plain">The plaintext to multiply</param>
+                <param name="destination">The ciphertext to overwrite with the multiplication result</param>
+                <exception cref="System::ArgumentException">if the ciphertexts are not valid for the encryption parameters</exception>
+                <exception cref="System::ArgumentException">if the plain polynomial's significant coefficient count or coefficient
                 values are too large to represent with the encryption parameters</exception>
-                <exception cref="System::InvalidOperationException">If destination is an alias but needs to be resized</exception>
+                <exception cref="System::ArgumentException">if the plaintext multiplier is zero</exception>
+                <exception cref="System::ArgumentNullException">if encrypted, plain, or destination is null</exception>
                 */
-                void MultiplyPlain(BigPoly ^encrypted1, BigPoly ^plain2, BigPoly ^destination);
+                void MultiplyPlain(BigPolyArray ^encrypted, BigPoly ^plain, BigPolyArray ^destination);
 
                 /**
-                <summary>Multiplies an encrypted polynomial with a plain polynomial, and returns the result.</summary>
+                <summary>Multiplies a ciphertext with a plaintext, and returns the result.</summary>
 
                 <remarks>
-                Multiplies an encrypted polynomial with a plain polynomial, and returns the result. The plain polynomial must have a
+                <para>
+                Multiplies a ciphertext with a plaintext, and returns the result. The plaintext must have a
                 significant coefficient count smaller than the coefficient count specified by the encryption parameters, and with
                 coefficient values less-than the plain modulus (<see cref="EncryptionParameters::PlainModulus"/>).
+                </para>
+                <para>
+                Multiplying by a plaintext 0 is not allowed and will result in the library throwing an invalid
+                argument exception. The reason behind this design choice is that the result should
+                be a fresh encryption of 0, but creating fresh encryptions should not be something
+                this class does. Instead the user should separately handle the cases where the
+                plain multiplier is 0.
+                </para>
                 </remarks>
-                <param name="encrypted1">The first encrypted polynomial to multiply</param>
-                <param name="plain2">The second plain polynomial to multiply</param>
-                <exception cref="System::ArgumentException">if the encrypted1 polynomials are not valid for the encryption
-                parameters</exception>
-                <exception cref="System::ArgumentException">if the plain2 polynomial's significant coefficient count or coefficient
+                <param name="encrypted">The ciphertext to multiply</param>
+                <param name="plain">The plaintext to multiply</param>
+                <exception cref="System::ArgumentException">if the ciphertexts are not valid for the encryption parameters</exception>
+                <exception cref="System::ArgumentException">if the plain polynomial's significant coefficient count or coefficient
                 values are too large to represent with the encryption parameters</exception>
-                <exception cref="System::InvalidOperationException">If destination is an alias but needs to be resized</exception>
+                <exception cref="System::ArgumentException">if the plaintext multiplier is zero</exception>
+                <exception cref="System::ArgumentNullException">if encrypted or plain is null</exception>
                 */
-                BigPoly ^MultiplyPlain(BigPoly ^encrypted1, BigPoly ^plain2);
+                BigPolyArray ^MultiplyPlain(BigPolyArray ^encrypted, BigPoly ^plain);
 
                 /**
-                <summary>Multiplies a vector of encrypted polynomials together and stores the result in the destination
-                parameter.</summary>
+                <summary>Multiplies a list of ciphertexts together and stores the result in the destination parameter.</summary>
+                <param name="encrypteds">The list of ciphertexts to multiply</param>
+                <param name="destination">The ciphertext to overwrite with the multiplication result</param>
+                <exception cref="System::ArgumentException">if the encrypteds list is empty</exception>
+                <exception cref="System::ArgumentException">if the ciphertexts are not valid ciphertexts for the encryption parameters</exception>.
+                <exception cref="System::ArgumentNullException">if encrypteds or any of its elements is null</exception>
+                <exception cref="System::ArgumentNullException">if destination is null</exception>
+                */
+                void MultiplyMany(System::Collections::Generic::List<BigPolyArray^> ^encrypteds, BigPolyArray ^destination);
+
+                /**
+                <summary>Multiplies a list of ciphertexts together and returns the result.</summary>
+                <param name="encrypteds">The list of ciphertexts to multiply</param>
+                <exception cref="System::ArgumentException">if the encrypteds list is empty</exception>
+                <exception cref="System::ArgumentException">if the ciphertexts are not valid ciphertexts for the encryption parameters</exception>
+                <exception cref="System::ArgumentNullException">if encrypteds or any of its elements is null</exception>
+                */
+                BigPolyArray ^MultiplyMany(System::Collections::Generic::List<BigPolyArray^> ^encrypteds);
+
+                /**
+                <summary>Raises a ciphertext to the specified power and stores the result in the destination parameter.</summary>
                 <remarks>
-                Multiplies a vector of encrypted polynomials together and stores the result in the destination parameter. The
-                destination parameter is resized if and only if its coefficient count or coefficient bit count does not match the
-                encryption parameters.
+                <para>
+                Raises a ciphertext to the specified power and stores the result in the destination parameter.
+                </para>
+                <para>
+                Exponentiation to power 0 is not allowed and will result in the library throwing an invalid argument
+                exception. The reason behind this design choice is that the result should be a fresh encryption
+                of 1, but creating fresh encryptions should not be something this class does. Instead the user
+                should separately handle the cases where the exponent is 0.
+                </para>
                 </remarks>
-                <param name="encrypteds">The vector of encrypted polynomials to multiply</param>
-                <param name="destination">The polynomial to overwrite with the multiplication result</param>
-                <exception cref="System::ArgumentException">if the encrypteds vector is empty</exception>
-                <exception cref="System::ArgumentException">if the encrypted polynomials are not valid encrypted polynomials for the
-                encryption parameters</exception>
-                <exception cref="System::InvalidOperationException">If destination is an alias but needs to be resized</exception>
+                <param name="encrypted">The ciphertext to raise to a power</param>
+                <param name="exponent">The power to raise the ciphertext to</param>
+                <param name="destination">The ciphertext to overwrite with the exponentiation result</param>
+                <exception cref="System::ArgumentException">if the ciphertext is not valid for the encryption parameters</exception>
+                <exception cref="System::ArgumentException">if exponent is zero</exception>
+                <exception cref="System::ArgumentNullException">if encrypted or destination is null</exception>
                 */
-                void MultiplyMany(System::Collections::Generic::List<BigPoly^> ^encrypteds, BigPoly ^destination);
+                void Exponentiate(BigPolyArray ^encrypted, System::UInt64 exponent, BigPolyArray ^destination);
 
                 /**
-                <summary>Multiplies a vector of encrypted polynomials together and returns the result.</summary>
-                <param name="encrypteds">The vector of encrypted polynomials to multiply</param>
-                <exception cref="System::ArgumentException">if the encrypteds vector is empty</exception>
-                <exception cref="System::ArgumentException">if the encrypted polynomials are not valid encrypted polynomials for the
-                encryption parameters</exception>
-                */
-                BigPoly ^MultiplyMany(System::Collections::Generic::List<BigPoly^> ^encrypteds);
-
-                /**
-                <summary>Multiplies a vector of encrypted polynomials together without performing relinearization and stores the result in the destination
-                parameter.</summary>
+                <summary>Raises a ciphertext to the specified power and returns the result.</summary>
                 <remarks>
-                Multiplies a vector of encrypted polynomials together and stores the result in the destination parameter. The
-                destination parameter is resized if and only if its coefficient count or coefficient bit count does not match the
-                encryption parameters.
+                <para>
+                Raises a ciphertext to the specified power and returns the result.
+                </para>
+                <para>
+                Exponentiation to power 0 is not allowed and will result in the library throwing an invalid argument
+                exception. The reason behind this design choice is that the result should be a fresh encryption
+                of 1, but creating fresh encryptions should not be something this class does. Instead the user
+                should separately handle the cases where the exponent is 0.
+                </para>
                 </remarks>
-                <param name="encrypteds">The vector of encrypted polynomials to multiply</param>
-                <param name="destination">The polynomial to overwrite with the multiplication result</param>
-                <exception cref="System::ArgumentException">if the encrypteds vector is empty</exception>
-                <exception cref="System::ArgumentException">if the encrypted polynomials are not valid encrypted polynomials for the
-                encryption parameters</exception>
-                <exception cref="System::InvalidOperationException">If destination is an alias but needs to be resized</exception>
+                <param name="encrypted">The ciphertext to raise to a power</param>
+                <param name="exponent">The power to raise the ciphertext to</param>
+                <exception cref="System::ArgumentException">if the ciphertext is not valid for the encryption parameters</exception>
+                <exception cref="System::ArgumentException">if exponent is zero</exception>
+                <exception cref="System::ArgumentNullException">if encrypted is null</exception>
                 */
-                void MultiplyNoRelinMany(System::Collections::Generic::List<BigPoly^> ^encrypteds, BigPoly ^destination);
-
-                /**
-                <summary>Multiplies a vector of encrypted polynomials together without performing relinearization and returns the result.</summary>
-                <param name="encrypteds">The vector of encrypted polynomials to multiply</param>
-                <exception cref="System::ArgumentException">if the encrypteds vector is empty</exception>
-                <exception cref="System::ArgumentException">if the encrypted polynomials are not valid encrypted polynomials for the
-                encryption parameters</exception>
-                */
-                BigPoly ^MultiplyNoRelinMany(System::Collections::Generic::List<BigPoly^> ^encrypteds);
-
-                /**
-                <summary>Raises an encrypted polynomial to the specified power and stores the result in the destination
-                parameter.</summary>
-                <remarks>
-                Raises an encrypted polynomial to the specified power and stores the result in the destination parameter. The
-                destination parameter is resized if and only if its coefficient count or coefficient bit count does not match the
-                encryption parameters.
-                </remarks>
-                <param name="encrypted">The encrypted polynomial to raise to a power</param>
-                <param name="exponent">The power to raise the encrypted polynomial to</param>
-                <param name="destination">The polynomial to overwrite with the exponentiation result</param>
-                <exception cref="System::ArgumentException">if the encrypted polynomial is not valid for the encryption
-                parameters</exception>
-                <exception cref="System::InvalidOperationException">If destination is an alias but needs to be resized</exception>
-                */
-                void Exponentiate(BigPoly ^encrypted, System::UInt64 exponent, BigPoly ^destination);
-
-                /**
-                <summary>Raises an encrypted polynomial to the specified power and returns the result.</summary>
-                <param name="encrypted">The encrypted polynomial to raise to a power</param>
-                <param name="exponent">The power to raise the encrypted polynomial to</param>
-                <exception cref="System::ArgumentException">if the encrypted polynomial is not valid for the encryption
-                parameters</exception>
-                */
-                BigPoly ^Exponentiate(BigPoly ^encrypted, System::UInt64 exponent);
-
-                /**
-                <summary>Raises an encrypted polynomial to the specified power without performing relinearization and stores the result in the destination
-                parameter.</summary>
-                <remarks>
-                Raises an encrypted polynomial to the specified power and stores the result in the destination parameter. The
-                destination parameter is resized if and only if its coefficient count or coefficient bit count does not match the
-                encryption parameters.
-                </remarks>
-                <param name="encrypted">The encrypted polynomial to raise to a power</param>
-                <param name="exponent">The power to raise the encrypted polynomial to</param>
-                <param name="destination">The polynomial to overwrite with the exponentiation result</param>
-                <exception cref="System::ArgumentException">if the encrypted polynomial is not valid for the encryption
-                parameters</exception>
-                <exception cref="System::InvalidOperationException">If destination is an alias but needs to be resized</exception>
-                */
-                void ExponentiateNoRelin(BigPoly ^encrypted, System::UInt64 exponent, BigPoly ^destination);
-
-                /**
-                <summary>Raises an encrypted polynomial to the specified power without performing relinearization and returns the result.</summary>
-                <param name="encrypted">The encrypted polynomial to raise to a power</param>
-                <param name="exponent">The power to raise the encrypted polynomial to</param>
-                <exception cref="System::ArgumentException">if the encrypted polynomial is not valid for the encryption
-                parameters</exception>
-                */
-                BigPoly ^ExponentiateNoRelin(BigPoly ^encrypted, System::UInt64 exponent);
+                BigPolyArray ^Exponentiate(BigPolyArray ^encrypted, System::UInt64 exponent);
 
                 /**
                 <summary>Destroys the Evaluator.</summary>

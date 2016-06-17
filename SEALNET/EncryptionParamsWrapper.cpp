@@ -127,24 +127,6 @@ namespace Microsoft
                 parms_->decomposition_bit_count() = value;
             }
 
-            EncryptionMode EncryptionParameters::Mode::get()
-            {
-                if (parms_ == nullptr)
-                {
-                    throw gcnew ObjectDisposedException("EncryptionParameters is disposed");
-                }
-                return parms_->mode() == seal::TEST_MODE ? EncryptionMode::Test : EncryptionMode::Normal;
-            }
-
-            void EncryptionParameters::Mode::set(EncryptionMode value)
-            {
-                if (parms_ == nullptr)
-                {
-                    throw gcnew ObjectDisposedException("EncryptionParameters is disposed");
-                }
-                parms_->mode() = value == EncryptionMode::Test ? seal::TEST_MODE : seal::NORMAL_MODE;
-            }
-
             void EncryptionParameters::Save(Stream ^stream)
             {
                 if (parms_ == nullptr)

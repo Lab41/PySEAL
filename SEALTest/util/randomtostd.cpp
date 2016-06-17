@@ -18,7 +18,7 @@ namespace SEALTest
         public:
             TEST_METHOD(RandomToStandardGenerate)
             {
-                unique_ptr<UniformRandomGenerator> generator(UniformRandomGeneratorFactory::default_factory()->create(0));
+                unique_ptr<UniformRandomGenerator> generator(UniformRandomGeneratorFactory::default_factory()->create());
                 RandomToStandardAdapter rand(generator.get());
                 Assert::IsTrue(rand.generator() == generator.get());
                 Assert::AreEqual(static_cast<uint32_t>(0), rand.min());
