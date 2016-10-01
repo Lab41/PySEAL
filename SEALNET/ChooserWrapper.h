@@ -23,7 +23,7 @@ namespace Microsoft
 
             ref class ChooserEncryptor;
 
-            ref class BalancedEncoder;
+            ref class IntegerEncoder;
 
             /**
             <summary>Models ciphertexts for the automatic parameter selection module.</summary>
@@ -423,6 +423,22 @@ namespace Microsoft
                 <seealso>See SimulationEvaluator::Multiply() for the corresponding operation on <see cref="Simulation"/> objects.</seealso>
                 */
                 ChooserPoly ^Multiply(ChooserPoly ^operand1, ChooserPoly ^operand2);
+
+                /**
+                <summary>Performs an operation modeling Evaluator::Square() on ChooserPoly objects.</summary>
+                <remarks>
+                Performs an operation modeling Evaluator::Square() on <see cref="ChooserPoly"/> objects. This
+                operation creates a new ChooserPoly with updated bounds on the degree of the corresponding plaintext 
+                polynomial and on the absolute values of the coefficients based on the inputs, and sets the operation 
+                history accordingly.
+                </remarks>
+                <param name="operand">The ChooserPoly object to square</param>
+                <exception cref="System::ArgumentNullException">if operand is null</exception>
+                <exception cref="System::ArgumentException">if operand is not correctly initialized</exception>
+                <seealso>See Evaluator::Square() for the corresponding operation on ciphertexts.</seealso>
+                <seealso>See SimulationEvaluator::Square() for the corresponding operation on <see cref="Simulation"/> objects.</seealso>
+                */
+                ChooserPoly ^Square(ChooserPoly ^operand);
 
                 /**
                 <summary>Performs an operation modeling Evaluator::Relinearize() on ChooserPoly objects.</summary>
@@ -865,11 +881,11 @@ namespace Microsoft
             <summary>Constructs ChooserPoly objects representing encoded plaintexts.</summary>
             <remarks>
             <para>
-            Constructs <see cref="ChooserPoly"/> objects representing encoded plaintexts. ChooserPoly objects constructed in this way have null
-            operation history. They can be further used by <see cref="ChooserEncryptor"/>, or in the functions
-            ChooserEvaluator::MultiplyPlain(), ChooserEvaluator::AddPlain(), ChooserEvaluator::SubPlain() representing plaintext
-            operands. Only the balanced odd base encodings (those provided by <see cref="BalancedEncoder"/>) are supported by ChooserEncoder.
-            This class is a part of the automatic parameter selection module.
+            Constructs <see cref="ChooserPoly"/> objects representing encoded plaintexts. ChooserPoly objects constructed in 
+            this way have null operation history. They can be further used by <see cref="ChooserEncryptor"/>, or in the 
+            functions ChooserEvaluator::MultiplyPlain(), ChooserEvaluator::AddPlain(), ChooserEvaluator::SubPlain() 
+            representing plaintext operands. Only the integer encodings (those provided by <see cref="IntegerEncoder"/>) 
+            are supported by ChooserEncoder. This class is a part of the automatic parameter selection module.
             </para>
             </remarks>
             <seealso cref="ChooserPoly">See ChooserPoly for the object modeling encrypted/plaintext data for automatic parameter
@@ -877,7 +893,7 @@ namespace Microsoft
             <seealso cref="ChooserEvaluator">See ChooserEvaluator for manipulating instances of ChooserPoly.</seealso>
             <seealso cref="ChooserEncryptor">See ChooserEncryptor for modeling the behavior of encryption with ChooserPoly
             objects.</seealso>
-            <seealso cref="BalancedEncoder">See BalancedEncoder for the corresponding encoder for real data.</seealso>
+            <seealso cref="IntegerEncoder">See IntegerEncoder for the corresponding encoder for real data.</seealso>
             <seealso cref="Simulation">See Simulation for the class that handles the inherent noise growth estimates.</seealso>
             */
             public ref class ChooserEncoder
@@ -885,19 +901,19 @@ namespace Microsoft
             public:
                 /**
                 <summary>Creates a ChooserEncoder that can be used to create ChooserPoly objects modeling plaintext polynomials encoded
-                with <see cref="BalancedEncoder"/>, with base set to 3.</summary>
+                with <see cref="IntegerEncoder"/>, with base set to 2.</summary>
                 */
                 ChooserEncoder();
 
                 /**
                 <summary>Creates a ChooserEncoder that can be used to create ChooserPoly objects modeling plaintext polynomials encoded
-                with BalancedEncoder with the base given as argument.</summary>
+                with IntegerEncoder with the base given as argument.</summary>
                 <remarks>
                 Creates a ChooserEncoder that can be used to create <see cref="ChooserPoly"/> objects modeling plaintext polynomials encoded with
-                <see cref="BalancedEncoder"/>. The base is given by the user as a parameter, and it can be any odd integer at least 3.
+                <see cref="IntegerEncoder"/>. The base is given by the user as a parameter, and it can be any integer at least 2.
                 </remarks>
-                <param name="base">The base</param>
-                <exception cref="System::ArgumentException">if base is not an odd integer and at least 3</exception>
+                <param name="base">The base to be used for encoding (default value is 2)</param>
+                <exception cref="System::ArgumentException">if base is not an integer and at least 2</exception>
                 */
                 ChooserEncoder(System::UInt64 base);
 
@@ -915,11 +931,11 @@ namespace Microsoft
                 <summary>Encodes a number (represented by System::UInt64) into a ChooserPoly object.</summary>
                 <remarks>
                 Encodes a number (represented by System::UInt64) into a <see cref="ChooserPoly"/> object. This is done by first encoding it with
-                <see cref="BalancedEncoder"/> and then simply reading the number of coefficients and the maximal absolute value of the coefficients
+                <see cref="IntegerEncoder"/> and then simply reading the number of coefficients and the maximal absolute value of the coefficients
                 in the polynomial. In the returned ChooserPoly the computation history is set to null.
                 </remarks>
                 <param name="value">The non-negative integer to encode</param>
-                <seealso>See BalancedEncoder::Encode() for the corresponding function returning a real polynomial.</seealso>
+                <seealso>See IntegerEncoder::Encode() for the corresponding function returning a real polynomial.</seealso>
                 */
                 ChooserPoly ^Encode(System::UInt64 value);
 
@@ -927,12 +943,12 @@ namespace Microsoft
                 <summary>Encodes a number (represented by System::UInt64) into a ChooserPoly object given as an argument.</summary>
                 <remarks>
                 Encodes a number (represented by System::UInt64) into a <see cref="ChooserPoly"/> object given as an argument. This is done by first
-                encoding it with <see cref="BalancedEncoder"/> and then simply reading the number of coefficients and the maximal absolute value of
+                encoding it with <see cref="IntegerEncoder"/> and then simply reading the number of coefficients and the maximal absolute value of
                 the coefficients in the polynomial. In the output ChooserPoly the operation history is set to null.
                 </remarks>
                 <param name="value">The non-negative integer to encode</param>
                 <param name="destination">Reference to a ChooserPoly where the output will be stored</param>
-                <seealso>See BalancedEncoder::Encode() for the corresponding function returning a real polynomial.</seealso>
+                <seealso>See IntegerEncoder::Encode() for the corresponding function returning a real polynomial.</seealso>
                 */
                 void Encode(System::UInt64 value, ChooserPoly ^destination);
 
@@ -940,11 +956,11 @@ namespace Microsoft
                 <summary>Encodes a number (represented by System::Int64) into a ChooserPoly object.</summary>
                 <remarks>
                 Encodes a number (represented by System::Int64) into a <see cref="ChooserPoly"/> object. This is done by first encoding it with
-                <see cref="BalancedEncoder"/> and then simply reading the number of coefficients and the maximal absolute value of the coefficients
+                <see cref="IntegerEncoder"/> and then simply reading the number of coefficients and the maximal absolute value of the coefficients
                 in the polynomial. In the returned ChooserPoly the computation history is set to null.
                 </remarks>
                 <param name="value">The integer to encode</param>
-                <seealso>See BalancedEncoder::Encode() for the corresponding function returning a real polynomial.</seealso>
+                <seealso>See IntegerEncoder::Encode() for the corresponding function returning a real polynomial.</seealso>
                 */
                 ChooserPoly ^Encode(System::Int64 value);
 
@@ -952,12 +968,12 @@ namespace Microsoft
                 <summary>Encodes a number (represented by System::Int64) into a ChooserPoly object given as an argument.</summary>
                 <remarks>
                 Encodes a number (represented by System::Int64) into a <see cref="ChooserPoly"/> object given as an argument. This is done by first
-                encoding it with <see cref="BalancedEncoder"/> and then simply reading the number of coefficients and the maximal absolute value of
+                encoding it with <see cref="IntegerEncoder"/> and then simply reading the number of coefficients and the maximal absolute value of
                 the coefficients in the polynomial. In the output ChooserPoly the operation history is set to null.
                 </remarks>
                 <param name="value">The integer to encode</param>
                 <param name="destination">Reference to a ChooserPoly where the output will be stored</param>
-                <seealso>See BalancedEncoder::Encode() for the corresponding function returning a real polynomial.</seealso>
+                <seealso>See IntegerEncoder::Encode() for the corresponding function returning a real polynomial.</seealso>
                 */
                 void Encode(System::Int64 value, ChooserPoly ^destination);
 
@@ -965,12 +981,12 @@ namespace Microsoft
                 <summary>Encodes a number (represented by BigUInt) into a ChooserPoly object.</summary>
                 <remarks>
                 Encodes a number (represented by <see cref="BigUInt"/>) into a <see cref="ChooserPoly"/> object. This is done by first encoding it with
-                <see cref="BalancedEncoder"/> and then simply reading the number of coefficients and the maximal absolute value of the coefficients
+                <see cref="IntegerEncoder"/> and then simply reading the number of coefficients and the maximal absolute value of the coefficients
                 in the polynomial. In the returned ChooserPoly the computation history is set to null.
                 </remarks>
                 <param name="value">The non-negative integer to encode</param>
                 <exception cref="System::ArgumentNullException">if value is null</exception>
-                <seealso>See BalancedEncoder::Encode() for the corresponding function returning a real polynomial.</seealso>
+                <seealso>See IntegerEncoder::Encode() for the corresponding function returning a real polynomial.</seealso>
                 */
                 ChooserPoly ^Encode(BigUInt ^value);
 
@@ -978,13 +994,13 @@ namespace Microsoft
                 <summary>Encodes a number (represented by BigUInt) into a ChooserPoly object given as an argument.</summary>
                 <remarks>
                 Encodes a number (represented by <see cref="BigUInt"/>) into a <see cref="ChooserPoly"/> object given as an argument. This is done by first
-                encoding it with <see cref="BalancedEncoder"/> and then simply reading the number of coefficients and the maximal absolute value of
+                encoding it with <see cref="IntegerEncoder"/> and then simply reading the number of coefficients and the maximal absolute value of
                 the coefficients in the polynomial. In the output ChooserPoly the operation history is set to null.
                 </remarks>
                 <param name="value">The non-negative integer to encode</param>
                 <param name="destination">Reference to a ChooserPoly where the output will be stored</param>
                 <exception cref="System::ArgumentNullException">if value is null</exception>
-                <seealso>See BalancedEncoder::Encode() for the corresponding function returning a real polynomial.</seealso>
+                <seealso>See IntegerEncoder::Encode() for the corresponding function returning a real polynomial.</seealso>
                 */
                 void Encode(BigUInt ^value, ChooserPoly ^destination);
 
@@ -992,11 +1008,11 @@ namespace Microsoft
                 <summary>Encodes a number (represented by System::Int32) into a ChooserPoly object.</summary>
                 <remarks>
                 Encodes a number (represented by System::Int32) into a <see cref="ChooserPoly"/> object. This is done by first encoding it with
-                <see cref="BalancedEncoder"/> and then simply reading the number of coefficients and the maximal absolute value of the coefficients
+                <see cref="IntegerEncoder"/> and then simply reading the number of coefficients and the maximal absolute value of the coefficients
                 in the polynomial. In the returned ChooserPoly the computation history is set to null.
                 </remarks>
                 <param name="value">The integer to encode</param>
-                <seealso>See BalancedEncoder::Encode() for the corresponding function returning a real polynomial.</seealso>
+                <seealso>See IntegerEncoder::Encode() for the corresponding function returning a real polynomial.</seealso>
                 */
                 ChooserPoly ^Encode(System::Int32 value);
 
@@ -1004,11 +1020,11 @@ namespace Microsoft
                 <summary>Encodes a number (represented by System::UInt32) into a ChooserPoly object.</summary>
                 <remarks>
                 Encodes a number (represented by System::UInt32) into a <see cref="ChooserPoly"/> object. This is done by first encoding it with
-                <see cref="BalancedEncoder"/> and then simply reading the number of coefficients and the maximal absolute value of the coefficients
+                <see cref="IntegerEncoder"/> and then simply reading the number of coefficients and the maximal absolute value of the coefficients
                 in the polynomial. In the returned ChooserPoly the computation history is set to null.
                 </remarks>
                 <param name="value">The non-negative integer to encode</param>
-                <seealso>See BalancedEncoder::Encode() for the corresponding function returning a real polynomial.</seealso>
+                <seealso>See IntegerEncoder::Encode() for the corresponding function returning a real polynomial.</seealso>
                 */
                 ChooserPoly ^Encode(System::UInt32 value);
 

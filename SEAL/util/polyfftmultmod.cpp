@@ -1,6 +1,11 @@
 #include "util/uintcore.h"
+#include "util/uintarith.h"
 #include "util/uintarithmod.h"
 #include "util/polycore.h"
+#include "util/polyfftmult.h"
+#include "util/ntt.h"
+#include "util/polyarithmod.h"
+#include "util/polyarith.h"
 
 using namespace std;
 
@@ -8,223 +13,263 @@ namespace seal
 {
     namespace util
     {
-        namespace
-        {
-            void do_fft_base(const uint64_t *operand1, const uint64_t *operand2, int coeff_count_power, const Modulus &modulus, uint64_t *result, MemoryPool &pool, uint64_t *alloc_ptr = nullptr)
+        // Compute the multiplication of two polynomials modulo x^n + 1 (and modulo q)
+        // using the Nussbaumer algorithm. The modulo q step is done after the multiplication.
+        void nussbaumer_multiply_poly_poly_coeffmod(const uint64_t *operand1, const uint64_t *operand2, int coeff_count_power, const Modulus &modulus, uint64_t *result, MemoryPool &pool)
+        { 
+            int coeff_count = 1 << coeff_count_power; 
+            int coeff_uint64_count = modulus.uint64_count(); 
+            int coeff_bit_count = modulus.significant_bit_count(); 
+            int product_coeff_uint64_count = divide_round_up(2 * coeff_bit_count + coeff_count_power + 1, bits_per_uint64); 
+            int sum_bit_count = 1 + coeff_bit_count + coeff_count_power;
+            int sum_uint64_count = divide_round_up(sum_bit_count, bits_per_uint64); 
+
+            Pointer intermediate(allocate_poly(coeff_count, product_coeff_uint64_count, pool));
+            nussbaumer_multiply_poly_poly(operand1, operand2, coeff_count_power, coeff_uint64_count, sum_uint64_count, product_coeff_uint64_count, intermediate.get(), pool);
+
+            Pointer big_alloc(allocate_uint(3 * product_coeff_uint64_count, pool));
+            Pointer temp(allocate_uint(product_coeff_uint64_count, pool));
+
+            // We need to deal with the negative coefficients. 
+            uint64_t *poly_coeff = intermediate.get(); 
+            uint64_t* result_coeff = result;
+
+            for (int i = 0; i < coeff_count; ++i)
             {
-                // alloc_ptr should point to 8 x modulus.uint64_count() memory
-
-                // Allocate temporary storage for FFT.
-                int coeff_uint64_count = modulus.uint64_count();
-
-                // To reduce the number of allocations, we allocate one big block of memory at once.
-                // Set big_alloc to point to either an existing allocation given as parameter,
-                // or else to a new allocation from the memory pool.
-                Pointer big_alloc_anchor;
-                uint64_t *big_alloc = alloc_ptr;
-                if (alloc_ptr == nullptr)
+                bool coeff_is_negative = is_high_bit_set_uint(poly_coeff, product_coeff_uint64_count);
+                if (coeff_is_negative)
                 {
-                    big_alloc_anchor = allocate_uint(coeff_uint64_count + coeff_uint64_count + 2 * coeff_uint64_count + 4 * coeff_uint64_count, pool);
-                    big_alloc = big_alloc_anchor.get();
+                    negate_uint(poly_coeff, product_coeff_uint64_count, temp.get());
+                }
+                else
+                {
+                    set_uint_uint(poly_coeff, product_coeff_uint64_count, temp.get());
                 }
 
-                uint64_t *a = big_alloc;
-                uint64_t *b = a + coeff_uint64_count;
-                uint64_t *t = b + coeff_uint64_count; // Twice as large to allow for multiplying in-place.
-                uint64_t *fast_alloc = t + 2 * coeff_uint64_count; // Will be passed all the way down to modulo_uint_inplace
-
-                const uint64_t *modulusptr = modulus.get();
-                int coeff_count = 1 << coeff_count_power;
-                for (int i = 0; i < coeff_count; ++i)
+                // Perform the modular reduction and reduce size. 
+                modulo_uint(temp.get(), product_coeff_uint64_count, modulus, result_coeff, pool, big_alloc.get());
+                if (coeff_is_negative)
                 {
-                    set_zero_uint(coeff_uint64_count, a);
-                    set_zero_uint(coeff_uint64_count, b);
-                    for (int j = 0; j <= i; ++j)
-                    {
-                        multiply_uint_uint_mod_inplace(get_poly_coeff(operand1, j, coeff_uint64_count), get_poly_coeff(operand2, i - j, coeff_uint64_count), modulus, t, pool, fast_alloc);
-                        add_uint_uint_mod(a, t, modulusptr, coeff_uint64_count, a);
-                    }
-                    for (int j = i + 1; j < coeff_count; ++j)
-                    {
-                        multiply_uint_uint_mod_inplace(get_poly_coeff(operand1, j, coeff_uint64_count), get_poly_coeff(operand2, coeff_count - (j - i), coeff_uint64_count), modulus, t, pool, fast_alloc);
-                        add_uint_uint_mod(b, t, modulusptr, coeff_uint64_count, b);
-                    }
-                    sub_uint_uint_mod(a, b, modulusptr, coeff_uint64_count, get_poly_coeff(result, i, coeff_uint64_count));
-                }
-            }
-
-            void do_fft(const uint64_t *operand1, const uint64_t *operand2, int coeff_count_power, const Modulus &modulus, uint64_t *result, MemoryPool &pool, uint64_t *fft_base_alloc_ptr = nullptr)
-            {
-                // fft_base_alloc_ptr should point to 8 x modulus.uint64_count() memory
-
-                const int USE_BASE_CASE = 16;
-
-                // Handle base case differently.
-                int coeff_count = 1 << coeff_count_power;
-                if (coeff_count <= USE_BASE_CASE)
-                {
-                    do_fft_base(operand1, operand2, coeff_count_power, modulus, result, pool, fft_base_alloc_ptr);
-                    return;
+                    negate_uint_mod(result_coeff, modulus.get(), coeff_uint64_count, result_coeff);
                 }
 
-                // Allocate temporary storage for FFT.
-                int m = 1 << (coeff_count_power / 2);
-                int r = 1 << ((coeff_count_power + 1) / 2);
-                int coeff_uint64_count = modulus.uint64_count();
-
-                // To reduce the number of allocations, we allocate one big block of memory at once.
-                // Set big_alloc to point to either an existing allocation given as parameter,
-                // or else to a new allocation from the memory pool.
-                Pointer big_alloc_anchor = allocate_poly(2 * coeff_count + 2 * coeff_count + 2 * coeff_count + r, coeff_uint64_count, pool);
-                uint64_t *big_alloc = big_alloc_anchor.get();
-
-                uint64_t *x = big_alloc;
-                uint64_t *y = get_poly_coeff(x, 2 * coeff_count, coeff_uint64_count);
-                uint64_t *z = get_poly_coeff(y, 2 * coeff_count, coeff_uint64_count);
-                uint64_t *temp_poly = get_poly_coeff(z, 2 * coeff_count, coeff_uint64_count);
-
-                // Populate x and y with butterfly pattern.
-                const uint64_t *operand1_coeff;
-                const uint64_t *operand2_coeff;
-                for (int indexM = 0; indexM < m; ++indexM)
-                {
-                    for (int indexR = 0; indexR < r; ++indexR)
-                    {
-                        operand1_coeff = get_poly_coeff(operand1, indexR * m + indexM, coeff_uint64_count);
-                        set_uint_uint(operand1_coeff, coeff_uint64_count, get_poly_coeff(x, indexM * r + indexR, coeff_uint64_count));
-                        set_uint_uint(operand1_coeff, coeff_uint64_count, get_poly_coeff(x, (indexM + m) * r + indexR, coeff_uint64_count));
-                        operand2_coeff = get_poly_coeff(operand2, indexR * m + indexM, coeff_uint64_count);
-                        set_uint_uint(operand2_coeff, coeff_uint64_count, get_poly_coeff(y, indexM * r + indexR, coeff_uint64_count));
-                        set_uint_uint(operand2_coeff, coeff_uint64_count, get_poly_coeff(y, (indexM + m) * r + indexR, coeff_uint64_count));
-                    }
-                }
-
-                // Do first stage of FFT.
-                const uint64_t *modulusptr = modulus.get();
-                int outer_start = coeff_count_power / 2 - 1;
-                for (int outer_index = outer_start; outer_index >= 0; --outer_index)
-                {
-                    int outer_remaining = coeff_count_power / 2 - outer_index;
-                    int middle_end = 1 << outer_remaining;
-                    int inner_end = 1 << outer_index;
-                    for (int middle_index = 0; middle_index < middle_end; ++middle_index)
-                    {
-                        int sr = static_cast<int>((reverse_bits(static_cast<uint32_t>(middle_index)) >> (32 - outer_remaining)) << outer_index);
-                        int s = middle_index << (outer_index + 1);
-                        int k = (r / m) * sr;
-                        for (int inner_index = 0; inner_index < inner_end; ++inner_index)
-                        {
-                            int i = s + inner_index;
-                            int l = i + inner_end;
-                            for (int a = k; a < r; ++a)
-                            {
-                                set_uint_uint(get_poly_coeff(x, l * r + a - k, coeff_uint64_count), coeff_uint64_count, get_poly_coeff(temp_poly, a, coeff_uint64_count));
-                            }
-                            for (int a = 0; a < k; ++a)
-                            {
-                                negate_uint_mod(get_poly_coeff(x, (l + 1) * r + a - k, coeff_uint64_count), modulusptr, coeff_uint64_count, get_poly_coeff(temp_poly, a, coeff_uint64_count));
-                            }
-                            for (int a = 0; a < r; ++a)
-                            {
-                                sub_uint_uint_mod(get_poly_coeff(x, i * r + a, coeff_uint64_count), get_poly_coeff(temp_poly, a, coeff_uint64_count), modulusptr, coeff_uint64_count, get_poly_coeff(x, l * r + a, coeff_uint64_count));
-                                add_uint_uint_mod(get_poly_coeff(x, i * r + a, coeff_uint64_count), get_poly_coeff(temp_poly, a, coeff_uint64_count), modulusptr, coeff_uint64_count, get_poly_coeff(x, i * r + a, coeff_uint64_count));
-                            }
-                            for (int a = k; a < r; ++a)
-                            {
-                                set_uint_uint(get_poly_coeff(y, l * r + a - k, coeff_uint64_count), coeff_uint64_count, get_poly_coeff(temp_poly, a, coeff_uint64_count));
-                            }
-                            for (int a = 0; a < k; ++a)
-                            {
-                                negate_uint_mod(get_poly_coeff(y, (l + 1) * r + a - k, coeff_uint64_count), modulusptr, coeff_uint64_count, get_poly_coeff(temp_poly, a, coeff_uint64_count));
-                            }
-                            for (int a = 0; a < r; ++a)
-                            {
-                                sub_uint_uint_mod(get_poly_coeff(y, i * r + a, coeff_uint64_count), get_poly_coeff(temp_poly, a, coeff_uint64_count), modulusptr, coeff_uint64_count, get_poly_coeff(y, l * r + a, coeff_uint64_count));
-                                add_uint_uint_mod(get_poly_coeff(y, i * r + a, coeff_uint64_count), get_poly_coeff(temp_poly, a, coeff_uint64_count), modulusptr, coeff_uint64_count, get_poly_coeff(y, i * r + a, coeff_uint64_count));
-                            }
-                        }
-                    }
-                }
-
-                // Recursively do FFT.
-                int rec_coeff_count_power = (coeff_count_power + 1) / 2;
-                for (int i = 0; i < 2 * m; ++i)
-                {
-                    do_fft(get_poly_coeff(x, i * r, coeff_uint64_count), get_poly_coeff(y, i * r, coeff_uint64_count), rec_coeff_count_power, modulus, get_poly_coeff(z, i * r, coeff_uint64_count), pool, fft_base_alloc_ptr);
-                }
-
-                // Do second stage of FFT.
-                int outer_end = coeff_count_power / 2;
-                for (int outer_index = 0; outer_index <= outer_end; ++outer_index)
-                {
-                    int outer_remaining = coeff_count_power / 2 - outer_index;
-                    int middle_end = 1 << outer_remaining;
-                    int inner_end = 1 << outer_index;
-                    for (int middle_index = 0; middle_index < middle_end; ++middle_index)
-                    {
-                        int sr = static_cast<int>((reverse_bits(static_cast<uint32_t>(middle_index)) >> (32 - outer_remaining)) << outer_index);
-                        int s = middle_index << (outer_index + 1);
-                        int k = (r / m) * sr;
-                        for (int inner_index = 0; inner_index < inner_end; ++inner_index)
-                        {
-                            int i = s + inner_index;
-                            int l = i + inner_end;
-                            for (int a = 0; a < r; ++a)
-                            {
-                                sub_uint_uint_mod(get_poly_coeff(z, i * r + a, coeff_uint64_count), get_poly_coeff(z, l * r + a, coeff_uint64_count), modulusptr, coeff_uint64_count, get_poly_coeff(temp_poly, a, coeff_uint64_count));
-                                div2_uint_mod(get_poly_coeff(temp_poly, a, coeff_uint64_count), modulusptr, coeff_uint64_count, get_poly_coeff(temp_poly, a, coeff_uint64_count));
-                                add_uint_uint_mod(get_poly_coeff(z, i * r + a, coeff_uint64_count), get_poly_coeff(z, l * r + a, coeff_uint64_count), modulusptr, coeff_uint64_count, get_poly_coeff(z, i * r + a, coeff_uint64_count));
-                                div2_uint_mod(get_poly_coeff(z, i * r + a, coeff_uint64_count), modulusptr, coeff_uint64_count, get_poly_coeff(z, i * r + a, coeff_uint64_count));
-                            }
-
-                            int rsubk = r - k;
-                            for (int a = 0; a < rsubk; ++a)
-                            {
-                                set_uint_uint(get_poly_coeff(temp_poly, a + k, coeff_uint64_count), coeff_uint64_count, get_poly_coeff(z, l * r + a, coeff_uint64_count));
-                            }
-                            for (int a = rsubk; a < r; ++a)
-                            {
-                                negate_uint_mod(get_poly_coeff(temp_poly, a - rsubk, coeff_uint64_count), modulusptr, coeff_uint64_count, get_poly_coeff(z, l * r + a, coeff_uint64_count));
-                            }
-                        }
-                    }
-                }
-
-                // Copy to result.
-                for (int indexM = 0; indexM < m; ++indexM)
-                {
-                    sub_uint_uint_mod(get_poly_coeff(z, indexM * r, coeff_uint64_count), get_poly_coeff(z, (m + indexM + 1) * r - 1, coeff_uint64_count), modulusptr, coeff_uint64_count, get_poly_coeff(result, indexM, coeff_uint64_count));
-                    for (int indexR = 1; indexR < r; ++indexR)
-                    {
-                        add_uint_uint_mod(get_poly_coeff(z, indexM * r + indexR, coeff_uint64_count), get_poly_coeff(z, (m + indexM) * r + indexR - 1, coeff_uint64_count), modulusptr, coeff_uint64_count, get_poly_coeff(result, indexR * m + indexM, coeff_uint64_count));
-                    }
-                }
+                poly_coeff += product_coeff_uint64_count;
+                result_coeff += coeff_uint64_count;
             }
         }
 
-        void fftmultiply_poly_poly_polymod_coeffmod(const uint64_t *operand1, const uint64_t *operand2, int coeff_count_power, const Modulus &modulus, uint64_t *result, MemoryPool &pool)
+        void ntt_multiply_poly_poly(const uint64_t *operand1, const uint64_t *operand2, const NTTTables &tables, uint64_t *result, MemoryPool &pool)
+        {
+            Pointer copy_operand1(allocate_poly(tables.coeff_count(), tables.coeff_uint64_count(), pool)); 
+            set_poly_poly(operand1, tables.coeff_count(), tables.coeff_uint64_count(), copy_operand1.get()); 
+            Pointer copy_operand2(allocate_poly(tables.coeff_count(), tables.coeff_uint64_count(), pool));
+            set_poly_poly(operand2, tables.coeff_count(), tables.coeff_uint64_count(), copy_operand2.get());
+            ntt_negacyclic_harvey(copy_operand1.get(), tables, pool); 
+            ntt_negacyclic_harvey(copy_operand2.get(), tables, pool); 
+            dyadic_product_coeffmod(copy_operand1.get(), copy_operand2.get(), tables.coeff_count(), tables.modulus(), result, pool); 
+            inverse_ntt_negacyclic_harvey(result, tables, pool); 
+        }
+
+        /*
+        Performs NTT multiply assuming one of the operands (operand2) is already transformed to NTT domain. 
+        */
+        void ntt_multiply_poly_nttpoly(const uint64_t *operand1, const uint64_t *operand2, const NTTTables &tables, uint64_t *result, MemoryPool &pool)
+        {
+            Pointer copy_operand1(allocate_poly(tables.coeff_count(), tables.coeff_uint64_count(), pool));
+            set_poly_poly(operand1, tables.coeff_count(), tables.coeff_uint64_count(), copy_operand1.get());
+            ntt_negacyclic_harvey(copy_operand1.get(), tables, pool);
+            dyadic_product_coeffmod(copy_operand1.get(), operand2, tables.coeff_count(), tables.modulus(), result, pool);
+            inverse_ntt_negacyclic_harvey(result, tables, pool);
+        }
+
+        /*
+        Perform NTT multiply (a*b, a*c) when b, c are already in NTT domain. 
+        */
+        void ntt_double_multiply_poly_nttpoly(const uint64_t *operand1, const uint64_t *operand2, const uint64_t *operand3,  const NTTTables &tables, uint64_t *result1, uint64_t *result2,  MemoryPool &pool)
+        {
+            Pointer copy_operand1(allocate_poly(tables.coeff_count(), tables.coeff_uint64_count(), pool));
+            set_poly_poly(operand1, tables.coeff_count(), tables.coeff_uint64_count(), copy_operand1.get());
+            ntt_negacyclic_harvey(copy_operand1.get(), tables, pool);
+            dyadic_product_coeffmod(copy_operand1.get(), operand2, tables.coeff_count(), tables.modulus(), result1, pool);
+            dyadic_product_coeffmod(copy_operand1.get(), operand3, tables.coeff_count(), tables.modulus(), result2, pool);
+            inverse_ntt_negacyclic_harvey(result1, tables, pool);
+            inverse_ntt_negacyclic_harvey(result2, tables, pool);
+        }
+
+        // Perform the dot product of two bigpolyarrays array1 and array2, assuming array2 is already transformed into NTT form
+        void ntt_dot_product_bigpolyarray_nttbigpolyarray(const uint64_t *array1, const uint64_t *array2, int count, int array_poly_uint64_count, const NTTTables &tables, uint64_t *result, MemoryPool &pool)
         {
 #ifdef _DEBUG
-            if (operand1 == nullptr)
+            if (array1 == nullptr)
             {
-                throw invalid_argument("operand1");
+                throw invalid_argument("array1");
             }
-            if (operand2 == nullptr)
+            if (array2 == nullptr)
             {
-                throw invalid_argument("operand2");
-            }
-            if (coeff_count_power <= 0)
-            {
-                throw invalid_argument("coeff_count_power");
+                throw invalid_argument("array2");
             }
             if (result == nullptr)
             {
                 throw invalid_argument("result");
             }
+            if (count < 1)
+            {
+                throw invalid_argument("count");
+            }
+            if (array_poly_uint64_count < 1)
+            {
+                throw invalid_argument("array_poly_uint64_count");
+            }
+            if (!tables.is_generated())
+            {
+                throw invalid_argument("tables");
+            }
 #endif
-            int coeff_uint64_count = modulus.uint64_count();
-            Pointer fft_base_alloc(allocate_uint(8 * coeff_uint64_count, pool));
-            do_fft(operand1, operand2, coeff_count_power, modulus, result, pool, fft_base_alloc.get());
+            int coeff_count = tables.coeff_count();
+            int coeff_bit_count = tables.modulus().significant_bit_count();
+            int coeff_uint64_count = divide_round_up(coeff_bit_count, bits_per_uint64);
+
+            // Initialize pointers for multiplication
+            const uint64_t *current_array1 = array1;
+            const uint64_t *current_array2 = array2;
+
+            // Create copies
+            Pointer temp(allocate_poly(coeff_count, coeff_uint64_count, pool));
+            Pointer copy_operand1(allocate_poly(coeff_count, coeff_uint64_count, pool));
+            Pointer ntt_result(allocate_zero_poly(coeff_count, coeff_uint64_count, pool));
+
+            for (int i = 0; i < count; ++i)
+            {
+                // Perform the dyadic product. 
+                set_poly_poly(current_array1, coeff_count, coeff_uint64_count, copy_operand1.get());
+                ntt_negacyclic_harvey(copy_operand1.get(), tables, pool);
+                dyadic_product_coeffmod(copy_operand1.get(), current_array2, coeff_count, tables.modulus(), temp.get(), pool);
+                add_poly_poly_coeffmod(ntt_result.get(), temp.get(), coeff_count, tables.modulus().get(), coeff_uint64_count, ntt_result.get());
+                
+                current_array1 += array_poly_uint64_count;
+                current_array2 += array_poly_uint64_count;
+            }
+
+            // Perform inverse NTT
+            inverse_ntt_negacyclic_harvey(ntt_result.get(), tables, pool);
+            set_poly_poly(ntt_result.get(), coeff_count, coeff_uint64_count, result);
+        }
+
+        // Perform two dot products of bigpoly arrays <array1 , array2> and <array1 , array3>, assuming array2 and array3 are already transformed into NTT form
+        void ntt_double_dot_product_bigpolyarray_nttbigpolyarrays(const uint64_t *array1, const uint64_t *array2, const uint64_t *array3, int count, int array_poly_uint64_count, const NTTTables &tables, uint64_t *result1, uint64_t *result2, MemoryPool &pool)
+        {
+#ifdef _DEBUG
+            if (array1 == nullptr)
+            {
+                throw invalid_argument("array1");
+            }
+            if (array2 == nullptr)
+            {
+                throw invalid_argument("array2");
+            }
+            if (array3 == nullptr)
+            {
+                throw invalid_argument("array3");
+            }
+            if (result1 == nullptr)
+            {
+                throw invalid_argument("result1");
+            }
+            if (result2 == nullptr)
+            {
+                throw invalid_argument("result2");
+            }
+            if (count < 1)
+            {
+                throw invalid_argument("count");
+            }
+            if (array_poly_uint64_count < 1)
+            {
+                throw invalid_argument("array_poly_uint64_count");
+            }
+            if (!tables.is_generated())
+            {
+                throw invalid_argument("tables");
+            }
+#endif
+            int coeff_count = tables.coeff_count();
+            int coeff_bit_count = tables.modulus().significant_bit_count();
+            int coeff_uint64_count = divide_round_up(coeff_bit_count, bits_per_uint64);
+
+            // Initialize pointers for multiplication
+            const uint64_t *current_array1 = array1;
+            const uint64_t *current_array2 = array2;
+            const uint64_t *current_array3 = array3;
+
+            // Create copies
+            Pointer temp(allocate_poly(coeff_count, coeff_uint64_count, pool));
+            Pointer copy_operand1(allocate_poly(coeff_count, coeff_uint64_count, pool));
+            Pointer ntt_result1(allocate_zero_poly(coeff_count, coeff_uint64_count, pool));
+            Pointer ntt_result2(allocate_zero_poly(coeff_count, coeff_uint64_count, pool));
+
+            for (int i = 0; i < count; ++i)
+            {
+                // Perform the dyadic product. 
+                set_poly_poly(current_array1, coeff_count, coeff_uint64_count, copy_operand1.get());
+                ntt_negacyclic_harvey(copy_operand1.get(), tables, pool);
+                dyadic_product_coeffmod(copy_operand1.get(), current_array2, coeff_count, tables.modulus(), temp.get(), pool);
+                add_poly_poly_coeffmod(ntt_result1.get(), temp.get(), coeff_count, tables.modulus().get(), coeff_uint64_count, ntt_result1.get());
+                dyadic_product_coeffmod(copy_operand1.get(), current_array3, coeff_count, tables.modulus(), temp.get(), pool);
+                add_poly_poly_coeffmod(ntt_result2.get(), temp.get(), coeff_count, tables.modulus().get(), coeff_uint64_count, ntt_result2.get());
+                current_array1 += array_poly_uint64_count;
+                current_array2 += array_poly_uint64_count;
+                current_array3 += array_poly_uint64_count;
+            }
+
+            // Perform inverse NTT
+            inverse_ntt_negacyclic_harvey(ntt_result1.get(), tables, pool);
+            inverse_ntt_negacyclic_harvey(ntt_result2.get(), tables, pool);
+            set_poly_poly(ntt_result1.get(), coeff_count, coeff_uint64_count, result1);
+            set_poly_poly(ntt_result2.get(), coeff_count, coeff_uint64_count, result2);
+        }
+
+        void nussbaumer_dot_product_bigpolyarray_coeffmod(const uint64_t *array1, const uint64_t *array2, int count,
+            const PolyModulus &poly_modulus, const Modulus &modulus, uint64_t *result, MemoryPool &pool)
+        {
+            // Check validity of inputs
+#ifdef _DEBUG
+            if (array1 == nullptr)
+            {
+                throw invalid_argument("array1");
+            }
+            if (array2 == nullptr)
+            {
+                throw invalid_argument("array2");
+            }
+            if (result == nullptr)
+            {
+                throw invalid_argument("result");
+            }
+            if (count < 1)
+            {
+                throw invalid_argument("count");
+            }
+#endif
+            // Calculate pointer increment
+            int coeff_count = poly_modulus.coeff_count();
+            int coeff_bit_count = modulus.significant_bit_count();
+            int coeff_uint64_count = divide_round_up(coeff_bit_count, bits_per_uint64);
+            int poly_ptr_increment = coeff_count * coeff_uint64_count;
+
+            set_zero_poly(coeff_count, coeff_uint64_count, result);
+
+            // initialize pointers for multiplication
+            const uint64_t *current_array1 = array1;
+            const uint64_t *current_array2 = array2;
+
+            Pointer temp(allocate_poly(coeff_count, coeff_uint64_count, pool));
+            for (int i = 0; i < count; ++i)
+            {
+                nussbaumer_multiply_poly_poly_coeffmod(current_array1, current_array2, poly_modulus.coeff_count_power_of_two(), modulus, temp.get(), pool);
+                add_poly_poly_coeffmod(result, temp.get(), coeff_count, modulus.get(), coeff_uint64_count, result);
+                current_array1 += poly_ptr_increment;
+                current_array2 += poly_ptr_increment;
+            }
         }
     }
 }

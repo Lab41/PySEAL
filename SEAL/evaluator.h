@@ -1,11 +1,13 @@
-#ifndef SEAL_EVALUATOR_H
-#define SEAL_EVALUATOR_H
+#pragma once
 
 #include <vector>
 #include "encryptionparams.h"
 #include "evaluationkeys.h"
+#include "util/mempool.h"
 #include "util/modulus.h"
 #include "util/polymodulus.h"
+#include "util/ntt.h"
+#include "util/crt.h"
 
 namespace seal
 {
@@ -187,6 +189,28 @@ namespace seal
         }
 
         /**
+        Squares a ciphertext and returns the result.
+
+        @param[in] encrypted The ciphertext to square
+        @throws std::invalid_argument if the ciphertexts are not valid for the encryption parameters
+        */
+        BigPolyArray square(const BigPolyArray &encrypted)
+        {
+            BigPolyArray result;
+            square(encrypted, result);
+            return result;
+        }
+        
+        /**
+        Squares a ciphertext and stores the result in the destination parameter.
+
+        @param[in] encrypted The ciphertext to square
+        @param[out] destination The ciphertext to overwrite with the result
+        @throws std::invalid_argument if the ciphertexts are not valid for the encryption parameters
+        */
+        void square(const BigPolyArray &encrypted, BigPolyArray &destination);
+
+        /**
         Relinearizes a ciphertext and stores the result in the destination parameter.
 
         @param[in] encrypted The ciphertext to relinearize
@@ -215,7 +239,8 @@ namespace seal
         }
 
         /**
-        Multiplies a vector of ciphertexts together and returns the result.
+        Multiplies a vector of ciphertexts together and returns the result. Relinearization is performed after 
+        every multiplication, so enough encryption keys must have been given to the constructor of the Evaluator.
 
         @param[in] encrypteds The vector of ciphertexts to multiply
         @throws std::invalid_argument if the encrypteds vector is empty
@@ -225,6 +250,8 @@ namespace seal
 
         /**
         Multiplies a vector of ciphertexts together and stores the result in the destination parameter. 
+        Relinearization is performed after every multiplication, so enough encryption keys must have been given
+        to the constructor of the Evaluator.
 
         @param[in] encrypteds The vector of ciphertexts to multiply
         @param[out] destination The ciphertext to overwrite with the multiplication result
@@ -242,7 +269,8 @@ namespace seal
         Exponentiation to power 0 is not allowed and will result in the library throwing an invalid argument
         exception. The reason behind this design choice is that the result should be a fresh encryption
         of 1, but creating fresh encryptions should not be something this class does. Instead the user
-        should separately handle the cases where the exponent is 0.
+        should separately handle the cases where the exponent is 0. Relinearization is performed after 
+        every multiplication, so enough encryption keys must have been given to the constructor of the Evaluator.
 
         @param[in] encrypted The ciphertext to raise to a power
         @param[in] exponent The power to raise the ciphertext to
@@ -259,7 +287,8 @@ namespace seal
         an invalid argument exception. The reason behind this design choice is that the 
         result should be a fresh encryption of 1, but creating fresh encryptions should 
         not be something this class does. Instead the user has to separately handle 
-        the cases where the exponent is 0.
+        the cases where the exponent is 0. Relinearization is performed after every multiplication, 
+        so enough encryption keys must have been given to the constructor of the Evaluator.
 
         @param[in] encrypted The ciphertext to raise to a power
         @param[in] exponent The power to raise the ciphertext to
@@ -404,17 +433,20 @@ namespace seal
 
         void preencrypt(const std::uint64_t *plain, int plain_coeff_count, int plain_coeff_uint64_count, std::uint64_t *destination);
 
-        void relinearize_internal(const BigPolyArray &encrypted, BigPolyArray &destination, int destination_size = 2);
-
-        void relinearize_one_step(BigPolyArray &encrypted, BigPolyArray &destination);
+        void relinearize_one_step(const std::uint64_t *encrypted, int encrypted_size, std::uint64_t *destination, util::MemoryPool &pool);
 
         BigPoly poly_modulus_;
 
         BigUInt coeff_modulus_;
 
+        BigUInt aux_coeff_modulus_;
+
         BigUInt plain_modulus_;
 
         BigUInt upper_half_threshold_;
+
+        // Threshold for negative integers modulo coeff_modulus_ * aux_coeff_modulus_.
+        BigUInt mod_product_upper_half_threshold_;
 
         BigUInt upper_half_increment_;
 
@@ -428,18 +460,24 @@ namespace seal
 
         EvaluationKeys evaluation_keys_;
 
-        BigUInt wide_coeff_modulus_;
-
-        BigUInt wide_coeff_modulus_div_two_;
+        BigUInt coeff_modulus_div_two_;
 
         util::PolyModulus polymod_;
 
         util::Modulus mod_;
 
+        util::Modulus aux_mod_;
+
         int product_coeff_bit_count_;
 
         int plain_modulus_bit_count_;
+
+        util::NTTTables ntt_tables_;
+
+        util::NTTTables aux_ntt_tables_;
+
+        util::UIntCRTBuilder crt_builder_;
+
+        EncryptionParameterQualifiers qualifiers_;
     };
 }
-
-#endif // SEAL_EVALUATOR_H

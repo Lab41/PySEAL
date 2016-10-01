@@ -1,11 +1,11 @@
-#ifndef SEAL_KEYGENERATOR_H
-#define SEAL_KEYGENERATOR_H
+#pragma once
 
 #include <memory>
 #include "encryptionparams.h"
 #include "util/modulus.h"
 #include "util/polymodulus.h"
 #include "evaluationkeys.h"
+#include "util/ntt.h"
 
 namespace seal
 {
@@ -77,9 +77,9 @@ namespace seal
         /**
         Returns true or false depending on whether secret key and public key have been generated.
         */
-        bool generated()
+        bool is_generated() const
         {
-            return is_generated_;
+            return generated_;
         }
 
         /**
@@ -114,6 +114,8 @@ namespace seal
 
         void populate_evaluation_factors();
 
+        void compute_secret_key_array(int max_power); 
+
         BigPoly poly_modulus_;
 
         BigUInt coeff_modulus_;
@@ -142,9 +144,13 @@ namespace seal
 
         util::Modulus mod_;
 
-        bool is_generated_;
+        bool generated_;
+
+        util::NTTTables ntt_tables_; 
+
+        EncryptionParameterQualifiers qualifiers_;
+
+        BigPolyArray secret_key_array_;
 
     };
 }
-
-#endif // SEAL_KEYGENERATOR_H

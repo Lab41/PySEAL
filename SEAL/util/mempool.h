@@ -1,5 +1,4 @@
-#ifndef SEAL_UTIL_MEMPOOL_H
-#define SEAL_UTIL_MEMPOOL_H
+#pragma once
 
 #include <cstdint>
 #include <vector>
@@ -22,7 +21,7 @@ namespace seal
                     throw std::invalid_argument("uint64_count");
                 }
 #endif
-                pointer_ = uint64_count > 0 ? new uint64_t[uint64_count] : nullptr;
+                pointer_ = uint64_count > 0 ? new std::uint64_t[uint64_count] : nullptr;
             }
 
             std::uint64_t *pointer()
@@ -221,18 +220,18 @@ namespace seal
                 release();
             }
 
-            static Pointer Owning(uint64_t *pointer)
+            static Pointer Owning(std::uint64_t *pointer)
             {
                 return Pointer(pointer, false);
             }
 
-            static Pointer Aliasing(uint64_t *pointer)
+            static Pointer Aliasing(std::uint64_t *pointer)
             {
                 return Pointer(pointer, true);
             }
 
         private:
-            Pointer(uint64_t *pointer, bool alias) : head_(nullptr), item_(nullptr), pointer_(pointer), alias_(alias)
+            Pointer(std::uint64_t *pointer, bool alias) : head_(nullptr), item_(nullptr), pointer_(pointer), alias_(alias)
             {
             }
 
@@ -244,7 +243,7 @@ namespace seal
 
             MemoryPoolItem *item_;
 
-            uint64_t *pointer_;
+            std::uint64_t *pointer_;
 
             bool alias_;
         };
@@ -371,18 +370,18 @@ namespace seal
                 release();
             }
 
-            static ConstPointer Owning(uint64_t *pointer)
+            static ConstPointer Owning(std::uint64_t *pointer)
             {
                 return ConstPointer(pointer, false);
             }
 
-            static ConstPointer Aliasing(const uint64_t *pointer)
+            static ConstPointer Aliasing(const std::uint64_t *pointer)
             {
                 return ConstPointer(const_cast<uint64_t*>(pointer), true);
             }
 
         private:
-            ConstPointer(uint64_t *pointer, bool alias) : head_(nullptr), item_(nullptr), pointer_(pointer), alias_(alias)
+            ConstPointer(std::uint64_t *pointer, bool alias) : head_(nullptr), item_(nullptr), pointer_(pointer), alias_(alias)
             {
             }
 
@@ -394,7 +393,7 @@ namespace seal
 
             MemoryPoolItem *item_;
 
-            uint64_t *pointer_;
+            std::uint64_t *pointer_;
 
             bool alias_;
         };
@@ -450,10 +449,8 @@ namespace seal
             static MemoryPool *default_pool_;
         };
 
-        Pointer duplicate_if_needed(uint64_t *original, int uint64_count, bool condition, MemoryPool &pool);
+        Pointer duplicate_if_needed(std::uint64_t *original, int uint64_count, bool condition, MemoryPool &pool);
 
-        ConstPointer duplicate_if_needed(const uint64_t *original, int uint64_count, bool condition, MemoryPool &pool);
+        ConstPointer duplicate_if_needed(const std::uint64_t *original, int uint64_count, bool condition, MemoryPool &pool);
     }
 }
-
-#endif // SEAL_UTIL_MEMPOOL_H

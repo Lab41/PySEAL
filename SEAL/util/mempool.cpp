@@ -76,7 +76,7 @@ namespace seal
             // For part 1, obtain just a reader lock and attempt to find size.
             ReaderLock readerLock = pools_locker_.acquire_read();
             int start = 0;
-            int end = static_cast<int>(pools_.size());
+            int end = pools_.size();
             while (start < end)
             {
                 int mid = (start + end) / 2;
@@ -100,7 +100,7 @@ namespace seal
             // Size was not found, so obtain an exclusive lock and search again.
             WriterLock writerLock = pools_locker_.acquire_write();
             start = 0;
-            end = static_cast<int>(pools_.size());
+            end = pools_.size();
             while (start < end)
             {
                 int mid = (start + end) / 2;
@@ -128,7 +128,7 @@ namespace seal
             }
             else
             {
-                pools_.push_back(new_head);
+                pools_.emplace_back(new_head);
             }
 
             return Pointer(new_head);
@@ -138,7 +138,7 @@ namespace seal
         {
             ReaderLock lock = pools_locker_.acquire_read();
             int byte_count = 0;
-            for (int i = static_cast<int>(pools_.size()) - 1; i >= 0; --i)
+            for (int i = pools_.size() - 1; i >= 0; --i)
             {
                 MemoryPoolHead *head = pools_[i];
                 byte_count += head->item_count() * head->uint64_count() * bytes_per_uint64;
@@ -149,7 +149,7 @@ namespace seal
         void MemoryPool::free_all()
         {
             WriterLock lock = pools_locker_.acquire_write();
-            for (int i = static_cast<int>(pools_.size()) - 1; i >= 0; --i)
+            for (int i = pools_.size() - 1; i >= 0; --i)
             {
                 MemoryPoolHead *head = pools_[i];
                 head->free_items();

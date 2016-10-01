@@ -1,5 +1,4 @@
-#ifndef SEAL_UTIL_UINTEXTRAS_H
-#define SEAL_UTIL_UINTEXTRAS_H
+#pragma once
 
 #include <cstdint>
 #include "util/mempool.h"
@@ -16,5 +15,3 @@ namespace seal
             const util::Modulus &modulus, std::uint64_t *result, MemoryPool &pool);
     }
 }
-
-#endif // SEAL_UTIL_UINTEXTRAS_H

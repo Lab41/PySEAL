@@ -11,6 +11,43 @@ namespace seal
 {
     namespace util
     {
+        void dyadic_product_coeffmod(const uint64_t *operand1, const uint64_t *operand2, int coeff_count, const Modulus &modulus, uint64_t *result, MemoryPool &pool)
+        {
+#ifdef _DEBUG
+            if (operand1 == nullptr)
+            {
+                throw invalid_argument("operand1");
+            }
+            if (operand2 == nullptr)
+            {
+                throw invalid_argument("operand2");
+            }
+            if (result == nullptr)
+            {
+                throw invalid_argument("result");
+            }
+            if (coeff_count <= 0)
+            {
+                throw invalid_argument("coeff_count");
+            }
+            if (modulus.uint64_count() <= 0 || modulus.get() == nullptr)
+            {
+                throw invalid_argument("modulus");
+            }
+#endif
+            int coeff_uint64_count = modulus.uint64_count();
+
+            // Use the same allocation for every instance of multiply_uint_uint_mod.
+            Pointer big_alloc(allocate_uint(4 * coeff_uint64_count, pool));
+            for (int i = 0; i < coeff_count; ++i)
+            {
+                multiply_uint_uint_mod(operand1, operand2, modulus, result, pool, big_alloc.get()); 
+                operand1 += coeff_uint64_count;
+                operand2 += coeff_uint64_count;
+                result += coeff_uint64_count; 
+            }
+        }
+
         void modulo_poly_inplace(uint64_t *value, int value_coeff_count, const PolyModulus &poly_modulus, const Modulus &modulus, MemoryPool &pool)
         {
 #ifdef _DEBUG
@@ -148,85 +185,7 @@ namespace seal
             set_poly_poly(value_copy.get(), poly_modulus.coeff_count(), coeff_uint64_count, result);
         }
 
-        void multiply_poly_poly_polymod_coeffmod(const uint64_t *operand1, const uint64_t *operand2, const PolyModulus &poly_modulus, const Modulus &modulus, uint64_t *result, MemoryPool &pool)
-        {
-#ifdef _DEBUG
-            if (operand1 == nullptr)
-            {
-                throw invalid_argument("operand1");
-            }
-            if (operand2 == nullptr)
-            {
-                throw invalid_argument("operand2");
-            }
-            if (result == nullptr)
-            {
-                throw invalid_argument("result");
-            }
-            if (get_significant_coeff_count_poly(operand1, poly_modulus.coeff_count(), poly_modulus.coeff_uint64_count()) >= poly_modulus.coeff_count())
-            {
-                throw out_of_range("operand1");
-            }
-            if (get_significant_coeff_count_poly(operand2, poly_modulus.coeff_count(), poly_modulus.coeff_uint64_count()) >= poly_modulus.coeff_count())
-            {
-                throw out_of_range("operand2");
-            }
-#endif
-            const int fft_coeff_count_ratio = 8;
-            int coeff_count = poly_modulus.coeff_count();
-            int coeff_uint64_count = poly_modulus.coeff_uint64_count();
-            int coeff_power = poly_modulus.coeff_count_power_of_two();
-            if (coeff_power >= 0 && poly_modulus.is_one_zero_one() &&
-                get_significant_coeff_count_poly(operand1, coeff_count, coeff_uint64_count) >= coeff_count / fft_coeff_count_ratio &&
-                get_significant_coeff_count_poly(operand2, coeff_count, coeff_uint64_count) >= coeff_count / fft_coeff_count_ratio)
-            {
-                set_zero_uint(coeff_uint64_count, get_poly_coeff(result, coeff_count - 1, coeff_uint64_count));
-                fftmultiply_poly_poly_polymod_coeffmod(operand1, operand2, coeff_power, modulus, result, pool);
-                return;
-            }
-            nonfftmultiply_poly_poly_polymod_coeffmod(operand1, operand2, poly_modulus, modulus, result, pool);
-        }
-
-        void multiply_poly_poly_polymod_coeffmod_inplace(const uint64_t *operand1, const uint64_t *operand2, const PolyModulus &poly_modulus, const Modulus &modulus, uint64_t *result, MemoryPool &pool)
-        {
-#ifdef _DEBUG
-            if (operand1 == nullptr)
-            {
-                throw invalid_argument("operand1");
-            }
-            if (operand2 == nullptr)
-            {
-                throw invalid_argument("operand2");
-            }
-            if (result == nullptr)
-            {
-                throw invalid_argument("result");
-            }
-            if (get_significant_coeff_count_poly(operand1, poly_modulus.coeff_count(), poly_modulus.coeff_uint64_count()) >= poly_modulus.coeff_count())
-            {
-                throw out_of_range("operand1");
-            }
-            if (get_significant_coeff_count_poly(operand2, poly_modulus.coeff_count(), poly_modulus.coeff_uint64_count()) >= poly_modulus.coeff_count())
-            {
-                throw out_of_range("operand2");
-            }
-#endif
-            const int fft_coeff_count_ratio = 8;
-            int coeff_count = poly_modulus.coeff_count();
-            int coeff_uint64_count = poly_modulus.coeff_uint64_count();
-            int coeff_power = poly_modulus.coeff_count_power_of_two();
-            if (coeff_power >= 0 && poly_modulus.is_one_zero_one() &&
-                get_significant_coeff_count_poly(operand1, coeff_count, coeff_uint64_count) >= coeff_count / fft_coeff_count_ratio &&
-                get_significant_coeff_count_poly(operand2, coeff_count, coeff_uint64_count) >= coeff_count / fft_coeff_count_ratio)
-            {
-                set_zero_uint(coeff_uint64_count, get_poly_coeff(result, coeff_count - 1, coeff_uint64_count));
-                fftmultiply_poly_poly_polymod_coeffmod(operand1, operand2, coeff_power, modulus, result, pool);
-                return;
-            }
-            nonfftmultiply_poly_poly_polymod_coeffmod_inplace(operand1, operand2, poly_modulus, modulus, result, pool);
-        }
-
-        void nonfftmultiply_poly_poly_polymod_coeffmod(const uint64_t *operand1, const uint64_t *operand2, const PolyModulus &poly_modulus, const Modulus &modulus, uint64_t *result, MemoryPool &pool)
+        void nonfft_multiply_poly_poly_polymod_coeffmod(const uint64_t *operand1, const uint64_t *operand2, const PolyModulus &poly_modulus, const Modulus &modulus, uint64_t *result, MemoryPool &pool)
         {
 #ifdef _DEBUG
             if (operand1 == nullptr)
@@ -264,7 +223,7 @@ namespace seal
             set_poly_poly(intermediate.get(), coeff_count, coeff_uint64_count, result);
         }
 
-        void nonfftmultiply_poly_poly_polymod_coeffmod_inplace(const uint64_t *operand1, const uint64_t *operand2, const PolyModulus &poly_modulus, const Modulus &modulus, uint64_t *result, MemoryPool &pool)
+        void nonfft_multiply_poly_poly_polymod_coeffmod_inplace(const uint64_t *operand1, const uint64_t *operand2, const PolyModulus &poly_modulus, const Modulus &modulus, uint64_t *result, MemoryPool &pool)
         {
 #ifdef _DEBUG
             if (operand1 == nullptr)
@@ -459,51 +418,6 @@ namespace seal
             // Multiply inverse by scalar and done.
             multiply_poly_scalar_coeffmod(invert_curr, coeff_count, monic_denominator_scalar.get(), modulus, result, pool);
             return true;
-        }
-
-        void dot_product_bigpolyarray_polymod_coeffmod(const std::uint64_t *array1, const std::uint64_t *array2, int count, 
-            const PolyModulus &poly_modulus, const Modulus &modulus, std::uint64_t *result, MemoryPool &pool)
-        {
-            // Check validity of inputs
-#ifdef _DEBUG
-            if (array1 == nullptr)
-            {
-                throw invalid_argument("array1");
-            }
-            if (array2 == nullptr)
-            {
-                throw invalid_argument("array2");
-            }
-            if (result == nullptr)
-            {
-                throw invalid_argument("result");
-            }
-            if (count < 1)
-            {
-                throw invalid_argument("count");
-            }
-#endif
-
-            // Calculate pointer increment
-            int coeff_count = poly_modulus.coeff_count();
-            int coeff_bit_count = modulus.significant_bit_count();
-            int coeff_uint64_count = divide_round_up(coeff_bit_count, bits_per_uint64);
-            int poly_ptr_increment = coeff_count * coeff_uint64_count;
-   
-            set_zero_poly(coeff_count, coeff_uint64_count, result);
-
-            // initialize pointers for multiplication
-            const uint64_t *current_array1 = array1;
-            const uint64_t *current_array2 = array2;
-
-            Pointer temp(allocate_poly(coeff_count, coeff_uint64_count, pool));
-            for (int i = 0; i < count; ++i)
-            {
-                multiply_poly_poly_polymod_coeffmod(current_array1, current_array2, poly_modulus, modulus, temp.get(), pool);
-                add_poly_poly_coeffmod(result, temp.get(), coeff_count, modulus.get(), coeff_uint64_count, result);
-                current_array1 += poly_ptr_increment;
-                current_array2 += poly_ptr_increment;
-            }
         }
     }
 }

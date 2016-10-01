@@ -1,11 +1,8 @@
-#ifndef SEAL_EVALUATIONKEYS_H
-#define SEAL_EVALUATIONKEYS_H
+#pragma once
 
 #include <iostream>
 #include <vector>
 #include "bigpolyarray.h"
-
-using namespace std;
 
 namespace seal 
 {
@@ -114,6 +111,3 @@ namespace seal
         std::vector<std::pair<BigPolyArray, BigPolyArray> > keys_;
     };
 }
-
-
-#endif // SEAL_EVALUATIONKEYS_H

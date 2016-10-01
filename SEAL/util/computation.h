@@ -1,5 +1,4 @@
-#ifndef SEAL_UTIL_COMPUTATION_H
-#define SEAL_UTIL_COMPUTATION_H
+#pragma once
 
 #include "encryptionparams.h"
 #include "simulator.h"
@@ -146,7 +145,7 @@ namespace seal
         public:
             MultiplyPlainComputation(Computation &input, int plain_max_coeff_count, const BigUInt &plain_max_abs_value);
 
-            MultiplyPlainComputation(Computation &input, int plain_max_coeff_count, uint64_t plain_max_abs_value);
+            MultiplyPlainComputation(Computation &input, int plain_max_coeff_count, std::uint64_t plain_max_abs_value);
 
             ~MultiplyPlainComputation();
 
@@ -264,5 +263,3 @@ namespace seal
         };
     }
 }
-
-#endif // SEAL_UTIL_COMPUTATION_H

@@ -2,6 +2,8 @@
 #include "util/uintarith.h"
 #include "util/uintarithmod.h"
 #include "util/common.h"
+#include "uintextras.h"
+#include <random>
 
 using namespace std;
 
@@ -41,6 +43,7 @@ namespace seal
 
             // Only perform computation on non-zero uint64s.
             int uint64_count = divide_round_up(value_bits, bits_per_uint64);
+
             int modulus_uint64_count = modulus.uint64_count();
             if (uint64_count < modulus_uint64_count)
             {
@@ -75,22 +78,18 @@ namespace seal
                     shifted_ptr = shifted.get();
                 }
 
-                while (value_bits > modulus_bits + 1)
+                while (value_bits >= modulus_bits + 1)
                 {
                     right_shift_uint(value, modulo_power_min_one, uint64_count, shifted_ptr);
                     filter_highbits_uint(value, uint64_count, modulo_power_min_one);
                     add_uint_uint(value, shifted_ptr, uint64_count, value);
                     value_bits = get_significant_bit_count_uint(value, uint64_count);
-                    uint64_count = divide_round_up(value_bits, bits_per_uint64);
                 }
-                if (value_bits >= modulus_bits)
+                if (is_greater_than_or_equal_uint_uint(value, uint64_count, modulus.get(), modulus_uint64_count))
                 {
-                    ConstPointer wide_modulus = duplicate_uint_if_needed(modulusptr, modulus_uint64_count, uint64_count, false, pool);
-                    const uint64_t *wide_modulusptr = wide_modulus.get();
-                    while (is_greater_than_or_equal_uint_uint(value, wide_modulusptr, uint64_count))
-                    {
-                        sub_uint_uint(value, wide_modulusptr, uint64_count, value);
-                    }
+                    // No need to do subtraction due to the shape of the modulus.
+                    //sub_uint_uint(value, uint64_count, modulus.get(), modulus_uint64_count, false, uint64_count, value);
+                    set_zero_uint(uint64_count, value);
                 }
                 return;
             }
@@ -125,25 +124,36 @@ namespace seal
                     product_ptr = product.get();
                 }
 
-                while (value_bits > modulus_bits + 1)
+                // If invmodulus is at most 64 bits, we can use multiply_uint_uint64, which is faster
+                function<void()> multiply_shifted_invmodulus;
+                if (modulus.inverse_significant_bit_count() <= bits_per_uint64)
+                {
+                    multiply_shifted_invmodulus = [&]() {
+                        multiply_uint_uint64(shifted_ptr, uint64_count, *invmodulus, uint64_count, product_ptr);
+                    };
+                }
+                else
+                {
+                    multiply_shifted_invmodulus = [&]() {
+                        multiply_uint_uint(shifted_ptr, uint64_count, invmodulus, modulus_uint64_count, uint64_count, product_ptr);
+                    };
+                }
+
+                while (value_bits >= modulus_bits + 1)
                 {
                     right_shift_uint(value, modulus_bits, uint64_count, shifted_ptr);
                     filter_highbits_uint(value, uint64_count, modulus_bits);
-                    multiply_uint_uint(shifted_ptr, uint64_count, invmodulus, modulus_uint64_count, uint64_count, product_ptr);
+
+                    multiply_shifted_invmodulus();
+
                     add_uint_uint(value, product_ptr, uint64_count, value);
                     value_bits = get_significant_bit_count_uint(value, uint64_count);
-                    uint64_count = divide_round_up(value_bits, bits_per_uint64);
                 }
 
                 // Use subtraction for few remaining iterations.
-                if (value_bits >= modulus_bits)
+                if (is_greater_than_or_equal_uint_uint(value, uint64_count, modulus.get(), modulus_uint64_count))
                 {
-                    ConstPointer wide_modulus = duplicate_uint_if_needed(modulusptr, modulus_uint64_count, uint64_count, false, pool);
-                    const uint64_t *wide_modulusptr = wide_modulus.get();
-                    while (is_greater_than_or_equal_uint_uint(value, wide_modulusptr, uint64_count))
-                    {
-                        sub_uint_uint(value, wide_modulusptr, uint64_count, value);
-                    }
+                    sub_uint_uint(value, uint64_count, modulus.get(), modulus_uint64_count, false, uint64_count, value);
                 }
                 return;
             }
@@ -187,11 +197,8 @@ namespace seal
             {
                 // NOTE: MSBs of value and shifted modulus are aligned.
 
-                // Subtract value and modulus.
-                bool difference_is_negative = sub_uint_uint(value, shifted_modulus_ptr, uint64_count, difference_ptr);
-
                 // Even though MSB of value and modulus are aligned, still possible value < shifted_modulus.
-                if (difference_is_negative)
+                if (sub_uint_uint(value, shifted_modulus_ptr, uint64_count, difference_ptr))
                 {
                     // value < shifted_modulus, so current quotient bit is zero and next one is definitely one.
                     if (remaining_shifts == 0)
@@ -319,7 +326,7 @@ namespace seal
                 throw invalid_argument("result cannot point to the same value as modulus");
             }
 #endif
-            bool carry = increment_uint(operand, uint64_count, result);
+            unsigned char carry = increment_uint(operand, uint64_count, result);
             if (carry || is_greater_than_or_equal_uint_uint(result, modulus, uint64_count))
             {
                 sub_uint_uint(result, modulus, uint64_count, result);
@@ -354,8 +361,7 @@ namespace seal
                 throw invalid_argument("result cannot point to the same value as modulus");
             }
 #endif
-            bool borrow = decrement_uint(operand, uint64_count, result);
-            if (borrow)
+            if (decrement_uint(operand, uint64_count, result))
             {
                 add_uint_uint(result, modulus, uint64_count, result);
             }
@@ -420,14 +426,14 @@ namespace seal
             {
                 throw invalid_argument("modulus");
             }
-            if (is_greater_than_or_equal_uint_uint(operand, modulus, uint64_count))
-            {
-                throw out_of_range("operand");
-            }
+            //if (is_greater_than_or_equal_uint_uint(operand, modulus, uint64_count))
+            //{
+            //    throw out_of_range("operand");
+            //}
 #endif
-            if (is_bit_set_uint(operand, uint64_count, 0))
+            if (*operand & 1)
             {
-                bool carry = add_uint_uint(operand, modulus, uint64_count, result);
+                unsigned char carry = add_uint_uint(operand, modulus, uint64_count, result);
                 right_shift_uint(result, 1, uint64_count, result);
                 if (carry)
                 {
@@ -476,7 +482,7 @@ namespace seal
                 throw invalid_argument("result cannot point to the same value as modulus");
             }
 #endif
-            bool carry = add_uint_uint(operand1, operand2, uint64_count, result);
+            unsigned char carry = add_uint_uint(operand1, operand2, uint64_count, result);
             if (carry || is_greater_than_or_equal_uint_uint(result, modulus, uint64_count))
             {
                 sub_uint_uint(result, modulus, uint64_count, result);
@@ -519,8 +525,7 @@ namespace seal
                 throw invalid_argument("result cannot point to the same value as modulus");
             }
 #endif
-            bool borrow = sub_uint_uint(operand1, operand2, uint64_count, result);
-            if (borrow)
+            if (sub_uint_uint(operand1, operand2, uint64_count, result))
             {
                 add_uint_uint(result, modulus, uint64_count, result);
             }
@@ -781,11 +786,8 @@ namespace seal
                 {
                     // NOTE: MSBs of numerator and denominator are aligned.
 
-                    // Subtract numerator and denominator.
-                    bool difference_is_negative = sub_uint_uint(numerator, denominator, division_uint64_count, difference);
-
                     // Even though MSB of numerator and denominator are aligned, still possible numerator < denominator.
-                    if (difference_is_negative)
+                    if (sub_uint_uint(numerator, denominator, division_uint64_count, difference))
                     {
                         // numerator < denominator and MSBs are aligned, so current quotient bit is zero and next one is definitely one.
                         if (remaining_shifts == 0)
@@ -899,6 +901,135 @@ namespace seal
 
             // Set result.
             set_uint_uint(invert_curr, uint64_count, result);
+            return true;
+        }
+
+        bool is_primitive_root(const uint64_t *root, uint64_t degree, const Modulus &prime_modulus, MemoryPool &pool)
+        {
+            int uint64_count = prime_modulus.uint64_count();
+#ifdef _DEBUG
+            if (root == nullptr)
+            {
+                throw invalid_argument("root");
+            }
+            if (prime_modulus.significant_bit_count() < 2)
+            {
+                throw invalid_argument("modulus");
+            }
+            if (is_greater_than_or_equal_uint_uint(root, prime_modulus.get(), uint64_count))
+            {
+                throw out_of_range("operand");
+            }
+            if (get_power_of_two(degree) < 1)
+            {
+                throw invalid_argument("degree must be a power of two and at least two");
+            }
+#endif
+            if (is_zero_uint(root, uint64_count))
+            {
+                return false;
+            }
+
+            // We check if root is a degree-th root of unity in integers modulo modulus, where degree is a power of two.
+            // It suffices to check that root^(degree/2) is -1 modulo modulus.
+            Pointer power(allocate_uint(uint64_count, pool));
+            degree >>= 1;
+            exponentiate_uint_mod(root, &degree, 1, prime_modulus, power.get(), pool);
+            increment_uint_mod(power.get(), prime_modulus.get(), uint64_count, power.get());
+
+            return is_zero_uint(power.get(), uint64_count);
+        }
+
+        bool try_primitive_root(uint64_t degree, const Modulus &prime_modulus, MemoryPool &pool, uint64_t *destination)
+        {
+            int uint64_count = prime_modulus.uint64_count();
+#ifdef _DEBUG
+            if (destination == nullptr)
+            {
+                throw invalid_argument("destination");
+            }
+            if (prime_modulus.significant_bit_count() < 2)
+            {
+                throw invalid_argument("modulus");
+            }
+            if (get_power_of_two(degree) < 1)
+            {
+                throw invalid_argument("degree must be a power of two and at least two");
+            }
+#endif
+            // We need to divide modulus-1 by degree to get the size of the quotient group
+            Pointer size_entire_group(allocate_uint(uint64_count, pool));
+            decrement_uint(prime_modulus.get(), uint64_count, size_entire_group.get());
+
+            Pointer divisor(allocate_uint(uint64_count, pool));
+            set_uint(degree, uint64_count, divisor.get());
+
+            // Compute size of quotient group
+            Pointer size_quotient_group(allocate_uint(uint64_count, pool));
+            divide_uint_uint_inplace(size_entire_group.get(), divisor.get(), uint64_count, size_quotient_group.get(), pool);
+
+            // size_entire_group must be zero now, or otherwise the primitive root does not exist in integers modulo modulus
+            if (!is_zero_uint(size_entire_group.get(), uint64_count))
+            {
+                return false;
+            }
+
+            // For randomness
+            random_device rd;
+
+            int attempt_counter = 0;
+            int attempt_counter_max = 100;
+            do
+            {
+                attempt_counter++;
+
+                // Set destination to be a random number modulo modulus
+                uint32_t *random_uint32_ptr = reinterpret_cast<uint32_t*>(destination);
+                for (int i = 0; i < 2 * uint64_count; ++i)
+                {
+                    *random_uint32_ptr++ = rd();
+                }
+                modulo_uint_inplace(destination, uint64_count, prime_modulus, pool);
+
+                // Raise the random number to power the size of the quotient to get rid of irrelevant part
+                exponentiate_uint_mod(destination, size_quotient_group.get(), uint64_count, prime_modulus, destination, pool);
+            }
+            while(!is_primitive_root(destination, degree, prime_modulus, pool) && attempt_counter < attempt_counter_max);
+
+            return is_primitive_root(destination, degree, prime_modulus, pool);
+        }
+
+        bool try_minimal_primitive_root(uint64_t degree, const Modulus &prime_modulus, MemoryPool &pool, std::uint64_t *destination)
+        {
+            if (!try_primitive_root(degree, prime_modulus, pool, destination))
+            {
+                return false;
+            }
+
+            int uint64_count = prime_modulus.uint64_count();
+
+            Pointer generator_sq(allocate_uint(uint64_count, pool));
+            multiply_uint_uint_mod(destination, destination, prime_modulus, generator_sq.get(), pool);
+
+            Pointer current_generator(allocate_uint(uint64_count, pool));
+            set_uint_uint(destination, uint64_count, current_generator.get());
+
+            // destination is going to always contain the smallest generator found
+            set_uint_uint(current_generator.get(), uint64_count, destination);
+
+            for (size_t i = 0; i < degree; ++i)
+            {
+                // If our current generator is strictly smaller than destination, update
+                if (compare_uint_uint(current_generator.get(), destination, uint64_count) == -1)
+                {
+                    set_uint_uint(current_generator.get(), uint64_count, destination);
+                }
+
+                // Then move on to the next generator
+                ConstPointer current_generator_copy(duplicate_uint_if_needed(current_generator.get(), uint64_count, uint64_count, true, pool));
+                multiply_uint_uint_mod(current_generator_copy.get(), generator_sq.get(), prime_modulus, current_generator.get(), pool);
+            }
+
             return true;
         }
     }

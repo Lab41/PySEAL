@@ -1,6 +1,7 @@
 #pragma once
 
 #include "simulator.h"
+#include "EvaluatorWrapper.h"
 
 namespace Microsoft
 {
@@ -15,6 +16,8 @@ namespace Microsoft
             ref class BigPoly;
             
             ref class SimulationEvaluator;
+
+            ref class Evaluator;
 
             /**
             <summary>Models the inherent noise in a ciphertext based on given EncryptionParameters object.</summary>
@@ -121,6 +124,21 @@ namespace Microsoft
                 property BigUInt ^MaxNoise
                 {
                     BigUInt ^get();
+                }
+
+                /**
+                <summary>Returns the bit length of the maximal value of inherent noise that a ciphertext
+                encrypted using the given encryption parameters can contain and still decrypt correctly.</summary>
+                <remarks>
+                Returns the bit length of the maximal value of inherent noise that a ciphertext encrypted using the 
+                given encryption parameters can contain and still decrypt correctly. If <see cref="NoiseBits()"/> 
+                returns a value larger than this, the encryption parameters used are possibly not large enough to 
+                support the performed homomorphic operations.
+                </remarks>
+                */
+                property int MaxNoiseBits
+                {
+                    int get();
                 }
 
                 /**
@@ -299,7 +317,7 @@ namespace Microsoft
                 <param name="simulation">The <see cref="Simulation"/> object to relinearize</param>
                 <exception cref="System::ArgumentNullException">if simulation is null</exception>
                 <exception cref="System::ArgumentException">if simulation has Size less than 2</exception>
-                <seealso>See Evaluator::Relinearize() for the corresponding operation on ciphertexts.</seealso>
+                <seealso cref="Evaluator::Relinearize(BigPolyArray^)">See Evaluator::Relinearize() for the corresponding operation on ciphertexts.</seealso>
                 */
                 Simulation ^Relinearize(Simulation ^simulation);
 
@@ -310,7 +328,7 @@ namespace Microsoft
                 <exception cref="System::ArgumentException">if destinationSize is less than 2 or greater than that of the ciphertext represented by simulation</exception>
                 <exception cref="System::ArgumentNullException">if simulation is null</exception>
                 <exception cref="System::ArgumentException">if simulation has Size less than 2</exception>
-                <seealso>See Evaluator::Relinearize() for the corresponding operation on ciphertexts.</seealso>
+                <seealso cref="Evaluator::Relinearize(BigPolyArray^,int)">See Evaluator::Relinearize() for the corresponding operation on ciphertexts.</seealso>
                 */
                 Simulation ^Relinearize(Simulation ^simulation, int destinationSize);
 
@@ -322,9 +340,17 @@ namespace Microsoft
                 <exception cref="System::ArgumentException">if simulation1 and simulation2 were constructed with different encryption
                 parameters</exception>
                 <exception cref="System::ArgumentException">if simulation1 or simulation2 has Size less than 2</exception>
-                <seealso>See Evaluator::Multiply() for the corresponding operation on ciphertexts.</seealso>
+                <seealso cref="Evaluator::Multiply(BigPolyArray^,BigPolyArray^)">See Evaluator::Multiply() for the corresponding operation on ciphertexts.</seealso>
                 */
                 Simulation ^Multiply(Simulation ^simulation1, Simulation ^simulation2);
+
+                /**
+                <summary>Simulates inherent noise growth in Evaluator::Square() and returns the result.</summary>
+                <param name="simulation">The Simulation object to square</param>
+                <exception cref="System::ArgumentException">if simulation has Size less than 2</exception>
+                <seealso cref="Evaluator::Square(BigPolyArray^)">See Evaluator::Square() for the corresponding operation on ciphertexts.</seealso>
+                */
+                Simulation ^Square(Simulation ^simulation);
                 
                 /**
                 <summary>Simulates inherent noise growth in Evaluator::Add() and returns the result.</summary>
@@ -334,7 +360,7 @@ namespace Microsoft
                 <exception cref="System::ArgumentException">if simulation1 and simulation2 were constructed with different encryption
                 parameters</exception>
                 <exception cref="System::ArgumentException">if simulation1 or simulation2 has Size less than 2</exception>
-                <seealso>See Evaluator::Add() for the corresponding operation on ciphertexts.</seealso>
+                <seealso cref="Add(BigPolyArray^,BigPolyArray^)">See Evaluator::Add() for the corresponding operation on ciphertexts.</seealso>
                 */
                 Simulation ^Add(Simulation ^simulation1, Simulation ^simulation2);
 
@@ -346,7 +372,7 @@ namespace Microsoft
                 <exception cref="System::ArgumentException">if not all elements of simulations were constructed with the same
                 encryption parameters</exception>
                 <exception cref="System::ArgumentException">if any of the elements in the simulation list has Size less than 2</exception>
-                <seealso>See Evaluator::AddMany() for the corresponding operation on ciphertexts.</seealso>
+                <seealso cref="Evaluator::AddMany(List<BigPolyArray^>^)">See Evaluator::AddMany() for the corresponding operation on ciphertexts.</seealso>
                 */
                 Simulation ^AddMany(System::Collections::Generic::List<Simulation^> ^simulations);
 
@@ -358,7 +384,7 @@ namespace Microsoft
                 <exception cref="System::ArgumentException">if simulation1 and simulation2 were constructed with different encryption
                 parameters</exception>
                 <exception cref="System::ArgumentException">if simulation1 or simulation2 has Size less than 2</exception>
-                <seealso>See Evaluator::Sub() for the corresponding operation on ciphertexts.</seealso>
+                <seealso cref="Evaluator::Sub(BigPolyArray^,BigPolyArray^)">See Evaluator::Sub() for the corresponding operation on ciphertexts.</seealso>
                 */
                 Simulation ^Sub(Simulation ^simulation1, Simulation ^simulation2);
 
@@ -374,7 +400,7 @@ namespace Microsoft
                 <exception cref="System::ArgumentException">if simulation has Size less than 2</exception>
                 <exception cref="System::ArgumentException">if plainMaxCoeffCount is out of range</exception>
                 <exception cref="System::ArgumentException">if plainMaxCoeffCount or plainMaxAbsValue is zero</exception>
-                <seealso>See Evaluator::MultiplyPlain() for the corresponding operation on ciphertexts.</seealso>
+                <seealso cref="Evaluator::MultiplyPlain(BigPolyArray^,BigPoly^)">See Evaluator::MultiplyPlain() for the corresponding operation on ciphertexts.</seealso>
                 */
                 Simulation ^MultiplyPlain(Simulation ^simulation, int plainMaxCoeffCount, BigUInt ^plainMaxAbsValue);
 
@@ -390,7 +416,7 @@ namespace Microsoft
                 <exception cref="System::ArgumentException">if simulation has Size less than 2</exception>
                 <exception cref="System::ArgumentException">if plainMaxCoeffCount is out of range</exception>
                 <exception cref="System::ArgumentException">if plainMaxCoeffCount or plainMaxAbsValue is zero</exception>
-                <seealso>See Evaluator::MultiplyPlain() for the corresponding operation on ciphertexts.</seealso>
+                <seealso cref="Evaluator::MultiplyPlain(BigPolyArray^,BigPoly^)">See Evaluator::MultiplyPlain() for the corresponding operation on ciphertexts.</seealso>
                 */
                 Simulation ^MultiplyPlain(Simulation ^simulation, int plainMaxCoeffCount, System::UInt64 plainMaxAbsValue);
 
@@ -399,7 +425,7 @@ namespace Microsoft
                 <param name="simulation">The <see cref="Simulation"/> object to add to</param>
                 <exception cref="System::ArgumentNullException">if simulation is null</exception>
                 <exception cref="System::ArgumentException">if simulation has Size less than 2</exception>
-                <seealso>See Evaluator::AddPlain() for the corresponding operation on ciphertexts.</seealso>
+                <seealso cref="Evaluator::AddPlain(BigPolyArray^,BigPoly^)">See Evaluator::AddPlain() for the corresponding operation on ciphertexts.</seealso>
                 */
                 Simulation ^AddPlain(Simulation ^simulation);
 
@@ -408,7 +434,7 @@ namespace Microsoft
                 <param name="simulation">The <see cref="Simulation"/> object to subtract from</param>
                 <exception cref="System::ArgumentNullException">if simulation is null</exception>
                 <exception cref="System::ArgumentException">if simulation has Size less than 2</exception>
-                <seealso>See Evaluator::SubPlain() for the corresponding operation on ciphertexts.</seealso>
+                <seealso cref="Evaluator::SubPlain(BigPolyArray^,BigPoly^)">See Evaluator::SubPlain() for the corresponding operation on ciphertexts.</seealso>
                 */
                 Simulation ^SubPlain(Simulation ^simulation);
 
@@ -419,7 +445,7 @@ namespace Microsoft
                 <exception cref="System::ArgumentException">if simulations list is empty</exception>
                 <exception cref="System::ArgumentException">if at least two of the elements in the simulations list were
                 constructed with different encryption parameters</exception>
-                <seealso>See Evaluator::MultiplyMany() for the corresponding operation on ciphertexts.</seealso>
+                <seealso cref="Evaluator::MultiplyMany(List<BigPolyArray^>^)">See Evaluator::MultiplyMany() for the corresponding operation on ciphertexts.</seealso>
                 */
                 Simulation ^MultiplyMany(System::Collections::Generic::List<Simulation^> ^simulations);
 
@@ -439,7 +465,7 @@ namespace Microsoft
                 <param name="simulation">The <see cref="Simulation"/> object to negate</param>
                 <exception cref="System::ArgumentNullException">if simulation is null</exception>
                 <exception cref="System::ArgumentException">if simulation has Size less than 2</exception>
-                <seealso>See Evaluator::Negate() for the corresponding operation on ciphertexts.</seealso>
+                <seealso cref="Evaluator::Negate(BigPolyArray^)">See Evaluator::Negate() for the corresponding operation on ciphertexts.</seealso>
                 */
                 Simulation ^Negate(Simulation ^simulation);
 

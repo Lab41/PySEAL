@@ -14,6 +14,99 @@ namespace Microsoft
     {
         namespace SEAL
         {
+            EncryptionParameterQualifiers::EncryptionParameterQualifiers(const seal::EncryptionParameterQualifiers &qualifiers) : qualifiers_(nullptr)
+            {
+                try
+                {
+                    qualifiers_ = new seal::EncryptionParameterQualifiers(qualifiers);
+                }
+                catch (const exception &e)
+                {
+                    HandleException(&e);
+                }
+                catch (...)
+                {
+                    HandleException(nullptr);
+                }
+            }
+
+            EncryptionParameterQualifiers::~EncryptionParameterQualifiers()
+            {
+                this->!EncryptionParameterQualifiers();
+            }
+
+            EncryptionParameterQualifiers::!EncryptionParameterQualifiers()
+            {
+                if (qualifiers_ != nullptr)
+                {
+                    delete qualifiers_;
+                    qualifiers_ = nullptr;
+                }
+            }
+
+            seal::EncryptionParameterQualifiers &EncryptionParameterQualifiers::GetQualifiers()
+            {
+                if (qualifiers_ == nullptr)
+                {
+                    throw gcnew ObjectDisposedException("EncryptionParameterQualifiers is disposed");
+                }
+                return *qualifiers_;
+            }
+
+            bool EncryptionParameterQualifiers::ParametersSet::get()
+            {
+                if (qualifiers_ == nullptr)
+                {
+                    throw gcnew ObjectDisposedException("EncryptionParameterQualifiers is disposed");
+                }
+                return qualifiers_->parameters_set;
+            }
+
+            bool EncryptionParameterQualifiers::EnableRelinearization::get()
+            {
+                if (qualifiers_ == nullptr)
+                {
+                    throw gcnew ObjectDisposedException("EncryptionParameterQualifiers is disposed");
+                }
+                return qualifiers_->enable_relinearization;
+            }
+
+            bool EncryptionParameterQualifiers::EnableNussbaumer::get()
+            {
+                if (qualifiers_ == nullptr)
+                {
+                    throw gcnew ObjectDisposedException("EncryptionParameterQualifiers is disposed");
+                }
+                return qualifiers_->enable_nussbaumer;
+            }
+
+            bool EncryptionParameterQualifiers::EnableNTT::get()
+            {
+                if (qualifiers_ == nullptr)
+                {
+                    throw gcnew ObjectDisposedException("EncryptionParameterQualifiers is disposed");
+                }
+                return qualifiers_->enable_ntt;
+            }
+
+            bool EncryptionParameterQualifiers::EnableBatching::get()
+            {
+                if (qualifiers_ == nullptr)
+                {
+                    throw gcnew ObjectDisposedException("EncryptionParameterQualifiers is disposed");
+                }
+                return qualifiers_->enable_batching;
+            }
+
+            bool EncryptionParameterQualifiers::EnableNTTInMultiply::get()
+            {
+                if (qualifiers_ == nullptr)
+                {
+                    throw gcnew ObjectDisposedException("EncryptionParameterQualifiers is disposed");
+                }
+                return qualifiers_->enable_ntt_in_multiply;
+            }
+
             EncryptionParameters::EncryptionParameters() : parms_(nullptr)
             {
                 try
@@ -62,6 +155,15 @@ namespace Microsoft
                     throw gcnew ObjectDisposedException("EncryptionParameters is disposed");
                 }
                 return gcnew BigUInt(&parms_->coeff_modulus());
+            }
+
+            BigUInt ^EncryptionParameters::AuxCoeffModulus::get()
+            {
+                if (parms_ == nullptr)
+                {
+                    throw gcnew ObjectDisposedException("EncryptionParameters is disposed");
+                }
+                return gcnew BigUInt(&parms_->aux_coeff_modulus());
             }
 
             BigUInt ^EncryptionParameters::PlainModulus::get()
@@ -127,6 +229,52 @@ namespace Microsoft
                 parms_->decomposition_bit_count() = value;
             }
 
+            int EncryptionParameters::InherentNoiseBitsMax()
+            {
+                if (parms_ == nullptr)
+                {
+                    throw gcnew ObjectDisposedException("EncryptionParameters is disposed");
+                }
+                try
+                {
+                    return parms_->inherent_noise_bits_max();
+                }
+                catch (const exception &e)
+                {
+                    HandleException(&e);
+                }
+                catch (...)
+                {
+                    HandleException(nullptr);
+                }
+                throw gcnew Exception("Unexpected exception");
+            }
+
+            void EncryptionParameters::InherentNoiseMax(BigUInt ^destination)
+            {
+                if (parms_ == nullptr)
+                {
+                    throw gcnew ObjectDisposedException("EncryptionParameters is disposed");
+                }
+                if (destination == nullptr)
+                {
+                    throw gcnew ArgumentNullException("destination cannot be null");
+                }
+                try
+                {
+                    parms_->inherent_noise_max(destination->GetUInt());
+                    GC::KeepAlive(destination);
+                }
+                catch (const exception &e)
+                {
+                    HandleException(&e);
+                }
+                catch (...)
+                {
+                    HandleException(nullptr);
+                }
+            }
+
             void EncryptionParameters::Save(Stream ^stream)
             {
                 if (parms_ == nullptr)
@@ -139,6 +287,7 @@ namespace Microsoft
                 }
                 PolyModulus->Save(stream);
                 CoeffModulus->Save(stream);
+                AuxCoeffModulus->Save(stream);
                 PlainModulus->Save(stream);
                 Write(stream, reinterpret_cast<const char*>(&parms_->noise_standard_deviation()), sizeof(double));
                 Write(stream, reinterpret_cast<const char*>(&parms_->noise_max_deviation()), sizeof(double));
@@ -158,12 +307,34 @@ namespace Microsoft
                 }
                 PolyModulus->Load(stream);
                 CoeffModulus->Load(stream);
+                AuxCoeffModulus->Load(stream);
                 PlainModulus->Load(stream);
                 Read(stream, reinterpret_cast<char*>(&parms_->noise_standard_deviation()), sizeof(double));
                 Read(stream, reinterpret_cast<char*>(&parms_->noise_max_deviation()), sizeof(double));
                 int32_t decomp_bit_count32 = 0;
                 Read(stream, reinterpret_cast<char*>(&decomp_bit_count32), sizeof(int32_t));
-                parms_->decomposition_bit_count() = static_cast<int>(decomp_bit_count32);
+                parms_->decomposition_bit_count() = decomp_bit_count32;
+            }
+
+            EncryptionParameterQualifiers ^EncryptionParameters::Qualifiers::get()
+            {
+                if (parms_ == nullptr)
+                {
+                    throw gcnew ObjectDisposedException("EncryptionParameters is disposed");
+                }
+                try
+                {
+                    return gcnew EncryptionParameterQualifiers(parms_->get_qualifiers());
+                }
+                catch (const exception &e)
+                {
+                    HandleException(&e);
+                }
+                catch (...)
+                {
+                    HandleException(nullptr);
+                }
+                throw gcnew Exception("Unexpected exception");
             }
 
             seal::EncryptionParameters &EncryptionParameters::GetParameters()

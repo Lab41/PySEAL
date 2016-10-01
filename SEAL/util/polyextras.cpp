@@ -3,6 +3,7 @@
 #include "util/polyarith.h"
 #include "util/uintarithmod.h"
 #include "util/polyarithmod.h"
+#include "util/polyfftmultmod.h"
 
 using namespace std;
 
@@ -143,7 +144,6 @@ namespace seal
                 throw invalid_argument("poly_modulus");
             }
 #endif
-
             // Evaluate poly at value using Horner's method
             Pointer temp1(allocate_poly(poly_modulus_coeff_count, coeff_modulus_uint64_count, pool));
             Pointer temp2(allocate_zero_poly(poly_modulus_coeff_count, coeff_modulus_uint64_count, pool));
@@ -151,12 +151,25 @@ namespace seal
             uint64_t *intermediateptr = temp2.get();
 
             const uint64_t *curr_coeff;
-            for (int coeff_index = poly_modulus_coeff_count - 1; coeff_index >= 0; --coeff_index)
+            if (poly_modulus.is_fft_modulus())
             {
-                multiply_poly_poly_polymod_coeffmod(intermediateptr, value, poly_modulus, coeff_modulus, productptr, pool);
-                curr_coeff = get_poly_coeff(poly_to_eval, coeff_index, coeff_modulus_uint64_count);
-                add_uint_uint_mod(productptr, curr_coeff, coeff_modulus.get(), coeff_modulus_uint64_count, productptr);
-                swap(productptr, intermediateptr);
+                for (int coeff_index = poly_modulus_coeff_count - 1; coeff_index >= 0; --coeff_index)
+                {
+                    nussbaumer_multiply_poly_poly_coeffmod(intermediateptr, value, poly_modulus.coeff_count_power_of_two(), coeff_modulus, productptr, pool);
+                    curr_coeff = get_poly_coeff(poly_to_eval, coeff_index, coeff_modulus_uint64_count);
+                    add_uint_uint_mod(productptr, curr_coeff, coeff_modulus.get(), coeff_modulus_uint64_count, productptr);
+                    swap(productptr, intermediateptr);
+                }
+            }
+            else
+            {
+                for (int coeff_index = poly_modulus_coeff_count - 1; coeff_index >= 0; --coeff_index)
+                {
+                    nonfft_multiply_poly_poly_polymod_coeffmod(intermediateptr, value, poly_modulus, coeff_modulus, productptr, pool);
+                    curr_coeff = get_poly_coeff(poly_to_eval, coeff_index, coeff_modulus_uint64_count);
+                    add_uint_uint_mod(productptr, curr_coeff, coeff_modulus.get(), coeff_modulus_uint64_count, productptr);
+                    swap(productptr, intermediateptr);
+                }
             }
             set_poly_poly(intermediateptr, poly_modulus_coeff_count, coeff_modulus_uint64_count, result);
         }
@@ -183,7 +196,6 @@ namespace seal
                 throw invalid_argument("modulus");
             }
 #endif
-
             // Evaluate poly at value using Horner's method
             Pointer temp1(allocate_uint(modulus_uint64_count, pool));
             Pointer temp2(allocate_zero_uint(modulus_uint64_count, pool));
@@ -351,20 +363,41 @@ namespace seal
             *intermediateptr = 1;
 
             // Initially: power = operand and intermediate = 1, product is not initialized.
-            while (true)
+            if (poly_modulus.is_fft_modulus())
             {
-                if ((*exponent_copy.get() % 2) == 1)
+                while (true)
                 {
-                    multiply_poly_poly_polymod_coeffmod(powerptr, intermediateptr, poly_modulus, coeff_modulus, productptr, pool);
-                    swap(productptr, intermediateptr);
+                    if ((*exponent_copy.get() % 2) == 1)
+                    {
+                        nussbaumer_multiply_poly_poly_coeffmod(powerptr, intermediateptr, poly_modulus.coeff_count_power_of_two(), coeff_modulus, productptr, pool);
+                        swap(productptr, intermediateptr);
+                    }
+                    right_shift_uint(exponent_copy.get(), 1, exponent_uint64_count, exponent_copy.get());
+                    if (is_zero_uint(exponent_copy.get(), exponent_uint64_count))
+                    {
+                        break;
+                    }
+                    nussbaumer_multiply_poly_poly_coeffmod(powerptr, powerptr, poly_modulus.coeff_count_power_of_two(), coeff_modulus, productptr, pool);
+                    swap(productptr, powerptr);
                 }
-                right_shift_uint(exponent_copy.get(), 1, exponent_uint64_count, exponent_copy.get());
-                if (is_zero_uint(exponent_copy.get(), exponent_uint64_count))
+            }
+            else
+            {
+                while (true)
                 {
-                    break;
+                    if ((*exponent_copy.get() % 2) == 1)
+                    {
+                        nonfft_multiply_poly_poly_polymod_coeffmod(powerptr, intermediateptr, poly_modulus, coeff_modulus, productptr, pool);
+                        swap(productptr, intermediateptr);
+                    }
+                    right_shift_uint(exponent_copy.get(), 1, exponent_uint64_count, exponent_copy.get());
+                    if (is_zero_uint(exponent_copy.get(), exponent_uint64_count))
+                    {
+                        break;
+                    }
+                    nonfft_multiply_poly_poly_polymod_coeffmod(powerptr, powerptr, poly_modulus, coeff_modulus, productptr, pool);
+                    swap(productptr, powerptr);
                 }
-                multiply_poly_poly_polymod_coeffmod(powerptr, powerptr, poly_modulus, coeff_modulus, productptr, pool);
-                swap(productptr, powerptr);
             }
             set_poly_poly(intermediateptr, poly_modulus_coeff_count, coeff_modulus_uint64_count, result);
         }

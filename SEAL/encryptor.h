@@ -1,11 +1,11 @@
-#ifndef SEAL_ENCRYPTOR_H
-#define SEAL_ENCRYPTOR_H
+#pragma once
 
 #include <memory>
 #include "encryptionparams.h"
 #include "util/modulus.h"
 #include "util/polymodulus.h"
 #include "bigpolyarray.h"
+#include "util/ntt.h"
 
 namespace seal
 {
@@ -61,6 +61,7 @@ namespace seal
             encrypt(plain, result);
             return result;
         }
+
         /**
         Returns the public key used by the Encryptor.
         */
@@ -79,6 +80,8 @@ namespace seal
         void set_poly_coeffs_normal(std::uint64_t *poly, UniformRandomGenerator *random) const;
         
         void set_poly_coeffs_zero_one_negone(uint64_t *poly, UniformRandomGenerator *random) const;
+
+        void set_poly_coeffs_zero_one(uint64_t *poly, UniformRandomGenerator *random) const;
 
         BigPoly poly_modulus_;
         
@@ -103,8 +106,10 @@ namespace seal
         util::PolyModulus polymod_;
         
         util::Modulus mod_;
+
+        util::NTTTables ntt_tables_; 
+
+        EncryptionParameterQualifiers qualifiers_;
     };
 
 }
-
-#endif // SEAL_ENCRYPTOR_H

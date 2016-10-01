@@ -283,7 +283,7 @@ namespace seal
 
         stream.read(reinterpret_cast<char*>(value_), size_ * coeff_count_ * coeff_uint64_count() * bytes_per_uint64);
     }
-
+ 
     void BigPolyArray::reset()
     {
         if (polys_ != nullptr)

@@ -1,7 +1,7 @@
 #include "CppUnitTest.h"
 #include "util/modulus.h"
 #include <cstdint>
-#include <biguint.h>
+#include "biguint.h"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 using namespace seal;

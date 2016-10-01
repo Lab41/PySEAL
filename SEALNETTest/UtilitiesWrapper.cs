@@ -62,29 +62,6 @@ namespace SEALNETTest
         }
 
         [TestMethod]
-        public void EstimateLevelMaxNET()
-        {
-            var parms = new EncryptionParameters
-            {
-                DecompositionBitCount = 4,
-                NoiseStandardDeviation = 3.19,
-                NoiseMaxDeviation = 35.06
-            };
-            var coeffModulus = parms.CoeffModulus;
-            coeffModulus.Resize(48);
-            coeffModulus.Set("FFFFFFFFC001");
-            var plainModulus = parms.PlainModulus;
-            plainModulus.Resize(7);
-            plainModulus.Set(1 << 6);
-            var polyModulus = parms.PolyModulus;
-            polyModulus.Resize(64, 1);
-            polyModulus[0].Set(1);
-            polyModulus[63].Set(1);
-
-            Assert.AreEqual(2, Utilities.EstimateLevelMax(parms));
-        }
-
-        [TestMethod]
         public void PolyEvalPolyNET()
         {
             var polyToEval = new BigPoly("0");

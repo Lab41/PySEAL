@@ -1,5 +1,4 @@
-#ifndef SEAL_UTIL_MODULUS_H
-#define SEAL_UTIL_MODULUS_H
+#pragma once
 
 #include <cstdint>
 #include "util/mempool.h"
@@ -56,6 +55,11 @@ namespace seal
                 return power_of_two_minus_one_;
             }
 
+            int inverse_significant_bit_count() const
+            {
+                return inverse_significant_bit_count_;
+            }
+
         private:
             Modulus(const Modulus &copy) = delete;
 
@@ -70,8 +74,8 @@ namespace seal
             int significant_bit_count_;
 
             int power_of_two_minus_one_;
+
+            int inverse_significant_bit_count_;
         };
     }
 }
-
-#endif // SEAL_UTIL_MODULUS_H

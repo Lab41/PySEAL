@@ -1,5 +1,4 @@
-#ifndef SEAL_RANDOMGEN_H
-#define SEAL_RANDOMGEN_H
+#pragma once
 
 #include <cstdint>
 
@@ -160,5 +159,3 @@ namespace seal
         }
     };
 }
-
-#endif // SEAL_RANDOMGEN_H

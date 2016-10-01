@@ -168,6 +168,42 @@ namespace SEALTest
             poly7[3] = 1;    // 1    (*343)
             value = 123 + -1 * 7 + 511 * 49 + 1 * 343;
             Assert::IsTrue(value == encoder2.decode_biguint(poly7));
+
+            BalancedEncoder encoder3(modulus, 6);
+            BigPoly poly8(4, 16);
+            poly8[0] = 5;
+            poly8[1] = 4;
+            poly8[2] = 3;
+            poly8[3] = 2;
+            value = 5 + 4 * 6 + 3 * 36 + 2 * 216;
+            Assert::IsTrue(value == encoder3.decode_biguint(poly8));
+
+            BalancedEncoder encoder4(modulus, 10);
+            BigPoly poly9(4, 16);
+            poly9[0] = 1;
+            poly9[1] = 2;
+            poly9[2] = 3;
+            poly9[3] = 4;
+            value = 4321;
+            Assert::IsTrue(value == encoder4.decode_biguint(poly9));
+
+            value = "4D2";
+            BigPoly poly10 = encoder2.encode(value);
+            Assert::AreEqual(5, poly10.significant_coeff_count());
+            Assert::AreEqual(modulus.bit_count(), poly10.coeff_bit_count());
+            Assert::IsTrue(value == encoder2.decode_biguint(poly10));
+
+            value = "4D2";
+            BigPoly poly11 = encoder3.encode(value);
+            Assert::AreEqual(5, poly11.significant_coeff_count());
+            Assert::AreEqual(modulus.bit_count(), poly11.coeff_bit_count());
+            Assert::IsTrue(value == encoder3.decode_biguint(poly11));
+
+            value = "4D2";
+            BigPoly poly12 = encoder4.encode(value);
+            Assert::AreEqual(4, poly12.significant_coeff_count());
+            Assert::AreEqual(modulus.bit_count(), poly12.coeff_bit_count());
+            Assert::IsTrue(value == encoder4.decode_biguint(poly12));
         }
 
         TEST_METHOD(BinaryEncodeDecodeUInt64)
@@ -310,6 +346,42 @@ namespace SEALTest
             poly7[2] = 511;  // 511  (*49)
             poly7[3] = 1;    // 1    (*343)
             Assert::AreEqual(static_cast<uint64_t>(123 + -1 * 7 + 511 * 49 + 1 * 343), encoder2.decode_uint64(poly7));
+
+            BalancedEncoder encoder3(modulus, 6);
+            BigPoly poly8(4, 16);
+            poly8[0] = 5;
+            poly8[1] = 4;
+            poly8[2] = 3;
+            poly8[3] = 2;
+            uint64_t value = 5 + 4 * 6 + 3 * 36 + 2 * 216;
+            Assert::IsTrue(value == encoder3.decode_uint64(poly8));
+
+            BalancedEncoder encoder4(modulus, 10);
+            BigPoly poly9(4, 16);
+            poly9[0] = 1;
+            poly9[1] = 2;
+            poly9[2] = 3;
+            poly9[3] = 4;
+            value = 4321;
+            Assert::IsTrue(value == encoder4.decode_uint64(poly9));
+
+            value = 1234;
+            BigPoly poly10 = encoder2.encode(value);
+            Assert::AreEqual(5, poly10.significant_coeff_count());
+            Assert::AreEqual(modulus.bit_count(), poly10.coeff_bit_count());
+            Assert::IsTrue(value == encoder2.decode_uint64(poly10));
+
+            value = 1234;
+            BigPoly poly11 = encoder3.encode(value);
+            Assert::AreEqual(5, poly11.significant_coeff_count());
+            Assert::AreEqual(modulus.bit_count(), poly11.coeff_bit_count());
+            Assert::IsTrue(value == encoder3.decode_uint64(poly11));
+
+            value = 1234;
+            BigPoly poly12 = encoder4.encode(value);
+            Assert::AreEqual(4, poly12.significant_coeff_count());
+            Assert::AreEqual(modulus.bit_count(), poly12.coeff_bit_count());
+            Assert::IsTrue(value == encoder4.decode_uint64(poly12));
         }
 
         TEST_METHOD(BinaryEncodeDecodeUInt32)
@@ -451,6 +523,42 @@ namespace SEALTest
             poly7[2] = 511;  // 511  (*49)
             poly7[3] = 1;    // 1    (*343)
             Assert::AreEqual(static_cast<uint32_t>(123 + -1 * 7 + 511 * 49 + 1 * 343), encoder2.decode_uint32(poly7));
+
+            BalancedEncoder encoder3(modulus, 6);
+            BigPoly poly8(4, 16);
+            poly8[0] = 5;
+            poly8[1] = 4;
+            poly8[2] = 3;
+            poly8[3] = 2;
+            uint64_t value = 5 + 4 * 6 + 3 * 36 + 2 * 216;
+            Assert::IsTrue(value == encoder3.decode_uint32(poly8));
+
+            BalancedEncoder encoder4(modulus, 10);
+            BigPoly poly9(4, 16);
+            poly9[0] = 1;
+            poly9[1] = 2;
+            poly9[2] = 3;
+            poly9[3] = 4;
+            value = 4321;
+            Assert::IsTrue(value == encoder4.decode_uint32(poly9));
+
+            value = 1234;
+            BigPoly poly10 = encoder2.encode(value);
+            Assert::AreEqual(5, poly10.significant_coeff_count());
+            Assert::AreEqual(modulus.bit_count(), poly10.coeff_bit_count());
+            Assert::IsTrue(value == encoder2.decode_uint32(poly10));
+
+            value = 1234;
+            BigPoly poly11 = encoder3.encode(value);
+            Assert::AreEqual(5, poly11.significant_coeff_count());
+            Assert::AreEqual(modulus.bit_count(), poly11.coeff_bit_count());
+            Assert::IsTrue(value == encoder3.decode_uint32(poly11));
+
+            value = 1234;
+            BigPoly poly12 = encoder4.encode(value);
+            Assert::AreEqual(4, poly12.significant_coeff_count());
+            Assert::AreEqual(modulus.bit_count(), poly12.coeff_bit_count());
+            Assert::IsTrue(value == encoder4.decode_uint32(poly12));
         }
 
         TEST_METHOD(BinaryEncodeDecodeInt64)
@@ -691,6 +799,42 @@ namespace SEALTest
             poly12[4] = "7FFF"; // 32767
             poly12[5] = "7FFE"; // 32766
             Assert::AreEqual(static_cast<uint64_t>(1 + -1 * 7 + -2 * 49 + -32767 * 343 + 32767 * 2401 + 32766 * 16807), static_cast<uint64_t>(encoder3.decode_int64(poly12)));
+        
+            BalancedEncoder encoder4(modulus, 6);
+            poly8.resize(4, 16);
+            poly8[0] = 5;
+            poly8[1] = 4;
+            poly8[2] = 3;
+            poly8[3] = *modulus.pointer() - 2;
+            int64_t value = 5 + 4 * 6 + 3 * 36 - 2 * 216;
+            Assert::IsTrue(value == encoder4.decode_int64(poly8));
+
+            BalancedEncoder encoder5(modulus, 10);
+            poly9.resize(4, 16);
+            poly9[0] = 1;
+            poly9[1] = 2;
+            poly9[2] = 3;
+            poly9[3] = 4;
+            value = 4321;
+            Assert::IsTrue(value == encoder5.decode_int64(poly9));
+
+            value = -1234;
+            poly10 = encoder3.encode(value);
+            Assert::AreEqual(5, poly10.significant_coeff_count());
+            Assert::AreEqual(modulus.significant_bit_count(), poly10.coeff_bit_count());
+            Assert::IsTrue(value == encoder3.decode_int64(poly10));
+
+            value = -1234;
+            poly11 = encoder4.encode(value);
+            Assert::AreEqual(5, poly11.significant_coeff_count());
+            Assert::AreEqual(modulus.significant_bit_count(), poly11.coeff_bit_count());
+            Assert::IsTrue(value == encoder4.decode_int64(poly11));
+
+            value = -1234;
+            poly12 = encoder5.encode(value);
+            Assert::AreEqual(4, poly12.significant_coeff_count());
+            Assert::AreEqual(modulus.significant_bit_count(), poly12.coeff_bit_count());
+            Assert::IsTrue(value == encoder5.decode_int64(poly12));
         }
 
         TEST_METHOD(EncodeDecodeInt32)
@@ -914,6 +1058,42 @@ namespace SEALTest
             poly12[4] = "7FFF"; // 32767
             poly12[5] = "7FFE"; // 32766
             Assert::AreEqual(static_cast<int32_t>(1 + -1 * 7 + -2 * 49 + -32767 * 343 + 32767 * 2401 + 32766 * 16807), encoder2.decode_int32(poly12));
+        
+            BalancedEncoder encoder4(modulus, 6);
+            poly8.resize(4, 16);
+            poly8[0] = 5;
+            poly8[1] = 4;
+            poly8[2] = 3;
+            poly8[3] = *modulus.pointer() - 2;
+            int32_t value = 5 + 4 * 6 + 3 * 36 - 2 * 216;
+            Assert::IsTrue(value == encoder4.decode_int32(poly8));
+
+            BalancedEncoder encoder5(modulus, 10);
+            poly9.resize(4, 16);
+            poly9[0] = 1;
+            poly9[1] = 2;
+            poly9[2] = 3;
+            poly9[3] = 4;
+            value = 4321;
+            Assert::IsTrue(value == encoder5.decode_int32(poly9));
+
+            value = -1234;
+            poly10 = encoder2.encode(value);
+            Assert::AreEqual(5, poly10.significant_coeff_count());
+            Assert::AreEqual(modulus.significant_bit_count(), poly10.coeff_bit_count());
+            Assert::IsTrue(value == encoder2.decode_int32(poly10));
+
+            value = -1234;
+            BigPoly poly11 = encoder4.encode(value);
+            Assert::AreEqual(5, poly11.significant_coeff_count());
+            Assert::AreEqual(modulus.significant_bit_count(), poly11.coeff_bit_count());
+            Assert::IsTrue(value == encoder4.decode_int32(poly11));
+
+            value = -1234;
+            poly12 = encoder5.encode(value);
+            Assert::AreEqual(4, poly12.significant_coeff_count());
+            Assert::AreEqual(modulus.significant_bit_count(), poly12.coeff_bit_count());
+            Assert::IsTrue(value == encoder5.decode_int32(poly12));
         }
 
         TEST_METHOD(BinaryFractionalEncodeDecode)
@@ -956,42 +1136,100 @@ namespace SEALTest
         TEST_METHOD(BalancedFractionalEncodeDecode)
         {
             BigPoly poly_modulus("1x^1024 + 1");
-            BigUInt modulus("10000");
-            BalancedFractionalEncoder encoder(modulus, poly_modulus, 500, 50);
-
-            for (uint64_t b = 3; b < 20; b += 2)
             {
-                BalancedFractionalEncoder encoder(modulus, poly_modulus, 500, 50, b);
+                BigUInt modulus("10000");
+                for (uint64_t b = 3; b < 20; ++b)
+                {
+                    BalancedFractionalEncoder encoder(modulus, poly_modulus, 500, 50, b);
 
-                BigPoly poly = encoder.encode(0.0);
-                Assert::AreEqual(poly_modulus.coeff_count(), poly.coeff_count());
-                Assert::IsTrue(poly.is_zero());
-                Assert::AreEqual(0.0, encoder.decode(poly));
+                    BigPoly poly = encoder.encode(0.0);
+                    Assert::AreEqual(poly_modulus.coeff_count(), poly.coeff_count());
+                    Assert::IsTrue(poly.is_zero());
+                    Assert::AreEqual(0.0, encoder.decode(poly));
 
-                BigPoly poly1 = encoder.encode(-1.0);
-                Assert::AreEqual(poly_modulus.coeff_count(), poly1.coeff_count());
-                Assert::AreEqual(modulus.bit_count(), poly1.coeff_bit_count());
-                Assert::AreEqual(-1.0, encoder.decode(poly1));
+                    BigPoly poly1 = encoder.encode(-1.0);
+                    Assert::AreEqual(poly_modulus.coeff_count(), poly1.coeff_count());
+                    Assert::AreEqual(modulus.bit_count(), poly1.coeff_bit_count());
+                    Assert::AreEqual(-1.0, encoder.decode(poly1));
 
-                BigPoly poly2 = encoder.encode(0.1);
-                Assert::AreEqual(poly_modulus.coeff_count(), poly2.coeff_count());
-                Assert::AreEqual(modulus.bit_count(), poly2.coeff_bit_count());
-                Assert::IsTrue(fabs(encoder.decode(poly2) - 0.1) / 0.1 < 0.000001);
+                    BigPoly poly2 = encoder.encode(0.1);
+                    Assert::AreEqual(poly_modulus.coeff_count(), poly2.coeff_count());
+                    Assert::AreEqual(modulus.bit_count(), poly2.coeff_bit_count());
+                    Assert::IsTrue(fabs(encoder.decode(poly2) - 0.1) / 0.1 < 0.000001);
 
-                BigPoly poly3 = encoder.encode(3.123);
-                Assert::AreEqual(poly_modulus.coeff_count(), poly3.coeff_count());
-                Assert::AreEqual(modulus.bit_count(), poly3.coeff_bit_count());
-                Assert::IsTrue(fabs(encoder.decode(poly3) - 3.123) / 3.123 < 0.000001);
+                    BigPoly poly3 = encoder.encode(3.123);
+                    Assert::AreEqual(poly_modulus.coeff_count(), poly3.coeff_count());
+                    Assert::AreEqual(modulus.bit_count(), poly3.coeff_bit_count());
+                    Assert::IsTrue(fabs(encoder.decode(poly3) - 3.123) / 3.123 < 0.000001);
 
-                BigPoly poly4 = encoder.encode(-123.456);
-                Assert::AreEqual(poly_modulus.coeff_count(), poly4.coeff_count());
-                Assert::AreEqual(modulus.bit_count(), poly4.coeff_bit_count());
-                Assert::IsTrue(fabs(encoder.decode(poly4) + 123.456) / (-123.456) < 0.000001);
+                    BigPoly poly4 = encoder.encode(-123.456);
+                    Assert::AreEqual(poly_modulus.coeff_count(), poly4.coeff_count());
+                    Assert::AreEqual(modulus.bit_count(), poly4.coeff_bit_count());
+                    Assert::IsTrue(fabs(encoder.decode(poly4) + 123.456) / (-123.456) < 0.000001);
 
-                BigPoly poly5 = encoder.encode(12345.98765);
-                Assert::AreEqual(poly_modulus.coeff_count(), poly5.coeff_count());
-                Assert::AreEqual(modulus.bit_count(), poly5.coeff_bit_count());
-                Assert::IsTrue(fabs(encoder.decode(poly5) - 12345.98765) / 12345.98765 < 0.000001);
+                    BigPoly poly5 = encoder.encode(12345.98765);
+                    Assert::AreEqual(poly_modulus.coeff_count(), poly5.coeff_count());
+                    Assert::AreEqual(modulus.bit_count(), poly5.coeff_bit_count());
+                    Assert::IsTrue(fabs(encoder.decode(poly5) - 12345.98765) / 12345.98765 < 0.000001);
+
+                    BigPoly poly6 = encoder.encode(-0.0);
+                    Assert::AreEqual(poly_modulus.coeff_count(), poly6.coeff_count());
+                    Assert::AreEqual(modulus.bit_count(), poly6.coeff_bit_count());
+                    Assert::AreEqual(0.0, encoder.decode(poly));
+
+                    BigPoly poly7 = encoder.encode(0.115);
+                    Assert::AreEqual(poly_modulus.coeff_count(), poly7.coeff_count());
+                    Assert::AreEqual(modulus.bit_count(), poly7.coeff_bit_count());
+                    Assert::IsTrue(fabs(encoder.decode(poly7) - 0.115) / 0.115 < 0.000001);
+                }
+            }
+
+            {
+                BigUInt modulus("100000000000000000000000000");
+                for (uint64_t b = 3; b < 20; ++b)
+                {
+                    BalancedFractionalEncoder encoder(modulus, poly_modulus, 500, 50, b);
+
+                    BigPoly poly = encoder.encode(0.0);
+                    Assert::AreEqual(poly_modulus.coeff_count(), poly.coeff_count());
+                    Assert::IsTrue(poly.is_zero());
+                    Assert::AreEqual(0.0, encoder.decode(poly));
+
+                    BigPoly poly1 = encoder.encode(-1.0);
+                    Assert::AreEqual(poly_modulus.coeff_count(), poly1.coeff_count());
+                    Assert::AreEqual(modulus.bit_count(), poly1.coeff_bit_count());
+                    Assert::AreEqual(-1.0, encoder.decode(poly1));
+
+                    BigPoly poly2 = encoder.encode(0.1);
+                    Assert::AreEqual(poly_modulus.coeff_count(), poly2.coeff_count());
+                    Assert::AreEqual(modulus.bit_count(), poly2.coeff_bit_count());
+                    Assert::IsTrue(fabs(encoder.decode(poly2) - 0.1) / 0.1 < 0.000001);
+
+                    BigPoly poly3 = encoder.encode(3.123);
+                    Assert::AreEqual(poly_modulus.coeff_count(), poly3.coeff_count());
+                    Assert::AreEqual(modulus.bit_count(), poly3.coeff_bit_count());
+                    Assert::IsTrue(fabs(encoder.decode(poly3) - 3.123) / 3.123 < 0.000001);
+
+                    BigPoly poly4 = encoder.encode(-123.456);
+                    Assert::AreEqual(poly_modulus.coeff_count(), poly4.coeff_count());
+                    Assert::AreEqual(modulus.bit_count(), poly4.coeff_bit_count());
+                    Assert::IsTrue(fabs(encoder.decode(poly4) + 123.456) / (-123.456) < 0.000001);
+
+                    BigPoly poly5 = encoder.encode(12345.98765);
+                    Assert::AreEqual(poly_modulus.coeff_count(), poly5.coeff_count());
+                    Assert::AreEqual(modulus.bit_count(), poly5.coeff_bit_count());
+                    Assert::IsTrue(fabs(encoder.decode(poly5) - 12345.98765) / 12345.98765 < 0.000001);
+
+                    BigPoly poly6 = encoder.encode(-0.0);
+                    Assert::AreEqual(poly_modulus.coeff_count(), poly6.coeff_count());
+                    Assert::AreEqual(modulus.bit_count(), poly6.coeff_bit_count());
+                    Assert::AreEqual(0.0, encoder.decode(poly));
+
+                    BigPoly poly7 = encoder.encode(0.115);
+                    Assert::AreEqual(poly_modulus.coeff_count(), poly7.coeff_count());
+                    Assert::AreEqual(modulus.bit_count(), poly7.coeff_bit_count());
+                    Assert::IsTrue(fabs(encoder.decode(poly7) - 0.115) / 0.115 < 0.000001);
+                }
             }
         }
     };

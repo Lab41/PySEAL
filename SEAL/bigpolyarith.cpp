@@ -3,6 +3,8 @@
 #include "bigpolyarith.h"
 #include "util/polyarith.h"
 #include "util/polyarithmod.h"
+#include "util/polyfftmultmod.h"
+#include "util/polyfftmult.h"
 #include "util/common.h"
 #include "util/mempool.h"
 #include "util/modulus.h"
@@ -223,7 +225,14 @@ namespace seal
         // Multiply polynomials.
         Modulus modulus(coeff_mod.pointer(), coeff_uint64_count, pool);
         PolyModulus polymod(polymodptr.get(), coeff_count, coeff_uint64_count);
-        multiply_poly_poly_polymod_coeffmod(poly1ptr.get(), poly2ptr.get(), polymod, modulus, result.pointer(), pool);
+        if (polymod.is_fft_modulus())
+        {
+             nussbaumer_multiply_poly_poly_coeffmod(poly1ptr.get(), poly2ptr.get(), polymod.coeff_count_power_of_two(), modulus, result.pointer(), pool);
+        }
+        else
+        {
+            nonfft_multiply_poly_poly_polymod_coeffmod(poly1ptr.get(), poly2ptr.get(), polymod, modulus, result.pointer(), pool);
+        }
     }
 
     void BigPolyArith::multiply(const BigPoly &poly1, const BigPoly &poly2, const BigUInt &coeff_mod, BigPoly &result)

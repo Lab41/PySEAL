@@ -15,106 +15,100 @@ namespace SEALTest
         public:
             TEST_METHOD(IncrementUInt)
             {
-                Assert::IsTrue(increment_uint(nullptr, 0, nullptr));
-
                 MemoryPool &pool = *MemoryPool::default_pool();
                 Pointer ptr(allocate_uint(2, pool));
                 ptr[0] = 0;
                 ptr[1] = 0;
-                Assert::IsFalse(increment_uint(ptr.get(), 2, ptr.get()));
+                Assert::IsFalse(increment_uint(ptr.get(), 2, ptr.get()) != 0);
                 Assert::AreEqual(static_cast<uint64_t>(1), ptr[0]);
                 Assert::AreEqual(static_cast<uint64_t>(0), ptr[1]);
-                Assert::IsFalse(increment_uint(ptr.get(), 2, ptr.get()));
+                Assert::IsFalse(increment_uint(ptr.get(), 2, ptr.get()) != 0);
                 Assert::AreEqual(static_cast<uint64_t>(2), ptr[0]);
                 Assert::AreEqual(static_cast<uint64_t>(0), ptr[1]);
 
                 ptr[0] = 0xFFFFFFFFFFFFFFFF;
                 ptr[1] = 0;
-                Assert::IsFalse(increment_uint(ptr.get(), 2, ptr.get()));
+                Assert::IsFalse(increment_uint(ptr.get(), 2, ptr.get()) != 0);
                 Assert::AreEqual(static_cast<uint64_t>(0), ptr[0]);
                 Assert::AreEqual(static_cast<uint64_t>(1), ptr[1]);
-                Assert::IsFalse(increment_uint(ptr.get(), 2, ptr.get()));
+                Assert::IsFalse(increment_uint(ptr.get(), 2, ptr.get()) != 0);
                 Assert::AreEqual(static_cast<uint64_t>(1), ptr[0]);
                 Assert::AreEqual(static_cast<uint64_t>(1), ptr[1]);
 
                 ptr[0] = 0xFFFFFFFFFFFFFFFF;
                 ptr[1] = 1;
-                Assert::IsFalse(increment_uint(ptr.get(), 2, ptr.get()));
+                Assert::IsFalse(increment_uint(ptr.get(), 2, ptr.get()) != 0);
                 Assert::AreEqual(static_cast<uint64_t>(0), ptr[0]);
                 Assert::AreEqual(static_cast<uint64_t>(2), ptr[1]);
-                Assert::IsFalse(increment_uint(ptr.get(), 2, ptr.get()));
+                Assert::IsFalse(increment_uint(ptr.get(), 2, ptr.get()) != 0);
                 Assert::AreEqual(static_cast<uint64_t>(1), ptr[0]);
                 Assert::AreEqual(static_cast<uint64_t>(2), ptr[1]);
 
                 ptr[0] = 0xFFFFFFFFFFFFFFFE;
                 ptr[1] = 0xFFFFFFFFFFFFFFFF;
-                Assert::IsFalse(increment_uint(ptr.get(), 2, ptr.get()));
+                Assert::IsFalse(increment_uint(ptr.get(), 2, ptr.get()) != 0);
                 Assert::AreEqual(static_cast<uint64_t>(0xFFFFFFFFFFFFFFFF), ptr[0]);
                 Assert::AreEqual(static_cast<uint64_t>(0xFFFFFFFFFFFFFFFF), ptr[1]);
-                Assert::IsTrue(increment_uint(ptr.get(), 2, ptr.get()));
+                Assert::IsTrue(increment_uint(ptr.get(), 2, ptr.get()) != 0);
                 Assert::AreEqual(static_cast<uint64_t>(0), ptr[0]);
                 Assert::AreEqual(static_cast<uint64_t>(0), ptr[1]);
-                Assert::IsFalse(increment_uint(ptr.get(), 2, ptr.get()));
+                Assert::IsFalse(increment_uint(ptr.get(), 2, ptr.get()) != 0);
                 Assert::AreEqual(static_cast<uint64_t>(1), ptr[0]);
                 Assert::AreEqual(static_cast<uint64_t>(0), ptr[1]);
             }
 
             TEST_METHOD(DecrementUInt)
             {
-                Assert::IsTrue(decrement_uint(nullptr, 0, nullptr));
-
                 MemoryPool &pool = *MemoryPool::default_pool();
                 Pointer ptr(allocate_uint(2, pool));
                 ptr[0] = 2;
                 ptr[1] = 2;
-                Assert::IsFalse(decrement_uint(ptr.get(), 2, ptr.get()));
+                Assert::IsFalse(decrement_uint(ptr.get(), 2, ptr.get()) != 0);
                 Assert::AreEqual(static_cast<uint64_t>(1), ptr[0]);
                 Assert::AreEqual(static_cast<uint64_t>(2), ptr[1]);
-                Assert::IsFalse(decrement_uint(ptr.get(), 2, ptr.get()));
+                Assert::IsFalse(decrement_uint(ptr.get(), 2, ptr.get()) != 0);
                 Assert::AreEqual(static_cast<uint64_t>(0), ptr[0]);
                 Assert::AreEqual(static_cast<uint64_t>(2), ptr[1]);
-                Assert::IsFalse(decrement_uint(ptr.get(), 2, ptr.get()));
+                Assert::IsFalse(decrement_uint(ptr.get(), 2, ptr.get()) != 0);
                 Assert::AreEqual(static_cast<uint64_t>(0xFFFFFFFFFFFFFFFF), ptr[0]);
                 Assert::AreEqual(static_cast<uint64_t>(1), ptr[1]);
-                Assert::IsFalse(decrement_uint(ptr.get(), 2, ptr.get()));
+                Assert::IsFalse(decrement_uint(ptr.get(), 2, ptr.get()) != 0);
                 Assert::AreEqual(static_cast<uint64_t>(0xFFFFFFFFFFFFFFFE), ptr[0]);
                 Assert::AreEqual(static_cast<uint64_t>(1), ptr[1]);
 
                 ptr[0] = 2;
                 ptr[1] = 1;
-                Assert::IsFalse(decrement_uint(ptr.get(), 2, ptr.get()));
+                Assert::IsFalse(decrement_uint(ptr.get(), 2, ptr.get()) != 0);
                 Assert::AreEqual(static_cast<uint64_t>(1), ptr[0]);
                 Assert::AreEqual(static_cast<uint64_t>(1), ptr[1]);
-                Assert::IsFalse(decrement_uint(ptr.get(), 2, ptr.get()));
+                Assert::IsFalse(decrement_uint(ptr.get(), 2, ptr.get()) != 0);
                 Assert::AreEqual(static_cast<uint64_t>(0), ptr[0]);
                 Assert::AreEqual(static_cast<uint64_t>(1), ptr[1]);
-                Assert::IsFalse(decrement_uint(ptr.get(), 2, ptr.get()));
+                Assert::IsFalse(decrement_uint(ptr.get(), 2, ptr.get()) != 0);
                 Assert::AreEqual(static_cast<uint64_t>(0xFFFFFFFFFFFFFFFF), ptr[0]);
                 Assert::AreEqual(static_cast<uint64_t>(0), ptr[1]);
-                Assert::IsFalse(decrement_uint(ptr.get(), 2, ptr.get()));
+                Assert::IsFalse(decrement_uint(ptr.get(), 2, ptr.get()) != 0);
                 Assert::AreEqual(static_cast<uint64_t>(0xFFFFFFFFFFFFFFFE), ptr[0]);
                 Assert::AreEqual(static_cast<uint64_t>(0), ptr[1]);
 
                 ptr[0] = 2;
                 ptr[1] = 0;
-                Assert::IsFalse(decrement_uint(ptr.get(), 2, ptr.get()));
+                Assert::IsFalse(decrement_uint(ptr.get(), 2, ptr.get()) != 0);
                 Assert::AreEqual(static_cast<uint64_t>(1), ptr[0]);
                 Assert::AreEqual(static_cast<uint64_t>(0), ptr[1]);
-                Assert::IsFalse(decrement_uint(ptr.get(), 2, ptr.get()));
+                Assert::IsFalse(decrement_uint(ptr.get(), 2, ptr.get()) != 0);
                 Assert::AreEqual(static_cast<uint64_t>(0), ptr[0]);
                 Assert::AreEqual(static_cast<uint64_t>(0), ptr[1]);
-                Assert::IsTrue(decrement_uint(ptr.get(), 2, ptr.get()));
+                Assert::IsTrue(decrement_uint(ptr.get(), 2, ptr.get()) != 0);
                 Assert::AreEqual(static_cast<uint64_t>(0xFFFFFFFFFFFFFFFF), ptr[0]);
                 Assert::AreEqual(static_cast<uint64_t>(0xFFFFFFFFFFFFFFFF), ptr[1]);
-                Assert::IsFalse(decrement_uint(ptr.get(), 2, ptr.get()));
+                Assert::IsFalse(decrement_uint(ptr.get(), 2, ptr.get()) != 0);
                 Assert::AreEqual(static_cast<uint64_t>(0xFFFFFFFFFFFFFFFE), ptr[0]);
                 Assert::AreEqual(static_cast<uint64_t>(0xFFFFFFFFFFFFFFFF), ptr[1]);
             }
 
             TEST_METHOD(NegateUInt)
             {
-                negate_uint(nullptr, 0, nullptr);
-
                 MemoryPool &pool = *MemoryPool::default_pool();
                 Pointer ptr(allocate_uint(2, pool));
                 ptr[0] = 0;
@@ -171,8 +165,6 @@ namespace SEALTest
 
             TEST_METHOD(LeftShiftUInt)
             {
-                left_shift_uint(nullptr, 0, 0, nullptr);
-
                 MemoryPool &pool = *MemoryPool::default_pool();
                 Pointer ptr(allocate_uint(2, pool));
                 Pointer ptr2(allocate_uint(2, pool));
@@ -229,8 +221,6 @@ namespace SEALTest
 
             TEST_METHOD(RightShiftUInt)
             {
-                right_shift_uint(nullptr, 0, 0, nullptr);
-
                 MemoryPool &pool = *MemoryPool::default_pool();
                 Pointer ptr(allocate_uint(2, pool));
                 Pointer ptr2(allocate_uint(2, pool));
@@ -287,8 +277,6 @@ namespace SEALTest
 
             TEST_METHOD(RightShiftSignExtendUInt)
             {
-                right_shift_sign_extend_uint(nullptr, 0, 0, nullptr);
-
                 MemoryPool &pool = *MemoryPool::default_pool();
                 Pointer ptr(allocate_uint(2, pool));
                 Pointer ptr2(allocate_uint(2, pool));
@@ -549,8 +537,6 @@ namespace SEALTest
 
             TEST_METHOD(AddUIntUInt)
             {
-                Assert::IsFalse(add_uint_uint(nullptr, nullptr, 0, nullptr));
-
                 MemoryPool &pool = *MemoryPool::default_pool();
                 Pointer ptr(allocate_uint(2, pool));
                 Pointer ptr2(allocate_uint(2, pool));
@@ -561,7 +547,7 @@ namespace SEALTest
                 ptr2[1] = 0;
                 ptr3[0] = 0xFFFFFFFFFFFFFFFF;
                 ptr3[1] = 0xFFFFFFFFFFFFFFFF;
-                Assert::IsFalse(add_uint_uint(ptr.get(), ptr2.get(), 2, ptr3.get()));
+                Assert::IsFalse(add_uint_uint(ptr.get(), ptr2.get(), 2, ptr3.get()) != 0);
                 Assert::AreEqual(static_cast<uint64_t>(0), ptr3[0]);
                 Assert::AreEqual(static_cast<uint64_t>(0), ptr3[1]);
 
@@ -571,7 +557,7 @@ namespace SEALTest
                 ptr2[1] = 0;
                 ptr3[0] = 0;
                 ptr3[1] = 0;
-                Assert::IsFalse(add_uint_uint(ptr.get(), ptr2.get(), 2, ptr3.get()));
+                Assert::IsFalse(add_uint_uint(ptr.get(), ptr2.get(), 2, ptr3.get()) != 0);
                 Assert::AreEqual(static_cast<uint64_t>(0xFFFFFFFFFFFFFFFF), ptr3[0]);
                 Assert::AreEqual(static_cast<uint64_t>(0xFFFFFFFFFFFFFFFF), ptr3[1]);
 
@@ -581,7 +567,7 @@ namespace SEALTest
                 ptr2[1] = 0;
                 ptr3[0] = 0;
                 ptr3[1] = 0;
-                Assert::IsFalse(add_uint_uint(ptr.get(), ptr2.get(), 2, ptr3.get()));
+                Assert::IsFalse(add_uint_uint(ptr.get(), ptr2.get(), 2, ptr3.get()) != 0);
                 Assert::AreEqual(static_cast<uint64_t>(0xFFFFFFFFFFFFFFFF), ptr3[0]);
                 Assert::AreEqual(static_cast<uint64_t>(0xFFFFFFFFFFFFFFFF), ptr3[1]);
 
@@ -591,7 +577,7 @@ namespace SEALTest
                 ptr2[1] = 0;
                 ptr3[0] = 0xFFFFFFFFFFFFFFFF;
                 ptr3[1] = 0xFFFFFFFFFFFFFFFF;
-                Assert::IsTrue(add_uint_uint(ptr.get(), ptr2.get(), 2, ptr3.get()));
+                Assert::IsTrue(add_uint_uint(ptr.get(), ptr2.get(), 2, ptr3.get()) != 0);
                 Assert::AreEqual(static_cast<uint64_t>(0), ptr3[0]);
                 Assert::AreEqual(static_cast<uint64_t>(0), ptr3[1]);
 
@@ -601,10 +587,11 @@ namespace SEALTest
                 ptr2[1] = 0xFFFFFFFFFFFFFFFF;
                 ptr3[0] = 0;
                 ptr3[1] = 0;
-                Assert::IsTrue(add_uint_uint(ptr.get(), ptr2.get(), 2, ptr3.get()));
+
+                Assert::IsTrue(add_uint_uint(ptr.get(), ptr2.get(), 2, ptr3.get()) != 0);
                 Assert::AreEqual(static_cast<uint64_t>(0xFFFFFFFFFFFFFFFE), ptr3[0]);
                 Assert::AreEqual(static_cast<uint64_t>(0xFFFFFFFFFFFFFFFF), ptr3[1]);
-                Assert::IsTrue(add_uint_uint(ptr.get(), ptr2.get(), 2, ptr.get()));
+                Assert::IsTrue(add_uint_uint(ptr.get(), ptr2.get(), 2, ptr.get()) != 0);
                 Assert::AreEqual(static_cast<uint64_t>(0xFFFFFFFFFFFFFFFE), ptr[0]);
                 Assert::AreEqual(static_cast<uint64_t>(0xFFFFFFFFFFFFFFFF), ptr[1]);
 
@@ -614,7 +601,7 @@ namespace SEALTest
                 ptr2[1] = 0;
                 ptr3[0] = 0;
                 ptr3[1] = 0;
-                Assert::IsFalse(add_uint_uint(ptr.get(), ptr2.get(), 2, ptr3.get()));
+                Assert::IsFalse(add_uint_uint(ptr.get(), ptr2.get(), 2, ptr3.get()) != 0);
                 Assert::AreEqual(static_cast<uint64_t>(0), ptr3[0]);
                 Assert::AreEqual(static_cast<uint64_t>(1), ptr3[1]);
 
@@ -624,18 +611,16 @@ namespace SEALTest
                 ptr2[1] = 0;
                 ptr3[0] = 0;
                 ptr3[1] = 0;
-                Assert::IsFalse(add_uint_uint(ptr.get(), 2, ptr2.get(), 1, false, 2, ptr3.get()));
+                Assert::IsFalse(add_uint_uint(ptr.get(), 2, ptr2.get(), 1, false, 2, ptr3.get()) != 0);
                 Assert::AreEqual(static_cast<uint64_t>(0), ptr3[0]);
                 Assert::AreEqual(static_cast<uint64_t>(6), ptr3[1]);
-                Assert::IsFalse(add_uint_uint(ptr.get(), 2, ptr2.get(), 1, true, 2, ptr3.get()));
+                Assert::IsFalse(add_uint_uint(ptr.get(), 2, ptr2.get(), 1, true, 2, ptr3.get()) != 0);
                 Assert::AreEqual(static_cast<uint64_t>(1), ptr3[0]);
                 Assert::AreEqual(static_cast<uint64_t>(6), ptr3[1]);
             }
 
             TEST_METHOD(SubUIntUInt)
             {
-                Assert::IsFalse(sub_uint_uint(nullptr, nullptr, 0, nullptr));
-
                 MemoryPool &pool = *MemoryPool::default_pool();
                 Pointer ptr(allocate_uint(2, pool));
                 Pointer ptr2(allocate_uint(2, pool));
@@ -646,7 +631,7 @@ namespace SEALTest
                 ptr2[1] = 0;
                 ptr3[0] = 0xFFFFFFFFFFFFFFFF;
                 ptr3[1] = 0xFFFFFFFFFFFFFFFF;
-                Assert::IsFalse(sub_uint_uint(ptr.get(), ptr2.get(), 2, ptr3.get()));
+                Assert::IsFalse(sub_uint_uint(ptr.get(), ptr2.get(), 2, ptr3.get()) != 0);
                 Assert::AreEqual(static_cast<uint64_t>(0), ptr3[0]);
                 Assert::AreEqual(static_cast<uint64_t>(0), ptr3[1]);
 
@@ -656,7 +641,7 @@ namespace SEALTest
                 ptr2[1] = 0;
                 ptr3[0] = 0;
                 ptr3[1] = 0;
-                Assert::IsFalse(sub_uint_uint(ptr.get(), ptr2.get(), 2, ptr3.get()));
+                Assert::IsFalse(sub_uint_uint(ptr.get(), ptr2.get(), 2, ptr3.get()) != 0);
                 Assert::AreEqual(static_cast<uint64_t>(0xFFFFFFFFFFFFFFFF), ptr3[0]);
                 Assert::AreEqual(static_cast<uint64_t>(0xFFFFFFFFFFFFFFFF), ptr3[1]);
 
@@ -666,7 +651,7 @@ namespace SEALTest
                 ptr2[1] = 0;
                 ptr3[0] = 0;
                 ptr3[1] = 0;
-                Assert::IsFalse(sub_uint_uint(ptr.get(), ptr2.get(), 2, ptr3.get()));
+                Assert::IsFalse(sub_uint_uint(ptr.get(), ptr2.get(), 2, ptr3.get()) != 0);
                 Assert::AreEqual(static_cast<uint64_t>(0xFFFFFFFFFFFFFFFE), ptr3[0]);
                 Assert::AreEqual(static_cast<uint64_t>(0xFFFFFFFFFFFFFFFF), ptr3[1]);
 
@@ -676,10 +661,10 @@ namespace SEALTest
                 ptr2[1] = 0;
                 ptr3[0] = 0;
                 ptr3[1] = 0;
-                Assert::IsTrue(sub_uint_uint(ptr.get(), ptr2.get(), 2, ptr3.get()));
+                Assert::IsTrue(sub_uint_uint(ptr.get(), ptr2.get(), 2, ptr3.get()) != 0);
                 Assert::AreEqual(static_cast<uint64_t>(0xFFFFFFFFFFFFFFFF), ptr3[0]);
                 Assert::AreEqual(static_cast<uint64_t>(0xFFFFFFFFFFFFFFFF), ptr3[1]);
-                Assert::IsTrue(sub_uint_uint(ptr.get(), ptr2.get(), 2, ptr.get()));
+                Assert::IsTrue(sub_uint_uint(ptr.get(), ptr2.get(), 2, ptr.get()) != 0);
                 Assert::AreEqual(static_cast<uint64_t>(0xFFFFFFFFFFFFFFFF), ptr[0]);
                 Assert::AreEqual(static_cast<uint64_t>(0xFFFFFFFFFFFFFFFF), ptr[1]);
 
@@ -689,10 +674,10 @@ namespace SEALTest
                 ptr2[1] = 0xFFFFFFFFFFFFFFFF;
                 ptr3[0] = 0;
                 ptr3[1] = 0;
-                Assert::IsFalse(sub_uint_uint(ptr.get(), ptr2.get(), 2, ptr3.get()));
+                Assert::IsFalse(sub_uint_uint(ptr.get(), ptr2.get(), 2, ptr3.get()) != 0);
                 Assert::AreEqual(static_cast<uint64_t>(0), ptr3[0]);
                 Assert::AreEqual(static_cast<uint64_t>(0), ptr3[1]);
-                Assert::IsFalse(sub_uint_uint(ptr.get(), ptr2.get(), 2, ptr.get()));
+                Assert::IsFalse(sub_uint_uint(ptr.get(), ptr2.get(), 2, ptr.get()) != 0);
                 Assert::AreEqual(static_cast<uint64_t>(0), ptr[0]);
                 Assert::AreEqual(static_cast<uint64_t>(0), ptr[1]);
 
@@ -702,7 +687,7 @@ namespace SEALTest
                 ptr2[1] = 0xFFFFFFFFFFFFFFFF;
                 ptr3[0] = 0;
                 ptr3[1] = 0;
-                Assert::IsTrue(sub_uint_uint(ptr.get(), ptr2.get(), 2, ptr3.get()));
+                Assert::IsTrue(sub_uint_uint(ptr.get(), ptr2.get(), 2, ptr3.get()) != 0);
                 Assert::AreEqual(static_cast<uint64_t>(0xFFFFFFFFFFFFFFFF), ptr3[0]);
                 Assert::AreEqual(static_cast<uint64_t>(0xFFFFFFFFFFFFFFFF), ptr3[1]);
 
@@ -712,7 +697,7 @@ namespace SEALTest
                 ptr2[1] = 0;
                 ptr3[0] = 0;
                 ptr3[1] = 0;
-                Assert::IsFalse(sub_uint_uint(ptr.get(), ptr2.get(), 2, ptr3.get()));
+                Assert::IsFalse(sub_uint_uint(ptr.get(), ptr2.get(), 2, ptr3.get()) != 0);
                 Assert::AreEqual(static_cast<uint64_t>(0xFFFFFFFFFFFFFFFF), ptr3[0]);
                 Assert::AreEqual(static_cast<uint64_t>(0), ptr3[1]);
 
@@ -722,18 +707,16 @@ namespace SEALTest
                 ptr2[1] = 0;
                 ptr3[0] = 0;
                 ptr3[1] = 0;
-                Assert::IsFalse(sub_uint_uint(ptr.get(), 2, ptr2.get(), 1, false, 2, ptr3.get()));
+                Assert::IsFalse(sub_uint_uint(ptr.get(), 2, ptr2.get(), 1, false, 2, ptr3.get()) != 0);
                 Assert::AreEqual(static_cast<uint64_t>(0xFFFFFFFFFFFFFFFF), ptr3[0]);
                 Assert::AreEqual(static_cast<uint64_t>(0), ptr3[1]);
-                Assert::IsFalse(sub_uint_uint(ptr.get(), 2, ptr2.get(), 1, true, 2, ptr3.get()));
+                Assert::IsFalse(sub_uint_uint(ptr.get(), 2, ptr2.get(), 1, true, 2, ptr3.get()) != 0);
                 Assert::AreEqual(static_cast<uint64_t>(0xFFFFFFFFFFFFFFFE), ptr3[0]);
                 Assert::AreEqual(static_cast<uint64_t>(0), ptr3[1]);
             }
 
             TEST_METHOD(MultiplyUIntUInt)
             {
-                multiply_uint_uint(nullptr, nullptr, 0, nullptr);
-
                 MemoryPool &pool = *MemoryPool::default_pool();
                 Pointer ptr(allocate_uint(2, pool));
                 Pointer ptr2(allocate_uint(2, pool));

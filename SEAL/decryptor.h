@@ -1,10 +1,10 @@
-#ifndef SEAL_DECRYPTOR_H
-#define SEAL_DECRYPTOR_H
+#pragma once
 
 #include "encryptionparams.h"
 #include "util/modulus.h"
 #include "util/polymodulus.h"
 #include "bigpolyarray.h"
+#include "util/ntt.h"
 
 namespace seal
 {
@@ -57,6 +57,46 @@ namespace seal
             return secret_key_;
         }
 
+        /**
+        Computes and returns the number of bits of inherent noise in a ciphertext. The user can easily compare
+        this with the maximum possible value returned by the function EncryptionParameters::inherent_noise_bits_max().
+
+        @par Inherent Noise
+        Technically speaking, the inherent noise of a ciphertext is a polynomial, but the condition for 
+        decryption working depends on the size of the largest absolute value of its coefficients. It is this 
+        largest absolute value that we will call the "noise", the "inherent noise", or the "error", in this 
+        documentation. The reader is referred to the description of the encryption scheme for more details.
+
+        @param[in] encrypted The ciphertext
+        @throws std::invalid_argument if the ciphertext is not a valid ciphertext for the encryption parameters
+        @see inherent_noise for computing the exact size of inherent noise.
+        */
+        int inherent_noise_bits(const BigPolyArray &encrypted)
+        {
+            BigUInt result;
+            inherent_noise(encrypted, result);
+            return result.significant_bit_count();
+        }
+
+        /**
+        Computes the inherent noise in a ciphertext. The result is written in a BigUInt given as a parameter.
+        The user can easily compare this with the maximum possible value returned by the function 
+        EncryptionParameters::inherent_noise_max(). It is often easier to analyze the size of the inherent
+        noise by using the functions inherent_noise_bits() and EncryptionParameters::inherent_noise_max().
+
+        @par Inherent Noise
+        Technically speaking, the inherent noise of a ciphertext is a polynomial, but the condition for
+        decryption working depends on the size of the largest absolute value of its coefficients. It is this
+        largest absolute value that we will call the "noise", the "inherent noise", or the "error", in this
+        documentation. The reader is referred to the description of the encryption scheme for more details.
+
+        @param[in] encrypted The ciphertext
+        @param[out] destination The BigUInt to overwrite with the inherent noise
+        @throws std::invalid_argument if the ciphertext is not a valid ciphertext for the encryption parameters
+        @see inherent_noise_bits for returning the significant bit count of the inherent noise instead.
+        */
+        void inherent_noise(const BigPolyArray &encrypted, BigUInt &destination);
+
     private:
         Decryptor(const Decryptor &copy) = delete;
 
@@ -86,8 +126,10 @@ namespace seal
 
         util::Modulus mod_;
 
+        util::NTTTables ntt_tables_;
+
         BigPolyArray secret_key_array_;
+
+        EncryptionParameterQualifiers qualifiers_;
     };
 }
-
-#endif // SEAL_DECRYPTOR_H

@@ -134,9 +134,9 @@ namespace SEALTest
             coeff_modulus = "FFFFFFFFC001";
             plain_modulus.resize(7);
             plain_modulus = 1 << 6;
-            poly_modulus.resize(64, 1);
+            poly_modulus.resize(65, 1);
             poly_modulus[0] = 1;
-            poly_modulus[63] = 1;
+            poly_modulus[64] = 1;
             parms.random_generator() = &factory;
 
             Assert::AreEqual(0, CustomRandomEngine::count());

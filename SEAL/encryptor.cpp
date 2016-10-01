@@ -5,8 +5,10 @@
 #include "util/uintarith.h"
 #include "util/polyarith.h"
 #include "util/polyarithmod.h"
+#include "util/polyfftmultmod.h"
 #include "util/clipnormal.h"
 #include "util/randomtostd.h"
+#include "util/ntt.h"
 #include "bigpoly.h"
 
 using namespace std;
@@ -37,7 +39,6 @@ namespace seal
             throw invalid_argument("plain is too large to be represented by encryption parameters");
         }
 #endif
-
         // Make destination have right size
         destination.resize(2, coeff_count, coeff_bit_count);
 
@@ -53,27 +54,46 @@ namespace seal
 
         // Generate u 
         MemoryPool &pool = *MemoryPool::default_pool();
-        unique_ptr<UniformRandomGenerator> random(random_generator_->create());
         Pointer u(allocate_poly(coeff_count, coeff_uint64_count, pool));
+        unique_ptr<UniformRandomGenerator> random(random_generator_->create());
+
         set_poly_coeffs_zero_one_negone(u.get(), random.get());
+        //set_poly_coeffs_zero_one(u.get(), random.get());
 
         // Calculate public_key_[0] * u.
         // Since we (may) need both public_key_[0] and u later, need a temp variable to store the solution.
         // Add temp into destination[0].
         Pointer temp(allocate_poly(coeff_count, coeff_uint64_count, pool));
-        multiply_poly_poly_polymod_coeffmod(u.get(), public_key_[0].pointer(), polymod_, mod_, temp.get(), pool);
+
+        // Multiply both u*public_key_[0] and u*public_key_[1] using the same FFT
+        set_zero_uint(coeff_uint64_count, get_poly_coeff(temp.get(), coeff_count - 1, coeff_uint64_count));
+        set_zero_uint(coeff_uint64_count, get_poly_coeff(destination[1].pointer(), coeff_count - 1, coeff_uint64_count));
+        
+        if (qualifiers_.enable_ntt)
+        {
+            ntt_double_multiply_poly_nttpoly(u.get(), public_key_[0].pointer(), public_key_[1].pointer(), ntt_tables_, temp.get(), destination[1].pointer(), pool);
+        }
+        else if(!qualifiers_.enable_ntt && qualifiers_.enable_nussbaumer)
+        {
+            int coeff_count_power = polymod_.coeff_count_power_of_two(); 
+            nussbaumer_multiply_poly_poly_coeffmod(u.get(), public_key_[0].pointer(), coeff_count_power, mod_, temp.get(), pool); 
+            nussbaumer_multiply_poly_poly_coeffmod(u.get(), public_key_[1].pointer(), coeff_count_power, mod_, destination[1].pointer(), pool);
+        }
+        else
+        {
+            // This branch should never be reached
+            throw logic_error("invalid encryption parameters");
+        }
+        
         add_poly_poly_coeffmod(temp.get(), destination[0].pointer(), coeff_count, coeff_modulus_.pointer(), coeff_uint64_count, destination[0].pointer());
 
-        // Generate e_1, add this value into destination[0].
+        // Generate e_0, add this value into destination[0].
         set_poly_coeffs_normal(temp.get(), random.get());
         add_poly_poly_coeffmod(temp.get(), destination[0].pointer(), coeff_count, coeff_modulus_.pointer(), coeff_uint64_count, destination[0].pointer());
 
-        // Calculate public_key_[1] * u and set this value to destination[1].
-        multiply_poly_poly_polymod_coeffmod(u.get(), public_key_[1].pointer(), polymod_, mod_, destination[1].pointer(), pool);
-
-        // Generate e_2, add this value into destination[1].
+        // Generate e_1, add this value into destination[1].
         set_poly_coeffs_normal(temp.get(), random.get());
-        add_poly_poly_coeffmod(temp.get(), destination[1].pointer(), coeff_count, coeff_modulus_.pointer(), coeff_uint64_count, destination[1].pointer());
+        add_poly_poly_coeffmod(temp.get(), destination[1].pointer(), coeff_count, coeff_modulus_.pointer(), coeff_uint64_count, destination[1].pointer()); 
     }
 
     void Encryptor::preencrypt(const std::uint64_t *plain, int plain_coeff_count, int plain_coeff_uint64_count, std::uint64_t *destination)
@@ -136,14 +156,17 @@ namespace seal
         }
     }
 
-
     void Encryptor::set_poly_coeffs_zero_one_negone(uint64_t *poly, UniformRandomGenerator *random) const
     {
         int coeff_count = poly_modulus_.coeff_count();
         int coeff_bit_count = poly_modulus_.coeff_bit_count();
         int coeff_uint64_count = divide_round_up(coeff_bit_count, bits_per_uint64);
+
+        BigUInt coeff_modulus_minus_one = coeff_modulus_ - 1;
+        
         RandomToStandardAdapter engine(random);
         uniform_int_distribution<int> dist(-1, 1);
+
         for (int i = 0; i < coeff_count - 1; ++i)
         {
             int rand_index = dist(engine);
@@ -153,7 +176,7 @@ namespace seal
             }
             else if (rand_index == -1)
             {
-                set_uint_uint((coeff_modulus_ - 1).pointer(), coeff_uint64_count, poly);
+                set_uint_uint(coeff_modulus_minus_one.pointer(), coeff_uint64_count, poly);
             }
             else
             {
@@ -162,6 +185,24 @@ namespace seal
             poly += coeff_uint64_count;
         }
         set_zero_uint(coeff_uint64_count, poly);
+    }
+
+    void Encryptor::set_poly_coeffs_zero_one(uint64_t *poly, UniformRandomGenerator *random) const
+    {
+        int coeff_count = poly_modulus_.coeff_count();
+        int coeff_bit_count = poly_modulus_.coeff_bit_count();
+        int coeff_uint64_count = divide_round_up(coeff_bit_count, bits_per_uint64);
+
+        RandomToStandardAdapter engine(random);
+        uniform_int_distribution<int> dist(0, 1);
+
+        set_zero_poly(coeff_count, coeff_uint64_count, poly);
+
+        for (int i = 0; i < coeff_count - 1; ++i)
+        {
+            *poly = dist(engine);
+            poly += coeff_uint64_count;
+        }
     }
 
     void Encryptor::set_poly_coeffs_normal(std::uint64_t *poly, UniformRandomGenerator *random) const
@@ -201,43 +242,18 @@ namespace seal
     Encryptor::Encryptor(const EncryptionParameters &parms, const BigPolyArray &public_key) :
         poly_modulus_(parms.poly_modulus()), coeff_modulus_(parms.coeff_modulus()), plain_modulus_(parms.plain_modulus()), public_key_(public_key),
         noise_standard_deviation_(parms.noise_standard_deviation()), noise_max_deviation_(parms.noise_max_deviation()), 
-        random_generator_(parms.random_generator() != nullptr ? parms.random_generator() : UniformRandomGeneratorFactory::default_factory())
+        random_generator_(parms.random_generator() != nullptr ? parms.random_generator() : UniformRandomGeneratorFactory::default_factory()),
+        qualifiers_(parms.get_qualifiers())
     {
+        // Verify parameters
+        if (!qualifiers_.parameters_set)
+        {
+            throw invalid_argument("encryption parameters are not set correctly");
+        }
+
         int coeff_count = poly_modulus_.significant_coeff_count();
         int coeff_bit_count = coeff_modulus_.significant_bit_count();
         int coeff_uint64_count = divide_round_up(coeff_bit_count, bits_per_uint64);
-
-        // Verify required parameters are non-zero and non-nullptr.
-        if (poly_modulus_.is_zero())
-        {
-            throw invalid_argument("poly_modulus cannot be zero");
-        }
-        if (coeff_modulus_.is_zero())
-        {
-            throw invalid_argument("coeff_modulus cannot be zero");
-        }
-        if (plain_modulus_.is_zero())
-        {
-            throw invalid_argument("plain_modulus cannot be zero");
-        }
-        if (noise_standard_deviation_ < 0)
-        {
-            throw invalid_argument("noise_standard_deviation must be non-negative");
-        }
-        if (noise_max_deviation_ < 0)
-        {
-            throw invalid_argument("noise_max_deviation must be non-negative");
-        }
-
-        // Verify parameters.
-        if (plain_modulus_ >= coeff_modulus_)
-        {
-            throw invalid_argument("plain_modulus must be smaller than coeff_modulus");
-        }
-        if (!are_poly_coefficients_less_than(poly_modulus_, coeff_modulus_))
-        {
-            throw invalid_argument("poly_modulus cannot have coefficients larger than coeff_modulus");
-        }
 
         // Resize encryption parameters to consistent size.
         if (poly_modulus_.coeff_count() != coeff_count || poly_modulus_.coeff_bit_count() != coeff_bit_count)
@@ -280,6 +296,14 @@ namespace seal
         // Initialize moduli.
         polymod_ = PolyModulus(poly_modulus_.pointer(), coeff_count, coeff_uint64_count);
         mod_ = Modulus(coeff_modulus_.pointer(), coeff_uint64_count, pool);
-        
+
+        // Generate NTT tables if needed
+        if (qualifiers_.enable_ntt)
+        {
+            if (!ntt_tables_.generate(polymod_.coeff_count_power_of_two(), mod_))
+            {
+                throw invalid_argument("failed to generate NTT tables");
+            }
+        }
     }
 }

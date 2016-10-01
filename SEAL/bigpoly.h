@@ -1,5 +1,4 @@
-#ifndef SEAL_BIGPOLY_H
-#define SEAL_BIGPOLY_H
+#pragma once
 
 #include <iostream>
 #include <cstdint>
@@ -14,7 +13,7 @@ namespace seal
     operator[] function. A BigPoly has a set coefficient count (which can be read with coeff_count()) and coefficient
     bit width (which can be read with coeff_bit_count()), and all coefficients in a BigPoly have the same bit width.
     The coefficient count and bit width of a BigPoly is set initially by the constructor, and can be resized either
-    explicitly with the resize() function or implicitly with the operator=() function.
+    explicitly with the resize() function, or implicitly with for example the operator=() function.
 
     @par Backing Array
     A BigPoly's coefficients are stored sequentially, index-zero coefficient first, in a contiguous std::uint64_t
@@ -23,8 +22,21 @@ namespace seal
     uint64_count() function returns the number of std::uint64_t values used to store all coefficients. Each
     coefficient is stored in an identical format to BigUInt, with the least quad word first and the order of bits
     for each quad word dependent on the architecture's std::uint64_t representation. For each coefficient, the bits higher
-    than the coefficient bit count must be set to zero to prevent undefined behavior. The pointer() function returns a
-    pointer to the first std::uint64_t of the array.
+    than the coefficient bit count must be set to zero to prevent undefined behavior. The pointer() function returns 
+    a pointer to the first std::uint64_t of the array.
+
+    @par Implicit Resizing
+    Both the copy constructor and operator=() allocate more memory for the backing array when needed, i.e. when
+    the source polynomial has a larger backing array than the destination. Conversely, when the destination backing 
+    array is already large enough, the data is only copied and the unnecessary higher degree coefficients are set
+    to zero. When new memory has to be allocated, only the significant coefficients of the source polynomial
+    are taken into account. This is is important, because it avoids unnecessary zero coefficients to be included 
+    in the destination, which in some cases could accumulate and result in very large unnecessary allocations. 
+    However, sometimes it is necessary to preserve the original coefficient count, even if some of the
+    leading coefficients are zero. This comes up for example when copying individual polynomials of ciphertext 
+    BigPolyArray objects, as these polynomials need to have the leading coefficient equal to zero to be considered
+    valid by classes such as Evaluator and Decryptor. For this purpose BigPoly contains functions duplicate_from
+    and duplicate_to, which create an exact copy of the source BigPoly.
 
     @par Alias BigPolys
     An aliased BigPoly (which can be determined with is_alias()) is a special type of BigPoly that does not manage
@@ -478,5 +490,3 @@ namespace seal
         bool is_alias_;
     };
 }
-
-#endif // SEAL_BIGPOLY_H

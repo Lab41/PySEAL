@@ -1,6 +1,7 @@
 #pragma once
 
 #include "bigpoly.h"
+#include "EvaluatorWrapper.h"
 
 namespace Microsoft
 {
@@ -10,7 +11,13 @@ namespace Microsoft
         {
             ref class BigUInt;
 
+            ref class BigPolyArray;
+
             ref class BigPolyArithmetic;
+
+            ref class Evaluator;
+
+            ref class Decryptor;
 
             /**
             <summary>Represents a polynomial consisting of a set of unsigned integer coefficients with a specified bit width.</summary>
@@ -21,7 +28,8 @@ namespace Microsoft
             indexer property. A BigPoly has a set coefficient count (which can be read with <see cref="CoeffCount"/>)
             and coefficient bit width (which can be read with <see cref="CoeffBitCount"/>), and all coefficients in a BigPoly have
             the same bit width. The coefficient count and bit width of a BigPoly is set initially by the constructor, and
-            can be resized either explicitly with the <see cref="Resize()"/> function or implicitly by assignment.
+            can be resized either explicitly with the <see cref="Resize()"/> function, or implicitly with for example 
+            assignment.
             </para>
 
             <para>
@@ -33,6 +41,21 @@ namespace Microsoft
             and the order of bits for each quad word dependent on the architecture's <see cref="System::UInt64"/> representation. For
             each coefficient, the bits higher than the coefficient bit count must be set to zero to prevent undefined behavior. The
             <see cref="Pointer"/> function returns a pointer to the first <see cref="System::UInt64"/> of the array.
+            </para>
+
+            <para>
+            Both the copy constructor and the Set function allocate more memory for the backing array when needed, 
+            i.e. when the source polynomial has a larger backing array than the destination. Conversely, when the destination 
+            backing array is already large enough, the data is only copied and the unnecessary higher degree coefficients 
+            are set to zero. When new memory has to be allocated, only the significant coefficients of the source polynomial
+            are taken into account. This is is important, because it avoids unnecessary zero coefficients to be included
+            in the destination, which in some cases could accumulate and result in very large unnecessary allocations.
+            However, sometimes it is necessary to preserve the original coefficient count, even if some of the
+            leading coefficients are zero. This comes up for example when copying individual polynomials of ciphertext
+            <see cref="BigPolyArray" /> objects, as these polynomials need to have the leading coefficient equal to zero to 
+            be considered valid by classes such as <see cref="Evaluator"/> and <see cref="Decryptor"/>. For this purpose 
+            BigPoly contains functions <see cref="DuplicateFrom" /> and <see cref="DuplicateTo"/>, which create an exact 
+            copy of the source BigPoly.
             </para>
 
             <para>

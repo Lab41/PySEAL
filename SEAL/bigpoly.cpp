@@ -462,7 +462,7 @@ namespace seal
 
     BigPoly &BigPoly::operator =(const string &hex_poly)
     {
-        int length = static_cast<int>(hex_poly.size());
+        int length = hex_poly.size();
 
         // Determine size needed to store string coefficient.
         int assign_coeff_count = 0;

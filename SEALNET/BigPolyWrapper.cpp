@@ -1,5 +1,6 @@
 #include <msclr\marshal_cppstd.h>
 #include <stdexcept>
+#include <algorithm>
 #include "Common.h"
 #include "util/common.h"
 #include "util/uintcore.h"
@@ -361,7 +362,7 @@ namespace Microsoft
                     if (read_coeff_count > bigpoly_->coeff_count() || read_coeff_bit_count > bigpoly_->coeff_bit_count())
                     {
                         // Size is too large to currently fit, so resize.
-                        bigpoly_->resize(max(read_coeff_count, bigpoly_->coeff_count()), max(read_coeff_bit_count, bigpoly_->coeff_bit_count()));
+                        bigpoly_->resize(std::max(read_coeff_count, bigpoly_->coeff_count()), std::max(read_coeff_bit_count, bigpoly_->coeff_bit_count()));
                     }
                     int read_coeff_uint64_count = divide_round_up(read_coeff_bit_count, bits_per_uint64);
                     int coeff_uint64_count = divide_round_up(bigpoly_->coeff_bit_count(), bits_per_uint64);

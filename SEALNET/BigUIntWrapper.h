@@ -36,6 +36,18 @@ namespace Microsoft
             </para>
 
             <para>
+            Both the copy constructor and the Set function allocate more memory for the backing array when needed, 
+            i.e. when the source BigUInt has a larger backing array than the destination. Conversely, when the destination backing
+            array is already large enough, the data is only copied and the unnecessary higher order bits are set
+            to zero. When new memory has to be allocated, only the significant bits of the source BigUInt are taken
+            into account. This is is important, because it avoids unnecessary zero bits to be included in the destination,
+            which in some cases could accumulate and result in very large unnecessary allocations.
+            However, sometimes it is necessary to preserve the original size, even if some of the leading bits are zero.
+            For this purpose BigUInt contains functions <see cref="DuplicateFrom"/> and <see cref="DuplicateTo"/>, which 
+            create an exact copy of the source BigUInt.
+            </para>
+
+            <para>
             An aliased BigUInt (which can be determined with <see cref="IsAlias"/>) is a special type of BigUInt that does not
             manage its underlying <see cref="System::UInt64"/> pointer used to store the value. An aliased BigUInt supports most
             of the same operations as a non-aliased BigUInt, including reading and writing the value, however an aliased BigUInt

@@ -1,5 +1,4 @@
-#ifndef SEAL_UTIL_POLYCORE_H
-#define SEAL_UTIL_POLYCORE_H
+#pragma once
 
 #include <cstdint>
 #include <stdexcept>
@@ -21,8 +20,7 @@ namespace seal
                 throw std::invalid_argument("coeff_uint64_count");
             }
 #endif
-            int poly_uint64_count = coeff_count * coeff_uint64_count;
-            return pool.get_for_uint64_count(poly_uint64_count);
+            return pool.get_for_uint64_count(coeff_count * coeff_uint64_count);
         }
 
         inline void set_zero_poly(int coeff_count, int coeff_uint64_count, std::uint64_t* result)
@@ -41,8 +39,7 @@ namespace seal
                 throw std::invalid_argument("result");
             }
 #endif
-            int poly_uint64_count = coeff_count * coeff_uint64_count;
-            for (int i = 0; i < poly_uint64_count; ++i)
+            for (int i = 0; i < coeff_count * coeff_uint64_count; ++i)
             {
                 *result++ = 0;
             }
@@ -128,8 +125,7 @@ namespace seal
                 // Fast path to handle self-assignment.
                 return;
             }
-            int poly_uint64_count = coeff_count * coeff_uint64_count;
-            for (int i = 0; i < poly_uint64_count; ++i)
+            for (int i = 0; i < coeff_count * coeff_uint64_count; ++i)
             {
                 *result++ = *poly++;
             }
@@ -151,15 +147,12 @@ namespace seal
                 throw std::invalid_argument("coeff_uint64_count");
             }
 #endif
-            int poly_uint64_count = coeff_count * coeff_uint64_count;
-            for (int i = 0; i < poly_uint64_count; ++i)
+            bool result = true;
+            for (int i = 0; (i < coeff_count * coeff_uint64_count) && result; ++i)
             {
-                if (*poly++ != 0)
-                {
-                    return false;
-                }
+                result = (*poly++ == 0);
             }
-            return true;
+            return result;
         }
 
         inline bool is_equal_poly_poly(const std::uint64_t *operand1, const std::uint64_t *operand2, int coeff_count, int coeff_uint64_count)
@@ -187,26 +180,26 @@ namespace seal
                 // Fast path to handle self comparison.
                 return true;
             }
-            int poly_uint64_count = coeff_count * coeff_uint64_count;
-            for (int i = 0; i < poly_uint64_count; ++i)
+            bool result = true;
+            for (int i = 0; (i < coeff_count * coeff_uint64_count) && result; ++i)
             {
-                if (*operand1++ != *operand2++)
-                {
-                    return false;
-                }
+                result = (*operand1++ == *operand2++);
             }
-            return true;
+            return result;
         }
 
         void set_poly_poly(const std::uint64_t *poly, int poly_coeff_count, int poly_coeff_uint64_count, int result_coeff_count, int result_coeff_uint64_count, std::uint64_t *result);
 
-        bool is_one_zero_one_poly(const uint64_t *poly, int coeff_count, int coeff_uint64_count);
+        void set_bigpolyarray_bigpolyarray(const std::uint64_t *operand, int size, int coeff_count, int coeff_uint64_count, int result_size, int result_coeff_count, int result_coeff_uint64_count, std::uint64_t *result);
+        
+        bool is_one_zero_one_poly(const std::uint64_t *poly, int coeff_count, int coeff_uint64_count);
 
         int get_significant_coeff_count_poly(const std::uint64_t *poly, int coeff_count, int coeff_uint64_count);
 
         ConstPointer duplicate_poly_if_needed(const std::uint64_t *poly, int coeff_count, int coeff_uint64_count, int new_coeff_count, int new_coeff_uint64_count, bool force, MemoryPool &pool);
 
+        ConstPointer duplicate_bigpolyarray_if_needed(const std::uint64_t *operand, int size, int coeff_count, int coeff_uint64_count, int new_size, int new_coeff_count, int new_coeff_uint64_count, bool force, MemoryPool &pool);
+        
         bool are_poly_coefficients_less_than(const std::uint64_t *poly, int coeff_count, int coeff_uint64_count, const std::uint64_t *max_coeff, int max_coeff_uint64_count);
     }
 }
-#endif // SEAL_UTIL_POLYCORE_H

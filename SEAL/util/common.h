@@ -1,8 +1,8 @@
-#ifndef SEAL_UTIL_COMMON_H
-#define SEAL_UTIL_COMMON_H
+#pragma once
 
 #include <cstdint>
 #include <stdexcept>
+#include "util/defines.h"
 
 //#define _BIG_ENDIAN
 #define _LITTLE_ENDIAN
@@ -195,7 +195,40 @@ namespace seal
 #endif
         }
 
-        int get_significant_bit_count(std::uint64_t value);
+        inline void get_msb_index_generic(unsigned long *result, std::uint64_t value)
+        {
+            static const int deBruijnTable64[64] = {
+                63,  0, 58,  1, 59, 47, 53,  2,
+                60, 39, 48, 27, 54, 33, 42,  3,
+                61, 51, 37, 40, 49, 18, 28, 20,
+                55, 30, 34, 11, 43, 14, 22,  4,
+                62, 57, 46, 52, 38, 26, 32, 41,
+                50, 36, 17, 19, 29, 10, 13, 21,
+                56, 45, 25, 31, 35, 16,  9, 12,
+                44, 24, 15,  8, 23,  7,  6,  5
+            };
+
+            value |= value >> 1;
+            value |= value >> 2;
+            value |= value >> 4;
+            value |= value >> 8;
+            value |= value >> 16;
+            value |= value >> 32;
+
+            *result = deBruijnTable64[((value - (value >> 1)) * 0x07EDD5E59A4E28C2) >> 58];
+        }
+
+        inline int get_significant_bit_count(std::uint64_t value)
+        {
+            if (value == 0)
+            {
+                return 0;
+            }
+
+            unsigned long result;
+            MSB_INDEX_UINT64(&result, value)
+            return result + 1;
+        }
 
         std::string uint64_to_hex_string(const std::uint64_t *value, int uint64_count);
 
@@ -211,5 +244,3 @@ namespace seal
         int get_power_of_two_minus_one(std::uint64_t value);
     }
 }
-
-#endif // SEAL_UTIL_COMMON_H

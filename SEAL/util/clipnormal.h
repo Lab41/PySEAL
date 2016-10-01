@@ -1,5 +1,4 @@
-#ifndef SEAL_UTIL_CLIPNORMAL_H
-#define SEAL_UTIL_CLIPNORMAL_H
+#pragma once
 
 #include <random>
 
@@ -85,5 +84,3 @@ namespace seal
         };
     }
 }
-
-#endif // SEAL_UTIL_CLIPNORMAL_H

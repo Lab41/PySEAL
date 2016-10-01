@@ -13,6 +13,8 @@ namespace Microsoft
 
             ref class BigPoly;
 
+            ref class BigUInt;
+
             /**
             <summary>Decrypts BigPolyArray objects into BigPoly objects.</summary>
 
@@ -70,6 +72,54 @@ namespace Microsoft
                 BigPoly ^Decrypt(BigPolyArray ^encrypted);
 
                 /**
+                <summary>Computes and returns the number of bits of inherent noise in a ciphertext.</summary>
+
+                <remarks>
+                <para>
+                Computes and returns the number of bits of inherent noise in a ciphertext. The user can easily compare this with the
+                maximum possible value returned by the function EncryptionParameters::InherentNoiseBitsMax().
+                </para>
+                <para>
+                Technically speaking, the inherent noise of a ciphertext is a polynomial, but the condition for decryption working
+                depends on the size of the largest absolute value of its coefficients. It is this largest absolute value that we will
+                call the "noise", the "inherent noise", or the "error", in this documentation. The reader is referred to the
+                description of the encryption scheme for more details.
+                </para>
+                </remarks>
+                <param name="encrypted">The ciphertext</param>
+                <exception cref="System::ArgumentException">if the ciphertext is not a valid ciphertext for the encryption
+                parameters</exception>
+                <seealso cref="InherentNoise">See InherentNoise for computing the exact size of inherent noise.</seealso>
+                */
+                int InherentNoiseBits(BigPolyArray ^encrypted);
+
+                /**
+                <summary>Computes the inherent noise in a ciphertext.</summary>
+
+                <remarks>
+                <para>
+                Computes the inherent noise in a ciphertext. The result is written in a BigUInt given as a parameter. The user can
+                easily compare this with the maximum possible value returned by the function EncryptionParameters::inherentNoiseMax().
+                It is often easier to analyze the size of the inherent noise by using the functions <see cref="InherentNoiseBits"/> 
+                and EncryptionParameters::InherentNoiseMax().
+                </para>
+                <para>
+                Technically speaking, the inherent noise of a ciphertext is a polynomial, but the condition for decryption working
+                depends on the size of the largest absolute value of its coefficients. It is this largest absolute value that we will
+                call the "noise", the "inherent noise", or the "error", in this documentation. The reader is referred to the
+                description of the encryption scheme for more details.
+                </para>
+                </remarks>
+                <param name="encrypted">The ciphertext</param>
+                <param name="destination">The BigUInt to overwrite with the inherent noise</param>
+                <exception cref="System::ArgumentException">if the ciphertext is not a valid ciphertext for the encryption
+                parameters</exception>
+                <seealso cref="InherentNoiseBits">See InherentNoiseBits for returning the significant bit count of the 
+                inherent noise instead.</seealso>
+                */
+                void InherentNoise(BigPolyArray ^encrypted, BigUInt ^destination);
+
+                /**
                 <summary>Destroys the Decryptor.</summary>
                 */
                 ~Decryptor();
@@ -89,10 +139,6 @@ namespace Microsoft
             private:
                 seal::Decryptor *decryptor_;
             };
-
-
-
-
         }
     }
 }

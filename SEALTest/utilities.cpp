@@ -56,26 +56,6 @@ namespace SEALTest
             Assert::IsTrue(inftynorm == BigUInt("2"));
         }
 
-        TEST_METHOD(EstimateLevelMax)
-        {
-            EncryptionParameters parms;
-            BigUInt &coeff_modulus = parms.coeff_modulus();
-            BigUInt &plain_modulus = parms.plain_modulus();
-            BigPoly &poly_modulus = parms.poly_modulus();
-            parms.decomposition_bit_count() = 4;
-            parms.noise_standard_deviation() = 3.19;
-            parms.noise_max_deviation() = 35.06;
-            coeff_modulus.resize(48);
-            coeff_modulus = "FFFFFFFFC001";
-            plain_modulus.resize(7);
-            plain_modulus = 1 << 6;
-            poly_modulus.resize(64, 1);
-            poly_modulus[0] = 1;
-            poly_modulus[63] = 1;
-
-            Assert::AreEqual(2, estimate_level_max(parms));
-        }
-
         TEST_METHOD(PolyEvalPoly)
         {
             BigPoly poly_to_eval("0");

@@ -6,10 +6,12 @@
 #include "util/uintarithmod.h"
 #include "util/polyarith.h"
 #include "util/polyarithmod.h"
+#include "util/polyfftmultmod.h"
 #include "util/randomtostd.h"
 #include "util/clipnormal.h"
 #include "util/polyextras.h"
 #include "util/polycore.h"
+#include "util/ntt.h"
 
 using namespace std;
 using namespace seal::util;
@@ -27,18 +29,18 @@ namespace seal
     void KeyGenerator::generate(int evaluation_keys_count)
     {
         // if decomposition bit count is zero, evaluation keys must be empty
-        if (decomposition_bit_count_ == 0 && evaluation_keys_count != 0)
+        if (!qualifiers_.enable_relinearization && evaluation_keys_count != 0)
         {
             throw invalid_argument("cannot generate evaluation keys for specified encryption parameters");
         }
 
         // If already generated, reset everything.
-        if (is_generated_)
+        if (generated_)
         {
             evaluation_keys_.clear();
             secret_key_.set_zero();
             public_key_.set_zero();
-            is_generated_ = false;
+            generated_ = false;
         }
 
         // Extract encryption parameters.
@@ -60,31 +62,58 @@ namespace seal
         uint64_t *public_key_1 = public_key_.pointer(1);
         set_poly_coeffs_uniform(public_key_1, random.get());
 
-        // calculate a*s (mod q) and store in pk[0]
-        // pk[0] is now as mod q
-        multiply_poly_poly_polymod_coeffmod(public_key_1, secret_key, polymod_, mod_, public_key_.pointer(0), pool);
+        // calculate a*s + e (mod q) and store in pk[0]
+        if (qualifiers_.enable_ntt)
+        {
+            // transform the secret s into NTT representation. 
+            ntt_negacyclic_harvey(secret_key, ntt_tables_, pool);
 
-        // add error into pk[0] (mod q)
-        // pk[0] is now (a*s + e) mod q
-        Pointer noise(allocate_poly(coeff_count, coeff_uint64_count, pool));
-        set_poly_coeffs_normal(noise.get(), random.get());
-        add_poly_poly_coeffmod(noise.get(), public_key_[0].pointer(), coeff_count, coeff_modulus_.pointer(), coeff_uint64_count, public_key_[0].pointer());
-        
+            // transform the uniform random polynomial a into NTT representation. 
+            ntt_negacyclic_harvey(public_key_1, ntt_tables_, pool);
+
+            Pointer noise(allocate_poly(coeff_count, coeff_uint64_count, pool));
+            set_poly_coeffs_normal(noise.get(), random.get());
+
+            // transform the noise e into NTT representation.
+            ntt_negacyclic_harvey(noise.get(), ntt_tables_, pool);
+
+            dyadic_product_coeffmod(secret_key, public_key_1, coeff_count, mod_, public_key_[0].pointer(), pool); 
+            add_poly_poly_coeffmod(noise.get(), public_key_[0].pointer(), coeff_count, coeff_modulus_.pointer(), coeff_uint64_count, public_key_[0].pointer());
+        }
+
+        else if(! qualifiers_.enable_ntt && qualifiers_.enable_nussbaumer)
+        {
+            nussbaumer_multiply_poly_poly_coeffmod(public_key_1, secret_key, polymod_.coeff_count_power_of_two(), mod_, public_key_.pointer(0), pool);
+            Pointer noise(allocate_poly(coeff_count, coeff_uint64_count, pool));
+            set_poly_coeffs_normal(noise.get(), random.get());
+            add_poly_poly_coeffmod(noise.get(), public_key_[0].pointer(), coeff_count, coeff_modulus_.pointer(), coeff_uint64_count, public_key_[0].pointer());
+        }
+        else
+        {
+            // This branch should never be reached
+            throw logic_error("invalid encryption parameters");
+        }
+
         // negate and set this value to pk[0]
         // pk[0] is now -(as+e) mod q
         negate_poly_coeffmod(public_key_[0].pointer(), coeff_count, coeff_modulus_.pointer(), coeff_uint64_count, public_key_[0].pointer());
 
-        // Secret key and public key have been generated
-        is_generated_ = true;
+        // Set the secret_key_array to have size 1 (first power of secret) 
+        secret_key_array_.resize(1, coeff_count, coeff_bit_count);
+        set_poly_poly(secret_key_.pointer(), coeff_count, coeff_uint64_count, secret_key_array_.pointer(0));
+
+        // Secret and public keys have been generated
+        generated_ = true;
 
         // generate the requested number of evaluation keys
         generate_evaluation_keys(evaluation_keys_count);
     }
 
+
     void KeyGenerator::generate_evaluation_keys(int count)
     {
         // if decomposition bit count is zero, evaluation keys must be empty
-        if (decomposition_bit_count_ == 0 && count != 0)
+        if (!qualifiers_.enable_relinearization && count != 0)
         {
             throw invalid_argument("cannot generate evaluation keys for specified encryption parameters");
         }
@@ -95,7 +124,7 @@ namespace seal
         int coeff_uint64_count = divide_round_up(coeff_bit_count, bits_per_uint64);
 
         // Check to see if secret key and public key have been generated
-        if (!is_generated_)
+        if (!generated_)
         {
             throw logic_error("cannot generate evaluation keys for unspecified secret key");
         }
@@ -109,7 +138,7 @@ namespace seal
         // Check if the specified number of evaluation keys have already been generated.
         // This would be the case if count is less than the current evaluation_keys_.size().
         // In this case, do nothing.
-        if (count <= evaluation_keys_.size() )
+        if (count <= evaluation_keys_.size())
         {
             return;
         }
@@ -117,11 +146,11 @@ namespace seal
         // In the constructor, evaluation_keys_ is initialized to have evaluation_keys_.size() = 0.
         // In a previous call to generate_evaluation_keys, evaluation_keys_ was only initialized to contain evaluation_keys_.size() entries.
         // Therefore need to initialize further if count > evaluation_keys_.size().
-        int initial_evaluation_key_size = static_cast<int>(evaluation_keys_.size());
-        int evaluation_factors_count = static_cast<int>(evaluation_factors_.size());
+        int initial_evaluation_key_size = evaluation_keys_.size();
+        int evaluation_factors_count = evaluation_factors_.size();
         for (int j = initial_evaluation_key_size; j < count; ++j)
         {
-            evaluation_keys_.keys().push_back(std::make_pair(BigPolyArray(evaluation_factors_count, coeff_count, coeff_bit_count), BigPolyArray(evaluation_factors_count, coeff_count, coeff_bit_count)));
+            evaluation_keys_.keys().emplace_back(BigPolyArray(evaluation_factors_count, coeff_count, coeff_bit_count), BigPolyArray(evaluation_factors_count, coeff_count, coeff_bit_count));
         }
 
         MemoryPool &pool = *MemoryPool::default_pool();
@@ -132,39 +161,87 @@ namespace seal
         Pointer power(allocate_uint(coeff_uint64_count, pool));
         Pointer secret_key_power(allocate_poly(coeff_count, coeff_uint64_count, pool));
         Pointer temp(allocate_poly(coeff_count, coeff_uint64_count, pool));
+        
+        int poly_ptr_increment = coeff_count * coeff_uint64_count;
 
-        for (int k = initial_evaluation_key_size; k < count; ++k)
+        // Make sure we have enough secret keys computed
+        compute_secret_key_array(count + 1);
+
+        if (qualifiers_.enable_ntt)
         {
-            // calculate s^{k+2}
-            // (evaluation_keys_[k] corresponds to s^{k+2})
-            set_uint(k + 2, coeff_uint64_count, power.get());
-            exponentiate_poly_polymod_coeffmod(secret_key_.pointer(), power.get(), coeff_uint64_count, polymod_, mod_, secret_key_power.get(), pool);
-
-            //populate evaluate_keys_[k]
-            for (int i = 0; i < evaluation_factors_.size(); ++i)
+            // assume the secret key is already transformed into NTT form. 
+            for (int k = initial_evaluation_key_size; k < count; ++k)
             {
-                //generate a_i and store in evaluation_keys_[k].second[i]
-                uint64_t *eval_keys_second = evaluation_keys_[k].second[i].pointer();
-                set_poly_coeffs_uniform(eval_keys_second, random.get());
+                set_poly_poly(secret_key_array_.pointer(0) + (k + 1)*poly_ptr_increment, coeff_count, coeff_uint64_count, secret_key_power.get()); 
 
-                // calculate a_i*s and store in evaluation_keys_[k].first[i]
-                multiply_poly_poly_polymod_coeffmod(eval_keys_second, secret_key_.pointer(), polymod_, mod_, evaluation_keys_[k].first[i].pointer(), pool);
+                //populate evaluate_keys_[k]
+                for (int i = 0; i < evaluation_factors_.size(); ++i)
+                {
+                    //generate NTT(a_i) and store in evaluation_keys_[k].second[i]
+                    uint64_t *eval_keys_second = evaluation_keys_[k].second[i].pointer();
+                    uint64_t *eval_keys_first = evaluation_keys_[k].first[i].pointer();
 
-                //generate e_i 
-                set_poly_coeffs_normal(noise.get(), random.get());
+                    set_poly_coeffs_uniform(eval_keys_second, random.get());
+                    ntt_negacyclic_harvey(eval_keys_second, ntt_tables_, pool);
 
-                //add e_i into evaluation_keys_[k].first[i]
-                add_poly_poly_coeffmod(noise.get(), evaluation_keys_[k].first[i].pointer(), coeff_count, coeff_modulus_.pointer(), coeff_uint64_count, evaluation_keys_[k].first[i].pointer());
+                    // calculate a_i*s and store in evaluation_keys_[k].first[i]
+                    dyadic_product_coeffmod(eval_keys_second, secret_key_.pointer(), coeff_count, mod_, eval_keys_first, pool);
 
-                // negate value in evaluation_keys_[k].first[i]
-                negate_poly_coeffmod(evaluation_keys_[k].first[i].pointer(), coeff_count, coeff_modulus_.pointer(), coeff_uint64_count, evaluation_keys_[k].first[i].pointer());
+                    //generate NTT(e_i) 
+                    set_poly_coeffs_normal(noise.get(), random.get());
+                    ntt_negacyclic_harvey(noise.get(), ntt_tables_, pool);
 
-                //multiply w^i by s^(k+2)
-                multiply_poly_scalar_coeffmod(secret_key_power.get(), coeff_count, evaluation_factors_[i].pointer(), mod_, temp.get(), pool);
+                    //add e_i into evaluation_keys_[k].first[i]
+                    add_poly_poly_coeffmod(noise.get(), eval_keys_first, coeff_count, coeff_modulus_.pointer(), coeff_uint64_count, eval_keys_first);
 
-                //add w^i . s^(k+2) into evaluation_keys_[k].first[i]
-                add_poly_poly_coeffmod(evaluation_keys_[k].first[i].pointer(), temp.get(), coeff_count, coeff_modulus_.pointer(), coeff_uint64_count, evaluation_keys_[k].first[i].pointer());
+                    // negate value in evaluation_keys_[k].first[i]
+                    negate_poly_coeffmod(eval_keys_first, coeff_count, coeff_modulus_.pointer(), coeff_uint64_count, eval_keys_first);
+
+                    //multiply w^i * s^(k+2)
+                    multiply_poly_scalar_coeffmod(secret_key_power.get(), coeff_count, evaluation_factors_[i].pointer(), mod_, temp.get(), pool);
+
+                    //add w^i . s^(k+2) into evaluation_keys_[k].first[i]
+                    add_poly_poly_coeffmod(eval_keys_first, temp.get(), coeff_count, coeff_modulus_.pointer(), coeff_uint64_count, eval_keys_first);
+                }
             }
+        }
+        else if (!qualifiers_.enable_ntt && qualifiers_.enable_nussbaumer)
+        {
+            for (int k = initial_evaluation_key_size; k < count; ++k)
+            {
+                set_poly_poly(secret_key_array_.pointer(0) + (k + 1)*poly_ptr_increment, coeff_count, coeff_uint64_count, secret_key_power.get());
+
+                //populate evaluate_keys_[k]
+                for (int i = 0; i < evaluation_factors_.size(); ++i)
+                {
+                    //generate a_i and store in evaluation_keys_[k].second[i]
+                    uint64_t *eval_keys_second = evaluation_keys_[k].second[i].pointer();
+                    set_poly_coeffs_uniform(eval_keys_second, random.get());
+
+                    // calculate a_i*s and store in evaluation_keys_[k].first[i]
+                    nussbaumer_multiply_poly_poly_coeffmod(eval_keys_second, secret_key_.pointer(), polymod_.coeff_count_power_of_two(), mod_, evaluation_keys_[k].first[i].pointer(), pool);
+
+                    //generate e_i 
+                    set_poly_coeffs_normal(noise.get(), random.get());
+
+                    //add e_i into evaluation_keys_[k].first[i]
+                    add_poly_poly_coeffmod(noise.get(), evaluation_keys_[k].first[i].pointer(), coeff_count, coeff_modulus_.pointer(), coeff_uint64_count, evaluation_keys_[k].first[i].pointer());
+
+                    // negate value in evaluation_keys_[k].first[i]
+                    negate_poly_coeffmod(evaluation_keys_[k].first[i].pointer(), coeff_count, coeff_modulus_.pointer(), coeff_uint64_count, evaluation_keys_[k].first[i].pointer());
+
+                    //multiply w^i by s^(k+2)
+                    multiply_poly_scalar_coeffmod(secret_key_power.get(), coeff_count, evaluation_factors_[i].pointer(), mod_, temp.get(), pool);
+
+                    //add w^i . s^(k+2) into evaluation_keys_[k].first[i]
+                    add_poly_poly_coeffmod(evaluation_keys_[k].first[i].pointer(), temp.get(), coeff_count, coeff_modulus_.pointer(), coeff_uint64_count, evaluation_keys_[k].first[i].pointer());
+                }
+            }
+        }
+        else
+        {
+            // This branch should never be reached
+            throw logic_error("invalid encryption parameters");
         }
     }
 
@@ -234,8 +311,6 @@ namespace seal
     {
         //get parameters
         int coeff_count = poly_modulus_.coeff_count();
-        int coeff_bit_count = poly_modulus_.coeff_bit_count();
-        int coeff_uint64_count = divide_round_up(coeff_bit_count, bits_per_uint64);
        
         // set up source of randomness which produces random things of size 32 bit
         RandomToStandardAdapter engine(random);
@@ -262,42 +337,13 @@ namespace seal
         poly_modulus_(parms.poly_modulus()), coeff_modulus_(parms.coeff_modulus()), plain_modulus_(parms.plain_modulus()),
         noise_standard_deviation_(parms.noise_standard_deviation()), noise_max_deviation_(parms.noise_max_deviation()),
         decomposition_bit_count_(parms.decomposition_bit_count()), 
-        random_generator_(parms.random_generator() != nullptr ? parms.random_generator() : UniformRandomGeneratorFactory::default_factory())
+        random_generator_(parms.random_generator() != nullptr ? parms.random_generator() : UniformRandomGeneratorFactory::default_factory()),
+        qualifiers_(parms.get_qualifiers())
     {
-        // Verify required parameters are non-zero and non-nullptr.
-        if (poly_modulus_.is_zero())
+        // Verify parameters
+        if (!qualifiers_.parameters_set)
         {
-            throw invalid_argument("poly_modulus cannot be zero");
-        }
-        if (coeff_modulus_.is_zero())
-        {
-            throw invalid_argument("coeff_modulus cannot be zero");
-        }
-        if (plain_modulus_.is_zero())
-        {
-            throw invalid_argument("plain_modulus cannot be zero");
-        }
-        if (noise_standard_deviation_ < 0)
-        {
-            throw invalid_argument("noise_standard_deviation must be non-negative");
-        }
-        if (noise_max_deviation_ < 0)
-        {
-            throw invalid_argument("noise_max_deviation must be non-negative");
-        }
-        if (decomposition_bit_count_ < 0)
-        {
-            throw invalid_argument("decomposition_bit_count must be non-negative");
-        }
-
-        // Verify parameters.
-        if (plain_modulus_ >= coeff_modulus_)
-        {
-            throw invalid_argument("plain_modulus must be smaller than coeff_modulus");
-        }
-        if (!are_poly_coefficients_less_than(poly_modulus_, coeff_modulus_))
-        {
-            throw invalid_argument("poly_modulus cannot have coefficients larger than coeff_modulus");
+            throw invalid_argument("encryption parameters are not set correctly");
         }
 
         // Resize encryption parameters to consistent size.
@@ -330,7 +376,7 @@ namespace seal
         secret_key_.resize(coeff_count, coeff_bit_count);
 
         // Initialize evaluation_factors_, if required
-        if (decomposition_bit_count_ != 0)
+        if (qualifiers_.enable_relinearization)
         {
             populate_evaluation_factors();
         }
@@ -344,57 +390,36 @@ namespace seal
         polymod_ = PolyModulus(poly_modulus_.pointer(), coeff_count, coeff_uint64_count);
         mod_ = Modulus(coeff_modulus_.pointer(), coeff_uint64_count, pool);
 
-        // Secret key and public key have not been generated
-        is_generated_ = false;
+        // Generate NTT tables if needed
+        if (qualifiers_.enable_ntt)
+        {
+            if(!ntt_tables_.generate(polymod_.coeff_count_power_of_two(), mod_))
+            {
+                throw invalid_argument("failed to generate NTT tables");
+            }
+        }
 
+        // Secret key and public key have not been generated
+        generated_ = false;
     }
 
     KeyGenerator::KeyGenerator(const EncryptionParameters &parms, const BigPoly &secret_key, const BigPolyArray &public_key, EvaluationKeys &evaluation_keys) :
         poly_modulus_(parms.poly_modulus()), coeff_modulus_(parms.coeff_modulus()), plain_modulus_(parms.plain_modulus()),
         noise_standard_deviation_(parms.noise_standard_deviation()), noise_max_deviation_(parms.noise_max_deviation()),
         decomposition_bit_count_(parms.decomposition_bit_count()),
-        random_generator_(parms.random_generator() != nullptr ? parms.random_generator() : UniformRandomGeneratorFactory::default_factory())
+        random_generator_(parms.random_generator() != nullptr ? parms.random_generator() : UniformRandomGeneratorFactory::default_factory()),
+        qualifiers_(parms.get_qualifiers())
     {
-        // Verify required parameters are non-zero and non-nullptr.
-        if (poly_modulus_.is_zero())
+        // Verify parameters
+        if (!qualifiers_.parameters_set)
         {
-            throw invalid_argument("poly_modulus cannot be zero");
-        }
-        if (coeff_modulus_.is_zero())
-        {
-            throw invalid_argument("coeff_modulus cannot be zero");
-        }
-        if (plain_modulus_.is_zero())
-        {
-            throw invalid_argument("plain_modulus cannot be zero");
-        }
-        if (noise_standard_deviation_ < 0)
-        {
-            throw invalid_argument("noise_standard_deviation must be non-negative");
-        }
-        if (noise_max_deviation_ < 0)
-        {
-            throw invalid_argument("noise_max_deviation must be non-negative");
-        }
-        if (decomposition_bit_count_ < 0)
-        {
-            throw invalid_argument("decomposition_bit_count must be non-negative");
+            throw invalid_argument("encryption parameters are not set correctly");
         }
 
         // Decomposition bit count should only be zero if evaluation keys are empty
-        if (decomposition_bit_count_ == 0 && evaluation_keys.size() != 0)
+        if (!qualifiers_.enable_relinearization && evaluation_keys.size() != 0)
         {
             throw invalid_argument("evaluation keys are not valid for encryption parameters");
-        }
-
-        // Verify parameters.
-        if (plain_modulus_ >= coeff_modulus_)
-        {
-            throw invalid_argument("plain_modulus must be smaller than coeff_modulus");
-        }
-        if (!are_poly_coefficients_less_than(poly_modulus_, coeff_modulus_))
-        {
-            throw invalid_argument("poly_modulus cannot have coefficients larger than coeff_modulus");
         }
 
         // Resize encryption parameters to consistent size.
@@ -423,7 +448,7 @@ namespace seal
         decrement_uint(coeff_modulus_.pointer(), coeff_uint64_count, coeff_modulus_minus_one_.pointer());
 
         // Initialize evaluation_factors_, if required
-        if (decomposition_bit_count_ != 0)
+        if (qualifiers_.enable_relinearization)
         {
             populate_evaluation_factors();
         }
@@ -439,7 +464,7 @@ namespace seal
         }
         if (evaluation_keys.size() != 0)
         {
-            int evaluation_factors_size = static_cast<int>(evaluation_factors_.size());
+            int evaluation_factors_size = evaluation_factors_.size();
             for (int i = 0; i < evaluation_keys.size(); ++i)
             {
                 if (evaluation_keys[i].first.size() != evaluation_factors_size || evaluation_keys[i].second.size() != evaluation_factors_size || 
@@ -462,8 +487,16 @@ namespace seal
         polymod_ = PolyModulus(poly_modulus_.pointer(), coeff_count, coeff_uint64_count);
         mod_ = Modulus(coeff_modulus_.pointer(), coeff_uint64_count, pool);
 
+        // Generate NTT tables if needed
+        if (qualifiers_.enable_ntt)
+        {
+            if (!ntt_tables_.generate(polymod_.coeff_count_power_of_two(), mod_))
+            {
+                throw invalid_argument("failed to generate NTT tables");
+            }
+        }
         // Secret key and public key are generated
-        is_generated_ = true;
+        generated_ = true;
     }
 
     void KeyGenerator::populate_evaluation_factors()
@@ -480,7 +513,7 @@ namespace seal
         set_uint(1, coeff_uint64_count, current_evaluation_factor.get());
         while (!is_zero_uint(current_evaluation_factor.get(), coeff_uint64_count) && is_less_than_uint_uint(current_evaluation_factor.get(), coeff_modulus_.pointer(), coeff_uint64_count))
         {
-            evaluation_factors_.push_back(BigUInt(coeff_bit_count));
+            evaluation_factors_.emplace_back(coeff_bit_count);
             set_uint_uint(current_evaluation_factor.get(), coeff_uint64_count, evaluation_factors_.back().pointer());
             left_shift_uint(current_evaluation_factor.get(), decomposition_bit_count_, coeff_uint64_count, current_evaluation_factor.get());
         }
@@ -488,7 +521,7 @@ namespace seal
 
     const BigPoly &KeyGenerator::secret_key() const
     {
-        if (!is_generated_)
+        if (!generated_)
         {
             throw logic_error("encryption keys have not been generated");
         }
@@ -497,7 +530,7 @@ namespace seal
 
     const BigPolyArray &KeyGenerator::public_key() const
     {
-        if (!is_generated_)
+        if (!generated_)
         {
             throw logic_error("encryption keys have not been generated");
         }
@@ -506,7 +539,7 @@ namespace seal
 
     const EvaluationKeys &KeyGenerator::evaluation_keys() const
     {
-        if (!is_generated_)
+        if (!generated_)
         {
             throw logic_error("encryption keys have not been generated");
         }
@@ -516,4 +549,59 @@ namespace seal
         }
         return evaluation_keys_;
     }
+
+
+    void KeyGenerator::compute_secret_key_array(int max_power)
+    {
+        int old_count = secret_key_array_.size();
+        int new_count = max(max_power, secret_key_array_.size());
+
+        if (old_count == new_count)
+        {
+            return;
+        }
+
+        int coeff_count = polymod_.coeff_count();
+        int coeff_bit_count = mod_.significant_bit_count(); 
+        int coeff_uint64_count = divide_round_up(coeff_bit_count, bits_per_uint64);
+
+        // Compute powers of secret key until max_power
+        secret_key_array_.resize(new_count, coeff_count, coeff_bit_count);
+
+        MemoryPool &pool = *MemoryPool::default_pool();
+
+        int poly_ptr_increment = coeff_count * coeff_uint64_count;
+        uint64_t *prev_poly_ptr = secret_key_array_.pointer(old_count - 1);
+        uint64_t *next_poly_ptr = prev_poly_ptr + poly_ptr_increment;
+
+        if (qualifiers_.enable_ntt)
+        {
+            // Since all of the key powers in secret_key_array_ are already NTT transformed, to get the next one 
+            // we simply need to compute a dyadic product of the last one with the first one [which is equal to NTT(secret_key_)].
+            for (int i = old_count; i < new_count; ++i)
+            {
+                dyadic_product_coeffmod(prev_poly_ptr, secret_key_array_.pointer(0), coeff_count, mod_, next_poly_ptr, pool);
+                prev_poly_ptr = next_poly_ptr;
+                next_poly_ptr += poly_ptr_increment;
+            }
+        }
+        else if (!qualifiers_.enable_ntt && qualifiers_.enable_nussbaumer)
+        {
+            // Non-NTT path involves computing powers of the secret key.
+            for (int i = old_count; i < new_count; ++i)
+            {
+                nussbaumer_multiply_poly_poly_coeffmod(prev_poly_ptr, secret_key_.pointer(), polymod_.coeff_count_power_of_two(), mod_, next_poly_ptr, pool);
+                prev_poly_ptr = next_poly_ptr;
+                next_poly_ptr += poly_ptr_increment;
+            }
+        }
+        else
+        {
+            // This branch should never be reached
+            throw logic_error("invalid encryption parameters");
+        }
+    }
+
+
+
 }

@@ -63,7 +63,10 @@ namespace seal
 
             Pointer remainder(allocate_uint(result_uint64_count, pool));
             Pointer quotient(allocate_uint(result_uint64_count, pool));
-            divide_uint_uint(simulation1.coeff_modulus_.pointer(), simulation1.plain_modulus_.pointer(), result_uint64_count, quotient.get(), remainder.get(), pool);
+
+            int coeff_uint64_count = simulation1.coeff_modulus_.uint64_count();
+            ConstPointer wide_plain_modulus = duplicate_uint_if_needed(simulation1.plain_modulus_.pointer(), simulation1.plain_modulus_.uint64_count(), coeff_uint64_count, false, pool);
+            divide_uint_uint(simulation1.coeff_modulus_.pointer(), wide_plain_modulus.get(), result_uint64_count, quotient.get(), remainder.get(), pool);
 
             Pointer result(allocate_uint(result_uint64_count, pool));
             set_uint_uint(simulation1.noise_.pointer(), simulation1.noise_.uint64_count(), result_uint64_count, result.get());
@@ -78,7 +81,9 @@ namespace seal
 
         Pointer remainder(allocate_uint(result_uint64_count, pool));
         Pointer quotient(allocate_uint(result_uint64_count, pool));
-        divide_uint_uint(simulation1.coeff_modulus_.pointer(), simulation1.plain_modulus_.pointer(), result_uint64_count, quotient.get(), remainder.get(), pool);
+        int coeff_uint64_count = simulation1.coeff_modulus_.uint64_count();
+        ConstPointer wide_plain_modulus = duplicate_uint_if_needed(simulation1.plain_modulus_.pointer(), simulation1.plain_modulus_.uint64_count(), coeff_uint64_count, false, pool);
+        divide_uint_uint(simulation1.coeff_modulus_.pointer(), wide_plain_modulus.get(), result_uint64_count, quotient.get(), remainder.get(), pool);
 
         Pointer result(allocate_uint(result_uint64_count, pool));
         set_uint_uint(simulation2.noise_.pointer(), simulation2.noise_.uint64_count(), result_uint64_count, result.get());
@@ -138,7 +143,11 @@ namespace seal
         // Calculate remainder
         Pointer remainder(allocate_uint(result_uint64_count, pool));
         Pointer quotient(allocate_uint(result_uint64_count, pool));
-        divide_uint_uint(simulations[largest_noise_index].coeff_modulus_.pointer(), simulations[largest_noise_index].plain_modulus_.pointer(), result_uint64_count, quotient.get(), remainder.get(), pool);
+
+
+        int coeff_uint64_count = simulations[largest_noise_index].coeff_modulus_.uint64_count();
+        ConstPointer wide_plain_modulus = duplicate_uint_if_needed(simulations[largest_noise_index].plain_modulus_.pointer(), simulations[largest_noise_index].plain_modulus_.uint64_count(), coeff_uint64_count, false, pool);
+        divide_uint_uint(simulations[largest_noise_index].coeff_modulus_.pointer(), wide_plain_modulus.get(), result_uint64_count, quotient.get(), remainder.get(), pool);
         
        // Calculate (scaling_coeff - 1) * remainder. Store in quotient, since we don't use this again now that remainder is calculated.
         multiply_uint_uint(&scaling_coeff_minus1, 1, remainder.get(), result_uint64_count, result_uint64_count, quotient.get());
@@ -261,6 +270,7 @@ namespace seal
         // Compute Delta and r_t(q)
         Pointer quotient(allocate_uint(result_uint64_count, pool));
         Pointer remainder(allocate_uint(result_uint64_count, pool));
+
         divide_uint_uint(wide_coeff_modulus.get(), wide_plain_modulus.get(), result_uint64_count, quotient.get(), remainder.get(), pool);
 
         set_uint(sqrt_factor, result_uint64_count, temp1.get());
@@ -281,6 +291,15 @@ namespace seal
         multiply_uint_uint(temp2.get(), result_uint64_count, temp3.get(), result_uint64_count, result_uint64_count, result.get());
 
         return Simulation(BigUInt(result_bit_count, result.get()), simulation1.max_noise_, simulation1.coeff_modulus_, simulation1.plain_modulus_, simulation1.poly_modulus_coeff_count_, simulation1.noise_standard_deviation_, simulation1.noise_max_deviation_, simulation1.decomposition_bit_count_, result_ciphertext_size);
+    }
+
+    Simulation SimulationEvaluator::square(const Simulation &simulation)
+    {
+        if (simulation.ciphertext_size_ < 2)
+        {
+            throw invalid_argument("simulation has invalid ciphertext size");
+        }
+        return multiply(simulation, simulation);
     }
 
     Simulation SimulationEvaluator::multiply_plain(const Simulation &simulation, int plain_max_coeff_count, const BigUInt &plain_max_abs_value)
@@ -323,7 +342,10 @@ namespace seal
         Pointer temp4(allocate_uint(result_uint64_count, pool));
 
         // Calculate remainder
-        divide_uint_uint(simulation.coeff_modulus_.pointer(), simulation.plain_modulus_.pointer(), result_uint64_count, temp3.get(), remainder.get(), pool);
+        int coeff_uint64_count = simulation.coeff_modulus_.uint64_count(); 
+        ConstPointer wide_plain_modulus = duplicate_uint_if_needed(simulation.plain_modulus_.pointer(), simulation.plain_modulus_.uint64_count(), coeff_uint64_count, false, pool);
+
+        divide_uint_uint(simulation.coeff_modulus_.pointer(), wide_plain_modulus.get(), result_uint64_count, temp3.get(), remainder.get(), pool);
 
         // Store N * remainder in temp3
         multiply_uint_uint(&temp1, 1, remainder.get(), result_uint64_count, result_uint64_count, temp3.get());
@@ -360,7 +382,10 @@ namespace seal
         MemoryPool &pool = *MemoryPool::default_pool();
         Pointer remainder(allocate_uint(result_uint64_count, pool));
         Pointer quotient(allocate_uint(result_uint64_count, pool));
-        divide_uint_uint(simulation.coeff_modulus_.pointer(), simulation.plain_modulus_.pointer(), result_uint64_count, quotient.get(), remainder.get(), pool);
+
+        int coeff_uint64_count = simulation.coeff_modulus_.uint64_count();
+        ConstPointer wide_plain_modulus = duplicate_uint_if_needed(simulation.plain_modulus_.pointer(), simulation.plain_modulus_.uint64_count(), coeff_uint64_count, false, pool);
+        divide_uint_uint(simulation.coeff_modulus_.pointer(), wide_plain_modulus.get(), result_uint64_count, quotient.get(), remainder.get(), pool);
 
         Pointer result(allocate_uint(result_uint64_count, pool));
         add_uint_uint(simulation.noise_.pointer(), simulation.noise_.uint64_count(), remainder.get(), result_uint64_count, false, result_uint64_count, result.get());
@@ -401,7 +426,7 @@ namespace seal
         // different encryption parameters than the others.
         for (size_t i = 0; i < simulations.size() - 1; i += 2)
         {
-            simulations.push_back(multiply(simulations[i], simulations[i + 1]));
+            simulations.emplace_back(relinearize(multiply(simulations[i], simulations[i + 1])));
         }
 
         return simulations[simulations.size() - 1];
@@ -458,8 +483,8 @@ namespace seal
         set_uint_uint(&temp, 1, result_uint64_count, noise_.pointer());
     }
 
-    Simulation::Simulation(const EncryptionParameters &parms) : max_noise_(inherent_noise_max(parms)), coeff_modulus_(parms.coeff_modulus()),
-        plain_modulus_(parms.plain_modulus()), poly_modulus_coeff_count_(parms.poly_modulus().coeff_count()), noise_standard_deviation_(parms.noise_standard_deviation()),
+    Simulation::Simulation(const EncryptionParameters &parms) : coeff_modulus_(parms.coeff_modulus()), plain_modulus_(parms.plain_modulus()), 
+        poly_modulus_coeff_count_(parms.poly_modulus().coeff_count()), noise_standard_deviation_(parms.noise_standard_deviation()),
         noise_max_deviation_(parms.noise_max_deviation()), decomposition_bit_count_(parms.decomposition_bit_count()), ciphertext_size_(0)
     {
         // Verify encryption parameters are non-zero and non-nullptr.
@@ -494,6 +519,9 @@ namespace seal
             throw invalid_argument("poly_modulus cannot have coefficients larger than coeff_modulus");
         }
 
+        // Set max noise
+        parms.inherent_noise_max(max_noise_);
+
         // Set noise
         set_initial_noise_estimate();
 
@@ -510,9 +538,9 @@ namespace seal
         return (noise_bits_left() >= noise_gap);
     }
 
-    Simulation::Simulation(const EncryptionParameters &parms, const BigUInt &noise, int ciphertext_size) : noise_(noise),
-        max_noise_(inherent_noise_max(parms)), coeff_modulus_(parms.coeff_modulus()),
-        plain_modulus_(parms.plain_modulus()), poly_modulus_coeff_count_(parms.poly_modulus().coeff_count()), noise_standard_deviation_(parms.noise_standard_deviation()),
+    Simulation::Simulation(const EncryptionParameters &parms, const BigUInt &noise, int ciphertext_size) : 
+        noise_(noise), coeff_modulus_(parms.coeff_modulus()), plain_modulus_(parms.plain_modulus()), 
+        poly_modulus_coeff_count_(parms.poly_modulus().coeff_count()), noise_standard_deviation_(parms.noise_standard_deviation()),
         noise_max_deviation_(parms.noise_max_deviation()), decomposition_bit_count_(parms.decomposition_bit_count()), ciphertext_size_(ciphertext_size)
     {
         // Verify encryption parameters are non-zero and non-nullptr.
@@ -554,6 +582,9 @@ namespace seal
         {
             throw invalid_argument("ciphertext_size must be greater than or equal to 2");
         }
+
+        // Set max noise
+        parms.inherent_noise_max(max_noise_);
     }
 
     Simulation::Simulation(const BigUInt &noise, const BigUInt &max_noise, const BigUInt &coeff_modulus, const BigUInt &plain_modulus, int poly_modulus_coeff_count,

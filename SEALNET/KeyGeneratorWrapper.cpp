@@ -138,7 +138,7 @@ namespace Microsoft
                 {
                     throw gcnew ObjectDisposedException("KeyGenerator is disposed");
                 }
-                return bool(generator_->generated());
+                return bool(generator_->is_generated());
             }
 
 

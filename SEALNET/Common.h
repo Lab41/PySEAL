@@ -3,6 +3,12 @@
 #include <stdexcept>
 #include <cstdint>
 
+#include "util/defines.h"
+
+#ifdef ENABLE_INTRIN
+#define MOI
+#endif
+
 namespace Microsoft
 {
     namespace Research

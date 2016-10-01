@@ -1,0 +1,37 @@
+# Makefile for the SEAL library
+UTIL_DIR=util
+BIN_DIR=../bin
+OBJ_DIR=obj
+SRCS=$(wildcard *.cpp) $(wildcard $(UTIL_DIR)/*.cpp)
+OBJS=$(SRCS:%.cpp=$(OBJ_DIR)/%.o)
+DEPS=$(OBJS:.o=.d)
+SEALLIB=$(BIN_DIR)/libseal.a
+CXX=@CXX@
+CXXFLAGS=@CXXFLAGS@ @DEFS@ -std=c++11
+
+.PHONY : all clean
+
+all : $(SEALLIB)
+
+$(OBJ_DIR)/%.d : %.cpp
+	@-mkdir -p $(dir $@)
+	@set -e; \
+	rm -f $@; \
+	$(CXX) -MM $(CXXFLAGS) -I. -I$(UTIL_DIR) $< > $@.temp; \
+	SUBDIR_NAME=`echo $@|sed -e 's,\.,,' -e 's,$(UTIL_DIR),$(UTIL_DIR)/,'`; \
+	sed 's,\($(*F)\)\.o[ :]*,$(OBJ_DIR)/$(SUBDIR_NAME)\1.o $@ : ,g' < $@.temp > $@; \
+	rm -f $@.temp
+
+$(OBJ_DIR)/%.o : %.cpp
+	@-mkdir -p $(dir $@)
+	$(CXX) -c $(CXXFLAGS) -I. -I$(UTIL_DIR) -o $@ $<
+
+$(SEALLIB) : $(OBJS)
+	@-mkdir -p $(dir $@)
+	ar rcs $(SEALLIB) $(OBJS)
+
+clean :
+	@-rm -f $(OBJS) $(DEPS) $(SEALLIB)
+	@-rmdir --ignore-fail-on-non-empty $(OBJ_DIR)/$(UTIL_DIR) $(OBJ_DIR) $(BIN_DIR)
+
+-include $(DEPS)

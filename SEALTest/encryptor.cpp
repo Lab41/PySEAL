@@ -21,35 +21,108 @@ namespace SEALTest
             BigUInt &coeff_modulus = parms.coeff_modulus();
             BigUInt &plain_modulus = parms.plain_modulus();
             BigPoly &poly_modulus = parms.poly_modulus();
-            parms.decomposition_bit_count() = 4;
-            parms.noise_standard_deviation() = 3.19;
-            parms.noise_max_deviation() = 35.06;
-            coeff_modulus.resize(48);
-            coeff_modulus = "FFFFFFFFC001";
-            plain_modulus.resize(7);
-            plain_modulus = 1 << 6;
-            poly_modulus.resize(64, 1);
-            poly_modulus[0] = 1;
-            poly_modulus[63] = 1;
+            {
+                parms.decomposition_bit_count() = 4;
+                parms.noise_standard_deviation() = 3.19;
+                parms.noise_max_deviation() = 35.06;
+                coeff_modulus.resize(48);
+                coeff_modulus = "FFFFFFFFC001";
+                plain_modulus.resize(7);
+                plain_modulus = 1 << 6;
+                poly_modulus.resize(65, 1);
+                poly_modulus[0] = 1;
+                poly_modulus[64] = 1;
 
-            BalancedEncoder encoder(plain_modulus);
+                BalancedEncoder encoder(plain_modulus);
 
-            KeyGenerator keygen(parms);
-            keygen.generate();
+                KeyGenerator keygen(parms);
+                keygen.generate();
 
-            Encryptor encryptor(parms, keygen.public_key());
+                Encryptor encryptor(parms, keygen.public_key());
 
-            Assert::IsTrue(encryptor.public_key()[0].to_string() == keygen.public_key()[0].to_string());
-            Assert::IsTrue(encryptor.public_key()[1].to_string() == keygen.public_key()[1].to_string());
+                Assert::IsTrue(encryptor.public_key()[0].to_string() == keygen.public_key()[0].to_string());
+                Assert::IsTrue(encryptor.public_key()[1].to_string() == keygen.public_key()[1].to_string());
 
-            BigPolyArray encrypted1 = encryptor.encrypt(encoder.encode(0x12345678));
-            BigPolyArray encrypted2 = encryptor.encrypt(encoder.encode(0x12345678));
-            Assert::IsTrue(encrypted1[0] != encrypted2[0]);
-            Assert::IsTrue(encrypted1[1] != encrypted2[1]);
+                BigPolyArray encrypted1 = encryptor.encrypt(encoder.encode(0x12345678));
+                BigPolyArray encrypted2 = encryptor.encrypt(encoder.encode(0x12345678));
+                Assert::IsTrue(encrypted1[0] != encrypted2[0]);
+                Assert::IsTrue(encrypted1[1] != encrypted2[1]);
 
-            Decryptor decryptor(parms, keygen.secret_key());
-            Assert::AreEqual(static_cast<uint64_t>(0x12345678), encoder.decode_uint64(decryptor.decrypt(encrypted1)));
-            Assert::AreEqual(static_cast<uint64_t>(0x12345678), encoder.decode_uint64(decryptor.decrypt(encrypted2)));
+                Decryptor decryptor(parms, keygen.secret_key());
+                Assert::AreEqual(static_cast<uint64_t>(0x12345678), encoder.decode_uint64(decryptor.decrypt(encrypted1)));
+                Assert::AreEqual(static_cast<uint64_t>(0x12345678), encoder.decode_uint64(decryptor.decrypt(encrypted2)));
+            }
+
+            {
+                // Testing that decryption is correct when the coeff_modulus has more than 1 uint64 count and 
+                // the Nussbaumer path.
+                parms.noise_standard_deviation() = 3.19;
+                parms.noise_max_deviation() = 35.06;
+                coeff_modulus = "FFFFFFFFFFFFFFFFFFFFFFFF";
+                plain_modulus.resize(7);
+                plain_modulus = 1 << 6;
+                poly_modulus.resize(65, 1);
+                poly_modulus[0] = 1;
+                poly_modulus[64] = 1;
+
+                BalancedEncoder encoder(plain_modulus);
+
+                KeyGenerator keygen(parms);
+                keygen.generate();
+
+                Encryptor encryptor(parms, keygen.public_key());
+
+                auto qualifiers = parms.get_qualifiers();
+                Assert::IsFalse(qualifiers.enable_ntt);
+                Assert::IsTrue(qualifiers.enable_nussbaumer);
+                Assert::IsTrue(encryptor.public_key()[0].to_string() == keygen.public_key()[0].to_string());
+                Assert::IsTrue(encryptor.public_key()[1].to_string() == keygen.public_key()[1].to_string());
+
+                BigPolyArray encrypted1 = encryptor.encrypt(encoder.encode(0x12345679));
+                BigPolyArray encrypted2 = encryptor.encrypt(encoder.encode(0x12345679));
+                Assert::IsTrue(encrypted1[0] != encrypted2[0]);
+                Assert::IsTrue(encrypted1[1] != encrypted2[1]);
+
+                Decryptor decryptor(parms, keygen.secret_key());
+
+                Assert::AreEqual(static_cast<uint64_t>(0x12345679), encoder.decode_uint64(decryptor.decrypt(encrypted1)));
+                Assert::AreEqual(static_cast<uint64_t>(0x12345679), encoder.decode_uint64(decryptor.decrypt(encrypted2)));
+            }
+
+            {
+                // Testing that decryption is correct when the plain modulus has more than 1 uint64 count and 
+                // the Nussbaumer path.
+                parms.noise_standard_deviation() = 3.19;
+                parms.noise_max_deviation() = 35.06;
+                coeff_modulus = "FFFFFFFFFFFFFFFFFFFFFFFF";
+                plain_modulus = "FFFFFFFFFFFFFFFFF";
+                poly_modulus.resize(65, 1);
+                poly_modulus[0] = 1;
+                poly_modulus[64] = 1;
+
+                BalancedEncoder encoder(plain_modulus);
+
+                KeyGenerator keygen(parms);
+                keygen.generate();
+
+                Encryptor encryptor(parms, keygen.public_key());
+
+                auto qualifiers = parms.get_qualifiers();
+                Assert::IsFalse(qualifiers.enable_ntt);
+                Assert::IsTrue(qualifiers.enable_nussbaumer);
+                Assert::IsTrue(encryptor.public_key()[0].to_string() == keygen.public_key()[0].to_string());
+                Assert::IsTrue(encryptor.public_key()[1].to_string() == keygen.public_key()[1].to_string());
+
+                BigPolyArray encrypted1 = encryptor.encrypt(encoder.encode(0x12345679));
+                BigPolyArray encrypted2 = encryptor.encrypt(encoder.encode(0x12345679));
+                Assert::IsTrue(encrypted1[0] != encrypted2[0]);
+                Assert::IsTrue(encrypted1[1] != encrypted2[1]);
+
+                Decryptor decryptor(parms, keygen.secret_key());
+
+                Assert::AreEqual(static_cast<uint64_t>(0x12345679), encoder.decode_uint64(decryptor.decrypt(encrypted1)));
+                Assert::AreEqual(static_cast<uint64_t>(0x12345679), encoder.decode_uint64(decryptor.decrypt(encrypted2)));
+            }
         }
 
         TEST_METHOD(FVEncryptDecrypt)
@@ -61,49 +134,96 @@ namespace SEALTest
             parms.decomposition_bit_count() = 4;
             parms.noise_standard_deviation() = 3.19;
             parms.noise_max_deviation() = 35.06;
-            coeff_modulus.resize(48);
-            coeff_modulus = "FFFFFFFFC001";
+            
             plain_modulus.resize(7);
             plain_modulus = 1 << 6;
-            poly_modulus.resize(64, 1);
+            poly_modulus.resize(65, 1);
             poly_modulus[0] = 1;
-            poly_modulus[63] = 1;
+            poly_modulus[64] = 1;
 
-            KeyGenerator keygen(parms);
-            keygen.generate();
+            {
+                coeff_modulus.resize(48);
+                coeff_modulus = "FFFFFFFFC001";
+                KeyGenerator keygen(parms);
+                keygen.generate();
 
-            BalancedEncoder encoder(plain_modulus);
+                BalancedEncoder encoder(plain_modulus);
 
-            Encryptor encryptor(parms, keygen.public_key());
-            Assert::IsTrue(keygen.public_key()[0] == encryptor.public_key()[0]);
-            Assert::IsTrue(keygen.public_key()[1] == encryptor.public_key()[1]);
+                Encryptor encryptor(parms, keygen.public_key());
+                Assert::IsTrue(keygen.public_key()[0] == encryptor.public_key()[0]);
+                Assert::IsTrue(keygen.public_key()[1] == encryptor.public_key()[1]);
 
-            Decryptor decryptor(parms, keygen.secret_key());
-            Assert::IsTrue(keygen.secret_key() == decryptor.secret_key());
+                Decryptor decryptor(parms, keygen.secret_key());
+                Assert::IsTrue(keygen.secret_key() == decryptor.secret_key());
 
-            BigPolyArray encrypted = encryptor.encrypt(encoder.encode(0x12345678));
-            Assert::AreEqual(static_cast<uint64_t>(0x12345678), encoder.decode_uint64(decryptor.decrypt(encrypted)));
+                BigPolyArray encrypted = encryptor.encrypt(encoder.encode(0x12345678));
+                Assert::AreEqual(static_cast<uint64_t>(0x12345678), encoder.decode_uint64(decryptor.decrypt(encrypted)));
 
-            encrypted = encryptor.encrypt(encoder.encode(0));
-            Assert::AreEqual(static_cast<uint64_t>(0), encoder.decode_uint64(decryptor.decrypt(encrypted)));
+                encrypted = encryptor.encrypt(encoder.encode(0));
+                Assert::AreEqual(static_cast<uint64_t>(0), encoder.decode_uint64(decryptor.decrypt(encrypted)));
 
-            encrypted = encryptor.encrypt(encoder.encode(1));
-            Assert::AreEqual(static_cast<uint64_t>(1), encoder.decode_uint64(decryptor.decrypt(encrypted)));
+                encrypted = encryptor.encrypt(encoder.encode(1));
+                Assert::AreEqual(static_cast<uint64_t>(1), encoder.decode_uint64(decryptor.decrypt(encrypted)));
 
-            encrypted = encryptor.encrypt(encoder.encode(2));
-            Assert::AreEqual(static_cast<uint64_t>(2), encoder.decode_uint64(decryptor.decrypt(encrypted)));
+                encrypted = encryptor.encrypt(encoder.encode(2));
+                Assert::AreEqual(static_cast<uint64_t>(2), encoder.decode_uint64(decryptor.decrypt(encrypted)));
 
-            encrypted = encryptor.encrypt(encoder.encode(0x7FFFFFFFFFFFFFFD));
-            Assert::AreEqual(static_cast<uint64_t>(0x7FFFFFFFFFFFFFFD), encoder.decode_uint64(decryptor.decrypt(encrypted)));
+                encrypted = encryptor.encrypt(encoder.encode(0x7FFFFFFFFFFFFFFD));
+                Assert::AreEqual(static_cast<uint64_t>(0x7FFFFFFFFFFFFFFD), encoder.decode_uint64(decryptor.decrypt(encrypted)));
 
-            encrypted = encryptor.encrypt(encoder.encode(0x7FFFFFFFFFFFFFFE));
-            Assert::AreEqual(static_cast<uint64_t>(0x7FFFFFFFFFFFFFFE), encoder.decode_uint64(decryptor.decrypt(encrypted)));
+                encrypted = encryptor.encrypt(encoder.encode(0x7FFFFFFFFFFFFFFE));
+                Assert::AreEqual(static_cast<uint64_t>(0x7FFFFFFFFFFFFFFE), encoder.decode_uint64(decryptor.decrypt(encrypted)));
 
-            encrypted = encryptor.encrypt(encoder.encode(0x7FFFFFFFFFFFFFFF));
-            Assert::AreEqual(static_cast<uint64_t>(0x7FFFFFFFFFFFFFFF), encoder.decode_uint64(decryptor.decrypt(encrypted)));
+                encrypted = encryptor.encrypt(encoder.encode(0x7FFFFFFFFFFFFFFF));
+                Assert::AreEqual(static_cast<uint64_t>(0x7FFFFFFFFFFFFFFF), encoder.decode_uint64(decryptor.decrypt(encrypted)));
 
-            encrypted = encryptor.encrypt(encoder.encode(314159265));
-            Assert::AreEqual(static_cast<uint64_t>(314159265), encoder.decode_uint64(decryptor.decrypt(encrypted)));
+                encrypted = encryptor.encrypt(encoder.encode(314159265));
+                Assert::AreEqual(static_cast<uint64_t>(314159265), encoder.decode_uint64(decryptor.decrypt(encrypted)));
+            }
+
+            //Testing the Nussbaumer path.
+            {
+                coeff_modulus = "FFFFFFFFFFFFFFFF";
+                KeyGenerator keygen(parms);
+                keygen.generate();
+
+                BalancedEncoder encoder(plain_modulus);
+
+                Encryptor encryptor(parms, keygen.public_key());
+                Assert::IsTrue(keygen.public_key()[0] == encryptor.public_key()[0]);
+                Assert::IsTrue(keygen.public_key()[1] == encryptor.public_key()[1]);
+
+                Decryptor decryptor(parms, keygen.secret_key());
+                Assert::IsTrue(keygen.secret_key() == decryptor.secret_key());
+                
+                auto qualifiers = parms.get_qualifiers();
+                Assert::IsFalse(qualifiers.enable_ntt);
+                Assert::IsTrue(qualifiers.enable_nussbaumer);
+
+                BigPolyArray encrypted = encryptor.encrypt(encoder.encode(0x12345678));
+                Assert::AreEqual(static_cast<uint64_t>(0x12345678), encoder.decode_uint64(decryptor.decrypt(encrypted)));
+
+                encrypted = encryptor.encrypt(encoder.encode(0));
+                Assert::AreEqual(static_cast<uint64_t>(0), encoder.decode_uint64(decryptor.decrypt(encrypted)));
+
+                encrypted = encryptor.encrypt(encoder.encode(1));
+                Assert::AreEqual(static_cast<uint64_t>(1), encoder.decode_uint64(decryptor.decrypt(encrypted)));
+
+                encrypted = encryptor.encrypt(encoder.encode(2));
+                Assert::AreEqual(static_cast<uint64_t>(2), encoder.decode_uint64(decryptor.decrypt(encrypted)));
+
+                encrypted = encryptor.encrypt(encoder.encode(0x7FFFFFFFFFFFFFFD));
+                Assert::AreEqual(static_cast<uint64_t>(0x7FFFFFFFFFFFFFFD), encoder.decode_uint64(decryptor.decrypt(encrypted)));
+
+                encrypted = encryptor.encrypt(encoder.encode(0x7FFFFFFFFFFFFFFE));
+                Assert::AreEqual(static_cast<uint64_t>(0x7FFFFFFFFFFFFFFE), encoder.decode_uint64(decryptor.decrypt(encrypted)));
+
+                encrypted = encryptor.encrypt(encoder.encode(0x7FFFFFFFFFFFFFFF));
+                Assert::AreEqual(static_cast<uint64_t>(0x7FFFFFFFFFFFFFFF), encoder.decode_uint64(decryptor.decrypt(encrypted)));
+
+                encrypted = encryptor.encrypt(encoder.encode(314159265));
+                Assert::AreEqual(static_cast<uint64_t>(314159265), encoder.decode_uint64(decryptor.decrypt(encrypted)));
+            }
         }
     };
 }

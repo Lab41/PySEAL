@@ -1,5 +1,4 @@
-#ifndef SEAL_UTIL_POLYMODULUS_H
-#define SEAL_UTIL_POLYMODULUS_H
+#pragma once
 
 #include <cstdint>
 
@@ -44,6 +43,11 @@ namespace seal
                 return is_one_zero_one_;
             }
 
+            bool is_fft_modulus() const
+            {
+                return is_one_zero_one_ && (coeff_count_power_of_two_ >= 0);
+            }
+
         private:
             const std::uint64_t *poly_;
 
@@ -57,5 +61,3 @@ namespace seal
         };
     }
 }
-
-#endif // SEAL_UTIL_POLYMODULUS_H

@@ -39,9 +39,12 @@
     <ClInclude Include="util\clipnormal.h" />
     <ClInclude Include="util\common.h" />
     <ClInclude Include="util\computation.h" />
+    <ClInclude Include="util\crt.h" />
+    <ClInclude Include="util\defines.h" />
     <ClInclude Include="util\locks.h" />
     <ClInclude Include="util\mempool.h" />
     <ClInclude Include="util\modulus.h" />
+    <ClInclude Include="util\ntt.h" />
     <ClInclude Include="util\polyarith.h" />
     <ClInclude Include="util\polyarithmod.h" />
     <ClInclude Include="util\polycore.h" />
@@ -75,9 +78,11 @@
     <ClCompile Include="util\clipnormal.cpp" />
     <ClCompile Include="util\common.cpp" />
     <ClCompile Include="util\computation.cpp" />
+    <ClCompile Include="util\crt.cpp" />
     <ClCompile Include="util\locks.cpp" />
     <ClCompile Include="util\mempool.cpp" />
     <ClCompile Include="util\modulus.cpp" />
+    <ClCompile Include="util\ntt.cpp" />
     <ClCompile Include="util\polyarith.cpp" />
     <ClCompile Include="util\polyarithmod.cpp" />
     <ClCompile Include="util\polycore.cpp" />
@@ -91,7 +96,9 @@
     <ClCompile Include="util\uintextras.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="makefile" />
+    <None Include="config.h.in" />
+    <None Include="configure.ac" />
+    <None Include="Makefile.in" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{7EA96C25-FC0D-485A-BB71-32B6DA55652A}</ProjectGuid>
@@ -168,7 +175,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(ProjectDir)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir)Network\</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -180,6 +187,8 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <AdditionalIncludeDirectories>$(ProjectDir)</AdditionalIncludeDirectories>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <FavorSizeOrSpeed>Neither</FavorSizeOrSpeed>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -192,7 +201,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(ProjectDir)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(SolutionDir)Network\</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -208,6 +217,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <AdditionalIncludeDirectories>$(ProjectDir)</AdditionalIncludeDirectories>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>

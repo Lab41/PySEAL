@@ -1,5 +1,4 @@
-#ifndef SEAL_UTIL_LOCKS_H
-#define SEAL_UTIL_LOCKS_H
+#pragma once
 
 #include <atomic>
 #include <utility>
@@ -126,5 +125,3 @@ namespace seal
         };
     }
 }
-
-#endif // SEAL_UTIL_LOCKS_H

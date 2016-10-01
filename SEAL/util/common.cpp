@@ -26,27 +26,11 @@ namespace seal
 
         int get_power_of_two_minus_one(uint64_t value)
         {
-            if (value == ~static_cast<uint64_t>(0))
+            if (value == 0xFFFFFFFFFFFFFFFF)
             {
                 return bits_per_uint64;
             }
             return get_power_of_two(value + 1);
-        }
-
-        int get_significant_bit_count(uint64_t value)
-        {
-            if (value != 0)
-            {
-                for (int bit_index = bits_per_uint64; bit_index > 0; --bit_index)
-                {
-                    if ((value & uint64_high_bit) != 0)
-                    {
-                        return bit_index;
-                    }
-                    value <<= 1;
-                }
-            }
-            return 0;
         }
 
         string uint64_to_hex_string(const uint64_t *value, int uint64_count)

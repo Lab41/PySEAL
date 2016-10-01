@@ -1,13 +1,84 @@
-#ifndef SEAL_ENCRYPTIONPARAMS_H
-#define SEAL_ENCRYPTIONPARAMS_H
+#pragma once
 
 #include <iostream>
 #include "biguint.h"
 #include "bigpoly.h"
 #include "randomgen.h"
+#include "util/ntt.h"
 
 namespace seal
 {
+    /**
+    Stores a set of attributes (qualifiers) of a set of encryption parameteres.
+    These parameters are used in various parts of the library, e.g. to determine which
+    algorithms can be used. The qualifiers are silently passed on to classes such as
+    Encryptor, Evaluator, and Decryptor, and the only way to change them is by changing
+    the encryption parameters accordingly. In other words, a user will never have to 
+    create their own instance of EncryptionParameterQualifiers.
+
+    @see EncryptionParameters for the class that stores the encryption parameters themselves.
+    @see EncryptionParameters::GetQualifiers for obtaining the EncryptionParameterQualifiers corresponding to a certain parameter set.
+    */
+    struct EncryptionParameterQualifiers
+    {
+        /**
+        If the encryption parameters are set in a way that is considered valid by SEAL, the
+        variable parameters_set will be set to true.
+        */
+        bool parameters_set;
+
+        /**
+        If EncryptionParameters::decomposition_bit_count is set to a positive value, the variable
+        enable_relinearization will be set to true.
+        */
+        bool enable_relinearization;
+
+        /**
+        If the polynomial modulus is of the form X^N+1, where N is a power of two, then
+        Nussbaumer convolution can be used for fast multiplication of polynomials modulo
+        the polynomial modulus. In this case the variable enable_nussbaumer will be set to true.
+        However, currently SEAL requires the polynomial modulus to be of this form to even
+        consider the parameters to be valid. Therefore, parameters_set can only be true if
+        enable_nussbaumer is true.
+        */
+        bool enable_nussbaumer;
+
+        /**
+        If the coefficient modulus is congruent to 1 modulo 2N, where X^N+1 is the polynomial
+        modulus and N is a power of two, then the number-theoretic transform (NTT) can be used
+        for fast multiplications of polynomials modulo the polynomial modulus and coefficient
+        modulus. In this case the variable enable_ntt will be set to true.
+        */
+        bool enable_ntt;
+
+        /**
+        If the plaintext modulus is congruent to 1 modulo 2N, where X^N+1 is the polynomial
+        modulus and N is a power of two, then it is possible to use PolyCRTBuilder to do batching,
+        which is a fundamental technique in homomorphic encryption to enable powerful SIMD
+        functionality, often called "batching" in homomorphic encryption literature. In this 
+        case the variable enable_batching will be set to true.
+        */
+        bool enable_batching;
+
+        /**
+        This variable has currently no effect (see util/defines.h).
+        */
+        bool enable_ntt_in_multiply;
+
+    private:
+        EncryptionParameterQualifiers() :
+            parameters_set(false),
+            enable_relinearization(false),
+            enable_nussbaumer(false),
+            enable_ntt(false),
+            enable_batching(false),
+            enable_ntt_in_multiply(false)
+        {
+        }
+
+        friend class EncryptionParameters;
+    };
+
     /**
     Represents the user-customizable encryption scheme settings. Several settings (e.g., poly_modulus(), coeff_modulus(),
     plain_modulus()) significantly affect the performance, capabilities, and security of the encryption scheme. KeyGenerator,
@@ -17,9 +88,9 @@ namespace seal
     Picking appropriate encryption parameters is essential to enable a particular application while balancing performance and
     security. Some encryption settings will not allow some inputs (e.g., attempting to encrypt a polynomial with more
     coefficients than poly_modulus() or larger coefficients than plain_modulus()) or support some computations (with noise
-    growing too fast as determined by coeff_modulus() and decomposition_bit_count()). The Chooser and Simulator classes
-    provide functionality to help determine the best encryption parameters for an application. Additionally, please refer to
-    external documentation to determine the best parameters.
+    growing too fast as determined by coeff_modulus() and decomposition_bit_count()). The ChooserPoly and ChooserEvaluator
+    classes provide functionality to help determine the best encryption parameters for an application. Additionally, please 
+    refer to external documentation to determine the best parameters.
 
     @par Thread Safety
     In general, reading from EncryptionParameters is thread-safe while mutating is not. Refer to the thread-safety of
@@ -27,7 +98,6 @@ namespace seal
 
     @warning Choosing inappropriate EncryptionParameters may load to an encryption scheme that is not secure, does not perform
     well, and/or does not support the input and computation of the application.
-    @see Chooser and Simulator to help determine the best encryption parameters for an application.
     */
     class EncryptionParameters
     {
@@ -68,6 +138,14 @@ namespace seal
         }
 
         /**
+        This variable has currently no effect (util/defines.h).
+        */
+        BigUInt &aux_coeff_modulus()
+        {
+            return aux_coeff_modulus_;
+        }
+
+        /**
         Returns a reference to the coefficient modulus (represented by a BigUInt) used for encryption. Note that the
         coefficient modulus directly determines the number of bits-per-coefficient of encrypted polynomials and the maximum
         value allowed for plain_modulus() (which should be significantly smaller than coeff_modulus()).
@@ -75,6 +153,11 @@ namespace seal
         const BigUInt &coeff_modulus() const
         {
             return coeff_modulus_;
+        }
+
+        const BigUInt &aux_coeff_modulus() const
+        {
+            return aux_coeff_modulus_;
         }
 
         /**
@@ -194,10 +277,60 @@ namespace seal
             return random_generator_;
         }
 
+        /**
+        Computes and returns the maximum number of bits of inherent noise supported by the current encryption
+        parameters. Any ciphertext with larger inherent noise is impossible to decrypt, even with the correct 
+        secret key. The function Decryptor::inherent_noise_bits() can be used to compute the number of bits
+        of inherent noise in a given ciphertext.
+
+        @par Inherent Noise
+        Technically speaking, the inherent noise of a ciphertext is a polynomial, but the condition for
+        decryption working depends on the size of the largest absolute value of its coefficients. It is this
+        largest absolute value that we will call the "noise", the "inherent noise", or the "error", in this
+        documentation. The reader is referred to the description of the encryption scheme for more details.
+
+        @throws std::logic_error if the encryption parameters are not valid
+        @see inherent_noise_max for computing the exact maximum size of inherent noise.
+        */
+        int inherent_noise_bits_max() const
+        {
+            BigUInt result;
+            inherent_noise_max(result);
+            return result.significant_bit_count();
+        }
+
+        /**
+        Computes the maximum amount of inherent noise supported by the current encryption parameters and stores
+        it in the given BigUInt. Any ciphertext with larger inherent noise is impossible to decrypt, even with 
+        the correct secret key. The function Decryptor::inherent_noise_bits() can be used to compute the number 
+        of bits of inherent noise in a given ciphertext.
+        
+        @par Inherent Noise
+        Technically speaking, the inherent noise of a ciphertext is a polynomial, but the condition for
+        decryption working depends on the size of the largest absolute value of its coefficients. It is this
+        largest absolute value that we will call the "noise", the "inherent noise", or the "error", in this
+        documentation. The reader is referred to the description of the encryption scheme for more details.
+
+        @param[in] destination The BigUInt to overwrite with the maximum inherent noise
+        @throws std::logic_error if the encryption parameters are not valid
+        @see inherent_noise_bits_max for returning instead the significant bit count of the maximum size of inherent noise.
+        */
+        void inherent_noise_max(BigUInt &destination) const;
+
+        /**
+        Returns the set of qualifiers (as an instance of EncryptionParameterQualifiers) for the current
+        encryption parameters.
+
+        @see EncryptionParameterQualifiers for more details.
+        */
+        EncryptionParameterQualifiers get_qualifiers() const;
+
     private:
         BigPoly poly_modulus_;
 
         BigUInt coeff_modulus_;
+
+        BigUInt aux_coeff_modulus_;
 
         BigUInt plain_modulus_;
 
@@ -210,5 +343,3 @@ namespace seal
         UniformRandomGeneratorFactory *random_generator_;
     };
 }
-
-#endif // SEAL_ENCRYPTIONPARAMS_H

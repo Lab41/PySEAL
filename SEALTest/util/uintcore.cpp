@@ -302,8 +302,6 @@ namespace SEALTest
 
             TEST_METHOD(GetSignificantBitCountUInt)
             {
-                Assert::AreEqual(0, get_significant_bit_count_uint(nullptr, 0));
-
                 MemoryPool &pool = *MemoryPool::default_pool();
                 Pointer ptr(allocate_uint(2, pool));
                 ptr[0] = 0;
@@ -353,7 +351,7 @@ namespace SEALTest
 
             TEST_METHOD(GetSignificantUInt64CountUInt)
             {
-                Assert::AreEqual(0, get_significant_uint64_count_uint(nullptr, 0));
+//                Assert::AreEqual(0, get_significant_uint64_count_uint(nullptr, 0));
 
                 MemoryPool &pool = *MemoryPool::default_pool();
                 Pointer ptr(allocate_uint(2, pool));

@@ -1,5 +1,4 @@
-#ifndef SEAL_UTIL_RANDOMTOSTD_H
-#define SEAL_UTIL_RANDOMTOSTD_H
+#pragma once
 
 #include <cstdint>
 #include "randomgen.h"
@@ -51,5 +50,3 @@ namespace seal
         };
     }
 }
-
-#endif // SEAL_UTIL_RANDOMTOSTD_H

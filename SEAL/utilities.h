@@ -1,5 +1,4 @@
-#ifndef SEAL_UTILITIES_H
-#define SEAL_UTILITIES_H
+#pragma once
 
 #include "bigpoly.h"
 #include "biguint.h"
@@ -8,95 +7,7 @@
 
 namespace seal
 {
-    /**
-    Computes the exact inherent noise in a ciphertext and returns it as a BigUInt. Computing the inherent noise
-    requires the ciphertext, the secret key, and the plaintext.
-
-    @par Inherent Noise
-    Technically speaking, the inherent noise of a ciphertext is a polynomial, but the condition for decryption working
-    depends on the size of the largest absolute value of its coefficients. It is this largest absolute value
-    that we will call the "noise", the "inherent noise", or the "error", in this documentation.
-    The reader is referred to the description of the encryption scheme for more details.
-
-    @param[in] encrypted The ciphertext
-    @param[in] plain The corresponding plaintext
-    @param[in] parms The encryption parameters
-    @param[in] secret_key The secret key
-    @throws std::invalid_argument if encryption parameters are not valid
-    @throws std::invalid_argument if the ciphertext is not a valid ciphertext for the encryption parameters
-    @throws std::invalid_argument if the plain polynomial's significant coefficient count or coefficient values are too large to
-    represent with the encryption parameters
-    @throws std::invalid_argument if the secret key is not valid
-    @see EncryptionParameters for more details on valid encryption parameters.
-    @see inherent_noise_max() for computing the maximum value of inherent noise supported by given encryption parameters.
-    */
-    BigUInt inherent_noise(const BigPolyArray &encrypted, const BigPoly &plain, const EncryptionParameters &parms, const BigPoly &secret_key);
-
-    /**
-    Computes the exact inherent noise in a ciphertext and returns it as a BigUInt. Computing the inherent noise
-    requires the ciphertext, the secret key, and the plaintext, which this function obtains by decrypting the
-    ciphertext with the secret key.
-
-    @par Inherent Noise
-    Technically speaking, the inherent noise of a ciphertext is a polynomial, but the condition for decryption working
-    depends on the size of the largest absolute value of its coefficients. It is this largest absolute value
-    that we will call the "noise", the "inherent noise", or the "error", in this documentation.
-    The reader is referred to the description of the encryption scheme for more details.
-
-    @param[in] encrypted The ciphertext
-    @param[in] parms The encryption parameters
-    @param[in] secret_key The secret key
-    @throws std::invalid_argument if encryption parameters are not valid
-    @throws std::invalid_argument if the ciphertext is not a valid ciphertext for the encryption parameters
-    @throws std::invalid_argument if the secret key is not valid
-    @see EncryptionParameters for more details on valid encryption parameters.
-    @see inherent_noise_max() for computing the maximum value of inherent noise supported by given encryption parameters.
-    */
-    BigUInt inherent_noise(const BigPolyArray &encrypted, const EncryptionParameters &parms, const BigPoly &secret_key);
-
-    /**
-    Computes the exact inherent noise in a ciphertext and stores it in a BigUInt given by reference.
-    Computing the inherent noise requires the ciphertext, the secret key, and the plaintext.
-
-    @par Inherent Noise
-    Technically speaking, the inherent noise of a ciphertext is a polynomial, but the condition for decryption working
-    depends on the size of the largest absolute value of its coefficients. It is this largest absolute value
-    that we will call the "noise", the "inherent noise", or the "error", in this documentation.
-    The reader is referred to the description of the encryption scheme for more details.
-
-    @param[in] encrypted The ciphertext
-    @param[in] plain The corresponding plaintext
-    @param[in] parms The encryption parameters
-    @param[in] secret_key The secret key
-    @param[out] result The BigUInt to overwrite with the inherent noise
-    @throws std::invalid_argument if encryption parameters are not valid
-    @throws std::invalid_argument if the ciphertext is not a valid ciphertext for the encryption parameters
-    @throws std::invalid_argument if the plain polynomial's significant coefficient count or coefficient values are too large to
-    represent with the encryption parameters
-    @throws std::invalid_argument if the secret key is not valid
-    @see EncryptionParameters for more details on valid encryption parameters.
-    @see inherent_noise_max() for computing the maximum value of inherent noise supported by given encryption parameters.
-    */
-    void inherent_noise(const BigPolyArray &encrypted, const BigPoly &plain, const EncryptionParameters &parms, const BigPoly &secret_key, BigUInt &result);
-
-    /**
-    Computes the maximum value of inherent noise supported by given encryption parameters. Any ciphertext
-    with larger inherent noise is impossible to decrypt, even with the correct secret key.
-
-    @par Inherent Noise
-    Technically speaking, the inherent noise of a ciphertext is a polynomial, but the condition for decryption working
-    depends on the size of the largest absolute value of its coefficients. It is this largest absolute value
-    that we will call the "noise", the "inherent noise", or the "error", in this documentation.
-    The reader is referred to the description of the encryption scheme for more details.
-
-    @param[in] parms The encryption parameters
-    @throws std::invalid_argument if encryption parameters are not valid
-    @see EncryptionParameters for more details on valid encryption parameters.
-    @see inherent_noise() for computing the exact value of inherent noise in a given ciphertext.
-    */
-    BigUInt inherent_noise_max(const EncryptionParameters &parms);
-
-    /**
+     /**
     Computes the infinity-norm of a given polynomial with non-negative coefficients (represented by BigPoly).
 
     @param[in] poly The polynomial whose infinity-norm is to be computed
@@ -114,15 +25,6 @@ namespace seal
     @throws std::invalid_argument if modulus is zero
     */
     BigUInt poly_infty_norm_coeffmod(const BigPoly &poly, const BigUInt &modulus);
-
-    /**
-    Estimates using Simulation the maximum "level" that can be achieved by given encryption parameters.
-
-    @param[in] parms The encryption parameters
-    @throws std::invalid_argument if encryption parameters are not valid
-    @see EncryptionParameters for more details on valid encryption parameters.
-    */
-    int estimate_level_max(const EncryptionParameters &parms);
 
     /**
     Raises an unsigned integer (represented by BigUInt) to an unsigned integer power
@@ -152,11 +54,9 @@ namespace seal
     BigUInt exponentiate_uint_mod(const BigUInt &operand, const BigUInt &exponent, const BigUInt &modulus);
 
     /**
-    Raises a polynomial (represented by BigPoly) to an unsigned integer power 
-    (represented by BigUInt) modulo a polynomial and a coefficient modulus, 
-    and stores the result in a given BigPoly.
-    The input is expected to be already reduced both modulo the polynomial
-    and the coefficient modulus.
+    Raises a polynomial (represented by BigPoly) to an unsigned integer power (represented by BigUInt) modulo 
+    a polynomial and a coefficient modulus, and stores the result in a given BigPoly. The input is expected 
+    to be already reduced both modulo the polynomial and the coefficient modulus.
 
     @param[in] operand The polynomial to exponentiate
     @param[in] exponent The unsigned integer exponent
@@ -171,10 +71,9 @@ namespace seal
         const BigPoly &poly_modulus, const BigUInt &coeff_modulus, BigPoly &destination);
 
     /**
-    Raises a polynomial (represented by BigPoly) to an unsigned integer power
-    (represented by BigUInt) modulo a polynomial and a coefficient modulus,
-    and returns the result. The input is expected to be already reduced both 
-    modulo the polynomial and the coefficient modulus.
+    Raises a polynomial (represented by BigPoly) to an unsigned integer power (represented by BigUInt) 
+    modulo a polynomial and a coefficient modulus, and returns the result. The input is expected to be 
+    already reduced both modulo the polynomial and the coefficient modulus.
 
     @param[in] operand The polynomial to exponentiate
     @param[in] exponent The unsigned integer exponent
@@ -259,6 +158,3 @@ namespace seal
     */
     BigUInt poly_eval_uint_mod(const BigPoly &poly_to_evaluate, const BigUInt &value, const BigUInt &modulus);
 }
-
-
-#endif // SEAL_UTILITIES_H

@@ -526,6 +526,42 @@ namespace SEALNETTest
             poly7[3].Set(1);    // 1    (*343)
             value.Set(123 + -1 * 7 + 511 * 49 + 1 * 343);
             Assert.AreEqual(value, encoder2.DecodeBigUInt(poly7));
+
+            var encoder3 = new BalancedEncoder(modulus, 6);
+            var poly8 = new BigPoly(4, 16);
+            poly8[0].Set(5);
+            poly8[1].Set(4);
+            poly8[2].Set(3);
+            poly8[3].Set(2);
+            value.Set(5 + 4 * 6 + 3 * 36 + 2 * 216);
+            Assert.AreEqual(value, encoder3.DecodeBigUInt(poly8));
+
+            var encoder4 = new BalancedEncoder(modulus, 10);
+            var poly9 = new BigPoly(4, 16);
+            poly9[0].Set(1);
+            poly9[1].Set(2);
+            poly9[2].Set(3);
+            poly9[3].Set(4);
+            value.Set(4321);
+            Assert.AreEqual(value, encoder4.DecodeBigUInt(poly9));
+
+            value.Set("4D2");
+            var poly10 = encoder2.Encode(value);
+            Assert.AreEqual(5, poly10.GetSignificantCoeffCount());
+            Assert.AreEqual(modulus.BitCount, poly10.CoeffBitCount);
+            Assert.IsTrue(value.Equals(encoder2.DecodeBigUInt(poly10)));
+
+            value.Set("4D2");
+            var poly11 = encoder3.Encode(value);
+            Assert.AreEqual(5, poly11.GetSignificantCoeffCount());
+            Assert.AreEqual(modulus.BitCount, poly11.CoeffBitCount);
+            Assert.IsTrue(value.Equals(encoder3.DecodeBigUInt(poly11)));
+
+            value.Set("4D2");
+            var poly12 = encoder4.Encode(value);
+            Assert.AreEqual(4, poly12.GetSignificantCoeffCount());
+            Assert.AreEqual(modulus.BitCount, poly12.CoeffBitCount);
+            Assert.IsTrue(value.Equals(encoder4.DecodeBigUInt(poly12)));
         }
 
         [TestMethod]
@@ -600,6 +636,41 @@ namespace SEALNETTest
             poly7[3].Set(1);    // 1    (*343)
             Assert.AreEqual((UInt64)(123 + -1 * 7 + 511 * 49 + 1 * 343), encoder2.DecodeUInt64(poly7));
 
+            var encoder3 = new BalancedEncoder(modulus, 6);
+            var poly8 = new BigPoly(4, 16);
+            poly8[0].Set(5);
+            poly8[1].Set(4);
+            poly8[2].Set(3);
+            poly8[3].Set(2);
+            UInt64 value = 5 + 4 * 6 + 3 * 36 + 2 * 216;
+            Assert.AreEqual(value, encoder3.DecodeUInt64(poly8));
+
+            var encoder4 = new BalancedEncoder(modulus, 10);
+            var poly9 = new BigPoly(4, 16);
+            poly9[0].Set(1);
+            poly9[1].Set(2);
+            poly9[2].Set(3);
+            poly9[3].Set(4);
+            value = 4321;
+            Assert.AreEqual(value, encoder4.DecodeUInt64(poly9));
+
+            value = 1234;
+            var poly10 = encoder2.Encode(value);
+            Assert.AreEqual(5, poly10.GetSignificantCoeffCount());
+            Assert.AreEqual(modulus.BitCount, poly10.CoeffBitCount);
+            Assert.IsTrue(value.Equals(encoder2.DecodeUInt64(poly10)));
+
+            value = 1234;
+            var poly11 = encoder3.Encode(value);
+            Assert.AreEqual(5, poly11.GetSignificantCoeffCount());
+            Assert.AreEqual(modulus.BitCount, poly11.CoeffBitCount);
+            Assert.IsTrue(value.Equals(encoder3.DecodeUInt64(poly11)));
+
+            value = 1234;
+            var poly12 = encoder4.Encode(value);
+            Assert.AreEqual(4, poly12.GetSignificantCoeffCount());
+            Assert.AreEqual(modulus.BitCount, poly12.CoeffBitCount);
+            Assert.IsTrue(value.Equals(encoder4.DecodeUInt64(poly12)));
         }
 
         [TestMethod]
@@ -673,6 +744,42 @@ namespace SEALNETTest
             poly7[2].Set(511);  // 511  (*49)
             poly7[3].Set(1);    // 1    (*343)
             Assert.AreEqual((UInt32)(123 + -1 * 7 + 511 * 49 + 1 * 343), encoder2.DecodeUInt32(poly7));
+
+            var encoder3 = new BalancedEncoder(modulus, 6);
+            var poly8 = new BigPoly(4, 16);
+            poly8[0].Set(5);
+            poly8[1].Set(4);
+            poly8[2].Set(3);
+            poly8[3].Set(2);
+            UInt64 value = 5 + 4 * 6 + 3 * 36 + 2 * 216;
+            Assert.AreEqual(value, encoder3.DecodeUInt32(poly8));
+
+            var encoder4 = new BalancedEncoder(modulus, 10);
+            var poly9 = new BigPoly(4, 16);
+            poly9[0].Set(1);
+            poly9[1].Set(2);
+            poly9[2].Set(3);
+            poly9[3].Set(4);
+            value = 4321;
+            Assert.AreEqual(value, encoder4.DecodeUInt32(poly9));
+
+            value = 1234;
+            var poly10 = encoder2.Encode(value);
+            Assert.AreEqual(5, poly10.GetSignificantCoeffCount());
+            Assert.AreEqual(modulus.BitCount, poly10.CoeffBitCount);
+            Assert.IsTrue(value.Equals(encoder2.DecodeUInt32(poly10)));
+
+            value = 1234;
+            var poly11 = encoder3.Encode(value);
+            Assert.AreEqual(5, poly11.GetSignificantCoeffCount());
+            Assert.AreEqual(modulus.BitCount, poly11.CoeffBitCount);
+            Assert.IsTrue(value.Equals(encoder3.DecodeUInt32(poly11)));
+
+            value = 1234;
+            var poly12 = encoder4.Encode(value);
+            Assert.AreEqual(4, poly12.GetSignificantCoeffCount());
+            Assert.AreEqual(modulus.BitCount, poly12.CoeffBitCount);
+            Assert.IsTrue(value.Equals(encoder4.DecodeUInt32(poly12)));
         }
 
         [TestMethod]
@@ -735,11 +842,11 @@ namespace SEALNETTest
             Assert.AreEqual(9, poly8.GetSignificantCoeffCount());
             Assert.AreEqual(modulus.BitCount, poly8.CoeffBitCount);
             Assert.AreEqual("FFFF", poly8[8].ToString());
-			Assert.AreEqual("1", poly8[7].ToString());
-			for (int i = 0; i < 7; ++i)
-			{
-				Assert.IsTrue(poly8[i].IsZero);
-			}
+            Assert.AreEqual("1", poly8[7].ToString());
+            for (int i = 0; i < 7; ++i)
+            {
+                Assert.IsTrue(poly8[i].IsZero);
+            }
             Assert.AreEqual(-4374L, encoder.DecodeInt64(poly8));
 
             var poly9 = encoder.Encode(-0xD4EBL);
@@ -805,6 +912,42 @@ namespace SEALNETTest
             poly12[4].Set("7FFF"); // 32767
             poly12[5].Set("7FFE"); // 32766
             Assert.AreEqual(1L + -1 * 7 + -2 * 49 + -32767 * 343 + 32767 * 2401 + 32766 * 16807, encoder3.DecodeInt64(poly12));
+
+            var encoder4 = new BalancedEncoder(modulus, 6);
+            poly8 = new BigPoly(4, 16);
+            poly8[0].Set(5);
+            poly8[1].Set(4);
+            poly8[2].Set(3);
+            poly8[3].Set(modulus - 2);
+            Int64 value = 5 + 4 * 6 + 3 * 36 - 2 * 216;
+            Assert.AreEqual(value, encoder4.DecodeInt64(poly8));
+
+            var encoder5 = new BalancedEncoder(modulus, 10);
+            poly9 = new BigPoly(4, 16);
+            poly9[0].Set(1);
+            poly9[1].Set(2);
+            poly9[2].Set(3);
+            poly9[3].Set(4);
+            value = 4321;
+            Assert.AreEqual(value, encoder5.DecodeInt64(poly9));
+
+            value = -1234;
+            poly10 = encoder3.Encode(value);
+            Assert.AreEqual(5, poly10.GetSignificantCoeffCount());
+            Assert.AreEqual(modulus.GetSignificantBitCount(), poly10.CoeffBitCount);
+            Assert.IsTrue(value.Equals(encoder3.DecodeInt64(poly10)));
+
+            value = -1234;
+            poly11 = encoder4.Encode(value);
+            Assert.AreEqual(5, poly11.GetSignificantCoeffCount());
+            Assert.AreEqual(modulus.GetSignificantBitCount(), poly11.CoeffBitCount);
+            Assert.IsTrue(value.Equals(encoder4.DecodeInt64(poly11)));
+
+            value = -1234;
+            poly12 = encoder5.Encode(value);
+            Assert.AreEqual(4, poly12.GetSignificantCoeffCount());
+            Assert.AreEqual(modulus.GetSignificantBitCount(), poly12.CoeffBitCount);
+            Assert.IsTrue(value.Equals(encoder5.DecodeInt64(poly12)));
         }
 
         [TestMethod]
@@ -920,43 +1063,79 @@ namespace SEALNETTest
             poly12[4].Set("7FFF"); // 32767
             poly12[5].Set("7FFE"); // 32766
             Assert.AreEqual(1 + -1 * 7 + -2 * 49 + -32767 * 343 + 32767 * 2401 + 32766 * 16807, encoder2.DecodeInt32(poly12));
+
+            var encoder4 = new BalancedEncoder(modulus, 6);
+            poly8 = new BigPoly(4, 16);
+            poly8[0].Set(5);
+            poly8[1].Set(4);
+            poly8[2].Set(3);
+            poly8[3].Set(modulus - 2);
+            Int32 value = 5 + 4 * 6 + 3 * 36 - 2 * 216;
+            Assert.AreEqual(value, encoder4.DecodeInt32(poly8));
+
+            var encoder5 = new BalancedEncoder(modulus, 10);
+            poly9 = new BigPoly(4, 16);
+            poly9[0].Set(1);
+            poly9[1].Set(2);
+            poly9[2].Set(3);
+            poly9[3].Set(4);
+            value = 4321;
+            Assert.AreEqual(value, encoder5.DecodeInt32(poly9));
+
+            value = -1234;
+            poly10 = encoder2.Encode(value);
+            Assert.AreEqual(5, poly10.GetSignificantCoeffCount());
+            Assert.AreEqual(modulus.GetSignificantBitCount(), poly10.CoeffBitCount);
+            Assert.IsTrue(value.Equals(encoder2.DecodeInt32(poly10)));
+
+            value = -1234;
+            var poly11 = encoder4.Encode(value);
+            Assert.AreEqual(5, poly11.GetSignificantCoeffCount());
+            Assert.AreEqual(modulus.GetSignificantBitCount(), poly11.CoeffBitCount);
+            Assert.IsTrue(value.Equals(encoder4.DecodeInt32(poly11)));
+
+            value = -1234;
+            poly12 = encoder5.Encode(value);
+            Assert.AreEqual(4, poly12.GetSignificantCoeffCount());
+            Assert.AreEqual(modulus.GetSignificantBitCount(), poly12.CoeffBitCount);
+            Assert.IsTrue(value.Equals(encoder5.DecodeInt32(poly12)));
         }
 
         [TestMethod]
         public void BinaryFractionalEncodeDecodeNET()
         {
-           	var polyModulus = new BigPoly("1x^1024 + 1");
-			var modulus = new BigUInt("10000");
-			var encoder = new BinaryFractionalEncoder(modulus, polyModulus, 500, 50);
+            var polyModulus = new BigPoly("1x^1024 + 1");
+            var modulus = new BigUInt("10000");
+            var encoder = new BinaryFractionalEncoder(modulus, polyModulus, 500, 50);
 
-			var poly = new BigPoly(encoder.Encode(0.0));
-			Assert.AreEqual(polyModulus.CoeffCount, poly.CoeffCount);
-			Assert.IsTrue(poly.IsZero);
-			Assert.AreEqual(0.0, encoder.Decode(poly));
-			
-			var poly1 = new BigPoly(encoder.Encode(-1.0));
+            var poly = new BigPoly(encoder.Encode(0.0));
+            Assert.AreEqual(polyModulus.CoeffCount, poly.CoeffCount);
+            Assert.IsTrue(poly.IsZero);
+            Assert.AreEqual(0.0, encoder.Decode(poly));
+            
+            var poly1 = new BigPoly(encoder.Encode(-1.0));
             Assert.AreEqual(polyModulus.CoeffCount, poly1.CoeffCount);
             Assert.AreEqual(modulus.BitCount, poly1.CoeffBitCount);
-			Assert.AreEqual(-1.0, encoder.Decode(poly1));
+            Assert.AreEqual(-1.0, encoder.Decode(poly1));
 
-			var poly2 = new BigPoly(encoder.Encode(0.1));
+            var poly2 = new BigPoly(encoder.Encode(0.1));
             Assert.AreEqual(polyModulus.CoeffCount, poly2.CoeffCount);
             Assert.AreEqual(modulus.BitCount, poly2.CoeffBitCount);
-			Assert.IsTrue(Math.Abs(encoder.Decode(poly2)-0.1)/0.1 < 0.000001);
-			
-			var poly3 = new BigPoly(encoder.Encode(3.123));
+            Assert.IsTrue(Math.Abs(encoder.Decode(poly2)-0.1)/0.1 < 0.000001);
+            
+            var poly3 = new BigPoly(encoder.Encode(3.123));
             Assert.AreEqual(polyModulus.CoeffCount, poly3.CoeffCount);
             Assert.AreEqual(modulus.BitCount, poly3.CoeffBitCount);
             Assert.IsTrue(Math.Abs(encoder.Decode(poly3) - 3.123) / 3.123 < 0.000001);
 
-			var poly4 = new BigPoly(encoder.Encode(-123.456));
+            var poly4 = new BigPoly(encoder.Encode(-123.456));
             Assert.AreEqual(polyModulus.CoeffCount, poly4.CoeffCount);
             Assert.AreEqual(modulus.BitCount, poly4.CoeffBitCount);
             Assert.IsTrue(Math.Abs(encoder.Decode(poly4) + 123.456) / (-123.456) < 0.000001);
 
-			var poly5 = new BigPoly(encoder.Encode(12345.98765));
+            var poly5 = new BigPoly(encoder.Encode(12345.98765));
             Assert.AreEqual(polyModulus.CoeffCount, poly5.CoeffCount);
-			Assert.AreEqual(modulus.BitCount, poly5.CoeffBitCount);
+            Assert.AreEqual(modulus.BitCount, poly5.CoeffBitCount);
             Assert.IsTrue(Math.Abs(encoder.Decode(poly5) - 12345.98765) / 12345.98765 < 0.000001);
         }
 

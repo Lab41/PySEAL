@@ -1,5 +1,4 @@
-#ifndef SEAL_SIMULATOR_H
-#define SEAL_SIMULATOR_H
+#pragma once
 
 #include "encryptionparams.h"
 #include "bigpoly.h"
@@ -81,6 +80,16 @@ namespace seal
         }
 
         /**
+        Returns the bit length of the maximal value of inherent noise that a ciphertext encrypted using the given 
+        encryption parameters can contain and still decrypt correctly. If noise_bits() returns a value larger than this,
+        the encryption parameters used are possibly not large enough to support the performed homomorphic operations.
+        */
+        int max_noise_bits() const
+        {
+            return max_noise_.significant_bit_count();
+        }
+
+        /**
         Returns the bit length of the value of inherent noise that is being simulated.
 
         @warning The average-case estimates used by the simulator are typically conservative, so the amount of noise tends
@@ -102,7 +111,7 @@ namespace seal
         */
         int noise_bits_left() const
         {
-            return max_noise_.significant_bit_count() - noise_bits();
+            return max_noise_bits() - noise_bits();
         }
 
         /**
@@ -286,7 +295,7 @@ namespace seal
         @throws std::invalid_argument if simulation has size() less than 2
         @see Evaluator::multiply_plain() for the corresponding operation on ciphertexts.
         */
-        Simulation multiply_plain(const Simulation &simulation, int plain_max_coeff_count, uint64_t plain_max_abs_value);
+        Simulation multiply_plain(const Simulation &simulation, int plain_max_coeff_count, std::uint64_t plain_max_abs_value);
 
         /**
         Simulates inherent noise growth in Evaluator::add_plain() and returns the result.
@@ -338,6 +347,15 @@ namespace seal
         Simulation multiply(const Simulation &simulation1, const Simulation &simulation2);
 
         /**
+        Simulates inherent noise growth in Evaluator::square() and returns the result.
+
+        @param[in] simulation The Simulation object to square
+        @throws std::invalid_argument if simulation has size() less than 2
+        @see Evaluator::square() for the corresponding operation on ciphertexts.
+        */
+        Simulation square(const Simulation &simulation);
+
+        /**
         Simulates inherent noise growth in Evaluator::relinearize() and returns the result.
 
         @param[in] simulation The Simulation object to relinearize
@@ -349,6 +367,3 @@ namespace seal
         Simulation relinearize(const Simulation &simulation, int destination_size = 2);
     };
 }
-
-
-#endif // SEAL_SIMULATOR_H

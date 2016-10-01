@@ -1,5 +1,4 @@
-#ifndef SEAL_H
-#define SEAL_H
+#pragma once
 
 #include "biguint.h"
 #include "bigpoly.h"
@@ -13,5 +12,3 @@
 #include "chooser.h"
 #include "utilities.h"
 #include "polycrt.h"
-
-#endif // SEAL_H

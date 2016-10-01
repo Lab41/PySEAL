@@ -98,7 +98,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <AdditionalIncludeDirectories>$(SolutionDir)SEAL\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)SEAL\;%(AdditionalIncludeDirectories);$(SolutionDir)Network\</AdditionalIncludeDirectories>
       <SDLCheck>true</SDLCheck>
       <XMLDocumentationFileName>$(SolutionDir)bin\$(Platform)\$(Configuration)\</XMLDocumentationFileName>
       <GenerateXMLDocumentationFiles>true</GenerateXMLDocumentationFiles>
@@ -106,7 +106,7 @@
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>SEAL.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>SEAL.lib;Network.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(SolutionDir)bin\$(Platform)\$(Configuration)\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <Xdcmake>
@@ -117,13 +117,15 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NOMINMAX</PreprocessorDefinitions>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <AdditionalIncludeDirectories>$(SolutionDir)SEAL\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <SDLCheck>true</SDLCheck>
       <XMLDocumentationFileName>$(SolutionDir)bin\$(Platform)\$(Configuration)\</XMLDocumentationFileName>
       <GenerateXMLDocumentationFiles>true</GenerateXMLDocumentationFiles>
       <DisableSpecificWarnings>4635</DisableSpecificWarnings>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <FavorSizeOrSpeed>Neither</FavorSizeOrSpeed>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -139,7 +141,7 @@
       <WarningLevel>Level3</WarningLevel>
       <PreprocessorDefinitions>WIN32;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <AdditionalIncludeDirectories>$(SolutionDir)SEAL\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)SEAL\;%(AdditionalIncludeDirectories);$(SolutionDir)Network\</AdditionalIncludeDirectories>
       <SDLCheck>true</SDLCheck>
       <XMLDocumentationFileName>$(SolutionDir)bin\$(Platform)\$(Configuration)\</XMLDocumentationFileName>
       <GenerateXMLDocumentationFiles>true</GenerateXMLDocumentationFiles>
@@ -147,7 +149,7 @@
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>SEAL.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>SEAL.lib;Network.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(SolutionDir)bin\$(Platform)\$(Configuration)\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <Xdcmake>
@@ -157,13 +159,16 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
-      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NOMINMAX</PreprocessorDefinitions>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <AdditionalIncludeDirectories>$(SolutionDir)SEAL\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <SDLCheck>true</SDLCheck>
       <XMLDocumentationFileName>$(SolutionDir)bin\$(Platform)\$(Configuration)\</XMLDocumentationFileName>
       <GenerateXMLDocumentationFiles>true</GenerateXMLDocumentationFiles>
       <DisableSpecificWarnings>4635</DisableSpecificWarnings>
+      <CompileAsManaged>true</CompileAsManaged>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>

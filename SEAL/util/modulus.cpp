@@ -44,11 +44,13 @@ namespace seal
             }
         }
 
-        Modulus::Modulus() : modulus_(nullptr), uint64_count_(0), significant_bit_count_(0), power_of_two_minus_one_(-1)
+        Modulus::Modulus() : modulus_(nullptr), uint64_count_(0), significant_bit_count_(0), 
+            power_of_two_minus_one_(-1), inverse_significant_bit_count_(0)
         {
         }
 
-        Modulus::Modulus(const std::uint64_t *modulus, int uint64_count) : modulus_(modulus), uint64_count_(uint64_count), power_of_two_minus_one_(-1)
+        Modulus::Modulus(const std::uint64_t *modulus, int uint64_count) : modulus_(modulus), uint64_count_(uint64_count), 
+            power_of_two_minus_one_(-1), inverse_significant_bit_count_(0)
         {
 #ifdef _DEBUG
             if (modulus == nullptr)
@@ -72,10 +74,12 @@ namespace seal
                 inverse_modulus_ = Pointer::Owning(new uint64_t[uint64_count]);
                 negate_uint(modulus, uint64_count, inverse_modulus_.get());
                 filter_highbits_uint(inverse_modulus_.get(), uint64_count, significant_bit_count_ - 1);
+                inverse_significant_bit_count_ = get_significant_bit_count_uint(inverse_modulus_.get(), uint64_count);
             }
         }
 
-        Modulus::Modulus(const std::uint64_t *modulus, int uint64_count, MemoryPool &pool) : modulus_(modulus), uint64_count_(uint64_count), power_of_two_minus_one_(-1)
+        Modulus::Modulus(const std::uint64_t *modulus, int uint64_count, MemoryPool &pool) : modulus_(modulus), uint64_count_(uint64_count), 
+            power_of_two_minus_one_(-1), inverse_significant_bit_count_(0)
         {
 #ifdef _DEBUG
             if (modulus == nullptr)
@@ -99,10 +103,12 @@ namespace seal
                 inverse_modulus_ = allocate_uint(uint64_count, pool);
                 negate_uint(modulus, uint64_count, inverse_modulus_.get());
                 filter_highbits_uint(inverse_modulus_.get(), uint64_count, significant_bit_count_ - 1);
+                inverse_significant_bit_count_ = get_significant_bit_count_uint(inverse_modulus_.get(), uint64_count);
             }
         }
 
-        Modulus::Modulus(Modulus &&move) : modulus_(move.modulus_), uint64_count_(move.uint64_count_), significant_bit_count_(move.significant_bit_count_), power_of_two_minus_one_(move.power_of_two_minus_one_)
+        Modulus::Modulus(Modulus &&move) : modulus_(move.modulus_), uint64_count_(move.uint64_count_), significant_bit_count_(move.significant_bit_count_), 
+            power_of_two_minus_one_(move.power_of_two_minus_one_), inverse_significant_bit_count_(move.inverse_significant_bit_count_)
         {
             inverse_modulus_.acquire(move.inverse_modulus_);
         }
@@ -113,6 +119,7 @@ namespace seal
             uint64_count_ = assign.uint64_count_;
             significant_bit_count_ = assign.significant_bit_count_;
             power_of_two_minus_one_ = assign.power_of_two_minus_one_;
+            inverse_significant_bit_count_ = assign.inverse_significant_bit_count_;
             inverse_modulus_.acquire(assign.inverse_modulus_);
             return *this;
         }

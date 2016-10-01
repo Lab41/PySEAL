@@ -28,7 +28,7 @@ namespace Microsoft
                         {
                             throw gcnew ObjectDisposedException("keys cannot be null");
                         }
-                        v_keys.push_back(make_pair(key->Item1->GetArray(), key->Item2->GetArray()));
+                        v_keys.emplace_back(key->Item1->GetArray(), key->Item2->GetArray());
                         GC::KeepAlive(key);
                     }
                     keys_ = new seal::EvaluationKeys(v_keys);
@@ -65,7 +65,7 @@ namespace Microsoft
                 {
                     throw gcnew ObjectDisposedException("EvaluationKeys is disposed");
                 }
-                return static_cast<int>(keys_->size());
+                return keys_->size();
             }
 
             System::Tuple<BigPolyArray^, BigPolyArray^> ^EvaluationKeys::default::get(int index)
@@ -188,7 +188,7 @@ namespace Microsoft
                     {
                         first->Load(stream);
                         second->Load(stream);
-                        keys_->keys().push_back(make_pair(first_underlying, second_underlying));
+                        keys_->keys().emplace_back(first_underlying, second_underlying);
                     }
                     GC::KeepAlive(stream);
                 }

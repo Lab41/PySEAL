@@ -64,7 +64,7 @@ namespace seal
                     throw invalid_argument("inputs can not contain null pointers");
                 }
 #endif
-                inputs_.push_back(inputs[i]->clone());
+                inputs_.emplace_back(inputs[i]->clone());
             }
         }
 
@@ -81,7 +81,7 @@ namespace seal
             vector<Simulation> inputs;
             for (size_t i = 0; i < inputs_.size(); ++i)
             {
-                inputs.push_back(inputs_[i]->simulate(parms));
+                inputs.emplace_back(inputs_[i]->simulate(parms));
             }
             return simulation_evaluator_.add_many(inputs);
         }
@@ -295,7 +295,7 @@ namespace seal
                     throw invalid_argument("inputs can not contain null pointers");
                 }
 #endif
-                inputs_.push_back(inputs[i]->clone());
+                inputs_.emplace_back(inputs[i]->clone());
             }
         }
 
@@ -312,7 +312,7 @@ namespace seal
             vector<Simulation> inputs;
             for (size_t i = 0; i < inputs_.size(); ++i)
             {
-                inputs.push_back(inputs_[i]->simulate(parms));
+                inputs.emplace_back(inputs_[i]->simulate(parms));
             }
             return simulation_evaluator_.multiply_many(inputs);
         }

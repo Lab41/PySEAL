@@ -56,8 +56,8 @@ namespace SEALTest
             std::pair<BigPolyArray, BigPolyArray> test_keys_2 = std::pair<BigPolyArray, BigPolyArray>(arr3, arr4);
 
            std::vector<std::pair<BigPolyArray, BigPolyArray> > test_keys_vector;
-           test_keys_vector.push_back(test_keys_1);
-           test_keys_vector.push_back(test_keys_2);
+           test_keys_vector.emplace_back(test_keys_1);
+           test_keys_vector.emplace_back(test_keys_2);
           
            EvaluationKeys test_evk(test_keys_vector);
            size_t expectedsize = 2;
@@ -128,8 +128,8 @@ namespace SEALTest
             std::pair<BigPolyArray, BigPolyArray> test_keys_2 = std::pair<BigPolyArray, BigPolyArray>(arr3, arr4);
 
             std::vector<std::pair<BigPolyArray, BigPolyArray> > test_keys_vector;
-            test_keys_vector.push_back(test_keys_1);
-            test_keys_vector.push_back(test_keys_2);
+            test_keys_vector.emplace_back(test_keys_1);
+            test_keys_vector.emplace_back(test_keys_2);
 
             EvaluationKeys test_evk(test_keys_vector);
 

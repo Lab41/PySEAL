@@ -2,6 +2,7 @@
 
 #include "evaluator.h"
 #include "EvaluationKeysWrapper.h"
+#include "EncryptionParamsWrapper.h"
 
 namespace Microsoft
 {
@@ -183,6 +184,21 @@ namespace Microsoft
                 BigPolyArray ^Multiply(BigPolyArray ^encrypted1, BigPolyArray ^encrypted2);
 
                 /**
+                <summary>Squares a ciphertext and stores the result in the destination parameter.</summary>
+                <param name="encrypted">The ciphertext to square</param>
+                <param name="destination">The ciphertext to overwrite with the result</param>
+                <exception cref="System::ArgumentException">if the ciphertexts are not valid for the encryption parameters</exception>
+                */
+                void Square(BigPolyArray ^encrypted, BigPolyArray ^destination);
+
+                /**
+                <summary>Squares a ciphertext and returns the result.</summary>
+                <param name="encrypted">The ciphertext to square</param>
+                <exception cref="System::ArgumentException">if the ciphertexts are not valid for the encryption parameters</exception>
+                */
+                BigPolyArray ^Square(BigPolyArray ^encrypted);
+
+                /**
                 <summary>Relinearizes a ciphertext and stores the result in the destination parameter.</summary>
                 <param name="encrypted">The ciphertext to relinearize</param>
                 <param name="destination">The ciphertext to overwrite with the relinearized result</param>
@@ -354,6 +370,14 @@ namespace Microsoft
 
                 /**
                 <summary>Multiplies a list of ciphertexts together and stores the result in the destination parameter.</summary>
+
+                <remarks>
+                <para>
+                Multiplies a list of ciphertexts together and stores the result in the destination parameter. Relinearization 
+                is performed after every multiplication, so enough encryption keys must have been given to the constructor 
+                of the Evaluator.
+                </para>
+                </remarks>
                 <param name="encrypteds">The list of ciphertexts to multiply</param>
                 <param name="destination">The ciphertext to overwrite with the multiplication result</param>
                 <exception cref="System::ArgumentException">if the encrypteds list is empty</exception>
@@ -365,6 +389,13 @@ namespace Microsoft
 
                 /**
                 <summary>Multiplies a list of ciphertexts together and returns the result.</summary>
+
+                <remarks>
+                <para>
+                Multiplies a list of ciphertexts together and returns the result. Relinearization is performed after 
+                every multiplication, so enough encryption keys must have been given to the constructor of the Evaluator.
+                </para>
+                </remarks>
                 <param name="encrypteds">The list of ciphertexts to multiply</param>
                 <exception cref="System::ArgumentException">if the encrypteds list is empty</exception>
                 <exception cref="System::ArgumentException">if the ciphertexts are not valid ciphertexts for the encryption parameters</exception>
@@ -376,7 +407,9 @@ namespace Microsoft
                 <summary>Raises a ciphertext to the specified power and stores the result in the destination parameter.</summary>
                 <remarks>
                 <para>
-                Raises a ciphertext to the specified power and stores the result in the destination parameter.
+                Raises a ciphertext to the specified power and stores the result in the destination parameter. 
+                Relinearization is performed after every multiplication, so enough encryption keys must have 
+                been given to the constructor of the Evaluator.
                 </para>
                 <para>
                 Exponentiation to power 0 is not allowed and will result in the library throwing an invalid argument
@@ -398,7 +431,9 @@ namespace Microsoft
                 <summary>Raises a ciphertext to the specified power and returns the result.</summary>
                 <remarks>
                 <para>
-                Raises a ciphertext to the specified power and returns the result.
+                Raises a ciphertext to the specified power and returns the result. Relinearization is performed 
+                after every multiplication, so enough encryption keys must have been given to the constructor 
+                of the Evaluator.
                 </para>
                 <para>
                 Exponentiation to power 0 is not allowed and will result in the library throwing an invalid argument

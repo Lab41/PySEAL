@@ -391,7 +391,7 @@ namespace Microsoft
                         {
                             throw gcnew ArgumentNullException("operand cannot be null");
                         }
-                        operands_vector.push_back(operand->GetChooserPoly());
+                        operands_vector.emplace_back(operand->GetChooserPoly());
                         GC::KeepAlive(operand);
                     }
 
@@ -444,7 +444,7 @@ namespace Microsoft
                         {
                             throw gcnew ArgumentNullException("operand cannot be null");
                         }
-                        operands_vector.push_back(operand->GetChooserPoly());
+                        operands_vector.emplace_back(operand->GetChooserPoly());
                         GC::KeepAlive(operand);
                     }
 
@@ -576,6 +576,33 @@ namespace Microsoft
                 throw gcnew Exception("Unexpected exception");
             }
 
+            ChooserPoly ^ChooserEvaluator::Square(ChooserPoly ^operand)
+            {
+                if (chooserEvaluator_ == nullptr)
+                {
+                    throw gcnew ObjectDisposedException("ChooserEvaluator is disposed");
+                }
+                if (operand == nullptr)
+                {
+                    throw gcnew ArgumentNullException("operand cannot be null");
+                }
+                try
+                {
+                    auto result = gcnew ChooserPoly(chooserEvaluator_->square(operand->GetChooserPoly()));
+                    GC::KeepAlive(operand);
+                    return result;
+                }
+                catch (const exception &e)
+                {
+                    HandleException(&e);
+                }
+                catch (...)
+                {
+                    HandleException(nullptr);
+                }
+                throw gcnew Exception("Unexpected exception");
+            }
+
             ChooserPoly ^ChooserEvaluator::Relinearize(ChooserPoly ^operand)
             {
                 if (chooserEvaluator_ == nullptr)
@@ -681,7 +708,7 @@ namespace Microsoft
                         {
                             throw gcnew ArgumentNullException("operand cannot be null");
                         }
-                        v_simulations.push_back(operand->GetChooserPoly());
+                        v_simulations.emplace_back(operand->GetChooserPoly());
                         GC::KeepAlive(operand);
                     }
 
@@ -1022,7 +1049,7 @@ namespace Microsoft
                         {
                             throw gcnew ArgumentNullException("operand cannot be null");
                         }
-                        v_operands.push_back(operand->GetChooserPoly());
+                        v_operands.emplace_back(operand->GetChooserPoly());
                         GC::KeepAlive(operand);
                     }
 

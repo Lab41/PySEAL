@@ -1,5 +1,7 @@
 #include "evaluationkeys.h"
+#include <stdexcept>
 
+using namespace std;
 
 namespace seal
 {
@@ -53,7 +55,7 @@ namespace seal
         {
             first.load(stream);
             second.load(stream);
-            keys_.push_back(std::pair<BigPolyArray, BigPolyArray>(first, second));
+            keys_.emplace_back(first, second);
         }
     }
 

@@ -106,6 +106,61 @@ namespace Microsoft
                 throw gcnew Exception("Unexpected exception");
             }
 
+            int Decryptor::InherentNoiseBits(BigPolyArray ^encrypted)
+            {
+                if (decryptor_ == nullptr)
+                {
+                    throw gcnew ObjectDisposedException("Decryptor is disposed");
+                }
+                if (encrypted == nullptr)
+                {
+                    throw gcnew ArgumentNullException("encrypted cannot be null");
+                }
+                try
+                {
+                    return decryptor_->inherent_noise_bits(encrypted->GetArray());
+                }
+                catch (const exception &e)
+                {
+                    HandleException(&e);
+                }
+                catch (...)
+                {
+                    HandleException(nullptr);
+                }
+                throw gcnew Exception("Unexpected exception");
+            }
+
+            void Decryptor::InherentNoise(BigPolyArray ^encrypted, BigUInt ^destination)
+            {
+                if (decryptor_ == nullptr)
+                {
+                    throw gcnew ObjectDisposedException("Decryptor is disposed");
+                }
+                if (encrypted == nullptr)
+                {
+                    throw gcnew ArgumentNullException("encrypted cannot be null");
+                }
+                if (destination == nullptr)
+                {
+                    throw gcnew ArgumentNullException("destination cannot be null");
+                }
+                try
+                {
+                    decryptor_->inherent_noise(encrypted->GetArray(), destination->GetUInt());
+                    GC::KeepAlive(encrypted);
+                    GC::KeepAlive(destination);
+                }
+                catch (const exception &e)
+                {
+                    HandleException(&e);
+                }
+                catch (...)
+                {
+                    HandleException(nullptr);
+                }
+            }
+
             seal::Decryptor &Decryptor::GetDecryptor()
             {
                 if (decryptor_ == nullptr)

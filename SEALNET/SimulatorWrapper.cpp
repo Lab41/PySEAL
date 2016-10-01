@@ -116,7 +116,33 @@ namespace Microsoft
                     HandleException(nullptr);
                 }
                 throw gcnew Exception("Unexpected exception");
+            }
 
+            Simulation ^SimulationEvaluator::Square(Simulation ^simulation)
+            {
+                if (simulationEvaluator_ == nullptr)
+                {
+                    throw gcnew ObjectDisposedException("SimulationEvaluator is disposed");
+                }
+                if (simulation == nullptr)
+                {
+                    throw gcnew ArgumentNullException("simulation cannot be null");
+                }
+                try
+                {
+                    auto result = gcnew Simulation(simulationEvaluator_->square(simulation->GetSimulation()));
+                    GC::KeepAlive(simulation);
+                    return result;
+                }
+                catch (const exception &e)
+                {
+                    HandleException(&e);
+                }
+                catch (...)
+                {
+                    HandleException(nullptr);
+                }
+                throw gcnew Exception("Unexpected exception");
             }
 
             Simulation ^SimulationEvaluator::Add(Simulation ^simulation1, Simulation ^simulation2)
@@ -170,7 +196,7 @@ namespace Microsoft
                         {
                             throw gcnew ArgumentNullException("simulations cannot be null");
                         }
-                        v_simulations.push_back(simulation->GetSimulation());
+                        v_simulations.emplace_back(simulation->GetSimulation());
                         GC::KeepAlive(simulation);
                     }
 
@@ -352,7 +378,7 @@ namespace Microsoft
                         {
                             throw gcnew ArgumentNullException("simulations cannot be null");
                         }
-                        v_simulations.push_back(simulation->GetSimulation());
+                        v_simulations.emplace_back(simulation->GetSimulation());
                         GC::KeepAlive(simulation);
                     }
 
@@ -459,6 +485,15 @@ namespace Microsoft
                     throw gcnew ObjectDisposedException("Simulation is disposed");
                 }
                 return gcnew BigUInt(simulation_->max_noise());
+            }
+
+            int Simulation::MaxNoiseBits::get()
+            {
+                if (simulation_ == nullptr)
+                {
+                    throw gcnew ObjectDisposedException("Simulation is disposed");
+                }
+                return simulation_->max_noise_bits();
             }
 
             int Simulation::NoiseBits::get()

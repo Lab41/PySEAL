@@ -1,5 +1,4 @@
-#ifndef SEAL_BIGPOLY_ARITH_H
-#define SEAL_BIGPOLY_ARITH_H
+#pragma once
 
 #include "bigpoly.h"
 
@@ -480,5 +479,3 @@ namespace seal
         bool try_invert(const BigPoly &poly, const BigPoly &poly_mod, const BigUInt &coeff_mod, BigPoly &result);
     };
 }
-
-#endif // SEAL_BIGPOLY_ARITH_H

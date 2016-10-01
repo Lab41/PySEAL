@@ -7,19 +7,6 @@ namespace SEALNETExamples
 {
     public class Program
     {
-        public static void PrintExampleBanner(string title)
-        {
-            if (!String.IsNullOrEmpty(title))
-            {
-                var titleLength = title.Length;
-                var bannerLength = titleLength + 2 + 2 * 10;
-                var bannerTop = new string('*', bannerLength);
-                var bannerMiddle = new string('*', 10) + " " + title + " " + new string('*', 10);
-
-                Console.WriteLine("\n{0}\n{1}\n{2}\n", bannerTop, bannerMiddle, bannerTop);
-            }
-        }
-
         public static void Main()
         {
             // Example: Basics
@@ -64,39 +51,37 @@ namespace SEALNETExamples
             parms.PolyModulus.Set("1x^2048 + 1");
 
             /*
-            Next choose the coefficient modulus. The values we recommend to be used are:
+            Next we choose the coefficient modulus. SEAL comes with default values for the coefficient
+            modulus for some of the most reasonable choices of PolyModulus. They are as follows:
 
-            [ degree(PolyModulus), CoeffModulus ]
-            [ 1024, "FFFFFFF00001" ],
-            [ 2048, "3FFFFFFFFFFFFFFFFFF00001"],
-            [ 4096, "3FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFC0000001"],
-            [ 8192, "7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFE00000001"],
-            [ 16384, "7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00000000000001"].
-            
+            /---------------------------------------------------\
+            | poly_modulus | default coeff_modulus              |
+            | -------------|------------------------------------|
+            | 1x^1024 + 1  | 2^35 - 2^14 + 2^11 + 1 (35 bits)   |
+            | 1x^2048 + 1  | 2^60 - 2^14 + 1 (60 bits)          |
+            | 1x^4096 + 1  | 2^116 - 2^18 + 1 (116 bits)        |
+            | 1x^8192 + 1  | 2^226 - 2^26 + 1 (226 bits)        |
+            | 1x^16384 + 1 | 2^435 - 2^33 + 1 (435 bits)        |
+            \---------------------------------------------------/
+
             These can be conveniently accessed using ChooserEvaluator.DefaultParameterOptions, which returns 
             the above list of options as a Dictionary, keyed by the degree of the polynomial modulus.
-            
-            The user can also relatively easily choose their custom coefficient modulus. It should be a prime number
-            of the form 2^A - 2^B + 1, where A > B > degree(PolyModulus). Moreover, B should be as small as possible
-            for improved efficiency in modular reduction. For security, we recommend strictly adhering to the following 
-            size bounds: (see Lepoint-Naehrig (2014) [https://eprint.iacr.org/2014/062])
-            /-----------------------------------------------------------------\
-            | PolyModulus  | CoeffModulus bound | default CoeffModulus        |
-            | -------------|--------------------|-----------------------------|
-            | 1x^1024 + 1  | 48 bits            | 2^48 - 2^20 + 1 (47 bits)   |
-            | 1x^2048 + 1  | 96 bits            | 2^94 - 2^20 + 1 (93 bits)   |
-            | 1x^4096 + 1  | 192 bits           | 2^190 - 2^30 + 1 (189 bits) |
-            | 1x^8192 + 1  | 384 bits           | 2^383 - 2^33 + 1 (382 bits) |
-            | 1x^16384 + 1 | 768 bits           | 2^767 - 2^56 + 1 (766 bits) |
-            \-----------------------------------------------------------------/
+
+            The user can also easily choose their custom coefficient modulus. For best performance, it should 
+            be a prime of the form 2^A - B, where B is congruent to 1 modulo 2*degree(PolyModulus), and as small 
+            as possible. Roughly speaking, When the rest of the parameters are held fixed, increasing CoeffModulus
+            decreases the security level. Thus we would not recommend using a value for CoeffModulus much larger 
+            than those listed above (the defaults). In general, we highly recommend the user to consult with an expert 
+            in the security of RLWE-based cryptography when selecting their parameters to ensure an appropriate level 
+            of security.
 
             The size of CoeffModulus affects the upper bound on the "inherent noise" that a ciphertext can contain
             before becoming corrupted. More precisely, every ciphertext starts with a certain amount of noise in it,
             which grows in all homomorphic operations - in particular in multiplication. Once a ciphertext contains
             too much noise, it becomes impossible to decrypt. The upper bound on the noise is roughly given by 
             CoeffModulus/PlainModulus (see below), so increasing CoeffModulus will allow the user to perform more
-            homomorphic operations on the ciphertexts without corrupting them. We would like to stress, however, that
-            the bounds given above for CoeffModulus should absolutely not be exceeded.
+            homomorphic operations on the ciphertexts without corrupting them. However, we must again warn that
+            increasing CoeffModulus has a strong negative effect on the security level.
             */
             parms.CoeffModulus.Set(ChooserEvaluator.DefaultParameterOptions[2048]);
 
@@ -109,42 +94,34 @@ namespace SEALNETExamples
             */
             parms.PlainModulus.Set(1 << 8);
 
-            Console.WriteLine("Encryption parameters specify {0} coefficients with {1} bits per coefficient",
-                parms.PolyModulus.GetSignificantCoeffCount(), parms.CoeffModulus.GetSignificantBitCount());
-
             /*
             Plaintext elements in the FV scheme are polynomials (represented by the BigPoly class) with coefficients 
-            integers modulo plain_modulus. To encrypt integers instead, one must use an "encoding scheme", i.e. 
-            a specific way of representing integers as such polynomials. SEAL comes with a few basic encoders:
+            integers modulo PlainModulus. To encrypt for example integers instead, one must use an "encoding scheme", 
+            i.e. a specific way of representing integers as such polynomials. SEAL comes with a few basic encoders:
 
-            BinaryEncoder:
-            Encodes positive integers as plaintext polynomials where the coefficients are either 0 or 1 according
-            to the binary representation of the integer to be encoded. Decoding amounts to evaluating the polynomial
-            at x=2. For example, the integer 26 = 2^4 + 2^3 + 2^1 is encoded as the polynomial 1x^4 + 1x^3 + 1x^1.
-            Negative integers are encoded similarly but with each coefficient coefficient of the polynomial replaced 
-            with its negative modulo PlainModulus.
+            IntegerEncoder:
+            Given an integer base b, encodes integers as plaintext polynomials in the following way. First, a base-b
+            expansion of the integer is computed. This expansion uses a "balanced" set of representatives of integers
+            modulo b as the coefficients. Namely, when b is off the coefficients are integers between -(b-1)/2 and
+            (b-1)/2. When b is even, the integers are between -b/2 and (b-1)/2, except when b is two and the usual
+            binary expansion is used (coefficients 0 and 1). Decoding amounts to evaluating the polynomial at x=b.
+            For example, if b=2, the integer 26 = 2^4 + 2^3 + 2^1 is encoded as the polynomial 1x^4 + 1x^3 + 1x^1.
+            When b=3, 26 = 3^3 - 3^0 is encoded as the polynomial 1x^3 - 1. In reality, coefficients of polynomials
+            are always unsigned integers, and in this case are stored as their smallest non-negative representatives
+            modulo plain_modulus. To create an integer encoder with a base b, use IntegerEncoder(PlainModulus, b). 
+            If no b is given to the constructor, the default value of b=2 is used.
 
-            BalancedEncoder:
-            Given an odd integer base b, encodes integers as plaintext polynomials where the coefficients are according
-            to the "balanced" base b representation of the integer to be encoded, i.e. where each coefficient is in the
-            range -(b-1)/2,...,(b-1)/2. Decoding amounts to evaluating the polynomial at x=b. For example, when b=3 the 
-            integer 25 = 3^3 - 3^1 + 3^0 is encoded as the polynomial 1x^3 - 1x^1 + 1.
-
-            BinaryFractionalEncoder:
-            Encodes rational numbers as follows. First represent the number in binary, possibly truncating an infinite
-            fractional part to some fixed precision, e.g. 26.75 = 2^4 + 2^3 + 2^1 + 2^(-1) + 2^(-2). For the sake of
-            the example, suppose PolyModulus is 1x^1024 + 1. Next represent the integer part of the number in the same
-            was as in BinaryEncoder. Finally, represent the fractional part in the leading coefficients of the polynomial, 
-            but when doing so invert the signs of the coefficients. So in this example we would represent 26.75 as the 
-            polynomial -1x^1023 - 1x^1022 + 1x^4 + 1x^3 + 1x^1. The negative coefficients of the polynomial will again be 
-            represented as their negatives modulo PlainModulus.
-
-            BalancedFractionalEncoder:
-            Same as BinaryFractionalEncoder, except instead of using base 2 uses any odd base b and balanced 
-            representatives for the coefficients, i.e. integers in the range -(b-1)/2,...,(b-1)/2.
+            FractionalEncoder:
+            Encodes fixed-precision rational numbers as follows. First expand the number in a given base b, possibly 
+            truncating an infinite fractional part to finite precision, e.g. 26.75 = 2^4 + 2^3 + 2^1 + 2^(-1) + 2^(-2)
+            when b=2. For the sake of the example, suppose PolyModulus is 1x^1024 + 1. Next represent the integer part 
+            of the number in the same way as in IntegerEncoder (with b=2 here). Finally, represent the fractional part 
+            in the leading coefficients of the polynomial, but when doing so invert the signs of the coefficients. So 
+            in this example we would represent 26.75 as the polynomial -1x^1023 - 1x^1022 + 1x^4 + 1x^3 + 1x^1. The 
+            negative coefficients of the polynomial will again be represented as their negatives modulo PlainModulus.
 
             PolyCRTBuilder:
-            If PolyModulus is 1x^n + 1, PolyCRTBuilder allows "batching" of n plaintext integers modulo PlainModulus 
+            If PolyModulus is 1x^N + 1, PolyCRTBuilder allows "batching" of N plaintext integers modulo plain_modulus 
             into one plaintext polynomial, where homomorphic operations can be carried out very efficiently in a SIMD 
             manner by operating on such a "composed" plaintext or ciphertext polynomials. For full details on this very
             powerful technique we recommend https://eprint.iacr.org/2012/565.pdf and https://eprint.iacr.org/2011/133.
@@ -158,26 +135,26 @@ namespace SEALNETExamples
             have a good sense of how large the coefficients will grow in the underlying plaintext polynomials when
             homomorphic computations are carried out on the ciphertexts, and make sure that PlainModulus is chosen to
             be at least as large as this number.
+
+            Here we choose to create an IntegerEncoder with base b=2.
             */
+            var encoder = new IntegerEncoder(parms.PlainModulus);
 
             // Encode two integers as polynomials.
             const int value1 = 5;
             const int value2 = -7;
-            var encoder = new BalancedEncoder(parms.PlainModulus);
             var encoded1 = encoder.Encode(value1);
             var encoded2 = encoder.Encode(value2);
             Console.WriteLine("Encoded {0} as polynomial {1}", value1, encoded1);
             Console.WriteLine("Encoded {0} as polynomial {1}", value2, encoded2);
 
             // Generate keys.
-            Console.WriteLine("Generating keys...");
+            Console.WriteLine("Generating keys ...");
             var generator = new KeyGenerator(parms);
             generator.Generate();
             Console.WriteLine("... key generation completed");
             var publicKey = generator.PublicKey;
             var secretKey = generator.SecretKey;
-            //Console.WriteLine("Public Key = {0}", publicKey);
-            //Console.WriteLine("Secret Key = {0}", secretKey);
 
             // Encrypt values.
             Console.WriteLine("Encrypting values...");
@@ -186,19 +163,19 @@ namespace SEALNETExamples
             var encrypted2 = encryptor.Encrypt(encoded2);
 
             // Perform arithmetic on encrypted values.
-            Console.WriteLine("Performing encrypted arithmetic...");
+            Console.WriteLine("Performing arithmetic on ecrypted numbers ...");
             var evaluator = new Evaluator(parms);
-            Console.WriteLine("... Performing negation...");
+            Console.WriteLine("Performing homomorphic negation ...");
             var encryptedNegated1 = evaluator.Negate(encrypted1);
-            Console.WriteLine("... Performing addition...");
+            Console.WriteLine("Performing homomorphic addition ...");
             var encryptedSum = evaluator.Add(encrypted1, encrypted2);
-            Console.WriteLine("... Performing subtraction...");
+            Console.WriteLine("Performing homomorphic subtraction ...");
             var encryptedDiff = evaluator.Sub(encrypted1, encrypted2);
-            Console.WriteLine("... Performing multiplication...");
+            Console.WriteLine("Performing homomorphic multiplication ...");
             var encryptedProduct = evaluator.Multiply(encrypted1, encrypted2);
 
             // Decrypt results.
-            Console.WriteLine("Decrypting results...");
+            Console.WriteLine("Decrypting results ...");
             var decryptor = new Decryptor(parms, secretKey);
             var decrypted1 = decryptor.Decrypt(encrypted1);
             var decrypted2 = decryptor.Decrypt(encrypted2);
@@ -216,19 +193,19 @@ namespace SEALNETExamples
             var decodedProduct = encoder.DecodeInt32(decryptedProduct);
 
             // Display results.
-            Console.WriteLine("{0} after encryption/decryption = {1}", value1, decoded1);
-            Console.WriteLine("{0} after encryption/decryption = {1}", value2, decoded2);
-            Console.WriteLine("encrypted negate of {0} = {1}", value1, decodedNegated1);
-            Console.WriteLine("encrypted addition of {0} and {1} = {2}", value1, value2, decodedSum);
-            Console.WriteLine("encrypted subtraction of {0} and {1} = {2}", value1, value2, decodedDiff);
-            Console.WriteLine("encrypted multiplication of {0} and {1} = {2}", value1, value2, decodedProduct);
+            Console.WriteLine("Original = {0}; after encryption/decryption = {1}", value1, decoded1);
+            Console.WriteLine("Original = {0}; after encryption/decryption = {1}", value2, decoded2);
+            Console.WriteLine("Encrypted negate of {0} = {1}", value1, decodedNegated1);
+            Console.WriteLine("Encrypted addition of {0} and {1} = {2}", value1, value2, decodedSum);
+            Console.WriteLine("Encrypted subtraction of {0} and {1} = {2}", value1, value2, decodedDiff);
+            Console.WriteLine("Encrypted multiplication of {0} and {1} = {2}", value1, value2, decodedProduct);
 
             // How did the noise grow in these operations?
-            var maxNoiseBitCount = Utilities.InherentNoiseMax(parms).GetSignificantBitCount();
-            Console.WriteLine("Noise in encryption of {0}: {1}/{2} bits", value1, Utilities.InherentNoise(encrypted1, parms, secretKey).GetSignificantBitCount(), maxNoiseBitCount);
-            Console.WriteLine("Noise in encryption of {0}: {1}/{2} bits", value2, Utilities.InherentNoise(encrypted1, parms, secretKey).GetSignificantBitCount(), maxNoiseBitCount);
-            Console.WriteLine("Noise in the sum: {0}/{1} bits", Utilities.InherentNoise(encryptedSum, parms, secretKey).GetSignificantBitCount(), maxNoiseBitCount);
-            Console.WriteLine("Noise in the product: {0}/{1} bits", Utilities.InherentNoise(encryptedProduct, parms, secretKey).GetSignificantBitCount(), maxNoiseBitCount);
+            var maxNoiseBitCount = parms.InherentNoiseBitsMax();
+            Console.WriteLine("Noise in encryption of {0}: {1}/{2} bits", value1, decryptor.InherentNoiseBits(encrypted1), maxNoiseBitCount);
+            Console.WriteLine("Noise in encryption of {0}: {1}/{2} bits", value2, decryptor.InherentNoiseBits(encrypted2), maxNoiseBitCount);
+            Console.WriteLine("Noise in the sum: {0}/{1} bits", decryptor.InherentNoiseBits(encryptedSum), maxNoiseBitCount);
+            Console.WriteLine("Noise in the product: {0}/{1} bits", decryptor.InherentNoiseBits(encryptedProduct), maxNoiseBitCount);
         }
 
         public static void ExampleWeightedAverage()
@@ -250,30 +227,20 @@ namespace SEALNETExamples
             parms.CoeffModulus.Set(ChooserEvaluator.DefaultParameterOptions[1024]);
             parms.PlainModulus.Set(1 << 8);
 
-            Console.WriteLine("Encryption parameters specify {0} coefficients with {1} bits per coefficient",
-                parms.PolyModulus.GetSignificantCoeffCount(), parms.CoeffModulus.GetSignificantBitCount());
-
             // Generate keys.
-            Console.WriteLine("Generating keys...");
+            Console.WriteLine("Generating keys ...");
             var generator = new KeyGenerator(parms);
-
-            /*
-            Since we are not using homomorphic multiplication at all, there is no need to
-            create any evaluation keys. We can give the number of evaluation keys to be generated
-            as a parameter to KeyGenerator.Generate().
-            */
-            generator.Generate(0);
-
+            generator.Generate();
             Console.WriteLine("... key generation completed");
             var publicKey = generator.PublicKey;
             var secretKey = generator.SecretKey;
 
             /*
-            We will need a fractional encoder for dealing with the rational numbers.
-            Here we reserve 128 coefficients of the polynomial for the integral part (low-degree terms)
-            and 64 coefficients for the fractional part (high-degree terms).
+            We will need a fractional encoder for dealing with the rational numbers. Here we reserve 
+            64 coefficients of the polynomial for the integral part (low-degree terms) and expand the 
+            fractional part to 32 terms of precision (base 3) (high-degree terms).
             */
-            var encoder = new BalancedFractionalEncoder(parms.PlainModulus, parms.PolyModulus, 128, 64);
+            var encoder = new FractionalEncoder(parms.PlainModulus, parms.PolyModulus, 64, 32, 3);
 
             // Create the rest of the tools
             var encryptor = new Encryptor(parms, publicKey);
@@ -333,13 +300,13 @@ namespace SEALNETExamples
             var plainResult = decryptor.Decrypt(encryptedResult);
             Console.WriteLine("done");
 
-            // Print the answer
+            // Print the result
             double result = encoder.Decode(plainResult);
             Console.WriteLine("Weighted average: {0}", result);
 
             // How much noise did we end up with?
-            Console.WriteLine("Noise in the result: {0}/{1} bits", Utilities.InherentNoise(encryptedResult, parms, secretKey).GetSignificantBitCount(), 
-                Utilities.InherentNoiseMax(parms).GetSignificantBitCount());
+            Console.WriteLine("Noise in the result: {0}/{1} bits", decryptor.InherentNoiseBits(encryptedResult), 
+                parms.InherentNoiseBitsMax());
         }
 
         public static void ExampleParameterSelection()
@@ -377,7 +344,7 @@ namespace SEALNETExamples
             // Add the constant term 1
             var cresult = chooserEvaluator.AddPlain(csum12, chooserEncoder.Encode(1));
 
-            // To find an optimized set of parameters, we use ChooserEvaluator::select_parameters(...).
+            // To find an optimized set of parameters, we use ChooserEvaluator.SelectParameters(...).
             var optimalParms = new EncryptionParameters();
             chooserEvaluator.SelectParameters(cresult, optimalParms);
 
@@ -394,17 +361,24 @@ namespace SEALNETExamples
 
             // Let's try to actually perform the homomorphic computation using the recommended parameters.
             // Generate keys.
-            Console.WriteLine("Generating keys...");
+            Console.WriteLine("Generating keys ...");
             var generator = new KeyGenerator(optimalParms);
-            generator.Generate();
+
+            /*
+            Need to generate one evaluation key because below we will use Evaluator.Exponentiate(...),
+            which relinearizes after every multiplication it performs (see ExampleRelinearization()
+            for more details.
+            */
+            generator.Generate(1);
             Console.WriteLine("... key generation completed");
             var publicKey = generator.PublicKey;
             var secretKey = generator.SecretKey;
+            var evaluationKeys = generator.EvaluationKeys;
 
             // Create the encoding/encryption tools
-            var encoder = new BalancedEncoder(optimalParms.PlainModulus);
+            var encoder = new IntegerEncoder(optimalParms.PlainModulus, 3);
             var encryptor = new Encryptor(optimalParms, publicKey);
-            var evaluator = new Evaluator(optimalParms);
+            var evaluator = new Evaluator(optimalParms, evaluationKeys);
             var decryptor = new Decryptor(optimalParms, secretKey);
 
             // Now perform the computations on real encrypted data.
@@ -446,8 +420,8 @@ namespace SEALNETExamples
             Console.WriteLine("Polynomial 42x^3-27x+1 evaluated at x=12345: {0}", encoder.DecodeInt64(plainResult));
 
             // How much noise did we end up with?
-            Console.WriteLine("Noise in the result: {0}/{1} bits", Utilities.InherentNoise(result, optimalParms, secretKey).GetSignificantBitCount(),
-                Utilities.InherentNoiseMax(optimalParms).GetSignificantBitCount());
+            Console.WriteLine("Noise in the result: {0}/{1} bits", decryptor.InherentNoiseBits(result),
+                optimalParms.InherentNoiseBitsMax());
         }
 
         public static void ExampleBatching()
@@ -458,57 +432,18 @@ namespace SEALNETExamples
             var parms = new EncryptionParameters();
 
             /*
-            For PolyCRTBuilder we need to use a plain modulus congruent to 1 modulo 2*degree(PolyModulus), and
-            preferably a prime number. We could for example use the following parameters:
-
-            parms.PolyModulus.Set("1x^2048 + 1");
-            parms.CoeffModulus.Set(ChooserEvaluator.DefaultParameterOptions[2048]);
-            parms.PlainModulus.Set(12289);
-
-            However, the primes suggested by ChooserEvaluator.DefaultParameterOptions are highly non-optimal in this 
-            case. The reason is that the noise growth in many homomorphic operations depends on the remainder
-            CoeffModulus % PlainModulus, which is typically close to PlainModulus unless the parameters are carefully 
-            chosen. The primes in ChooserEvaluator.DefaultParameterOptions are chosen so that this remainder is 1 
-            when PlainModulus is a (not too large) power of 2, so in the earlier examples this was not an issue. 
-            However, here we are forced to take PlainModulus to be odd, and as a result the default parameters are no
-            longer optimal at all in this sense.
-
-            Thus, for improved performance when using PolyCRTBuilder, we recommend the user to use their own
-            custom CoeffModulus. It should be a prime of the form 2^A - D, where D is as small as possible.
-            The PlainModulus should be simultaneously chosen to be a prime congruent to 1 modulo 2*degree(PolyModulus),
-            so that in addition CoeffModulus % PlainModulus is 1. Finally, CoeffModulus should be bounded by the 
-            same strict upper bounds that were mentioned in ExampleBasics():
-            /------------------------------------\
-            | PolyModulus | CoeffModulus bound |
-            | -------------|---------------------|
-            | 1x^1024 + 1  | 48 bits             |
-            | 1x^2048 + 1  | 96 bits             |
-            | 1x^4096 + 1  | 192 bits            |
-            | 1x^8192 + 1  | 384 bits            |
-            | 1x^16384 + 1 | 768 bits            |
-            \------------------------------------/
-
-            One issue with using such custom primes, however, is that they are never NTT primes, i.e. not congruent 
-            to 1 modulo 2*degree(PolyModulus), and hence might not allow for certain optimizations to be used in 
-            polynomial arithmetic. Another issue is that the search-to-decision reduction of RLWE does not apply to 
-            non-NTT primes, but this is not known to result in any concrete reduction in the security level.
-
-            In this example we use the prime 2^95 - 613077 as our coefficient modulus. The user should try switching 
-            between this and ChooserEvaluator.DefaultParameterOptions[2048] to observe the difference in the noise 
-            level at the end of the computation. This difference becomes significantly greater when using larger
-            values for PlainModulus.
+            For PolyCRTBuilder it is necessary to have PlainModulus be a prime number congruent to 1 modulo 
+            2*degree(PolyModulus). We can use for example the following parameters:
             */
-            parms.PolyModulus.Set("1x^2048 + 1");
-            parms.CoeffModulus.Set("7FFFFFFFFFFFFFFFFFF6A52B");
-            //parms.CoeffModulus.Set(ChooserEvaluator.DefaultParameterOptions[2048]);
-            parms.PlainModulus.Set(12289);
-
-            Console.WriteLine("Encryption parameters specify {0} coefficients with {1} bits per coefficient",
-                parms.PolyModulus.GetSignificantCoeffCount(), parms.CoeffModulus.GetSignificantBitCount());
+            parms.PolyModulus.Set("1x^4096 + 1");
+            parms.CoeffModulus.Set(ChooserEvaluator.DefaultParameterOptions[4096]);
+            parms.PlainModulus.Set(40961);
 
             // Create the PolyCRTBuilder
-            var crtbuilder = new PolyCRTBuilder(parms.PlainModulus, parms.PolyModulus);
+            var crtbuilder = new PolyCRTBuilder(parms);
             int slotCount = crtbuilder.SlotCount;
+
+            Console.WriteLine("Encryption parameters allow {0} slots.", slotCount);
 
             // Create a list of values that are to be stored in the slots. We initialize all values to 0 at this point.
             var values = new List<BigUInt>(slotCount);
@@ -537,7 +472,7 @@ namespace SEALNETExamples
 
             // Let's do some homomorphic operations now. First we need all the encryption tools.
             // Generate keys.
-            Console.WriteLine("Generating keys...");
+            Console.WriteLine("Generating keys ...");
             var generator = new KeyGenerator(parms);
             generator.Generate();
             Console.WriteLine("... key generation completed");
@@ -556,7 +491,7 @@ namespace SEALNETExamples
 
             // Let's square and then decrypt the encryptedComposedPoly
             Console.Write("Squaring the encrypted polynomial ... ");
-            var encryptedSquare = evaluator.Exponentiate(encryptedComposedPoly, 2);
+            var encryptedSquare = evaluator.Square(encryptedComposedPoly);
             Console.WriteLine("done.");
 
             Console.Write("Decrypting the squared polynomial ... ");
@@ -564,10 +499,11 @@ namespace SEALNETExamples
             Console.WriteLine("done.");
 
             // Print the squared slots
+            crtbuilder.Decompose(plainSquare, values);
             Console.Write("Squared slot contents (slot, value): ");
             for (int i = 0; i < 6; ++i)
             {
-                string toWrite = "(" + i.ToString() + ", " + crtbuilder.GetSlot(plainSquare, i).ToDecimalString() + ")";
+                string toWrite = "(" + i.ToString() + ", " + values[i].ToDecimalString() + ")";
                 toWrite += (i != 5) ? ", " : "\n";
                 Console.Write(toWrite);
             }
@@ -594,7 +530,7 @@ namespace SEALNETExamples
             Console.Write("Coefficient slot contents (slot, value): ");
             for (int i = 0; i < 6; ++i)
             {
-                string toWrite = "(" + i.ToString() + ", " + crtbuilder.GetSlot(plainCoeffPoly, i).ToDecimalString() + ")";
+                string toWrite = "(" + i.ToString() + ", " + plainCoeffList[i].ToDecimalString() + ")";
                 toWrite += (i != 5) ? ", " : "\n";
                 Console.Write(toWrite);
             }
@@ -610,17 +546,18 @@ namespace SEALNETExamples
             Console.WriteLine("done.");
 
             // Print the scaled squared slots
+            crtbuilder.Decompose(plainScaledSquare, values);
             Console.Write("Scaled squared slot contents (slot, value): ");
             for (int i = 0; i < 6; ++i)
             {
-                string toWrite = "(" + i.ToString() + ", " + crtbuilder.GetSlot(plainScaledSquare, i).ToDecimalString() + ")";
+                string toWrite = "(" + i.ToString() + ", " + values[i].ToDecimalString() + ")";
                 toWrite += (i != 5) ? ", " : "\n";
                 Console.Write(toWrite);
             }
 
             // How much noise did we end up with?
-            Console.WriteLine("Noise in the result: {0}/{1} bits", Utilities.InherentNoise(encryptedScaledSquare, parms, secretKey).GetSignificantBitCount(),
-                Utilities.InherentNoiseMax(parms).GetSignificantBitCount());
+            Console.WriteLine("Noise in the result: {0}/{1} bits", decryptor.InherentNoiseBits(encryptedScaledSquare),
+                parms.InherentNoiseBitsMax());
         }
 
         public static void ExampleRelinearization()
@@ -628,203 +565,303 @@ namespace SEALNETExamples
             PrintExampleBanner("Example: Relinearization");
 
             /*
-            A valid ciphertext consists of at least two polynomials. To read the current size of a ciphertext the
-            user can use BigPolyArray.Size. A fresh ciphertext always has size 2, and performing homomorphic multiplication
-            results in the output ciphertext growing in size. More precisely, if the input ciphertexts have size M and N,
-            then the output ciphertext after homomorphic multiplication will have size M+N-1.
+            A valid ciphertext consists of at least two polynomials. To read the current size of a ciphertext 
+            the user can use BigPolyArray.Size. A fresh ciphertext always has size 2, and performing 
+            homomorphic multiplication results in the output ciphertext growing in size. More precisely, 
+            if the input ciphertexts have size M and N, then the output ciphertext after homomorphic 
+            multiplication will have size M+N-1.
 
-            The multiplication operation on input ciphertexts of size M and N will require M*N polynomial multiplications
-            to be performed. Therefore, if the ciphertexts grow to be large, multiplication could potentially become
-            computationally very costly and in some situations the user might prefer to reduce the size of the ciphertexts 
-            by performing a so-called relinearization operation.
+            The multiplication operation on input ciphertexts of size M and N will require O(M*N) polynomial 
+            multiplications to be performed. Therefore, the multiplication of large ciphertexts could be 
+            very computationally costly and in some situations the user might prefer to reduce the size of 
+            the ciphertexts by performing a so-called relinearization operation.
 
-            The function Evaluator.Relinearize(...) can reduce the size of an input ciphertext of size M to any size in 
-            2, 3, ..., M. Relinearizing one or both of two ciphertexts before performing multiplication on them may significantly
-            reduce the computational cost of the multiplication. However, note that the relinearization process also requires 
-            several polynomial multiplications to be performed. In particular relinearizing a ciphertext of size K to size L 
-            will itself require 2*(K-L)*[floor(log_2(CoeffModulus)/dbc)+1] polynomial multiplications, where dbc is the 
-            DecompositionBitCount (see below). It is also important to understand that relinearization grows the inherent noise 
-            in a ciphertext by an additive factor proportional to 2^dbc, which can in some cases be very large. When using 
-            relinearization it is necessary that the DecompositionBitCount is specified in the encryption parameters, 
-            and that enough evaluation keys are given to the constructor of Evaluator. 
+            The function Evaluator.Relinearize(...) can reduce the size of an input ciphertext of size M 
+            to any size in 2, 3, ..., M-1. As was explained above, relinearizing one or both of two ciphertexts 
+            before performing multiplication on them may significantly reduce the computational cost of the 
+            multiplication. However, note that the relinearization process itself also requires several polynomial 
+            multiplications to be performed. Using the Number Theoretic Transform (NTT) for relinearization, 
+            reducing a ciphertext of size K to size L requires (K - L)*([floor(log_2(CoeffModulus)/dbc) + 3]) 
+            NTT transforms, where dbc denotes the encryption parameter "DecompositionBitCount".
 
-            The DecompositionBitCount affects both performance and noise growth in relinearization, as was explained above.
-            Simply put, the larger dbc is, the faster relinearization is, and the larger the additive noise growth factor is
-            (see above). However, if some multiplications have already been performed on a ciphertext so that the noise has
-            grown to some reasonable level, relinearization might have no practical effect anymore on noise due to the additive 
-            factor being possibly (much) smaller than what the current noise is. This is why it makes almost never sense to 
-            relinearize after the first multiplication since the noise will still be so small that any reasonably large dbc
-            would increase the noise by a significant amount. In many cases it might not be beneficial to relinearize at all,
-            especially if the computation to be performed amounts to evaluating some fairly low degree polynomial. If the 
-            degree is higher, then in some cases it might be beneficial to relinearize at some stage in the computation.
-            See below for how to choose a good value for the DecompositionBitCount.
+            Relinearization also affects the inherent noise in two ways. First, a larger ciphertexts produces
+            more noise in homomorphic multiplication than a smaller one does. If the ciphertexts are small,
+            the effect of the ciphertext size is insignificant, but if they are very large the effect can 
+            easily become the biggest contributor to noise. Second, relinearization increases the inherent 
+            noise in the ciphertext to be relinearized by an additive factor. This should be contrasted with 
+            the multiplicative factor that homomorphic multiplication increases the noise by. The additive
+            factor is proportional to 2^dbc, which can be either very small or very large compared to the 
+            current level of inherent noise in the ciphertext. This means that if the ciphertextis very fresh 
+            (has very little noise in it), relinearization might have a significant adverse effect on the 
+            homomorphic computation ability, and it might make sense to instead use larger ciphertexts and 
+            relinearize at a later point where the additive noise term vanishes into an already larger noise,
+            or alternatively use a smaller dbc, which will result in slightly slower relinearization. 
 
-            If the intention of the evaluating party is to hide the structure of the computation that has been performed on 
-            the ciphertexts, it might be necessary to relinearize to hide the number of multiplications that the ciphertexts
-            have gone through. In addition, after relinearizing (to size 2) it might be a good idea to re-randomize the 
-            ciphertext by adding to it a fresh encryption of 0.
+            When using relinearization it is necessary that the DecompositionBitCount variable is set to 
+            some positive value in the encryption parameters, and that enough evaluation keys are given to
+            the constructor of Evaluator. We will discuss evaluation keys when we construct the key generator.
 
-            In this example we will demonstrate using Evaluator.Relinearize(...) and illustrate how it reduces the ciphertext 
-            sizes. We will also observe the effects it has on noise.
+            We will provide two examples of relinearization.
             */
+
+            /*
+            Example 1: We demonstrate using Evaluator::relinearize(...) and illustrate how it reduces the 
+            ciphertext sizes at the cost of increasing running time and noise in a particular computation.
+            */
+            ExampleRelinearizationPart1();
+            Console.WriteLine();
+
+            /*
+            Example 2: We demonstrate how relinearization can reduce noise. In the corresponding example 
+            in the C++ project SEALExamples (main.cpp) we also demonstrate a significant improvement in 
+            the running time when doing relinearization. This is due to ciphertext sizes being smaller, 
+            and as such faster to operate on.
+            */
+            ExampleRelinearizationPart2();
+   
+        }
+
+        public static void ExampleRelinearizationPart1()
+        {
+            Console.WriteLine("Example 1: Performing relinearization too early can increase noise in the final result.");
 
             // Set up encryption parameters
             var parms = new EncryptionParameters();
-            parms.PolyModulus.Set("1x^2048 + 1");
-            parms.CoeffModulus.Set(ChooserEvaluator.DefaultParameterOptions[2048]);
-            parms.PlainModulus.Set(1 << 16);
+            parms.PolyModulus.Set("1x^4096 + 1");
+            parms.CoeffModulus.Set(ChooserEvaluator.DefaultParameterOptions[4096]);
+            parms.PlainModulus.Set(1 << 8);
 
             /*
-            The choice of DecompositionBitCount (dbc) can affect the performance of relinearization noticeably. A somewhat 
-            optimal choice is to choose it between 1/5 and 1/2 of the significant bit count of the coefficient modulus (see 
-            table below). It turns out that if dbc cannot (due to noise growth) be more than one fifth of the significant 
-            bit count of the coefficient modulus, then it is in fact better to just move up to a larger PolyModulus and 
+            The choice of decomposition_bit_count (dbc) can affect the performance of relinearization
+            noticeably. A reasonable choice for it is between 1/10 and 1/2 of the significant bit count 
+            of the coefficient modulus (see table below). Sometimes when the dbc needs to be very small
+            (due to noise growth), it might make more sense to move up to a larger PolyModulus and
             CoeffModulus, and set dbc to be as large as possible.
             /--------------------------------------------------------\
             | poly_modulus | coeff_modulus bound | dbc min | dbc max |
-            | -------------|---------------------|------------------ |
-            | 1x^1024 + 1  | 48 bits             | 10      | 24      |
-            | 1x^2048 + 1  | 96 bits             | 20      | 48      |
-            | 1x^4096 + 1  | 192 bits            | 39      | 96      |
-            | 1x^8192 + 1  | 384 bits            | 77      | 192     |
-            | 1x^16384 + 1 | 768 bits            | 154     | 384     |
+            | -------------|---------------------|-------------------|
+            | 1x^1024 + 1  | 35 bits             | 4       | 13      |
+            | 1x^2048 + 1  | 60 bits             | 6       | 30      |
+            | 1x^4096 + 1  | 116 bits            | 12      | 58      |
+            | 1x^8192 + 1  | 226 bits            | 23      | 113     |
+            | 1x^16384 + 1 | 442 bits            | 45      | 221     |
             \--------------------------------------------------------/
 
-            A smaller DecompositionBitCount will make relinearization slower. A higher DecompositionBitCount will increase
-            noise growth while not making relinearization any faster. Here, the CoeffModulus has 96 significant bits, so 
-            we choose DecompositionBitCount to be half of this.
+            A smaller dbc will make relinearization too slow. A higher dbc will increase noise growth 
+            while not making relinearization any faster. Here, the CoeffModulus has 116 significant 
+            bits, so we choose dbc to be half of this. We can expect to see extreme differences in 
+            noise growth between the relinearizing and non-relinearizing cases due to the decomposition 
+            bit count being so large.
             */
-            parms.DecompositionBitCount = 48;
-
-            Console.WriteLine("Encryption parameters specify {0} coefficients with {1} bits per coefficient",
-                parms.PolyModulus.GetSignificantCoeffCount(), parms.CoeffModulus.GetSignificantBitCount());
+            parms.DecompositionBitCount = 58;
 
             /*
-            Generate keys
-
-            By default, KeyGenerator.Generate() will generate no evaluation keys. This means that we cannot perform any 
-            relinearization. However, this is sufficient for performing all other homomorphic evaluation operations as 
-            they do not use evaluation keys.
+            By default, KeyGenerator.Generate() will generate no evaluation keys. This means that we 
+            cannot perform any relinearization. However, this is sufficient for performing all other 
+            homomorphic evaluation operations as they do not use evaluation keys, and is enough for
+            now as we start by demonstrating the computation without relinearization.
             */
-            Console.WriteLine("Generating keys...");
+            Console.WriteLine("Generating keys ...");
             var generator = new KeyGenerator(parms);
             generator.Generate();
             Console.WriteLine("... key generation complete");
-            BigPolyArray publicKey = generator.PublicKey;
-            BigPoly secretKey = generator.SecretKey;
+            var publicKey = generator.PublicKey;
+            var secretKey = generator.SecretKey;
 
             /*
-            Suppose we want to homomorphically multiply four ciphertexts together. Does it make sense to relinearize 
-            at an intermediate step of the computation? We demonstrate how relinearization at different stages affects
-            the results.
+            Suppose we want to homomorphically multiply four ciphertexts together. Does it make sense 
+            to relinearize at an intermediate stage of the computation?
             */
 
-            // Encrypt the plaintexts to generate the four fresh ciphertexts
-            var plain1 = new BigPoly("4");
-            var plain2 = new BigPoly("3x^1");
-            var plain3 = new BigPoly("2x^2");
-            var plain4 = new BigPoly("1x^3");
-            Console.WriteLine("Encrypting values as { encrypted1, encrypted2, encrypted3, encrypted4 }");
+            // Encrypt plaintexts to generate the four fresh ciphertexts
+            var plain1 = new BigPoly("5");
+            var plain2 = new BigPoly("6");
+            var plain3 = new BigPoly("7");
+            var plain4 = new BigPoly("8");
+            Console.WriteLine("Encrypting values { 5, 6, 7, 8 } as { encrypted1, encrypted2, encrypted3, encrypted4 }");
             var encryptor = new Encryptor(parms, publicKey);
             var encrypted1 = encryptor.Encrypt(plain1);
             var encrypted2 = encryptor.Encrypt(plain2);
             var encrypted3 = encryptor.Encrypt(plain3);
             var encrypted4 = encryptor.Encrypt(plain4);
 
-            // What are the noises in the four ciphertexts?
-            var maxNoiseBitCount = Utilities.InherentNoiseMax(parms).GetSignificantBitCount();
+            // We need a Decryptor to be able to measure the inherent noise
+            var decryptor = new Decryptor(parms, secretKey);
+
+            //// What are the noises in the four ciphertexts?
+            var maxNoiseBitCount = parms.InherentNoiseBitsMax();
             Console.WriteLine("Noises in the four ciphertexts: {0}/{1} bits, {2}/{3} bits, {4}/{5} bits, {6}/{7} bits",
-                Utilities.InherentNoise(encrypted1, parms, secretKey).GetSignificantBitCount(), maxNoiseBitCount,
-                Utilities.InherentNoise(encrypted2, parms, secretKey).GetSignificantBitCount(), maxNoiseBitCount,
-                Utilities.InherentNoise(encrypted3, parms, secretKey).GetSignificantBitCount(), maxNoiseBitCount,
-                Utilities.InherentNoise(encrypted4, parms, secretKey).GetSignificantBitCount(), maxNoiseBitCount);
+                decryptor.InherentNoiseBits(encrypted1), maxNoiseBitCount,
+                decryptor.InherentNoiseBits(encrypted2), maxNoiseBitCount,
+                decryptor.InherentNoiseBits(encrypted3), maxNoiseBitCount,
+                decryptor.InherentNoiseBits(encrypted4), maxNoiseBitCount);
 
             // Construct an Evaluator
             var evaluator = new Evaluator(parms);
 
             // Perform first part of computation
-            Console.WriteLine("Computing encProd1 as encrypted1*encrypted2");
+            Console.WriteLine("Computing encProd1 as encrypted1*encrypted2 ...");
             var encProd1 = evaluator.Multiply(encrypted1, encrypted2);
-            Console.WriteLine("Computing encProd2 as encrypted3*encrypted4");
+            Console.WriteLine("Computing encProd2 as encrypted3*encrypted4 ...");
             var encProd2 = evaluator.Multiply(encrypted3, encrypted4);
 
-            // Now encProd1 and encProd2 both have size 3
-            Console.WriteLine($"Sizes of enc_prod1 and enc_prod2: {encProd1.Size}, {encProd2.Size}");
-
-            // What are the noises in the products?
-            Console.WriteLine("Noises in encProd1 and encProd2: {0}/{1} bits, {2}/{3} bits",
-                Utilities.InherentNoise(encProd1, parms, secretKey).GetSignificantBitCount(), maxNoiseBitCount,
-                Utilities.InherentNoise(encProd2, parms, secretKey).GetSignificantBitCount(), maxNoiseBitCount);
+            Console.WriteLine();
+            Console.WriteLine("Path 1: No relinearization.");
 
             // Compute product of all four
-            Console.WriteLine("Computing encResult as encProd1*encProd2");
+            Console.WriteLine("Computing encResult as encProd1*encProd2 ...");
             var encResult = evaluator.Multiply(encProd1, encProd2);
 
             // Now enc_result has size 5
-            Console.WriteLine($"Size of enc_result: {encResult.Size}");
+            Console.WriteLine($"Size of encResult: {encResult.Size}");
 
             // What is the noise in the result?
-            Console.WriteLine("Noise in enc_result: {0}/{1} bits", 
-                Utilities.InherentNoise(encResult, parms, secretKey).GetSignificantBitCount(), maxNoiseBitCount);
+            var noiseBitsNoRelin = decryptor.InherentNoiseBits(encResult);
+            Console.WriteLine($"Noise in encResult: {noiseBitsNoRelin}/{maxNoiseBitCount} bits");
 
             /*
-            We didn't create any evaluation keys, so we can't relinearize at all with the current Evaluator.
-            The size of our final ciphertext enc_result is 5, so for example to relinearize this down to size 2
-            we will need 3 evaluation keys. In general, relinearizing down from size K to any smaller size (but at least 2)
-            requires at least K-2 evaluation keys, so in this case we will need at least 2 evaluation keys.
+            We didn't create any evaluation keys, so we can't relinearize at all with the current 
+            Evaluator. In general, relinearizing down from size K to any smaller size (but at least 2) 
+            requires at least K-2 evaluation keys. In this case we wish to relinearize encProd1 and
+            encProd2, which both have size 3. Thus we need only one evaluation key.
 
-            We can create these new evaluation keys by calling KeyGenerator.GenerateEvaluationKeys(...). Alternatively,
-            we could have created them already in the beginning by instead of calling generator.Generate(2) instead of
-            generator.Generate().
+            We can create this newn evaluation key by calling KeyGenerator.GenerateEvaluationKeys(...). 
+            Alternatively, we could have created it already in the beginning by instead of calling 
+            generator.Generate(1) instead of generator.Generate().
 
-            We will also need a new Evaluator, as the previous one was constructed without enough (indeed, any)
-            evaluation keys. It is not possible to add new evaluation keys to a previously created Evaluator.
+            We will also need a new Evaluator, as the previous one was constructed without enough 
+            indeed, any) evaluation keys. It is not possible to add new evaluation keys to a previously 
+            created Evaluator.
             */
-            generator.GenerateEvaluationKeys(3);
+            generator.GenerateEvaluationKeys(1);
             var evaluationKeys = generator.EvaluationKeys;
             var evaluator2 = new Evaluator(parms, evaluationKeys);
 
-            /*
-            We can relinearize encResult back to size 2 if we want to. In fact, we could also relinearize it to size 3 or 4,
-            or more generally to any size less than the current size but at least 2. The way to do this would be to call
-            Evaluator.Relinearize(encResult, destinationSize).
-            */
-            Console.WriteLine("Relinearizing encResult to size 2 (stored in encRelinResult)");
-            var encRelinResult = evaluator2.Relinearize(encResult);
-
-            /*
-            What did that do to size and noise?
-            In fact noise remained essentially the same, because at this point the size of noise is already significantly 
-            larger than the additive term contributed by the relinearization process. We still remain below the noise bound.
-            */
-            Console.WriteLine($"Size of enc_relin_result: {encRelinResult.Size}");
-            Console.WriteLine("Noise in enc_relin_result: {0}/{1} bits",
-                Utilities.InherentNoise(encRelinResult, parms, secretKey).GetSignificantBitCount(), maxNoiseBitCount);
+            // Now with relinearization
+            Console.WriteLine("");
+            Console.WriteLine("Path 2: With relinearization");
 
             // What if we do intermediate relinearization of encProd1 and encProd2?
-            Console.WriteLine("Relinearizing encProd1 and encProd2 to size 2");
+            Console.WriteLine("Relinearizing encProd1 and encProd2 to size 2 ...");
             var encRelinProd1 = evaluator2.Relinearize(encProd1);
             var encRelinProd2 = evaluator2.Relinearize(encProd2);
 
-            // What happened to sizes and noises? Noises grew by a significant amount!
-            Console.WriteLine($"Sizes of encRelinProd1 and encRelinProd2: {encRelinProd1.Size}, {encRelinProd2.Size}");
-            Console.WriteLine("Noises in encRelinProd1 and encRelinProd2: {0}/{1} bits, {2}/{3} bits",
-                Utilities.InherentNoise(encRelinProd1, parms, secretKey).GetSignificantBitCount(), maxNoiseBitCount,
-                Utilities.InherentNoise(encRelinProd2, parms, secretKey).GetSignificantBitCount(), maxNoiseBitCount);
+            // Now multiply the relinearized products together
+            Console.WriteLine("Computing encResult as encRelinProd1*encRelinProd2");
+            encResult = evaluator2.Multiply(encRelinProd1, encRelinProd2);
+
+            // Now enc_result has size 3
+            Console.WriteLine($"Size of encResult: {encResult.Size}");
+
+            // What is the noise in the result
+            var noiseBitsRelin = decryptor.InherentNoiseBits(encResult);
+            Console.WriteLine($"Noise in encResult: {noiseBitsRelin}/{maxNoiseBitCount} bits");
+
+            /*
+            While in this case the noise increased significantly due to relinearization, in other
+            computations the situation might be entirely different. Indeed, recall that larger
+            ciphertext sizes can have a huge adverse effect on noise growth in multiplication.
+            Also recall that homomorphic multiplication is much slower when the ciphertexts are 
+            larger.
+            */
+        }
+
+        public static void ExampleRelinearizationPart2()
+        {
+            Console.WriteLine("Example 2: Effect on running time and noise in computing [(enc1*enc2)*(enc3*enc4)]^2.");
+
+            var parms = new EncryptionParameters();
+            parms.PolyModulus.Set("1x^4096 + 1");
+            parms.CoeffModulus.Set(ChooserEvaluator.DefaultParameterOptions[4096]);
+            parms.PlainModulus.Set(1 << 6);
+
+            /*
+            We use a relatively small decomposition bit count here to avoid significant noise
+            growth from the relinearization operation itself. Make this bigger and you will
+            see both increased running time and decreased noise.
+            */
+            parms.DecompositionBitCount = 16;
+
+            // We generate the encryption keys and one evaluation key.
+            Console.WriteLine("Generating keys ...");
+            var generator = new KeyGenerator(parms);
+            generator.Generate(1);
+            Console.WriteLine("... key generation complete");
+            var publicKey = generator.PublicKey;
+            var secretKey = generator.SecretKey;
+            var evaluationKeys = generator.EvaluationKeys;
+
+            // Encrypt plaintexts to generate the four fresh ciphertexts
+            var plain1 = new BigPoly("4");
+            var plain2 = new BigPoly("3x^1");
+            var plain3 = new BigPoly("2x^2");
+            var plain4 = new BigPoly("1x^3");
+            Console.WriteLine("Encrypting values { 4, 3x, 2x^2, x^3 } as { encrypted1, encrypted2, encrypted3, encrypted4 }");
+            var encryptor = new Encryptor(parms, publicKey);
+            var encrypted1 = encryptor.Encrypt(plain1);
+            var encrypted2 = encryptor.Encrypt(plain2);
+            var encrypted3 = encryptor.Encrypt(plain3);
+            var encrypted4 = encryptor.Encrypt(plain4);
+
+            // We need a Decryptor to be able to measure the inherent noise
+            var decryptor = new Decryptor(parms, secretKey);
+
+            // Construct an Evaluator
+            var evaluator = new Evaluator(parms, evaluationKeys);
+
+            Console.WriteLine("Computing encProd12 as encrypted1*encrypted2 ...");
+            var encProd12 = evaluator.Multiply(encrypted1, encrypted2);
+            Console.WriteLine("Computing encProd34 as encrypted3*encrypted4 ...");
+            var encProd34 = evaluator.Multiply(encrypted3, encrypted4);
+
+            // First the result with no relinearization
+            Console.WriteLine();
+            Console.WriteLine("Path 1: No relinearization");
+
+            // Compute product of all four
+            Console.WriteLine("Computing encProd = encProd12*encProd34 ...");
+            var encProd = evaluator.Multiply(encProd12, encProd34);
+
+            Console.WriteLine("Computing encSquare = [encProd]^2 ...");
+            var encSquare = evaluator.Square(encProd);
+
+            // Print size and inherent noise of the result. 
+            Console.WriteLine($"Size of encSquare: {encSquare.Size}");
+            Console.WriteLine("Noise in encSquare: {0}/{1} bits",
+                decryptor.InherentNoiseBits(encSquare), parms.InherentNoiseBitsMax());
+
+            // Now the same thing but with relinearization
+            Console.WriteLine("");
+            Console.WriteLine("Path 2: With relinerization");
+
+            Console.WriteLine("Relinearizing encProd12 and encProd23 to size 2 ...");
+            var encRelinProd12 = evaluator.Relinearize(encProd12);
+            var encRelinProd34 = evaluator.Relinearize(encProd34);
 
             // Now multiply the relinearized products together
-            Console.WriteLine("Computing encIntermediateRelinResult as encRelinProd1*encRelinProd2");
-            var encIntermediateRelinResult = evaluator2.Multiply(encRelinProd1, encRelinProd2);
+            Console.WriteLine("Computing encProd as encRelinProd12*encRelinProd34");
+            encProd = evaluator.Multiply(encRelinProd12, encRelinProd34);
 
-            /* 
-            What did that do to size and noise?
-            We are above the noise bound in this case. The resulting ciphertext is corrupted. It is instructive to 
-            try and see how a smaller DecompositionBitCount affects the results, e.g. try setting it to 24. 
-            Also here PlainModulus was set to be quite large to emphasize the effect.
-            */
-            Console.WriteLine($"Size of encIntermediateRelinResult: {encIntermediateRelinResult.Size}");
-            Console.WriteLine("Noise in encIntermediateRelinResult: {0}/{1} bits",
-                Utilities.InherentNoise(encIntermediateRelinResult, parms, secretKey).GetSignificantBitCount(), maxNoiseBitCount);
+            Console.WriteLine("Computing encSquare = [encProd]^2 ... ");
+            encSquare = evaluator.Square(encProd);
+
+            // Print size and inherent noise of the result. 
+            Console.WriteLine($"Size of encSquare: {encSquare.Size}");
+            Console.WriteLine("Noise in encSquare: {0}/{1} bits",
+                decryptor.InherentNoiseBits(encSquare), parms.InherentNoiseBitsMax());
+        }
+
+        public static void PrintExampleBanner(string title)
+        {
+            if (!String.IsNullOrEmpty(title))
+            {
+                var titleLength = title.Length;
+                var bannerLength = titleLength + 2 + 2 * 10;
+                var bannerTop = new string('*', bannerLength);
+                var bannerMiddle = new string('*', 10) + " " + title + " " + new string('*', 10);
+
+                Console.WriteLine("\n{0}\n{1}\n{2}\n", bannerTop, bannerMiddle, bannerTop);
+            }
         }
     }
 }

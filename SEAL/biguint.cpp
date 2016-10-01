@@ -246,7 +246,7 @@ namespace seal
 
     BigUInt &BigUInt::operator =(const string &hex_value)
     {
-        int hex_value_length = static_cast<int>(hex_value.length());
+        int hex_value_length = hex_value.length();
         int assign_bit_count = get_hex_string_bit_count(hex_value.data(), hex_value_length);
         if (assign_bit_count > bit_count_)
         {
@@ -303,8 +303,7 @@ namespace seal
 
     BigUInt &BigUInt::operator ++()
     {
-        bool carry = increment_uint(value_, uint64_count(), value_);
-        if (carry)
+        if (increment_uint(value_, uint64_count(), value_))
         {
             int carry_bit = bit_count_;
             resize(bit_count_ + 1);
@@ -325,8 +324,7 @@ namespace seal
     {
         BigUInt result;
         result = *this;
-        bool carry = increment_uint(value_, uint64_count(), value_);
-        if (carry)
+        if (increment_uint(value_, uint64_count(), value_))
         {
             int carry_bit = bit_count_;
             resize(bit_count_ + 1);

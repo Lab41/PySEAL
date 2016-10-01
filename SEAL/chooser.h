@@ -1,5 +1,4 @@
-#ifndef SEAL_CHOOSER_H
-#define SEAL_CHOOSER_H
+#pragma once
 
 #include <map>
 #include "encryptionparams.h"
@@ -79,7 +78,7 @@ namespace seal
         @param[in] max_abs_value An upper bound on the absolute value of the coefficients in the modeled plaintext data
         @throws std::invalid_argument if max_coeff_count is less than or equal to zero
         */
-        ChooserPoly(int max_coeff_count, uint64_t max_abs_value);
+        ChooserPoly(int max_coeff_count, std::uint64_t max_abs_value);
 
         /**
         Destroys the ChooserPoly, and deallocates all memory associated with it.
@@ -212,7 +211,7 @@ namespace seal
 
         ChooserPoly(int max_coeff_count, const BigUInt &max_abs_value, seal::util::Computation *comp);
 
-        ChooserPoly(int max_coeff_count, uint64_t max_abs_value, seal::util::Computation *comp);
+        ChooserPoly(int max_coeff_count, std::uint64_t max_abs_value, seal::util::Computation *comp);
 
         const seal::util::Computation *comp() const
         {
@@ -323,6 +322,19 @@ namespace seal
         ChooserPoly multiply(const ChooserPoly &operand1, const ChooserPoly &operand2) const;
 
         /**
+        Performs an operation modeling Evaluator::square() on ChooserPoly objects. This operation
+        creates a new ChooserPoly with updated bounds on the degree of the corresponding plaintext polynomial
+        and on the absolute values of the coefficients based on the inputs, and sets the operation history
+        accordingly.
+
+        @param[in] operand The ChooserPoly object to square
+        @throws std::invalid_argument if operand is not correctly initialized
+        @see Evaluator::square() for the corresponding operation on ciphertexts.
+        @see SimulationEvaluator::square() for the corresponding operation on Simulation objects.
+        */
+        ChooserPoly square(const ChooserPoly &operand) const;
+
+        /**
         Performs an operation modeling Evaluator::relinearize() on ChooserPoly objects. This operation
         creates a new ChooserPoly with the same bounds on the degree of the corresponding plaintext polynomial
         and on the absolute values of the coefficients as the input, but sets the operation history
@@ -372,7 +384,7 @@ namespace seal
         @see Evaluator::multiply_plain() for the corresponding operation on ciphertexts.
         @see SimulationEvaluator::multiply_plain() for the corresponding operation on Simulation objects.
         */
-        ChooserPoly multiply_plain(const ChooserPoly &operand, int plain_max_coeff_count, uint64_t plain_max_abs_value) const;
+        ChooserPoly multiply_plain(const ChooserPoly &operand, int plain_max_coeff_count, std::uint64_t plain_max_abs_value) const;
 
         /**
         Performs an operation modeling Evaluator::multiply_plain() on ChooserPoly objects. This operation
@@ -426,7 +438,7 @@ namespace seal
         @see Evaluator::add_plain() for the corresponding operation on ciphertexts.
         @see SimulationEvaluator::add_plain() for the corresponding operation on Simulation objects.
         */
-        ChooserPoly add_plain(const ChooserPoly &operand, int plain_max_coeff_count, uint64_t plain_max_abs_value) const;
+        ChooserPoly add_plain(const ChooserPoly &operand, int plain_max_coeff_count, std::uint64_t plain_max_abs_value) const;
 
         /**
         Performs an operation modeling Evaluator::add_plain() on ChooserPoly objects. This operation
@@ -480,7 +492,7 @@ namespace seal
         @see Evaluator::sub_plain() for the corresponding operation on ciphertexts.
         @see SimulationEvaluator::sub_plain() for the corresponding operation on Simulation objects.
         */
-        ChooserPoly sub_plain(const ChooserPoly &operand, int plain_max_coeff_count, uint64_t plain_max_abs_value) const;
+        ChooserPoly sub_plain(const ChooserPoly &operand, int plain_max_coeff_count, std::uint64_t plain_max_abs_value) const;
 
         /**
         Performs an operation modeling Evaluator::sub_plain() on ChooserPoly objects. This operation
@@ -673,14 +685,14 @@ namespace seal
     Constructs ChooserPoly objects representing encoded plaintexts. ChooserPoly objects constructed
     in this way have null operation history. They can be further used by ChooserEncryptor,
     or in the functions ChooserEvaluator::multiply_plain(), ChooserEvaluator::add_plain(), 
-    ChooserEvaluator::sub_plain() representing plaintext operands. Only the balanced odd base encodings
-    (those provided by BalancedEncoder) are supported by ChooserEncoder. This class is a part of the
+    ChooserEvaluator::sub_plain() representing plaintext operands. Only the integer encodings
+    (those provided by IntegerEncoder) are supported by ChooserEncoder. This class is a part of the
     automatic parameter selection module.
 
     @see ChooserPoly for the object modeling encrypted/plaintext data for automatic parameter selection.
     @see ChooserEvaluator for manipulating instances of ChooserPoly.
     @see ChooserEncryptor for modeling the behavior of encryption with ChooserPoly objects.
-    @see BalancedEncoder for the corresponding encoder for real data.
+    @see IntegerEncoder for the corresponding encoder for real data.
     @see Simulation for the class that handles the inherent noise growth estimates.
     */
     class ChooserEncoder
@@ -688,91 +700,91 @@ namespace seal
     public:
         /**
         Creates a ChooserEncoder that can be used to create ChooserPoly objects modeling plaintext
-        polynomials encoded with BalancedEncoder. The base will default to 3, but any odd integer at least 3
+        polynomials encoded with IntegerEncoder. The base will default to 2, but any integer at least 2
         can be used.
 
-        @param[in] base The base (default value is 3)
-        @throws std::invalid_argument if base is not an odd integer and at least 3
+        @param[in] base The base to be used for encoding (default value is 2)
+        @throws std::invalid_argument if base is not an integer and at least 2
         */
-        ChooserEncoder(uint64_t base = 3);
+        ChooserEncoder(std::uint64_t base = 2);
 
         /**
         Encodes a number (represented by std::uint64_t) into a ChooserPoly object. This is done by first
-        encoding it with BalancedEncoder and then simply reading the number of coefficients and the maximal
+        encoding it with IntegerEncoder and then simply reading the number of coefficients and the maximal
         absolute value of the coefficients in the polynomial. In the returned ChooserPoly the computation
         history is set to null.
 
         @param[in] value The non-negative integer to encode
-        @see BalancedEncoder::encode() for the corresponding function returning a real polynomial.
+        @see IntegerEncoder::encode() for the corresponding function returning a real polynomial.
         */
         ChooserPoly encode(std::uint64_t value);
         
         /**
         Encodes a number (represented by std::uint64_t) into a ChooserPoly object given as an argument.
-        This is done by first encoding it with BalancedEncoder and then simply reading the number of
+        This is done by first encoding it with IntegerEncoder and then simply reading the number of
         coefficients and the maximal absolute value of the coefficients in the polynomial. In the output
         ChooserPoly the operation history is set to null.
 
         @param[in] value The non-negative integer to encode
         @param[out] destination Reference to a ChooserPoly where the output will be stored
-        @see BalancedEncoder::encode() for the corresponding function returning a real polynomial.
+        @see IntegerEncoder::encode() for the corresponding function returning a real polynomial.
         */
         void encode(std::uint64_t value, ChooserPoly &destination);
 
         /**
         Encodes a number (represented by std::int64_t) into a ChooserPoly object. This is done by first
-        encoding it with BalancedEncoder and then simply reading the number of coefficients and the maximal
+        encoding it with IntegerEncoder and then simply reading the number of coefficients and the maximal
         absolute value of the coefficients in the polynomial. In the returned ChooserPoly the computation
         history is set to null.
 
         @param[in] value The integer to encode
-        @see BalancedEncoder::encode() for the corresponding function returning a real polynomial.
+        @see IntegerEncoder::encode() for the corresponding function returning a real polynomial.
         */
         ChooserPoly encode(std::int64_t value);
 
         /**
         Encodes a number (represented by std::int64_t) into a ChooserPoly object given as an argument.
-        This is done by first encoding it with BalancedEncoder and then simply reading the number of
+        This is done by first encoding it with IntegerEncoder and then simply reading the number of
         coefficients and the maximal absolute value of the coefficients in the polynomial. In the output
         ChooserPoly the operation history is set to null.
 
         @param[in] value The integer to encode
         @param[out] destination Reference to a ChooserPoly where the output will be stored
-        @see BalancedEncoder::encode() for the corresponding function returning a real polynomial.
+        @see IntegerEncoder::encode() for the corresponding function returning a real polynomial.
         */
         void encode(std::int64_t value, ChooserPoly &destination);
 
         /**
         Encodes a number (represented by BigUInt) into a ChooserPoly object. This is done by first
-        encoding it with BalancedEncoder and then simply reading the number of coefficients and the maximal
+        encoding it with IntegerEncoder and then simply reading the number of coefficients and the maximal
         absolute value of the coefficients in the polynomial. In the returned ChooserPoly the computation
         history is set to null.
 
         @param[in] value The non-negative integer to encode
-        @see BalancedEncoder::encode() for the corresponding function returning a real polynomial.
+        @see IntegerEncoder::encode() for the corresponding function returning a real polynomial.
         */
         ChooserPoly encode(BigUInt value);
 
         /**
         Encodes a number (represented by BigUInt) into a ChooserPoly object given as an argument.
-        This is done by first encoding it with BalancedEncoder and then simply reading the number of
+        This is done by first encoding it with IntegerEncoder and then simply reading the number of
         coefficients and the maximal absolute value of the coefficients in the polynomial. In the output
         ChooserPoly the operation history is set to null.
 
         @param[in] value The non-negative integer to encode
         @param[out] destination Reference to a ChooserPoly where the output will be stored
-        @see BalancedEncoder::encode() for the corresponding function returning a real polynomial.
+        @see IntegerEncoder::encode() for the corresponding function returning a real polynomial.
         */
         void encode(BigUInt value, ChooserPoly &destination);
 
         /**
         Encodes a number (represented by std::int32_t) into a ChooserPoly object. This is done by first
-        encoding it with BalancedEncoder and then simply reading the number of coefficients and the maximal
+        encoding it with IntegerEncoder and then simply reading the number of coefficients and the maximal
         absolute value of the coefficients in the polynomial. In the returned ChooserPoly the computation
         history is set to null.
 
         @param[in] value The integer to encode
-        @see BalancedEncoder::encode() for the corresponding function returning a real polynomial.
+        @see IntegerEncoder::encode() for the corresponding function returning a real polynomial.
         */
         ChooserPoly encode(std::int32_t value)
         {
@@ -781,12 +793,12 @@ namespace seal
 
         /**
         Encodes a number (represented by std::uint32_t) into a ChooserPoly object. This is done by first
-        encoding it with BalancedEncoder and then simply reading the number of coefficients and the maximal
+        encoding it with IntegerEncoder and then simply reading the number of coefficients and the maximal
         absolute value of the coefficients in the polynomial. In the returned ChooserPoly the computation
         history is set to null.
 
         @param[in] value The non-negative integer to encode
-        @see BalancedEncoder::encode() for the corresponding function returning a real polynomial.
+        @see IntegerEncoder::encode() for the corresponding function returning a real polynomial.
         */
         ChooserPoly encode(std::uint32_t value)
         {
@@ -796,13 +808,13 @@ namespace seal
         /**
         Returns the base used for encoding.
         */
-        uint64_t base() const
+        std::uint64_t base() const
         {
             return encoder_.base();
         }
 
     private:
-        BalancedEncoder encoder_;
+        IntegerEncoder encoder_;
 
         ChooserEncoder(const ChooserEncoder &copy) = delete;
 
@@ -882,6 +894,3 @@ namespace seal
         ChooserEncryptor &operator =(const ChooserEncryptor &copy) = delete;
     };
 }
-
-
-#endif // SEAL_CHOOSER_H

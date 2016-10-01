@@ -46,6 +46,15 @@ namespace Microsoft
                 return gcnew BigUInt(binaryEncoder_->plain_modulus());
             }
 
+            UInt64 BinaryEncoder::Base::get()
+            {
+                if (binaryEncoder_ == nullptr)
+                {
+                    throw gcnew ObjectDisposedException("BinaryEncoder is disposed");
+                }
+                return binaryEncoder_->base();
+            }
+
             BigPoly ^BinaryEncoder::Encode(UInt64 value)
             {
                 if (binaryEncoder_ == nullptr)
@@ -1025,6 +1034,42 @@ namespace Microsoft
                 return gcnew BigUInt(fractionalEncoder_->plain_modulus());
             }
 
+            BigPoly ^BinaryFractionalEncoder::PolyModulus::get()
+            {
+                if (fractionalEncoder_ == nullptr)
+                {
+                    throw gcnew ObjectDisposedException("BinaryFractionalEncoder is disposed");
+                }
+                return gcnew BigPoly(fractionalEncoder_->poly_modulus());
+            }
+
+            int BinaryFractionalEncoder::FractionCoeffCount::get()
+            {
+                if (fractionalEncoder_ == nullptr)
+                {
+                    throw gcnew ObjectDisposedException("BinaryFractionalEncoder is disposed");
+                }
+                return fractionalEncoder_->fraction_coeff_count();
+            }
+
+            int BinaryFractionalEncoder::IntegerCoeffCount::get()
+            {
+                if (fractionalEncoder_ == nullptr)
+                {
+                    throw gcnew ObjectDisposedException("BinaryFractionalEncoder is disposed");
+                }
+                return fractionalEncoder_->integer_coeff_count();
+            }
+
+            UInt64 BinaryFractionalEncoder::Base::get()
+            {
+                if (fractionalEncoder_ == nullptr)
+                {
+                    throw gcnew ObjectDisposedException("BinaryFractionalEncoder is disposed");
+                }
+                return fractionalEncoder_->base();
+            }
+
             seal::BinaryFractionalEncoder &BinaryFractionalEncoder::GetEncoder()
             {
                 if (fractionalEncoder_ == nullptr)
@@ -1157,6 +1202,33 @@ namespace Microsoft
                 return gcnew BigUInt(fractionalEncoder_->plain_modulus());
             }
 
+            BigPoly ^BalancedFractionalEncoder::PolyModulus::get()
+            {
+                if (fractionalEncoder_ == nullptr)
+                {
+                    throw gcnew ObjectDisposedException("BalancedFractionalEncoder is disposed");
+                }
+                return gcnew BigPoly(fractionalEncoder_->poly_modulus());
+            }
+
+            int BalancedFractionalEncoder::FractionCoeffCount::get()
+            {
+                if (fractionalEncoder_ == nullptr)
+                {
+                    throw gcnew ObjectDisposedException("BalancedFractionalEncoder is disposed");
+                }
+                return fractionalEncoder_->fraction_coeff_count();
+            }
+
+            int BalancedFractionalEncoder::IntegerCoeffCount::get()
+            {
+                if (fractionalEncoder_ == nullptr)
+                {
+                    throw gcnew ObjectDisposedException("BalancedFractionalEncoder is disposed");
+                }
+                return fractionalEncoder_->integer_coeff_count();
+            }
+
             UInt64 BalancedFractionalEncoder::Base::get()
             {
                 if (fractionalEncoder_ == nullptr)
@@ -1171,6 +1243,641 @@ namespace Microsoft
                 if (fractionalEncoder_ == nullptr)
                 {
                     throw gcnew ObjectDisposedException("BalancedFractionalEncoder is disposed");
+                }
+                return *fractionalEncoder_;
+            }
+
+            IntegerEncoder::IntegerEncoder(BigUInt ^plainModulus, UInt64 base) : integerEncoder_(nullptr)
+            {
+                if (plainModulus == nullptr)
+                {
+                    throw gcnew ArgumentNullException("plainModulus cannot be null");
+                }
+                integerEncoder_ = new seal::IntegerEncoder(plainModulus->GetUInt(), base);
+                GC::KeepAlive(plainModulus);
+            }
+
+            IntegerEncoder::IntegerEncoder(BigUInt ^plainModulus) : integerEncoder_(nullptr)
+            {
+                if (plainModulus == nullptr)
+                {
+                    throw gcnew ArgumentNullException("plainModulus cannot be null");
+                }
+                integerEncoder_ = new seal::IntegerEncoder(plainModulus->GetUInt());
+                GC::KeepAlive(plainModulus);
+            }
+
+            IntegerEncoder::~IntegerEncoder()
+            {
+                this->!IntegerEncoder();
+            }
+
+            IntegerEncoder::!IntegerEncoder()
+            {
+                if (integerEncoder_ == nullptr)
+                {
+                    delete integerEncoder_;
+                    integerEncoder_ = nullptr;
+                }
+            }
+
+            BigUInt ^IntegerEncoder::PlainModulus::get()
+            {
+                if (integerEncoder_ == nullptr)
+                {
+                    throw gcnew ObjectDisposedException("IntegerEncoder is disposed");
+                }
+                return gcnew BigUInt(integerEncoder_->plain_modulus());
+            }
+
+            UInt64 IntegerEncoder::Base::get()
+            {
+                if (integerEncoder_ == nullptr)
+                {
+                    throw gcnew ObjectDisposedException("IntegerEncoder is disposed");
+                }
+                return integerEncoder_->base();
+            }
+
+            BigPoly ^IntegerEncoder::Encode(UInt64 value)
+            {
+                if (integerEncoder_ == nullptr)
+                {
+                    throw gcnew ObjectDisposedException("IntegerEncoder is disposed");
+                }
+                try
+                {
+                    return gcnew BigPoly(integerEncoder_->encode(value));
+                }
+                catch (const exception &e)
+                {
+                    HandleException(&e);
+                }
+                catch (...)
+                {
+                    HandleException(nullptr);
+                }
+                throw gcnew Exception("Unexpected exception");
+            }
+
+            void IntegerEncoder::Encode(UInt64 value, BigPoly ^destination)
+            {
+                if (integerEncoder_ == nullptr)
+                {
+                    throw gcnew ObjectDisposedException("IntegerEncoder is disposed");
+                }
+                if (destination == nullptr)
+                {
+                    throw gcnew ArgumentNullException("destination cannot be null");
+                }
+                try
+                {
+                    integerEncoder_->encode(value, destination->GetPolynomial());
+                    GC::KeepAlive(destination);
+                }
+                catch (const exception &e)
+                {
+                    HandleException(&e);
+                }
+                catch (...)
+                {
+                    HandleException(nullptr);
+                }
+            }
+
+            void IntegerEncoder::Encode(UInt32 value, BigPoly ^destination)
+            {
+                if (integerEncoder_ == nullptr)
+                {
+                    throw gcnew ObjectDisposedException("IntegerEncoder is disposed");
+                }
+                if (destination == nullptr)
+                {
+                    throw gcnew ArgumentNullException("destination cannot be null");
+                }
+                try
+                {
+                    integerEncoder_->encode(value, destination->GetPolynomial());
+                    GC::KeepAlive(destination);
+                }
+                catch (const exception &e)
+                {
+                    HandleException(&e);
+                }
+                catch (...)
+                {
+                    HandleException(nullptr);
+                }
+            }
+
+            BigPoly ^IntegerEncoder::Encode(BigUInt ^value)
+            {
+                if (integerEncoder_ == nullptr)
+                {
+                    throw gcnew ObjectDisposedException("IntegerEncoder is disposed");
+                }
+                if (value == nullptr)
+                {
+                    throw gcnew ArgumentNullException("value cannot be null");
+                }
+                try
+                {
+                    auto result = gcnew BigPoly(integerEncoder_->encode(value->GetUInt()));
+                    GC::KeepAlive(value);
+                    return result;
+                }
+                catch (const exception &e)
+                {
+                    HandleException(&e);
+                }
+                catch (...)
+                {
+                    HandleException(nullptr);
+                }
+                throw gcnew Exception("Unexpected exception");
+            }
+
+            void IntegerEncoder::Encode(BigUInt ^value, BigPoly ^destination)
+            {
+                if (integerEncoder_ == nullptr)
+                {
+                    throw gcnew ObjectDisposedException("IntegerEncoder is disposed");
+                }
+                if (value == nullptr)
+                {
+                    throw gcnew ArgumentNullException("value cannot be null");
+                }
+                if (destination == nullptr)
+                {
+                    throw gcnew ArgumentNullException("destination cannot be null");
+                }
+                try
+                {
+                    integerEncoder_->encode(value->GetUInt(), destination->GetPolynomial());
+                    GC::KeepAlive(value);
+                    GC::KeepAlive(destination);
+                }
+                catch (const exception &e)
+                {
+                    HandleException(&e);
+                }
+                catch (...)
+                {
+                    HandleException(nullptr);
+                }
+            }
+
+            BigPoly ^IntegerEncoder::Encode(Int64 value)
+            {
+                if (integerEncoder_ == nullptr)
+                {
+                    throw gcnew ObjectDisposedException("IntegerEncoder is disposed");
+                }
+                try
+                {
+                    return gcnew BigPoly(integerEncoder_->encode(value));
+                }
+                catch (const exception &e)
+                {
+                    HandleException(&e);
+                }
+                catch (...)
+                {
+                    HandleException(nullptr);
+                }
+                throw gcnew Exception("Unexpected exception");
+            }
+
+            void IntegerEncoder::Encode(Int64 value, BigPoly ^destination)
+            {
+                if (integerEncoder_ == nullptr)
+                {
+                    throw gcnew ObjectDisposedException("IntegerEncoder is disposed");
+                }
+                if (destination == nullptr)
+                {
+                    throw gcnew ArgumentNullException("destination cannot be null");
+                }
+                try
+                {
+                    integerEncoder_->encode(value, destination->GetPolynomial());
+                    GC::KeepAlive(destination);
+                }
+                catch (const exception &e)
+                {
+                    HandleException(&e);
+                }
+                catch (...)
+                {
+                    HandleException(nullptr);
+                }
+            }
+
+            void IntegerEncoder::Encode(Int32 value, BigPoly ^destination)
+            {
+                if (integerEncoder_ == nullptr)
+                {
+                    throw gcnew ObjectDisposedException("IntegerEncoder is disposed");
+                }
+                if (destination == nullptr)
+                {
+                    throw gcnew ArgumentNullException("destination cannot be null");
+                }
+                try
+                {
+                    integerEncoder_->encode(value, destination->GetPolynomial());
+                    GC::KeepAlive(destination);
+                }
+                catch (const exception &e)
+                {
+                    HandleException(&e);
+                }
+                catch (...)
+                {
+                    HandleException(nullptr);
+                }
+            }
+
+            UInt64 IntegerEncoder::DecodeUInt64(BigPoly ^poly)
+            {
+                if (integerEncoder_ == nullptr)
+                {
+                    throw gcnew ObjectDisposedException("IntegerEncoder is disposed");
+                }
+                if (poly == nullptr)
+                {
+                    throw gcnew ArgumentNullException("poly cannot be null");
+                }
+                try
+                {
+                    auto result = integerEncoder_->decode_uint64(poly->GetPolynomial());
+                    GC::KeepAlive(poly);
+                    return result;
+                }
+                catch (const exception &e)
+                {
+                    HandleException(&e);
+                }
+                catch (...)
+                {
+                    HandleException(nullptr);
+                }
+                throw gcnew Exception("Unexpected exception");
+            }
+
+            UInt32 IntegerEncoder::DecodeUInt32(BigPoly ^poly)
+            {
+                if (integerEncoder_ == nullptr)
+                {
+                    throw gcnew ObjectDisposedException("IntegerEncoder is disposed");
+                }
+                if (poly == nullptr)
+                {
+                    throw gcnew ArgumentNullException("poly cannot be null");
+                }
+                try
+                {
+                    auto result = integerEncoder_->decode_uint32(poly->GetPolynomial());
+                    GC::KeepAlive(poly);
+                    return result;
+                }
+                catch (const exception &e)
+                {
+                    HandleException(&e);
+                }
+                catch (...)
+                {
+                    HandleException(nullptr);
+                }
+                throw gcnew Exception("Unexpected exception");
+            }
+
+            Int64 IntegerEncoder::DecodeInt64(BigPoly ^poly)
+            {
+                if (integerEncoder_ == nullptr)
+                {
+                    throw gcnew ObjectDisposedException("IntegerEncoder is disposed");
+                }
+                if (poly == nullptr)
+                {
+                    throw gcnew ArgumentNullException("poly cannot be null");
+                }
+                try
+                {
+                    auto result = integerEncoder_->decode_int64(poly->GetPolynomial());
+                    GC::KeepAlive(poly);
+                    return result;
+                }
+                catch (const exception &e)
+                {
+                    HandleException(&e);
+                }
+                catch (...)
+                {
+                    HandleException(nullptr);
+                }
+                throw gcnew Exception("Unexpected exception");
+            }
+
+            Int32 IntegerEncoder::DecodeInt32(BigPoly ^poly)
+            {
+                if (integerEncoder_ == nullptr)
+                {
+                    throw gcnew ObjectDisposedException("IntegerEncoder is disposed");
+                }
+                if (poly == nullptr)
+                {
+                    throw gcnew ArgumentNullException("poly cannot be null");
+                }
+                try
+                {
+                    auto result = integerEncoder_->decode_int32(poly->GetPolynomial());
+                    GC::KeepAlive(poly);
+                    return result;
+                }
+                catch (const exception &e)
+                {
+                    HandleException(&e);
+                }
+                catch (...)
+                {
+                    HandleException(nullptr);
+                }
+                throw gcnew Exception("Unexpected exception");
+            }
+
+            BigUInt ^IntegerEncoder::DecodeBigUInt(BigPoly ^poly)
+            {
+                if (integerEncoder_ == nullptr)
+                {
+                    throw gcnew ObjectDisposedException("IntegerEncoder is disposed");
+                }
+                if (poly == nullptr)
+                {
+                    throw gcnew ArgumentNullException("poly cannot be null");
+                }
+                try
+                {
+                    auto result = gcnew BigUInt(integerEncoder_->decode_biguint(poly->GetPolynomial()));
+                    GC::KeepAlive(poly);
+                    return result;
+                }
+                catch (const exception &e)
+                {
+                    HandleException(&e);
+                }
+                catch (...)
+                {
+                    HandleException(nullptr);
+                }
+                throw gcnew Exception("Unexpected exception");
+            }
+
+            void IntegerEncoder::DecodeBigUInt(BigPoly ^poly, BigUInt ^destination)
+            {
+                if (integerEncoder_ == nullptr)
+                {
+                    throw gcnew ObjectDisposedException("IntegerEncoder is disposed");
+                }
+                if (poly == nullptr)
+                {
+                    throw gcnew ArgumentNullException("poly cannot be null");
+                }
+                if (destination == nullptr)
+                {
+                    throw gcnew ArgumentNullException("destination cannot be null");
+                }
+                try
+                {
+                    integerEncoder_->decode_biguint(poly->GetPolynomial(), destination->GetUInt());
+                    GC::KeepAlive(poly);
+                    GC::KeepAlive(destination);
+                }
+                catch (const exception &e)
+                {
+                    HandleException(&e);
+                }
+                catch (...)
+                {
+                    HandleException(nullptr);
+                }
+            }
+
+            BigPoly ^IntegerEncoder::Encode(System::Int32 value)
+            {
+                if (integerEncoder_ == nullptr)
+                {
+                    throw gcnew ObjectDisposedException("IntegerEncoder is disposed");
+                }
+                try
+                {
+                    return gcnew BigPoly(integerEncoder_->encode(value));
+                }
+                catch (const exception &e)
+                {
+                    HandleException(&e);
+                }
+                catch (...)
+                {
+                    HandleException(nullptr);
+                }
+                throw gcnew Exception("Unexpected exception");
+            }
+
+            BigPoly ^IntegerEncoder::Encode(System::UInt32 value)
+            {
+                if (integerEncoder_ == nullptr)
+                {
+                    throw gcnew ObjectDisposedException("IntegerEncoder is disposed");
+                }
+                try
+                {
+                    return gcnew BigPoly(integerEncoder_->encode(value));
+                }
+                catch (const exception &e)
+                {
+                    HandleException(&e);
+                }
+                catch (...)
+                {
+                    HandleException(nullptr);
+                }
+                throw gcnew Exception("Unexpected exception");
+            }
+
+            seal::IntegerEncoder &IntegerEncoder::GetEncoder()
+            {
+                if (integerEncoder_ == nullptr)
+                {
+                    throw gcnew ObjectDisposedException("IntegerEncoder is disposed");
+                }
+                return *integerEncoder_;
+            }
+
+            FractionalEncoder::FractionalEncoder(BigUInt ^plainModulus, BigPoly ^polyModulus, int integerCoeffCount, int fractionCoeffCount, UInt64 base) : fractionalEncoder_(nullptr)
+            {
+                if (plainModulus == nullptr)
+                {
+                    throw gcnew ArgumentNullException("plainModulus cannot be null");
+                }
+                if (polyModulus == nullptr)
+                {
+                    throw gcnew ArgumentNullException("polyModulus cannot be null");
+                }
+                try
+                {
+                    fractionalEncoder_ = new seal::FractionalEncoder(plainModulus->GetUInt(), polyModulus->GetPolynomial(), integerCoeffCount, fractionCoeffCount, base);
+                    GC::KeepAlive(plainModulus);
+                    GC::KeepAlive(polyModulus);
+                }
+                catch (const exception &e)
+                {
+                    HandleException(&e);
+                }
+                catch (...)
+                {
+                    HandleException(nullptr);
+                }
+            }
+
+            FractionalEncoder::FractionalEncoder(BigUInt ^plainModulus, BigPoly ^polyModulus, int integerCoeffCount, int fractionCoeffCount) : fractionalEncoder_(nullptr)
+            {
+                if (plainModulus == nullptr)
+                {
+                    throw gcnew ArgumentNullException("plainModulus cannot be null");
+                }
+                if (polyModulus == nullptr)
+                {
+                    throw gcnew ArgumentNullException("polyModulus cannot be null");
+                }
+                try
+                {
+                    fractionalEncoder_ = new seal::FractionalEncoder(plainModulus->GetUInt(), polyModulus->GetPolynomial(), integerCoeffCount, fractionCoeffCount);
+                    GC::KeepAlive(plainModulus);
+                    GC::KeepAlive(polyModulus);
+                }
+                catch (const exception &e)
+                {
+                    HandleException(&e);
+                }
+                catch (...)
+                {
+                    HandleException(nullptr);
+                }
+            }
+
+            FractionalEncoder::~FractionalEncoder()
+            {
+                this->!FractionalEncoder();
+            }
+
+            FractionalEncoder::!FractionalEncoder()
+            {
+                if (fractionalEncoder_ != nullptr)
+                {
+                    delete fractionalEncoder_;
+                    fractionalEncoder_ = nullptr;
+                }
+            }
+
+            BigPoly ^FractionalEncoder::Encode(double value)
+            {
+                if (fractionalEncoder_ == nullptr)
+                {
+                    throw gcnew ObjectDisposedException("FractionalEncoder is disposed");
+                }
+                try
+                {
+                    return gcnew BigPoly(fractionalEncoder_->encode(value));
+                }
+                catch (const exception &e)
+                {
+                    HandleException(&e);
+                }
+                catch (...)
+                {
+                    HandleException(nullptr);
+                }
+                throw gcnew Exception("Unexpected exception");
+            }
+
+            double FractionalEncoder::Decode(BigPoly ^poly)
+            {
+                if (fractionalEncoder_ == nullptr)
+                {
+                    throw gcnew ObjectDisposedException("FractionalEncoder is disposed");
+                }
+                if (poly == nullptr)
+                {
+                    throw gcnew ArgumentNullException("poly cannot be null");
+                }
+                try
+                {
+                    auto result = fractionalEncoder_->decode(poly->GetPolynomial());
+                    GC::KeepAlive(poly);
+                    return result;
+                }
+                catch (const exception &e)
+                {
+                    HandleException(&e);
+                }
+                catch (...)
+                {
+                    HandleException(nullptr);
+                }
+                throw gcnew Exception("Unexpected exception");
+            }
+
+            BigUInt ^FractionalEncoder::PlainModulus::get()
+            {
+                if (fractionalEncoder_ == nullptr)
+                {
+                    throw gcnew ObjectDisposedException("FractionalEncoder is disposed");
+                }
+                return gcnew BigUInt(fractionalEncoder_->plain_modulus());
+            }
+
+            BigPoly ^FractionalEncoder::PolyModulus::get()
+            {
+                if (fractionalEncoder_ == nullptr)
+                {
+                    throw gcnew ObjectDisposedException("FractionalEncoder is disposed");
+                }
+                return gcnew BigPoly(fractionalEncoder_->poly_modulus());
+            }
+
+            int FractionalEncoder::FractionCoeffCount::get()
+            {
+                if (fractionalEncoder_ == nullptr)
+                {
+                    throw gcnew ObjectDisposedException("FractionalEncoder is disposed");
+                }
+                return fractionalEncoder_->fraction_coeff_count();
+            }
+
+            int FractionalEncoder::IntegerCoeffCount::get()
+            {
+                if (fractionalEncoder_ == nullptr)
+                {
+                    throw gcnew ObjectDisposedException("FractionalEncoder is disposed");
+                }
+                return fractionalEncoder_->integer_coeff_count();
+            }
+
+            UInt64 FractionalEncoder::Base::get()
+            {
+                if (fractionalEncoder_ == nullptr)
+                {
+                    throw gcnew ObjectDisposedException("FractionalEncoder is disposed");
+                }
+                return fractionalEncoder_->base();
+            }
+
+            seal::FractionalEncoder &FractionalEncoder::GetEncoder()
+            {
+                if (fractionalEncoder_ == nullptr)
+                {
+                    throw gcnew ObjectDisposedException("FractionalEncoder is disposed");
                 }
                 return *fractionalEncoder_;
             }

@@ -15,72 +15,53 @@ namespace seal
     {
         /*
         Polynomial modulus: 1x^1024 + 1
-        Coefficient modulus: 2^48 - 2^20 + 1
-        Hex form: FFFFFFF00001
+        Coefficient modulus: 2^35 - 2^14 + 2^11 + 1
+        Hex form: 7FFFFC801
         NTT prime: Yes
-        Plain modulus recommendation: Power of 2 up to 2^20
+        Plain modulus recommendation: Power of 2 up to 2^11
         */
-        { 1024, BigUInt("FFFFFFF00001") },
-
+        { 1024, BigUInt("7FFFFC801") },
+        
         /*
         Polynomial modulus: 1x^2048 + 1
-        Coefficient modulus: 2^94 - 2^20 + 1
-        Hex form: 3FFFFFFFFFFFFFFFFFF00001
+        Coefficient modulus: 2^60 - 2^14 + 1
+        Hex form: FFFFFFFFFFFC001
         NTT prime: Yes
-        Plain modulus recommendation: Power of 2 up to 2^20
+        Plain modulus recommendation: Power of 2 up to 2^14
         */
-        { 2048, BigUInt("3FFFFFFFFFFFFFFFFFF00001") },
+        { 2048, BigUInt("FFFFFFFFFFFC001") },
 
         /*
         Polynomial modulus: 1x^4096 + 1
-        Coefficient modulus: 2^125 - 2^29 + 1
-        Hex form: 1FFFFFFFFFFFFFFFFFFFFFFFE0000001
+        Coefficient modulus: 2^116 - 2^18 + 1
+        Hex form: FFFFFFFFFFFFFFFFFFFFFFFFC0001
         NTT prime: Yes
-        Plain modulus recommendation: Power of 2 up to 2^29
+        Plain modulus recommendation: Power of 2 up to 2^18
         */
-        //{ 4096, BigUInt("1FFFFFFFFFFFFFFFFFFFFFFFE0000001") },
-
-        /*
-        Polynomial modulus: 1x^4096 + 1
-        Coefficient modulus: 2^190 - 2^30 + 1
-        Hex form: 3FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFC0000001
-        NTT prime: Yes
-        Plain modulus recommendation: Power of 2 up to 2^30
-        */
-        { 4096, BigUInt("3FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFC0000001") },
+        { 4096, BigUInt("FFFFFFFFFFFFFFFFFFFFFFFFC0001") },
 
         /*
         Polynomial modulus: 1x^8192 + 1
-        Coefficient modulus: 2^314 - 2^28 + 1
-        Hex form: 3FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF0000001
+        Coefficient modulus: 2^226 - 2^26 + 1
+        Hex form: 3FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFC000001
         NTT prime: Yes
-        Plain modulus recommendation: Power of 2 up to 2^28
+        Plain modulus recommendation: Power of 2 up to 2^26
         */
-        //{ 8192, BigUInt("3FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF0000001") },
+        { 8192, BigUInt("3FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFC000001") },
 
-        /*
-        Polynomial modulus: 1x^8192 + 1
-        Coefficient modulus: 2^383 - 2^33 + 1
-        Hex form: 7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFE00000001
-        NTT prime: Yes
-        Plain modulus recommendation: Power of 2 up to 2^33
-        */
-        { 8192, BigUInt("7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFE00000001") },
-
-        /*
-        Polynomial modulus: 1x^16384 + 1
-        Coefficient modulus: 2^767 - 2^56 + 1
-        Hex form: 7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00000000000001
-        NTT prime: Yes
-        Plain modulus recommendation: Power of 2 up to 2^56
-        */
-        { 16384, BigUInt("7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00000000000001") },
+        ///*
+        //Polynomial modulus: 1x^16384 + 1
+        //Coefficient modulus: 2^435 - 2^33 + 1
+        //Hex form: 7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFE00000001
+        //NTT prime: Yes
+        //Plain modulus recommendation: Power of 2 up to 2^26
+        //*/
+        { 16384, BigUInt("7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFE00000001") },
     };
 
     const double ChooserEvaluator::default_noise_standard_deviation_ = 3.19;
 
     const double ChooserEvaluator::default_noise_max_deviation_ = 15.95;
-
 
     ChooserPoly::ChooserPoly() : max_coeff_count_(0), max_abs_value_(), comp_(nullptr)
     {
@@ -231,7 +212,7 @@ namespace seal
         for (size_t i = 0; i < operands.size(); ++i)
         {
             add_uint_uint(operands[i].max_abs_value_.pointer(), operands[i].max_abs_value_.uint64_count(), sum_max_abs_value.get(), sum_max_abs_value_uint64_count, false, sum_max_abs_value_uint64_count, sum_max_abs_value.get());
-            comps.push_back(operands[i].comp_);
+            comps.emplace_back(operands[i].comp_);
         }
 
         return ChooserPoly(sum_max_coeff_count, BigUInt(sum_max_abs_value_bit_count, sum_max_abs_value.get()), new AddManyComputation(comps));
@@ -279,6 +260,11 @@ namespace seal
         multiply_uint_uint(wide_operand2_max_abs_value.get(), prod_uint64_count, temp_pointer.get(), prod_uint64_count, prod_uint64_count, prod_max_abs_value.get());
 
         return ChooserPoly(operand1.max_coeff_count_ + operand2.max_coeff_count_ - 1, BigUInt(prod_bit_count, prod_max_abs_value.get()), new MultiplyComputation(*operand1.comp_, *operand2.comp_));
+    }
+
+    ChooserPoly ChooserEvaluator::square(const ChooserPoly &operand) const
+    {
+        return multiply(operand, operand);
     }
 
     ChooserPoly ChooserEvaluator::relinearize(const ChooserPoly &operand, int destination_size) const
@@ -430,7 +416,7 @@ namespace seal
         // k^n * sqrt[6/((k-1)*(k+1)*Pi*n)], where k = max_coeff_count_, n = exponent.
         uint64_t growth_factor = static_cast<uint64_t>(pow(operand.max_coeff_count_, exponent) * sqrt(6 / ((operand.max_coeff_count_ - 1) * (operand.max_coeff_count_ + 1) * 3.1415 * exponent)));
 
-        int result_bit_count = static_cast<int>(exponent) * operand.max_abs_value_.significant_bit_count() + get_significant_bit_count(growth_factor) + 1;
+        int result_bit_count = exponent * operand.max_abs_value_.significant_bit_count() + get_significant_bit_count(growth_factor) + 1;
         int result_uint64_count = divide_round_up(result_bit_count, bits_per_uint64);
 
         MemoryPool &pool = *MemoryPool::default_pool();
@@ -441,7 +427,7 @@ namespace seal
         ConstPointer temp_pointer(duplicate_uint_if_needed(result_max_abs_value.get(), result_uint64_count, result_uint64_count, true, pool));
         multiply_uint_uint(&growth_factor, 1, temp_pointer.get(), result_uint64_count, result_uint64_count, result_max_abs_value.get());
 
-        return ChooserPoly(static_cast<int>(exponent) * (operand.max_coeff_count_ - 1) + 1, BigUInt(result_bit_count, result_max_abs_value.get()), new ExponentiateComputation(*operand.comp_, exponent));
+        return ChooserPoly(exponent * (operand.max_coeff_count_ - 1) + 1, BigUInt(result_bit_count, result_max_abs_value.get()), new ExponentiateComputation(*operand.comp_, exponent));
     }
 
     ChooserPoly ChooserEvaluator::negate(const ChooserPoly &operand) const
@@ -483,7 +469,7 @@ namespace seal
 
             growth_factor *= (i == 0 ? 1 : min(operands[i].max_coeff_count_, prod_max_coeff_count));
 
-            comps.push_back(operands[i].comp_);
+            comps.emplace_back(operands[i].comp_);
         }
 
         prod_max_abs_value_bit_count += get_significant_bit_count(growth_factor);
@@ -606,13 +592,13 @@ namespace seal
                     destination.decomposition_bit_count() = 0;
                 }
 
-                // We bound the decomposition bit count value by 1/5 of the maximum. A too small
+                // We bound the decomposition bit count value by 1/10 of the maximum. A too small
                 // decomposition bit count slows down multiplication significantly. This is not an
                 // issue when the user wants to use multiply_norelin() instead of multiply(), as it
-                // only affects the relinearization step. The fraction 1/5 is a somewhat optimal choice.
-                // An expert user might want to tweak this value to be smaller or larger depending 
-                // on their use case.
-                int min_decomposition_bit_count = (destination.coeff_modulus().significant_bit_count() + 4) / 5;
+                // only affects the relinearization step. The fraction 1/10 is by no means an optimal 
+                // choice. An expert user might want to tweak this value to be smaller or larger 
+                // depending on their use case.
+                int min_decomposition_bit_count = (destination.coeff_modulus().significant_bit_count() + 9) / 10;
 
                 // Note that this part of the code will be skipped if the computation does not involve relinearization
                 // the decomposition bit count was already set to 0 above.

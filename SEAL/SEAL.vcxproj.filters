@@ -126,6 +126,15 @@
     <ClInclude Include="evaluationkeys.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="util\ntt.h">
+      <Filter>Header Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="util\crt.h">
+      <Filter>Header Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="util\defines.h">
+      <Filter>Header Files\util</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="bigpoly.cpp">
@@ -227,8 +236,16 @@
     <ClCompile Include="evaluationkeys.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="util\ntt.cpp">
+      <Filter>Source Files\util</Filter>
+    </ClCompile>
+    <ClCompile Include="util\crt.cpp">
+      <Filter>Source Files\util</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="makefile" />
+    <None Include="config.h.in" />
+    <None Include="configure.ac" />
+    <None Include="Makefile.in" />
   </ItemGroup>
 </Project>

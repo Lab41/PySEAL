@@ -1,5 +1,4 @@
-#ifndef SEAL_BIGUINT_H
-#define SEAL_BIGUINT_H
+#pragma once
 
 #include <iostream>
 #include <cstdint>
@@ -26,6 +25,17 @@ namespace seal
     individual bytes of the integer value in a platform-independent way - for example, reading the third
     byte will always return bits 16-24 of the BigUInt value regardless of the platform being little-endian or
     big-endian.
+
+    @par Implicit Resizing
+    Both the copy constructor and operator=() allocate more memory for the backing array when needed, i.e. when
+    the source BigUInt has a larger backing array than the destination. Conversely, when the destination backing
+    array is already large enough, the data is only copied and the unnecessary higher order bits are set
+    to zero. When new memory has to be allocated, only the significant bits of the source BigUInt are taken 
+    into account. This is is important, because it avoids unnecessary zero bits to be included in the destination,
+    which in some cases could accumulate and result in very large unnecessary allocations.
+    However, sometimes it is necessary to preserve the original size, even if some of the leading bits are zero. 
+    For this purpose BigUInt contains functions duplicate_from and duplicate_to, which create an exact copy of 
+    the source BigUInt.
 
     @par Alias BigUInts
     An aliased BigUInt (which can be determined with is_alias()) is a special type of BigUInt that does not manage
@@ -1052,5 +1062,3 @@ namespace seal
         bool is_alias_;
     };
 }
-
-#endif // SEAL_BIGUINT_H
