@@ -12,91 +12,125 @@ namespace seal
     {
         namespace
         {
-            // Shifts operand left by one bit
-            inline void left_shift_one_bit(const uint64_t *operand, int uint64_count, uint64_t *result)
+            namespace tools
             {
-                //int neg_bit_shift_amount = (bits_per_uint64 - bit_shift_amount) & (static_cast<uint64_t>(bit_shift_amount == 0) - 1);
-
-                result += (uint64_count - 1);
-                operand += (uint64_count - 1);
-
-                for (int i = 0; i < uint64_count - 1; i++)
+                // Shifts operand left by one bit
+                inline void left_shift_one_bit_uint(const uint64_t *operand, int uint64_count, uint64_t *result)
                 {
-                    *result = *operand-- << 1;
-                    *result-- |= (*operand >> 63);
-                }
-                *result = *operand--;
-                *result-- <<= 1;
-            }
+                    result += (uint64_count - 1);
+                    operand += (uint64_count - 1);
 
-            void multiply_uint_uint_add(const uint64_t *operand1, const uint64_t *operand2, int operand_uint64_count, int result_uint64_count, uint64_t *result)
-            {
-                // Handle fast cases.
-                if (operand_uint64_count == 0)
-                {
-                    return;
-                }
-                if (result_uint64_count == 1)
-                {
-                    *result += *operand1 * *operand2;
-                    return;
-                }
-
-                // In some cases these improve performance.
-                //int operand1_uint64_count = get_significant_uint64_count_uint(operand1, operand_uint64_count);
-                //int operand2_uint64_count = get_significant_uint64_count_uint(operand2, operand_uint64_count);
-
-                // Multiply operand1 and operand2.            
-                uint64_t temp_result;
-                uint64_t carry, new_carry, sum1_carry, sum2_carry;
-                const uint64_t *inner_operand2;
-                uint64_t *inner_result;
-
-                int operand1_index_max = min(operand_uint64_count, result_uint64_count);
-                for (int operand1_index = 0; operand1_index < operand1_index_max; operand1_index++)
-                {
-                    inner_operand2 = operand2;
-                    inner_result = result++;
-                    carry = 0;
-                    int operand2_index = 0;
-                    int operand2_index_max = min(operand_uint64_count, result_uint64_count - operand1_index);
-                    for (; operand2_index < operand2_index_max; operand2_index++)
+                    for (int i = 0; i < uint64_count - 1; i++)
                     {
-                        // Perform 64-bit multiplication of operand1 and operand2
-                        temp_result = multiply_uint64_uint64(*operand1, *inner_operand2++, &new_carry);
-                        sum1_carry = add_uint64_uint64(temp_result, carry, 0, &temp_result);
-                        sum2_carry = add_uint64_uint64(*inner_result, temp_result, 0, inner_result);
-                        carry = new_carry + sum1_carry + sum2_carry;
+                        *result = *operand-- << 1;
+                        *result-- |= (*operand >> (bits_per_uint64 - 1));
+                    }
+                    *result = (*operand << 1);
+                }
 
-                        inner_result++;
+                inline void right_shift_one_bit_uint(const uint64_t *operand, int uint64_count, uint64_t *result)
+                {
+                    int neg_bit_shift_amount = bits_per_uint64 - 1;
+
+                    for (; uint64_count >= 2; uint64_count--)
+                    {
+                        *result = *operand++ >> 1;
+                        *result++ |= *operand << (bits_per_uint64 - 1);
+                    }
+                    *result = *operand >> 1;
+                }
+
+                void multiply_truncate_uint_uint_add(const uint64_t *operand1, const uint64_t *operand2, int uint64_count, uint64_t *result)
+                {
+                    // Handle fast case
+                    if (uint64_count == 1)
+                    {
+                        *result += *operand1 * *operand2;
+                        return;
                     }
 
-                    // Write carry if there is room in result
-                    if (operand1_index + operand2_index < result_uint64_count)
+                    // Multiply operand1 and operand2.            
+                    uint64_t temp_result;
+                    uint64_t carry, new_carry;
+                    const uint64_t *inner_operand2;
+                    uint64_t *inner_result;
+
+                    for (int operand1_index = 0; operand1_index < uint64_count; operand1_index++)
                     {
-                        unsigned char c_carry = add_uint64_uint64(*inner_result, carry, 0, inner_result);
-                        for (int i = operand1_index + operand2_index + 1; i < result_uint64_count; i++)
+                        inner_operand2 = operand2;
+                        inner_result = result++;
+                        carry = 0;
+                        int operand2_index = 0;
+                        for (; operand2_index < uint64_count - operand1_index; operand2_index++)
                         {
+                            // Perform 64-bit multiplication of operand1 and operand2
+                            temp_result = multiply_uint64_uint64(*operand1, *inner_operand2++, &new_carry);
+                            carry = new_carry + add_uint64_uint64(temp_result, carry, 0, &temp_result);
+                            carry += add_uint64_uint64(*inner_result, temp_result, 0, inner_result);
+
                             inner_result++;
-                            c_carry = add_uint64_uint64(*inner_result, 0, c_carry, inner_result);
                         }
+
+                        operand1++;
+                    }
+                }
+
+                void multiply_truncate_uint_uint_sub(const uint64_t *operand1, const uint64_t *operand2, int uint64_count, uint64_t *result)
+                {
+                    uint64_t *temp_ptr = result;
+                    for (int k = 0; k < uint64_count; k++)
+                    {
+                        *temp_ptr++ ^= 0xFFFFFFFFFFFFFFFF;
+                    }
+                    multiply_truncate_uint_uint_add(operand1, operand2, uint64_count, result);
+                    for (int k = 0; k < uint64_count; k++)
+                    {
+                        *result++ ^= 0xFFFFFFFFFFFFFFFF;
+                    }
+                }
+
+                // Assume destination has uint64_count twice that of operands
+                void multiply_uint_uint(const uint64_t *operand1, const uint64_t *operand2, int operand_uint64_count, uint64_t *result)
+                {
+                    int result_uint64_count = 2 * operand_uint64_count;
+
+                    // Handle fast cases.
+                    if (operand_uint64_count == 0)
+                    {
+                        // If either operand is 0, then result is 0.
+                        set_zero_uint(result_uint64_count, result);
+                        return;
                     }
 
-                    operand1++;
-                }
-            }
+                    // Clear out result.
+                    set_zero_uint(result_uint64_count, result);
 
-            inline void multiply_uint_uint_sub(const uint64_t *operand1, const uint64_t *operand2, int operand_uint64_count, int result_uint64_count, uint64_t *result)
-            {
-                uint64_t *temp_ptr = result;
-                for (int k = 0; k < result_uint64_count; k++)
-                {
-                    *temp_ptr++ ^= 0xFFFFFFFFFFFFFFFF;
-                }
-                multiply_uint_uint_add(operand1, operand2, operand_uint64_count, result_uint64_count, result);
-                for (int k = 0; k < result_uint64_count; k++)
-                {
-                    *result++ ^= 0xFFFFFFFFFFFFFFFF;
+                    // Multiply operand1 and operand2.            
+                    uint64_t temp_result;
+                    uint64_t carry, new_carry;
+                    const uint64_t *inner_operand2;
+                    uint64_t *inner_result;
+
+                    for (int operand1_index = 0; operand1_index < operand_uint64_count; operand1_index++)
+                    {
+                        inner_operand2 = operand2;
+                        inner_result = result++;
+                        carry = 0;
+                        for (int operand2_index = 0; operand2_index < operand_uint64_count; operand2_index++)
+                        {
+                            // Perform 64-bit multiplication of operand1 and operand2
+                            temp_result = multiply_uint64_uint64(*operand1, *inner_operand2++, &new_carry);
+                            carry = new_carry + add_uint64_uint64(temp_result, carry, 0, &temp_result);
+                            carry += add_uint64_uint64(*inner_result, temp_result, 0, inner_result);
+
+                            inner_result++;
+                        }
+
+                        // Write carry
+                        *inner_result = carry;
+
+                        operand1++;
+                    }
                 }
             }
         }
@@ -380,19 +414,17 @@ namespace seal
             int coeff_uint64_count = tables.coeff_uint64_count(); 
 
             const uint64_t *modulusptr = tables.modulus().get(); 
-            Pointer big_alloc(allocate_uint(8 * coeff_uint64_count, pool));
+            Pointer big_alloc(allocate_uint(5 * coeff_uint64_count, pool));
 
             uint64_t *two_times_modulus = big_alloc.get();
             uint64_t *T = two_times_modulus + coeff_uint64_count;
             uint64_t *prod = T + coeff_uint64_count;
-            uint64_t *temp1 = prod + 2 * coeff_uint64_count;
-            uint64_t *temp2 = temp1 + coeff_uint64_count;
-            uint64_t *temp3 = temp2 + coeff_uint64_count;
-            uint64_t *temp4 = temp3 + coeff_uint64_count;
+            uint64_t *temp = prod + 2 * coeff_uint64_count;
 
-            left_shift_one_bit(modulusptr, coeff_uint64_count, two_times_modulus);
+            tools::left_shift_one_bit_uint(modulusptr, coeff_uint64_count, two_times_modulus);
 
             // Return the NTT in scrambled order
+            uint64_t *Q = prod + coeff_uint64_count;
             int n = 1 << tables.coeff_count_power();
             int t = n;
             for (int m = 1; m < n; m <<= 1)
@@ -404,31 +436,27 @@ namespace seal
                     int j2 = j1 + t - 1;
                     const uint64_t *W = tables.get_from_root_powers(m + i);
                     const uint64_t *Wprime = tables.get_from_scaled_root_powers(m + i);
-                    uint64_t *X, *Y;
+                    uint64_t *X = operand + j1 * coeff_uint64_count;
+                    uint64_t *Y = X + t * coeff_uint64_count;
                     for (int j = j1; j <= j2; j++)
                     {
-                        X = get_poly_coeff(operand, j, coeff_uint64_count);
-                        Y = get_poly_coeff(operand, j + t, coeff_uint64_count);
-
-                        // The Harvey butterfly: assume X, Y in [0, 2p), and return X', Y' in [0, 2p). 
-                        // X', Y' = X + WY, X - WY (mod p). 
+                        // The Harvey butterfly: assume X, Y in [0, 2p), and return X', Y' in [0, 2p).
+                        // X', Y' = X + WY, X - WY (mod p).
 
                         if (is_greater_than_or_equal_uint_uint(X, two_times_modulus, coeff_uint64_count))
                         {
-                            sub_uint_uint(X, two_times_modulus, coeff_uint64_count, temp1);
-                        }
-                        else 
-                        {
-                            set_uint_uint(X, coeff_uint64_count, temp1);
+                            sub_uint_uint(X, two_times_modulus, coeff_uint64_count, X);
                         }
 
-                        multiply_uint_uint(Wprime, coeff_uint64_count, Y, coeff_uint64_count, 2 * coeff_uint64_count, prod);
-                        uint64_t *Q = prod + coeff_uint64_count;
+                        tools::multiply_uint_uint(Wprime, Y, coeff_uint64_count, prod);
                         multiply_truncate_uint_uint(W, Y, coeff_uint64_count, T);
-                        multiply_uint_uint_sub(Q, modulusptr, coeff_uint64_count, coeff_uint64_count, T);
-                        add_uint_uint(temp1, T, coeff_uint64_count, X);
-                        sub_uint_uint(two_times_modulus, T, coeff_uint64_count, temp4);
-                        add_uint_uint(temp1, temp4, coeff_uint64_count, Y);
+                        tools::multiply_truncate_uint_uint_sub(Q, modulusptr, coeff_uint64_count, T);
+                        sub_uint_uint(two_times_modulus, T, coeff_uint64_count, temp);
+                        add_uint_uint(X, temp, coeff_uint64_count, Y);
+                        add_uint_uint(X, T, coeff_uint64_count, X);
+
+                        X += coeff_uint64_count;
+                        Y += coeff_uint64_count;
                     }
                 }
             }
@@ -448,26 +476,21 @@ namespace seal
             }
         }
 
-        /*
-        The inverse negacyclic NTT using Harvey's butterfly. (See Patrick Longa and Michael Naehrig). 
-        */
+        // Inverse negacyclic NTT using Harvey's butterfly. (See Patrick Longa and Michael Naehrig). 
         void inverse_ntt_negacyclic_harvey(uint64_t *operand, const NTTTables &tables, MemoryPool &pool)
         {
             int coeff_uint64_count = tables.coeff_uint64_count();
 
             const uint64_t *modulusptr = tables.modulus().get();
-            Pointer big_alloc(allocate_uint(7 * coeff_uint64_count, pool));
-
+            Pointer big_alloc(allocate_uint(4 * coeff_uint64_count, pool));
             uint64_t *two_times_modulus = big_alloc.get();
             uint64_t *T = two_times_modulus + coeff_uint64_count;
-            uint64_t *sum = T + coeff_uint64_count;
-            uint64_t *temp1 = sum + coeff_uint64_count;
-            uint64_t *temp2 = temp1 + coeff_uint64_count;
-            uint64_t *prod = temp2 + coeff_uint64_count;
+            uint64_t *prod = T + coeff_uint64_count;
 
-            left_shift_one_bit(modulusptr, coeff_uint64_count, two_times_modulus);
+            tools::left_shift_one_bit_uint(modulusptr, coeff_uint64_count, two_times_modulus);
 
             // return the bit-reversed order of NTT. 
+            uint64_t *Q = prod + coeff_uint64_count;
             int n = 1 << tables.coeff_count_power();
             int t = 1;
             for (int m = n; m > 1; m >>= 1)
@@ -480,35 +503,43 @@ namespace seal
                     // Need the powers of  phi^{-1} in bit-reversed order
                     const uint64_t *W = tables.get_from_inv_root_powers_div_two(h + i);
                     const uint64_t *Wprime = tables.get_from_scaled_inv_root_powers_div_two(h + i);
-                    uint64_t *U, *V;
+                    uint64_t *U = operand + j1 * coeff_uint64_count;
+                    uint64_t *V = U + t * coeff_uint64_count;
                     for (int j = j1; j <= j2; j++)
                     {
                         // U = x[i], V = x[i+m]
-                        U = get_poly_coeff(operand, j, coeff_uint64_count);
-                        V = get_poly_coeff(operand, j + t, coeff_uint64_count);
-
-                        add_uint_uint(U,V, coeff_uint64_count, sum);
-
-                        if (is_greater_than_or_equal_uint_uint(sum, two_times_modulus, coeff_uint64_count))
-                        {
-                            sub_uint_uint(sum, two_times_modulus, coeff_uint64_count, sum);
-                        }
-
-                        // need to make it so that div2_uint_mod takes values that are > q. 
-                        div2_uint_mod(sum, modulusptr, coeff_uint64_count, sum); 
 
                         // Compute U - V + 2q
                         sub_uint_uint(two_times_modulus, V, coeff_uint64_count, T);
                         add_uint_uint(T, U, coeff_uint64_count, T);
 
-                        multiply_uint_uint(Wprime, coeff_uint64_count, T, coeff_uint64_count, 2 * coeff_uint64_count, prod);
-                        // need to take the high word of the product to obtain Q. 
-                        uint64_t *Q = prod + coeff_uint64_count;
+                        add_uint_uint(U, V, coeff_uint64_count, U);
+                        if (is_greater_than_or_equal_uint_uint(U, two_times_modulus, coeff_uint64_count))
+                        {
+                            sub_uint_uint(U, two_times_modulus, coeff_uint64_count, U);
+                        }
+
+                        // need to make it so that div2_uint_mod takes values that are > q. 
+                        //div2_uint_mod(U, modulusptr, coeff_uint64_count, U); 
+                        if (*U & 1)
+                        {
+                            uint64_t carry = static_cast<uint64_t>(add_uint_uint(U, modulusptr, coeff_uint64_count, U));
+                            tools::right_shift_one_bit_uint(U, coeff_uint64_count, U);
+                            *(U + coeff_uint64_count - 1) |=  (carry << (bits_per_uint64 - 1));
+                        }
+                        else
+                        {
+                            tools::right_shift_one_bit_uint(U, coeff_uint64_count, U);
+                        }
+
+                        tools::multiply_uint_uint(Wprime, T, coeff_uint64_count, prod);
 
                         // effectively, the next two multiply perform multiply modulo beta = 2**wordsize. 
                         multiply_truncate_uint_uint(W, T, coeff_uint64_count, V);
-                        multiply_uint_uint_sub(Q, modulusptr, coeff_uint64_count, coeff_uint64_count, V);
-                        set_uint_uint(sum, coeff_uint64_count, U);
+                        tools::multiply_truncate_uint_uint_sub(Q, modulusptr, coeff_uint64_count, V);
+
+                        U += coeff_uint64_count;
+                        V += coeff_uint64_count;
                     }
                     j1 += (t << 1); 
                 }

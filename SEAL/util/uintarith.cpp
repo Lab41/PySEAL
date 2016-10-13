@@ -131,7 +131,7 @@ namespace seal
             }
             if (uint64_shift_amount < uint64_count)
             {
-                *result = *(operand-- - uint64_shift_amount);
+                *result = *(operand - uint64_shift_amount);
                 *result-- <<= bit_shift_amount;
             }
             for (int i = uint64_count - uint64_shift_amount; i < uint64_count; ++i)
@@ -170,7 +170,7 @@ namespace seal
             int bit_shift_amount = shift_amount - uint64_shift_amount * bits_per_uint64;
             int neg_bit_shift_amount = (bits_per_uint64 - bit_shift_amount) & (static_cast<uint64_t>(bit_shift_amount == 0) - 1);
 
-            for (int i = 0; i < uint64_count - uint64_shift_amount - 1; ++i)
+            for (int i = 0; i < uint64_count - uint64_shift_amount - 1; i++)
             {
                 *result = *(operand + uint64_shift_amount);
 
@@ -179,10 +179,10 @@ namespace seal
             }
             if (uint64_shift_amount < uint64_count)
             {
-                *result = *(operand++ + uint64_shift_amount);
+                *result = *(operand + uint64_shift_amount);
                 *result++ >>= bit_shift_amount;
             }
-            for (int i = uint64_count - uint64_shift_amount; i < uint64_count; ++i)
+            for (int i = uint64_count - uint64_shift_amount; i < uint64_count; i++)
             {
                 *result++ = 0;
             }
@@ -219,20 +219,17 @@ namespace seal
             int neg_bit_shift_amount = (bits_per_uint64 - bit_shift_amount) & (static_cast<uint64_t>(bit_shift_amount == 0) - 1);
             uint64_t high_bits_shift_in = ~((operand[uint64_count - 1] >> (bits_per_uint64 - 1)) - 1);
                 
-            for (int i = 0; i < uint64_count - uint64_shift_amount - 1; ++i)
+            for (int i = 0; i < uint64_count - uint64_shift_amount - 1; i++)
             {
-                *result = *(operand + uint64_shift_amount);
-
-                *result >>= bit_shift_amount;
-                *result++ |= (*(++operand + uint64_shift_amount) << neg_bit_shift_amount) & static_cast<uint64_t>(-(neg_bit_shift_amount != 0));
+                *result = *(operand++ + uint64_shift_amount) >> bit_shift_amount;
+                *result++ |= (*(operand + uint64_shift_amount) << neg_bit_shift_amount) & static_cast<uint64_t>(-(neg_bit_shift_amount != 0));
             }
             if (uint64_shift_amount < uint64_count)
             {
-                *result = *(operand++ + uint64_shift_amount);
-                *result >>= bit_shift_amount;
+                *result = *(operand + uint64_shift_amount) >> bit_shift_amount;
                 *result++ |= (high_bits_shift_in << neg_bit_shift_amount) & static_cast<uint64_t>(-(neg_bit_shift_amount != 0));
             }
-            for (int i = uint64_count - uint64_shift_amount; i < uint64_count; ++i)
+            for (int i = uint64_count - uint64_shift_amount; i < uint64_count; i++)
             {
                 *result++ = high_bits_shift_in;
             }
@@ -552,7 +549,7 @@ namespace seal
 
             // Multiply operand1 and operand2.            
             uint64_t temp_result;
-            uint64_t carry, new_carry, sum1_carry, sum2_carry;
+            uint64_t carry, new_carry;
             const uint64_t *inner_operand2;
             uint64_t *inner_result;
 
@@ -568,15 +565,14 @@ namespace seal
                 {
                     // Perform 64-bit multiplication of operand1 and operand2
                     temp_result = multiply_uint64_uint64(*operand1, *inner_operand2++, &new_carry);
-                    sum1_carry = add_uint64_uint64(temp_result, carry, 0, &temp_result);
-                    sum2_carry = add_uint64_uint64(*inner_result, temp_result, 0, inner_result);
-                    carry = new_carry + sum1_carry + sum2_carry;
+                    carry = new_carry + add_uint64_uint64(temp_result, carry, 0, &temp_result);
+                    carry += add_uint64_uint64(*inner_result, temp_result, 0, inner_result);
 
                     inner_result++;
                 }
 
                 // Write carry if there is room in result
-                if (operand1_index + operand2_index < result_uint64_count)
+                if (operand1_index + operand2_index_max < result_uint64_count)
                 {
                     *inner_result = carry;
                 }
@@ -639,14 +635,14 @@ namespace seal
             uint64_t temp_result;
 
             int operand1_index_max = min(operand1_uint64_count, result_uint64_count);
-            for (int operand1_index = 0; operand1_index < operand1_index_max; ++operand1_index)
+            for (int operand1_index = 0; operand1_index < operand1_index_max; operand1_index++)
             {
                 temp_result = multiply_uint64_uint64(*operand1++, operand2, &new_carry);
                 carry = new_carry + add_uint64_uint64(temp_result, carry, 0, result++);
             }
 
             // Write carry if there is room in result
-            if (result - result_start < result_uint64_count)
+            if (operand1_index_max < result_uint64_count)
             {
                 *result = carry;
             }

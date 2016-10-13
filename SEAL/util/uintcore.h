@@ -33,10 +33,7 @@ namespace seal
                 throw std::invalid_argument("result");
             }
 #endif
-            for (int i = 0; i < uint64_count; i++)
-            {
-                *result++ = 0;
-            }
+            memset(result, 0, uint64_count * bytes_per_uint64);
         }
 
         inline Pointer allocate_zero_uint(int uint64_count, MemoryPool &pool)
@@ -92,10 +89,7 @@ namespace seal
                 // Fast path to handle self assignment.
                 return;
             }
-            for (int i = 0; i < uint64_count; i++)
-            {
-                *result++ = *value++;
-            }
+            memcpy(result, value, uint64_count * bytes_per_uint64);
         }
 
         inline void set_uint_uint(const std::uint64_t *value, int value_uint64_count, int result_uint64_count, std::uint64_t* result)
