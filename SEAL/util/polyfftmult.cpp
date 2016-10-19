@@ -85,7 +85,7 @@ namespace seal
                                 int i = s + inner_index; // j 
                                 int l = i + inner_end; // j + t.
 
-                                                       // Compute the FFT of x and y using Cooley-Tukey. Everything is done r times because we are working with polynomials. 
+                                // Compute the FFT of x and y using Cooley-Tukey. Everything is done r times because we are working with polynomials. 
                                 uint64_t *x_coeff_ptr = get_poly_coeff(operand, (l + 1) * r - k, coeff_uint64_count);
                                 uint64_t *temp_poly_coeff_ptr = alloc_ptr;
                                 for (int a = 0; a < k; a++)
@@ -102,11 +102,14 @@ namespace seal
                                 temp_poly_coeff_ptr = alloc_ptr;
                                 for (int a = 0; a < r; a++)
                                 {
-                                    sub_uint_uint(x_coeff_ptr, temp_poly_coeff_ptr, coeff_uint64_count, x_coeff_ptr2);
-                                    add_uint_uint(x_coeff_ptr, temp_poly_coeff_ptr, coeff_uint64_count, x_coeff_ptr);
-                                    x_coeff_ptr += coeff_uint64_count;
-                                    x_coeff_ptr2 += coeff_uint64_count;
-                                    temp_poly_coeff_ptr += coeff_uint64_count;
+                                    // Add and subtract
+                                    unsigned char borrow = sub_uint64_uint64(*x_coeff_ptr, *temp_poly_coeff_ptr, 0, x_coeff_ptr2++);
+                                    unsigned char carry = add_uint64_uint64(*x_coeff_ptr, *temp_poly_coeff_ptr++, 0, x_coeff_ptr++);
+                                    for (int add_sub_index = 1; add_sub_index < coeff_uint64_count; add_sub_index++)
+                                    {
+                                        borrow = sub_uint64_uint64(*x_coeff_ptr, *temp_poly_coeff_ptr, borrow, x_coeff_ptr2++);
+                                        carry = add_uint64_uint64(*x_coeff_ptr, *temp_poly_coeff_ptr++, carry, x_coeff_ptr++);
+                                    }
                                 }
                             }
                         }
@@ -140,11 +143,14 @@ namespace seal
                                 uint64_t *dest_coeff_ptr = alloc_ptr;
                                 for (int a = 0; a < r; a++)
                                 {
-                                    sub_uint_uint(coeff1_ptr, coeff2_ptr, coeff_uint64_count, dest_coeff_ptr);
-                                    add_uint_uint(coeff1_ptr, coeff2_ptr, coeff_uint64_count, coeff1_ptr);
-                                    coeff1_ptr += coeff_uint64_count;
-                                    coeff2_ptr += coeff_uint64_count;
-                                    dest_coeff_ptr += coeff_uint64_count;
+                                    // Add and subtract
+                                    unsigned char borrow = sub_uint64_uint64(*coeff1_ptr, *coeff2_ptr, 0, dest_coeff_ptr++);
+                                    unsigned char carry = add_uint64_uint64(*coeff1_ptr, *coeff2_ptr++, 0, coeff1_ptr++);
+                                    for (int add_sub_index = 1; add_sub_index < coeff_uint64_count; add_sub_index++)
+                                    {
+                                        borrow = sub_uint64_uint64(*coeff1_ptr, *coeff2_ptr, borrow, dest_coeff_ptr++);
+                                        carry = add_uint64_uint64(*coeff1_ptr, *coeff2_ptr++, carry, coeff1_ptr++);
+                                    }
                                 }
 
                                 int rsubk = r - k;
@@ -212,11 +218,10 @@ namespace seal
                         // Write carry if there is room in result
                         if (operand1_index + operand2_index_max < result_uint64_count)
                         {
-                            unsigned char c_carry = add_uint64_uint64(*inner_result, carry, 0, inner_result);
+                            unsigned char c_carry = add_uint64_uint64(*inner_result, carry, 0, inner_result++);
                             for (int i = operand1_index + operand2_index + 1; i < result_uint64_count; i++)
                             {
-                                inner_result++;
-                                c_carry = add_uint64_uint64(*inner_result, 0, c_carry, inner_result);
+                                c_carry = add_uint64_uint64(*inner_result, 0, c_carry, inner_result++);
                             }
                         }
 
@@ -288,19 +293,22 @@ namespace seal
                         // Write carry if there is room in result
                         if (operand1_index + operand2_index_max < result_uint64_count)
                         {
-                            unsigned char c_carry1 = add_uint64_uint64(*inner_result1, carry1, 0, inner_result1);
-                            unsigned char c_carry2 = add_uint64_uint64(*inner_result2, carry2, 0, inner_result2);
-                            unsigned char c_carry3 = add_uint64_uint64(*inner_result3, carry3, 0, inner_result3);
-
+                            unsigned char c_carry = add_uint64_uint64(*inner_result1, carry1, 0, inner_result1++);
                             for (int i = operand1_index + operand2_index + 1; i < result_uint64_count; i++)
                             {
-                                inner_result1++;
-                                inner_result2++;
-                                inner_result3++;
+                                c_carry = add_uint64_uint64(*inner_result1, 0, c_carry, inner_result1++);
+                            }
 
-                                c_carry1 = add_uint64_uint64(*inner_result1, 0, c_carry1, inner_result1);
-                                c_carry2 = add_uint64_uint64(*inner_result2, 0, c_carry2, inner_result2);
-                                c_carry3 = add_uint64_uint64(*inner_result3, 0, c_carry3, inner_result3);
+                            c_carry = add_uint64_uint64(*inner_result2, carry2, 0, inner_result2++);
+                            for (int i = operand1_index + operand2_index + 1; i < result_uint64_count; i++)
+                            {
+                                c_carry = add_uint64_uint64(*inner_result2, 0, c_carry, inner_result2++);
+                            }
+
+                            c_carry = add_uint64_uint64(*inner_result3, carry3, 0, inner_result3++);
+                            for (int i = operand1_index + operand2_index + 1; i < result_uint64_count; i++)
+                            {
+                                c_carry = add_uint64_uint64(*inner_result3, 0, c_carry, inner_result3++);
                             }
                         }
 
@@ -371,19 +379,22 @@ namespace seal
                         // Write carry if there is room in result
                         if (operand1_index + operand2_index_max < result_uint64_count)
                         {
-                            unsigned char c_carry1 = add_uint64_uint64(*inner_result1, carry1, 0, inner_result1);
-                            unsigned char c_carry2 = add_uint64_uint64(*inner_result2, carry2, 0, inner_result2);
-                            unsigned char c_carry3 = add_uint64_uint64(*inner_result3, carry3, 0, inner_result3);
-
+                            unsigned char c_carry = add_uint64_uint64(*inner_result1, carry1, 0, inner_result1++);
                             for (int i = operand1_index + operand2_index + 1; i < result_uint64_count; i++)
                             {
-                                inner_result1++;
-                                inner_result2++;
-                                inner_result3++;
+                                c_carry = add_uint64_uint64(*inner_result1, 0, c_carry, inner_result1++);
+                            }
 
-                                c_carry1 = add_uint64_uint64(*inner_result1, 0, c_carry1, inner_result1);
-                                c_carry2 = add_uint64_uint64(*inner_result2, 0, c_carry2, inner_result2);
-                                c_carry3 = add_uint64_uint64(*inner_result3, 0, c_carry3, inner_result3);
+                            c_carry = add_uint64_uint64(*inner_result2, carry2, 0, inner_result2++);
+                            for (int i = operand1_index + operand2_index + 1; i < result_uint64_count; i++)
+                            {
+                                c_carry = add_uint64_uint64(*inner_result2, 0, c_carry, inner_result2++);
+                            }
+
+                            c_carry = add_uint64_uint64(*inner_result3, carry3, 0, inner_result3++);
+                            for (int i = operand1_index + operand2_index + 1; i < result_uint64_count; i++)
+                            {
+                                c_carry = add_uint64_uint64(*inner_result3, 0, c_carry, inner_result3++);
                             }
                         }
 
@@ -517,7 +528,11 @@ namespace seal
                         // Subtract to get result
                         for (int i = 0; i < coeff_count; i++)
                         {
-                            sub_uint_uint(get_poly_coeff(alloc_ptr, i, product_uint64_count) + positive_offset, get_poly_coeff(alloc_ptr, i, product_uint64_count), product_uint64_count, get_poly_coeff(result, i, product_uint64_count));
+                            unsigned char borrow = 0;
+                            for (int j = 0; j < product_uint64_count; j++)
+                            {
+                                borrow = sub_uint64_uint64(*(alloc_ptr + positive_offset), *alloc_ptr++, borrow, result++);
+                            }
                         }
 
                         return;
@@ -836,7 +851,11 @@ namespace seal
                         // Subtract to get result
                         for (int i = 0; i < coeff_count; i++)
                         {
-                            sub_uint_uint(get_poly_coeff(alloc_ptr, i, product_uint64_count) + positive_offset, get_poly_coeff(alloc_ptr, i, product_uint64_count), product_uint64_count, get_poly_coeff(result, i, product_uint64_count));
+                            unsigned char borrow = 0;
+                            for (int j = 0; j < product_uint64_count; j++)
+                            {
+                                borrow = sub_uint64_uint64(*(alloc_ptr + positive_offset), *alloc_ptr++, borrow, result++);
+                            }
                         }
 
                         return;
@@ -957,9 +976,13 @@ namespace seal
                         // Subtract to get result
                         for (int i = 0; i < coeff_count; i++)
                         {
-                            sub_uint_uint(get_poly_coeff(negative_result_11, i, product_uint64_count) + positive_offset, get_poly_coeff(negative_result_11, i, product_uint64_count), product_uint64_count, get_poly_coeff(result_11, i, product_uint64_count));
-                            sub_uint_uint(get_poly_coeff(negative_result_12, i, product_uint64_count) + positive_offset, get_poly_coeff(negative_result_12, i, product_uint64_count), product_uint64_count, get_poly_coeff(result_12, i, product_uint64_count));
-                            sub_uint_uint(get_poly_coeff(negative_result_22, i, product_uint64_count) + positive_offset, get_poly_coeff(negative_result_22, i, product_uint64_count), product_uint64_count, get_poly_coeff(result_22, i, product_uint64_count));
+                            unsigned char borrow11 = 0, borrow12 = 0, borrow22 = 0;
+                            for (int j = 0; j < product_uint64_count; j++)
+                            {
+                                borrow11 = sub_uint64_uint64(*(negative_result_11 + positive_offset), *negative_result_11++, borrow11, result_11++);
+                                borrow12 = sub_uint64_uint64(*(negative_result_12 + positive_offset), *negative_result_12++, borrow12, result_12++);
+                                borrow22 = sub_uint64_uint64(*(negative_result_22 + positive_offset), *negative_result_22++, borrow22, result_22++);
+                            }
                         }
 
                         return;
@@ -1019,9 +1042,13 @@ namespace seal
                         // Subtract to get result
                         for (int i = 0; i < coeff_count; i++)
                         {
-                            sub_uint_uint(get_poly_coeff(negative_result_11, i, product_uint64_count) + positive_offset, get_poly_coeff(negative_result_11, i, product_uint64_count), product_uint64_count, get_poly_coeff(result_11, i, product_uint64_count));
-                            sub_uint_uint(get_poly_coeff(negative_result_12, i, product_uint64_count) + positive_offset, get_poly_coeff(negative_result_12, i, product_uint64_count), product_uint64_count, get_poly_coeff(result_12, i, product_uint64_count));
-                            sub_uint_uint(get_poly_coeff(negative_result_22, i, product_uint64_count) + positive_offset, get_poly_coeff(negative_result_22, i, product_uint64_count), product_uint64_count, get_poly_coeff(result_22, i, product_uint64_count));
+                            unsigned char borrow11 = 0, borrow12 = 0, borrow22 = 0;
+                            for (int j = 0; j < product_uint64_count; j++)
+                            {
+                                borrow11 = sub_uint64_uint64(*(negative_result_11 + positive_offset), *negative_result_11++, borrow11, result_11++);
+                                borrow12 = sub_uint64_uint64(*(negative_result_12 + positive_offset), *negative_result_12++, borrow12, result_12++);
+                                borrow22 = sub_uint64_uint64(*(negative_result_22 + positive_offset), *negative_result_22++, borrow22, result_22++);
+                            }
                         }
 
                         return;

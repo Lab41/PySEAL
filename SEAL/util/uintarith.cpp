@@ -81,12 +81,12 @@ namespace seal
             }
 #endif
             // Negation is equivalent to inverting bits and adding 1.
-            *result = ~*operand + 1;
-            unsigned char carry = (*result == 0);
-            for (int i = 1; i < uint64_count; ++i)
+            unsigned char carry = (*operand == 0);
+            *result++ = ~*operand++ + 1;
+            for (int i = 1; i < uint64_count; i++)
             {
-                *++result = ~*++operand + carry;
-                carry &= (*result == 0);
+                *result++ = ~*operand + carry;
+                carry &= (*operand++ == 0);
             }
         }
 
