@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <stdexcept>
+#include <cstring>
 #include "util/common.h"
 #include "util/mempool.h"
 #include "util/defines.h"
@@ -33,7 +34,7 @@ namespace seal
                 throw std::invalid_argument("result");
             }
 #endif
-            memset(result, 0, uint64_count * bytes_per_uint64);
+            std::memset(result, 0, uint64_count * bytes_per_uint64);
         }
 
         inline Pointer allocate_zero_uint(int uint64_count, MemoryPool &pool)
@@ -89,7 +90,7 @@ namespace seal
                 // Fast path to handle self assignment.
                 return;
             }
-            memcpy(result, value, uint64_count * bytes_per_uint64);
+            std::memcpy(result, value, uint64_count * bytes_per_uint64);
         }
 
         inline void set_uint_uint(const std::uint64_t *value, int value_uint64_count, int result_uint64_count, std::uint64_t* result)

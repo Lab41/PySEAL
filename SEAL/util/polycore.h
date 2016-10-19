@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <stdexcept>
+#include <cstring>
 #include "util/mempool.h"
 
 namespace seal
@@ -39,7 +40,7 @@ namespace seal
                 throw std::invalid_argument("result");
             }
 #endif
-            memset(result, 0, coeff_count * coeff_uint64_count * bytes_per_uint64);
+            std::memset(result, 0, coeff_count * coeff_uint64_count * bytes_per_uint64);
         }
 
         inline Pointer allocate_zero_poly(int coeff_count, int coeff_uint64_count, MemoryPool &pool)
@@ -122,7 +123,7 @@ namespace seal
                 // Fast path to handle self-assignment.
                 return;
             }
-            memcpy(result, poly, coeff_count * coeff_uint64_count * bytes_per_uint64);
+            std::memcpy(result, poly, coeff_count * coeff_uint64_count * bytes_per_uint64);
         }
 
         inline bool is_zero_poly(const std::uint64_t *poly, int coeff_count, int coeff_uint64_count)
