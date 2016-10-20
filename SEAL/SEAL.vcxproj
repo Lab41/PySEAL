@@ -97,6 +97,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="config.h.in" />
+    <None Include="configure" />
     <None Include="configure.ac" />
     <None Include="Makefile.in" />
   </ItemGroup>

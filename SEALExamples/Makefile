@@ -1,6 +1,7 @@
 # Makefile for SEAL examples
 BIN_DIR=../bin
-INCLUDE_DIR=../SEAL
+LIB_DIR=/usr/local/lib/SEAL ../bin
+INCLUDE_DIR=/usr/local/include/SEAL ../SEAL
 SRCS=main.cpp
 SEALRUN=$(BIN_DIR)/sealexamples
 CXX=g++
@@ -13,7 +14,7 @@ all : $(SEALRUN)
 
 $(SEALRUN) : $(SRCS)
 	@-mkdir -p $(dir $@)
-	$(CXX) $(SRCS) $(CXXFLAGS) $(LDFLAGS) -I$(INCLUDE_DIR) -L$(BIN_DIR) -lseal -o $@
+	$(CXX) $(SRCS) $(CXXFLAGS) $(LDFLAGS) $(addprefix -I,$(INCLUDE_DIR)) $(addprefix -L,$(LIB_DIR)) -lseal -o $@
 
 clean :
 	@-rm -f $(OBJS) $(SEALRUN)
