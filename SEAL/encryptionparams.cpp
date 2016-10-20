@@ -133,8 +133,6 @@ namespace seal
             return qualifiers;
         }
 
-        int coeff_bit_count = coeff_modulus_.significant_bit_count();
-
         // Next check more qualities of the moduli
         Modulus coeff_mod(coeff_modulus_.pointer(), coeff_modulus_.uint64_count());
         Modulus plain_mod(plain_modulus_.pointer(), plain_modulus_.uint64_count());
@@ -175,6 +173,7 @@ namespace seal
 
 #ifndef DISABLE_NTT_IN_MULTIPLY
         // Can we use NTT in homomorphic multiplication?
+        int coeff_bit_count = coeff_modulus_.significant_bit_count();
         int aux_coeff_bit_count = aux_coeff_modulus_.significant_bit_count();
         int aux_coeff_uint64_count = divide_round_up(aux_coeff_bit_count, bits_per_uint64);
         bool aux_coeff_large_enough = aux_coeff_bit_count > coeff_count_power + coeff_bit_count + 1;

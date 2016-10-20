@@ -631,7 +631,6 @@ namespace seal
 
             // Multiply operand1 and operand2.            
             uint64_t new_carry, carry = 0;
-            uint64_t *result_start = result;
             uint64_t temp_result;
 
             int operand1_index_max = min(operand1_uint64_count, result_uint64_count);

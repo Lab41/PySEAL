@@ -103,20 +103,20 @@
 // Use generic functions as (slower) fallback
 #ifndef ADD_CARRY_UINT64
 #define ADD_CARRY_UINT64(operand1, operand2, carry, result) add_uint64_uint64_generic(operand1, operand2, carry, result)
-#pragma message("ADD_CARRY_UINT64 not defined. Using add_uint64_uint64_generic (see util/defines.h)")
+//#pragma message("ADD_CARRY_UINT64 not defined. Using add_uint64_uint64_generic (see util/defines.h)")
 #endif
 
 #ifndef SUB_BORROW_UINT64
 #define SUB_BORROW_UINT64(operand1, operand2, borrow, result) sub_uint64_uint64_generic(operand1, operand2, borrow, result)
-#pragma message("SUB_BORROW_UINT64 not defined. Using sub_uint64_uint64_generic (see util/defines.h).")
+//#pragma message("SUB_BORROW_UINT64 not defined. Using sub_uint64_uint64_generic (see util/defines.h).")
 #endif
 
 #ifndef MULTIPLY_UINT64
 #define MULTIPLY_UINT64(operand1, operand2, carry) multiply_uint64_uint64_generic(operand1, operand2, carry)
-#pragma message("MULTIPLY_UINT64 not defined. Using multiply_uint64_uint64_generic (see util/defines.h).")
+//#pragma message("MULTIPLY_UINT64 not defined. Using multiply_uint64_uint64_generic (see util/defines.h).")
 #endif
 
 #ifndef MSB_INDEX_UINT64
 #define MSB_INDEX_UINT64(result, value) get_msb_index_generic(result, value);
-#pragma message("MSB_INDEX_UINT64 not defined. Using get_msb_index_generic (see util/defines.h).")
+//#pragma message("MSB_INDEX_UINT64 not defined. Using get_msb_index_generic (see util/defines.h).")
 #endif

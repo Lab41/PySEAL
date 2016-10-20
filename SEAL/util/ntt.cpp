@@ -30,8 +30,6 @@ namespace seal
 
                 inline void right_shift_one_bit_uint(const uint64_t *operand, int uint64_count, uint64_t *result)
                 {
-                    int neg_bit_shift_amount = bits_per_uint64 - 1;
-
                     for (; uint64_count >= 2; uint64_count--)
                     {
                         *result = *operand++ >> 1;
