@@ -1,5 +1,6 @@
 #include <stdexcept>
 #include <algorithm>
+#include <cmath>
 #include "encoder.h"
 #include "util/common.h"
 #include "util/uintarith.h"
