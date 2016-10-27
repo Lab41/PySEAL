@@ -25,21 +25,116 @@ namespace seal
 
             void reset();
 
-            const std::uint64_t *get_root() const;
+            inline const std::uint64_t *get_root() const
+            {
+#ifdef _DEBUG
+                if (!generated_)
+                {
+                    throw logic_error("tables are not generated");
+                }
+#endif
+                return root_.get();
+            }
 
-            const std::uint64_t *get_from_root_powers(int index) const;
+            inline const std::uint64_t *get_from_root_powers(int index) const 
+            {
+#ifdef _DEBUG
+                if (index >= coeff_count_)
+                {
+                    throw out_of_range("index");
+                }
+                if (!generated_)
+                {
+                    throw logic_error("tables are not generated");
+                }
+#endif
+                return root_powers_.get() + index * coeff_uint64_count_;
+            }
 
-            const std::uint64_t *get_from_scaled_root_powers(int index) const;
+            inline const std::uint64_t *get_from_scaled_root_powers(int index) const
+            {
+#ifdef _DEBUG
+                if (index >= coeff_count_)
+                {
+                    throw out_of_range("index");
+                }
+                if (!generated_)
+                {
+                    throw logic_error("tables are not generated");
+                }
+#endif
+                return scaled_root_powers_.get() + index * coeff_uint64_count_;
+            }
 
-            const std::uint64_t *get_from_inv_root_powers(int index) const;
+            inline const std::uint64_t *get_from_inv_root_powers(int index) const
+            {
+#ifdef _DEBUG
+                if (index >= coeff_count_)
+                {
+                    throw out_of_range("index");
+                }
+                if (!generated_)
+                {
+                    throw logic_error("tables are not generated");
+                }
+#endif
+                return inv_root_powers_.get() + index * coeff_uint64_count_;
+            }
 
-            const std::uint64_t *get_from_scaled_inv_root_powers(int index) const;
+            inline const std::uint64_t *get_from_scaled_inv_root_powers(int index) const
+            {
+#ifdef _DEBUG
+                if (index >= coeff_count_)
+                {
+                    throw out_of_range("index");
+                }
+                if (!generated_)
+                {
+                    throw logic_error("tables are not generated");
+                }
+#endif
+                return scaled_inv_root_powers_.get() + index * coeff_uint64_count_;
+            }
 
-            const std::uint64_t *get_from_inv_root_powers_div_two(int index) const;
+            inline const std::uint64_t *get_from_inv_root_powers_div_two(int index) const
+            {
+#ifdef _DEBUG
+                if (index >= coeff_count_)
+                {
+                    throw out_of_range("index");
+                }
+                if (!generated_)
+                {
+                    throw logic_error("tables are not generated");
+                }
+#endif
+                return inv_root_powers_div_two_.get() + index * coeff_uint64_count_;
+            }
 
-            const std::uint64_t *get_from_scaled_inv_root_powers_div_two(int index) const;
+            inline const std::uint64_t *get_from_scaled_inv_root_powers_div_two(int index) const {
+#ifdef _DEBUG
+                if (index >= coeff_count_)
+                {
+                    throw out_of_range("index");
+                }
+                if (!generated_)
+                {
+                    throw logic_error("tables are not generated");
+                }
+#endif
+                return scaled_inv_root_powers_div_two_.get() + index * coeff_uint64_count_;
+            }
 
-            const std::uint64_t *get_inv_degree_modulo() const;
+            inline const std::uint64_t *get_inv_degree_modulo() const 
+            {
+#ifdef _DEBUG
+                if (!generated_)
+                {
+                    throw logic_error("tables are not generated");
+                }
+#endif
+                return inv_degree_modulo_.get();
+            }
 
             inline const Modulus &modulus() const
             {
@@ -72,6 +167,18 @@ namespace seal
             // Scales the elements of a vector returned by powers_of_primitive_root(...) by word_size/modulus and rounds down.
             void ntt_scale_powers_of_primitive_root(std::uint64_t *input, MemoryPool &pool, std::uint64_t *destination);
 
+            // Size coeff_uint64_count_ * coeff_count_
+            Pointer root_powers_;
+
+            // Size coeff_uint64_count_ * coeff_count_
+            Pointer scaled_root_powers_;
+
+            // Size coeff_uint64_count_ * coeff_count_
+            Pointer inv_root_powers_div_two_;
+
+            // Size coeff_uint64_count_ * coeff_count_
+            Pointer scaled_inv_root_powers_div_two_;
+
             bool generated_;
 
             int coeff_count_power_;
@@ -87,22 +194,10 @@ namespace seal
             Pointer root_;
 
             // Size coeff_uint64_count_ * coeff_count_
-            Pointer root_powers_;
-
-            // Size coeff_uint64_count_ * coeff_count_
-            Pointer scaled_root_powers_;
-
-            // Size coeff_uint64_count_ * coeff_count_
             Pointer inv_root_powers_;
 
             // Size coeff_uint64_count_ * coeff_count_
             Pointer scaled_inv_root_powers_;
-
-            // Size coeff_uint64_count_ * coeff_count_
-            Pointer inv_root_powers_div_two_; 
-
-            // Size coeff_uint64_count_ * coeff_count_
-            Pointer scaled_inv_root_powers_div_two_;
 
             // Size coeff_uint64_count_
             Pointer inv_degree_modulo_;
