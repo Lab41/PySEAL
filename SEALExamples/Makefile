@@ -18,4 +18,3 @@ $(SEALRUN) : $(SRCS)
 
 clean :
 	@-rm -f $(OBJS) $(SEALRUN)
-	@-rmdir --ignore-fail-on-non-empty $(BIN_DIR)

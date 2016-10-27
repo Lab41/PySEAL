@@ -33,8 +33,8 @@ $(BIN_DIR)/$(SEALLIB) : $(OBJS)
 	ar rcs $(BIN_DIR)/$(SEALLIB) $(OBJS)
 
 clean :
-	@-rm -f $(OBJS) $(DEPS) $(BIN_DIR)/$(SEALLIB)
-	@-rmdir --ignore-fail-on-non-empty $(OBJ_DIR)/$(UTIL_DIR) $(OBJ_DIR) $(BIN_DIR)
+	@-rm -f $(BIN_DIR)/$(SEALLIB)
+	@-rm -rf $(OBJ_DIR)
 
 install : $(BIN_DIR)/$(SEALLIB)
 	@-mkdir -p $(PREFIX)/lib/$(INSTALL_DIR)
