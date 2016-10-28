@@ -231,7 +231,7 @@ namespace seal
             }
 
         private:
-            Pointer(std::uint64_t *pointer, bool alias) : head_(nullptr), item_(nullptr), pointer_(pointer), alias_(alias)
+            Pointer(std::uint64_t *pointer, bool alias) : pointer_(pointer), head_(nullptr), item_(nullptr), alias_(alias)
             {
             }
 
@@ -381,7 +381,7 @@ namespace seal
             }
 
         private:
-            ConstPointer(std::uint64_t *pointer, bool alias) : head_(nullptr), item_(nullptr), pointer_(pointer), alias_(alias)
+            ConstPointer(std::uint64_t *pointer, bool alias) : pointer_(pointer), head_(nullptr), item_(nullptr), alias_(alias)
             {
             }
 
