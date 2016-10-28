@@ -11,12 +11,16 @@ ac_has__subborrow_u64=no
 ac_has_mbmi2=no
 ac_has__mulx_u64=no
 
+ac_saved_cxxflags="$CXXFLAGS"
+ac_test_cxxflags="-g -O0"
+CXXFLAGS="$ac_test_cxxflags"
+
 if test "$with_intrin" != no
 then
 	AC_CHECK_HEADERS([x86intrin.h], [ac_has_intrin=yes], [])
 	if test "$ac_has_intrin" == yes
-	then
-		AC_DEFINE([ENABLE_INTRIN])		
+	then	
+		AC_DEFINE([ENABLE_INTRIN])
 
 		AC_MSG_CHECKING([for __builtin_clzll])
 		AC_COMPILE_IFELSE(
@@ -33,7 +37,7 @@ then
 		AC_MSG_CHECKING([for _addcarry_u64])
 		AC_RUN_IFELSE(
 			[AC_LANG_PROGRAM([#include <x86intrin.h>]
-					[unsigned long long a;], [_addcarry_u64(0,0,0,&a)])],
+			[unsigned long long a;], [_addcarry_u64(0,0,0,&a)])],
 			[ac_has__addcarry_u64=yes], [])
 		if test "$ac_has__addcarry_u64" == yes
 		then
@@ -46,7 +50,7 @@ then
 		AC_MSG_CHECKING([for _subborrow_u64])
 		AC_RUN_IFELSE(
 			[AC_LANG_PROGRAM([#include <x86intrin.h>]
-					[unsigned long long a;], [_subborrow_u64(0,0,0,&a)])],
+			[unsigned long long a;], [_subborrow_u64(0,0,0,&a)])],
 			[ac_has__subborrow_u64=yes], [])
 		if test "$ac_has__subborrow_u64" == yes
 		then
@@ -56,37 +60,25 @@ then
 			AC_MSG_RESULT([no])
 		fi
 
-		ac_saved_cxxflags="$CXXFLAGS"
-		CXXFLAGS="$CXXFLAGS -mbmi2"
-		AC_MSG_CHECKING([if $CXX supports -mbmi2])
-		AC_COMPILE_IFELSE(
-			[AC_LANG_PROGRAM([])],
-			[ac_has_mbmi2=yes], [])
-		if test "$ac_has_mbmi2" == yes
+		CXXFLAGS="$ac_test_cxxflags -mbmi2"
+		AC_MSG_CHECKING([for _mulx_u64])
+		AC_RUN_IFELSE(
+			[AC_LANG_PROGRAM([#include <x86intrin.h>]
+			[unsigned long long a;], [_mulx_u64(0,0,&a)])],
+			[ac_has__mulx_u64=yes], [])
+		if test "$ac_has__mulx_u64" == yes
 		then
 			AC_MSG_RESULT([yes])
+			AC_DEFINE([ENABLE__MULX_U64])
+			ac_saved_cxxflags="$ac_saved_cxxflags -mbmi2"
 		else
 			AC_MSG_RESULT([no])
-			CXXFLAGS="$ac_saved_cxxflags"
 		fi
-
-		if test "$ac_has_mbmi2" == yes
-		then
-			AC_MSG_CHECKING([for _mulx_u64])
-			AC_RUN_IFELSE(
-				[AC_LANG_PROGRAM([#include <x86intrin.h>]
-						[unsigned long long a;], [_mulx_u64(0,0,&a)])],
-				[ac_has__mulx_u64=yes], [])
-			if test "$ac_has__mulx_u64" == yes
-			then
-				AC_MSG_RESULT([yes])
-				AC_DEFINE([ENABLE__MULX_U64])
-			else
-				AC_MSG_RESULT([no])
-			fi
-		fi
+		CXXFLAGS="$ac_test_cxxflags"
 	fi
 fi
+
+CXXFLAGS="$ac_saved_cxxflags"
 
 AC_CONFIG_HEADERS([config.h])
 

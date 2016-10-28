@@ -2509,6 +2509,10 @@ ac_has__subborrow_u64=no
 ac_has_mbmi2=no
 ac_has__mulx_u64=no
 
+ac_saved_cxxflags="$CXXFLAGS"
+ac_test_cxxflags="-g -O0"
+CXXFLAGS="$ac_test_cxxflags"
+
 if test "$with_intrin" != no
 then
 
@@ -2961,7 +2965,7 @@ else
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 #include <x86intrin.h>
-					unsigned long long a;
+			unsigned long long a;
 int
 main ()
 {
@@ -2999,7 +3003,7 @@ else
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 #include <x86intrin.h>
-					unsigned long long a;
+			unsigned long long a;
 int
 main ()
 {
@@ -3026,40 +3030,10 @@ $as_echo "yes" >&6; }
 $as_echo "no" >&6; }
 		fi
 
-		ac_saved_cxxflags="$CXXFLAGS"
-		CXXFLAGS="$CXXFLAGS -mbmi2"
-		{ $as_echo "$as_me:${as_lineno-$LINENO}: checking if $CXX supports -mbmi2" >&5
-$as_echo_n "checking if $CXX supports -mbmi2... " >&6; }
-		cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-int
-main ()
-{
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_compile "$LINENO"; then :
-  ac_has_mbmi2=yes
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-		if test "$ac_has_mbmi2" == yes
-		then
-			{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-$as_echo "yes" >&6; }
-		else
-			{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-			CXXFLAGS="$ac_saved_cxxflags"
-		fi
-
-		if test "$ac_has_mbmi2" == yes
-		then
-			{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for _mulx_u64" >&5
+		CXXFLAGS="$ac_test_cxxflags -mbmi2"
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for _mulx_u64" >&5
 $as_echo_n "checking for _mulx_u64... " >&6; }
-			if test "$cross_compiling" = yes; then :
+		if test "$cross_compiling" = yes; then :
   { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
 $as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
 as_fn_error $? "cannot run test program while cross compiling
@@ -3068,7 +3042,7 @@ else
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 #include <x86intrin.h>
-						unsigned long long a;
+			unsigned long long a;
 int
 main ()
 {
@@ -3084,19 +3058,22 @@ rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
   conftest.$ac_objext conftest.beam conftest.$ac_ext
 fi
 
-			if test "$ac_has__mulx_u64" == yes
-			then
-				{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+		if test "$ac_has__mulx_u64" == yes
+		then
+			{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
-				$as_echo "#define ENABLE__MULX_U64 1" >>confdefs.h
+			$as_echo "#define ENABLE__MULX_U64 1" >>confdefs.h
 
-			else
-				{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+			ac_saved_cxxflags="$ac_saved_cxxflags -mbmi2"
+		else
+			{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
-			fi
 		fi
+		CXXFLAGS="$ac_test_cxxflags"
 	fi
 fi
+
+CXXFLAGS="$ac_saved_cxxflags"
 
 ac_config_headers="$ac_config_headers config.h"
 
