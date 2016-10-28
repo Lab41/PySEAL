@@ -19,14 +19,8 @@ if test "$with_intrin" != no
 then
 	AC_CHECK_HEADERS([x86intrin.h], [ac_has_intrin=yes], [])
 	if test "$ac_has_intrin" == yes
-<<<<<<< HEAD
 	then
 		AC_DEFINE([ENABLE_INTRIN])
-		
-=======
-	then	
-		AC_DEFINE([ENABLE_INTRIN])
->>>>>>> f59b091... configure(.ac) now runs tests with -O0 CXXFLAG
 
 		AC_MSG_CHECKING([for __builtin_clzll])
 		AC_COMPILE_IFELSE(
