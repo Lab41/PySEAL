@@ -1,5 +1,6 @@
 #pragma once
 
+#include <stdexcept>
 #include "util/modulus.h"
 #include "util/mempool.h"
 
@@ -30,7 +31,7 @@ namespace seal
 #ifdef _DEBUG
                 if (!generated_)
                 {
-                    throw logic_error("tables are not generated");
+                    throw std::logic_error("tables are not generated");
                 }
 #endif
                 return root_.get();
@@ -41,11 +42,11 @@ namespace seal
 #ifdef _DEBUG
                 if (index >= coeff_count_)
                 {
-                    throw out_of_range("index");
+                    throw std::out_of_range("index");
                 }
                 if (!generated_)
                 {
-                    throw logic_error("tables are not generated");
+                    throw std::logic_error("tables are not generated");
                 }
 #endif
                 return root_powers_.get() + index * coeff_uint64_count_;
@@ -56,11 +57,11 @@ namespace seal
 #ifdef _DEBUG
                 if (index >= coeff_count_)
                 {
-                    throw out_of_range("index");
+                    throw std::out_of_range("index");
                 }
                 if (!generated_)
                 {
-                    throw logic_error("tables are not generated");
+                    throw std::logic_error("tables are not generated");
                 }
 #endif
                 return scaled_root_powers_.get() + index * coeff_uint64_count_;
@@ -71,11 +72,11 @@ namespace seal
 #ifdef _DEBUG
                 if (index >= coeff_count_)
                 {
-                    throw out_of_range("index");
+                    throw std::out_of_range("index");
                 }
                 if (!generated_)
                 {
-                    throw logic_error("tables are not generated");
+                    throw std::logic_error("tables are not generated");
                 }
 #endif
                 return inv_root_powers_.get() + index * coeff_uint64_count_;
@@ -86,11 +87,11 @@ namespace seal
 #ifdef _DEBUG
                 if (index >= coeff_count_)
                 {
-                    throw out_of_range("index");
+                    throw std::out_of_range("index");
                 }
                 if (!generated_)
                 {
-                    throw logic_error("tables are not generated");
+                    throw std::logic_error("tables are not generated");
                 }
 #endif
                 return scaled_inv_root_powers_.get() + index * coeff_uint64_count_;
@@ -101,11 +102,11 @@ namespace seal
 #ifdef _DEBUG
                 if (index >= coeff_count_)
                 {
-                    throw out_of_range("index");
+                    throw std::out_of_range("index");
                 }
                 if (!generated_)
                 {
-                    throw logic_error("tables are not generated");
+                    throw std::logic_error("tables are not generated");
                 }
 #endif
                 return inv_root_powers_div_two_.get() + index * coeff_uint64_count_;
@@ -115,11 +116,11 @@ namespace seal
 #ifdef _DEBUG
                 if (index >= coeff_count_)
                 {
-                    throw out_of_range("index");
+                    throw std::out_of_range("index");
                 }
                 if (!generated_)
                 {
-                    throw logic_error("tables are not generated");
+                    throw std::logic_error("tables are not generated");
                 }
 #endif
                 return scaled_inv_root_powers_div_two_.get() + index * coeff_uint64_count_;
@@ -130,7 +131,7 @@ namespace seal
 #ifdef _DEBUG
                 if (!generated_)
                 {
-                    throw logic_error("tables are not generated");
+                    throw std::logic_error("tables are not generated");
                 }
 #endif
                 return inv_degree_modulo_.get();
