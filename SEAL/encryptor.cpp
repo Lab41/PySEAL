@@ -108,13 +108,13 @@ namespace seal
             plain_coeff_count = coeff_count;
         }
 
-        // Multiply plain by scalar coeff_div_plaintext and reposition if in upper-half.
+        // Multiply plain by scalar coeff_div_plain_modulus_ and reposition if in upper-half.
         MemoryPool &pool = *MemoryPool::default_pool();
         if (plain == destination)
         {
             // If plain and destination are same poly, then need another storage for multiply output.
             Pointer temp(allocate_uint(coeff_uint64_count, pool));
-            for (int i = 0; i < plain_coeff_count; ++i)
+            for (int i = 0; i < plain_coeff_count; i++)
             {
                 multiply_uint_uint(plain, plain_coeff_uint64_count, coeff_div_plain_modulus_.pointer(), coeff_uint64_count, coeff_uint64_count, temp.get());
                 bool is_upper_half = is_greater_than_or_equal_uint_uint(temp.get(), upper_half_threshold_.pointer(), coeff_uint64_count);
@@ -134,7 +134,7 @@ namespace seal
         {
             for (int i = 0; i < plain_coeff_count; ++i)
             {
-                //Multiply plain by coeff_div_plain_modulus and put the result in destination
+                //Multiply plain by coeff_div_plain_modulus_ and put the result in destination
                 multiply_uint_uint(plain, plain_coeff_uint64_count, coeff_div_plain_modulus_.pointer(), coeff_uint64_count, coeff_uint64_count, destination);
 
                 // check if destination >= upper half threshold
@@ -283,15 +283,14 @@ namespace seal
         Pointer temp(allocate_uint(coeff_uint64_count, pool));
         divide_uint_uint(coeff_modulus_.pointer(), plain_modulus_.pointer(), coeff_uint64_count, coeff_div_plain_modulus_.pointer(), temp.get(), pool);
 
+        // Calculate upper_half_increment.
+        upper_half_increment_.resize(coeff_bit_count);
+        set_uint_uint(temp.get(), coeff_uint64_count, upper_half_increment_.pointer());
+
         // Calculate (plain_modulus + 1) / 2 * coeff_div_plain_modulus.
         upper_half_threshold_.resize(coeff_bit_count);
         half_round_up_uint(plain_modulus_.pointer(), coeff_uint64_count, temp.get());
         multiply_truncate_uint_uint(temp.get(), coeff_div_plain_modulus_.pointer(), coeff_uint64_count, upper_half_threshold_.pointer());
-
-        // Calculate upper_half_increment.
-        upper_half_increment_.resize(coeff_bit_count);
-        multiply_truncate_uint_uint(plain_modulus_.pointer(), coeff_div_plain_modulus_.pointer(), coeff_uint64_count, upper_half_increment_.pointer());
-        sub_uint_uint(coeff_modulus_.pointer(), upper_half_increment_.pointer(), coeff_uint64_count, upper_half_increment_.pointer());
 
         // Initialize moduli.
         polymod_ = PolyModulus(poly_modulus_.pointer(), coeff_count, coeff_uint64_count);
