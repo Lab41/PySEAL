@@ -111,8 +111,18 @@ namespace seal
         Pointer coeff_div_plain_modulus(allocate_uint(coeff_uint64_count, pool));
         Pointer remainder(allocate_uint(coeff_uint64_count, pool));
         divide_uint_uint(coeff_modulus_.pointer(), plain_modulus_ptr.get(), coeff_uint64_count, coeff_div_plain_modulus.get(), remainder.get(), pool);
-        sub_uint_uint(coeff_div_plain_modulus.get(), remainder.get(), coeff_uint64_count, destination.pointer());
-        right_shift_uint(destination.pointer(), 1, coeff_uint64_count, destination.pointer());
+        
+        // For extreme parameter choices it can be that we in fact coeff_div_plain_modulus < remainder, 
+        // in which case the noise bound should be 0.
+        if (is_less_than_uint_uint(coeff_div_plain_modulus.get(), remainder.get(), coeff_uint64_count))
+        {
+            set_zero_uint(coeff_uint64_count, destination.pointer());
+        }
+        else
+        {
+            sub_uint_uint(coeff_div_plain_modulus.get(), remainder.get(), coeff_uint64_count, destination.pointer());
+            right_shift_uint(destination.pointer(), 1, coeff_uint64_count, destination.pointer());
+        }
     }
 
     EncryptionParameterQualifiers EncryptionParameters::get_qualifiers() const
