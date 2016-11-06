@@ -136,7 +136,7 @@ namespace seal
             // Create copies
             Pointer temp(allocate_poly(coeff_count, coeff_uint64_count, pool));
             Pointer copy_operand1(allocate_poly(coeff_count, coeff_uint64_count, pool));
-            Pointer ntt_result(allocate_zero_poly(coeff_count, coeff_uint64_count, pool));
+            set_zero_poly(coeff_count, coeff_uint64_count, result);
 
             for (int i = 0; i < count; ++i)
             {
@@ -144,15 +144,14 @@ namespace seal
                 set_poly_poly(current_array1, coeff_count, coeff_uint64_count, copy_operand1.get());
                 ntt_negacyclic_harvey(copy_operand1.get(), tables, pool);
                 dyadic_product_coeffmod(copy_operand1.get(), current_array2, coeff_count, tables.modulus(), temp.get(), pool);
-                add_poly_poly_coeffmod(ntt_result.get(), temp.get(), coeff_count, tables.modulus().get(), coeff_uint64_count, ntt_result.get());
+                add_poly_poly_coeffmod(result, temp.get(), coeff_count, tables.modulus().get(), coeff_uint64_count, result);
                 
                 current_array1 += array_poly_uint64_count;
                 current_array2 += array_poly_uint64_count;
             }
 
             // Perform inverse NTT
-            inverse_ntt_negacyclic_harvey(ntt_result.get(), tables, pool);
-            set_poly_poly(ntt_result.get(), coeff_count, coeff_uint64_count, result);
+            inverse_ntt_negacyclic_harvey(result, tables, pool);
         }
 
         // Perform two dot products of bigpoly arrays <array1 , array2> and <array1 , array3>, assuming array2 and array3 are already transformed into NTT form
@@ -204,8 +203,8 @@ namespace seal
             // Create copies
             Pointer temp(allocate_poly(coeff_count, coeff_uint64_count, pool));
             Pointer copy_operand1(allocate_poly(coeff_count, coeff_uint64_count, pool));
-            Pointer ntt_result1(allocate_zero_poly(coeff_count, coeff_uint64_count, pool));
-            Pointer ntt_result2(allocate_zero_poly(coeff_count, coeff_uint64_count, pool));
+            set_zero_poly(coeff_count, coeff_uint64_count, result1);
+            set_zero_poly(coeff_count, coeff_uint64_count, result2);
 
             for (int i = 0; i < count; ++i)
             {
@@ -213,19 +212,17 @@ namespace seal
                 set_poly_poly(current_array1, coeff_count, coeff_uint64_count, copy_operand1.get());
                 ntt_negacyclic_harvey(copy_operand1.get(), tables, pool);
                 dyadic_product_coeffmod(copy_operand1.get(), current_array2, coeff_count, tables.modulus(), temp.get(), pool);
-                add_poly_poly_coeffmod(ntt_result1.get(), temp.get(), coeff_count, tables.modulus().get(), coeff_uint64_count, ntt_result1.get());
+                add_poly_poly_coeffmod(result1, temp.get(), coeff_count, tables.modulus().get(), coeff_uint64_count, result1);
                 dyadic_product_coeffmod(copy_operand1.get(), current_array3, coeff_count, tables.modulus(), temp.get(), pool);
-                add_poly_poly_coeffmod(ntt_result2.get(), temp.get(), coeff_count, tables.modulus().get(), coeff_uint64_count, ntt_result2.get());
+                add_poly_poly_coeffmod(result2, temp.get(), coeff_count, tables.modulus().get(), coeff_uint64_count, result2);
                 current_array1 += array_poly_uint64_count;
                 current_array2 += array_poly_uint64_count;
                 current_array3 += array_poly_uint64_count;
             }
 
             // Perform inverse NTT
-            inverse_ntt_negacyclic_harvey(ntt_result1.get(), tables, pool);
-            inverse_ntt_negacyclic_harvey(ntt_result2.get(), tables, pool);
-            set_poly_poly(ntt_result1.get(), coeff_count, coeff_uint64_count, result1);
-            set_poly_poly(ntt_result2.get(), coeff_count, coeff_uint64_count, result2);
+            inverse_ntt_negacyclic_harvey(result1, tables, pool);
+            inverse_ntt_negacyclic_harvey(result2, tables, pool);
         }
 
         void nussbaumer_dot_product_bigpolyarray_coeffmod(const uint64_t *array1, const uint64_t *array2, int count,
