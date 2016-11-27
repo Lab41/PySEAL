@@ -1232,7 +1232,7 @@ namespace seal
             throw invalid_argument("plain cannot be zero");
         }
 #ifdef _DEBUG
-        for (int i = 0; i < encrypted_count; ++i)
+        for (int i = 0; i < encrypted_count; i++)
         {
             if (encrypted[i].significant_coeff_count() == coeff_count || !are_poly_coefficients_less_than(encrypted[i], coeff_modulus_))
             {
@@ -1281,7 +1281,7 @@ namespace seal
             bool is_upper_half = is_greater_than_or_equal_uint_uint(plain_coeff, plain_upper_half_threshold_.pointer(), coeff_uint64_count);
             if (is_upper_half)
             {
-                add_uint_uint(plain_coeff, plain_upper_half_increment_.pointer(), coeff_uint64_count, moved2_coeff);
+                add_uint_uint(plain_coeff, plain_coeff_uint64_count, plain_upper_half_increment_.pointer(), coeff_uint64_count, 0, coeff_uint64_count, moved2_coeff);
             }
             else
             {
