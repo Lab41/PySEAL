@@ -8,7 +8,7 @@ DEPS=$(OBJS:.o=.d)
 INSTALL_DIR=SEAL
 SEALLIB=libseal.a
 CXX=@CXX@
-CXXFLAGS=@CXXFLAGS@ @DEFS@ -std=c++11
+CXXFLAGS=@CXXFLAGS@ @DEFS@ -march=native -std=c++11
 PREFIX=@prefix@
 
 .PHONY : all clean install uninstall

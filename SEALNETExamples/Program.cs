@@ -1,6 +1,5 @@
 ﻿using System;
 using Microsoft.Research.SEAL;
-
 using System.Collections.Generic;
 
 namespace SEALNETExamples
@@ -48,24 +47,27 @@ namespace SEALNETExamples
             i.e. a polynomial of the form "1x^(power-of-2) + 1". We recommend using polynomials of
             degree at least 1024.
             */
-            parms.PolyModulus.Set("1x^2048 + 1");
+            parms.SetPolyModulus("1x^2048 + 1");
 
             /*
             Next we choose the coefficient modulus. SEAL comes with default values for the coefficient
             modulus for some of the most reasonable choices of PolyModulus. They are as follows:
 
-            /---------------------------------------------------\
-            | poly_modulus | default coeff_modulus              |
-            | -------------|------------------------------------|
-            | 1x^1024 + 1  | 2^35 - 2^14 + 2^11 + 1 (35 bits)   |
-            | 1x^2048 + 1  | 2^60 - 2^14 + 1 (60 bits)          |
-            | 1x^4096 + 1  | 2^116 - 2^18 + 1 (116 bits)        |
-            | 1x^8192 + 1  | 2^226 - 2^26 + 1 (226 bits)        |
-            | 1x^16384 + 1 | 2^435 - 2^33 + 1 (435 bits)        |
-            \---------------------------------------------------/
+            /----------------------------------------------------------------------\
+            | PolyModulus  | default CoeffModulus                       | security |
+            | -------------|--------------------------------------------|----------|
+            | 1x^2048 + 1  | 2^60 - 2^14 + 1 (60 bits)                  | 115 bit  |
+            | 1x^4096 + 1  | 2^116 - 2^18 + 1 (116 bits)                | 119 bit  |
+            | 1x^8192 + 1  | 2^226 - 2^26 + 1 (226 bits)                | 123 bit  |
+            | 1x^16384 + 1 | 2^435 - 2^33 + 1 (435 bits)                | 130 bit  |
+            | 1x^32768 + 1 | 2^889 - 2^54 - 2^53 - 2^52 + 1 (889 bits)  | 128 bit  |
+            \----------------------------------------------------------------------/
 
             These can be conveniently accessed using ChooserEvaluator.DefaultParameterOptions, which returns 
-            the above list of options as a Dictionary, keyed by the degree of the polynomial modulus.
+            the above list of options as a Dictionary, keyed by the degree of the polynomial modulus. The security 
+            levels are estimated based on https://eprint.iacr.org/2015/046 and https://eprint.iacr.org/2017/047. 
+            We strongly recommend that the user consult an expert in the security of RLWE-based cryptography to 
+            estimate the security of a particular choice of parameters.
 
             The user can also easily choose their custom coefficient modulus. For best performance, it should 
             be a prime of the form 2^A - B, where B is congruent to 1 modulo 2*degree(PolyModulus), and as small 
@@ -75,15 +77,15 @@ namespace SEALNETExamples
             in the security of RLWE-based cryptography when selecting their parameters to ensure an appropriate level 
             of security.
 
-            The size of CoeffModulus affects the upper bound on the "inherent noise" that a ciphertext can contain
-            before becoming corrupted. More precisely, every ciphertext starts with a certain amount of noise in it,
-            which grows in all homomorphic operations - in particular in multiplication. Once a ciphertext contains
-            too much noise, it becomes impossible to decrypt. The upper bound on the noise is roughly given by 
-            CoeffModulus/PlainModulus (see below), so increasing CoeffModulus will allow the user to perform more
+            The size of CoeffModulus affects the total noise budget that a freshly encrypted ciphertext has. More 
+            precisely, every ciphertext starts with a certain amount of noise budget, which is consumed in homomorphic
+            operations - in particular in multiplication. Once the noise budget reaches 0, the ciphertext becomes 
+            impossible to decrypt. The total noise budget in a freshly encrypted ciphertext is very roughly given by 
+            log2(CoeffModulus/PlainModulus), so increasing coeff_modulus will allow the user to perform more
             homomorphic operations on the ciphertexts without corrupting them. However, we must again warn that
             increasing CoeffModulus has a strong negative effect on the security level.
             */
-            parms.CoeffModulus.Set(ChooserEvaluator.DefaultParameterOptions[2048]);
+            parms.SetCoeffModulus(ChooserEvaluator.DefaultParameterOptions[2048]);
 
             /*
             Now we set the plaintext modulus. This can be any positive integer, even though here we take it to be a 
@@ -92,10 +94,17 @@ namespace SEALNETExamples
             On the other hand, a larger plaintext modulus typically allows for better homomorphic integer arithmetic,
             although this depends strongly on which encoder is used to encode integers into plaintext polynomials.
             */
-            parms.PlainModulus.Set(1 << 8);
+            parms.SetPlainModulus(1 << 8);
 
             /*
-            Plaintext elements in the FV scheme are polynomials (represented by the BigPoly class) with coefficients 
+            Once all parameters are set, we need to call EncryptionParameters::validate(), which evaluates the
+            properties of the parameters, their validity for homomorphic encryption, and performs some important
+            pre-computation.
+            */
+            parms.Validate();
+
+            /*
+            Plaintext elements in the FV scheme are polynomials (represented by the Plaintext class) with coefficients 
             integers modulo PlainModulus. To encrypt for example integers instead, one must use an "encoding scheme", 
             i.e. a specific way of representing integers as such polynomials. SEAL comes with a few basic encoders:
 
@@ -200,12 +209,11 @@ namespace SEALNETExamples
             Console.WriteLine("Encrypted subtraction of {0} and {1} = {2}", value1, value2, decodedDiff);
             Console.WriteLine("Encrypted multiplication of {0} and {1} = {2}", value1, value2, decodedProduct);
 
-            // How did the noise grow in these operations?
-            var maxNoiseBitCount = parms.InherentNoiseBitsMax();
-            Console.WriteLine("Noise in encryption of {0}: {1}/{2} bits", value1, decryptor.InherentNoiseBits(encrypted1), maxNoiseBitCount);
-            Console.WriteLine("Noise in encryption of {0}: {1}/{2} bits", value2, decryptor.InherentNoiseBits(encrypted2), maxNoiseBitCount);
-            Console.WriteLine("Noise in the sum: {0}/{1} bits", decryptor.InherentNoiseBits(encryptedSum), maxNoiseBitCount);
-            Console.WriteLine("Noise in the product: {0}/{1} bits", decryptor.InherentNoiseBits(encryptedProduct), maxNoiseBitCount);
+            // How much noise budget did we use in these operations?
+            Console.WriteLine("Noise budget in encryption of {0}: {1} bits", value1, decryptor.InvariantNoiseBudget(encrypted1));
+            Console.WriteLine("Noise budget in encryption of {0}: {1} bits", value2, decryptor.InvariantNoiseBudget(encrypted2));
+            Console.WriteLine("Noise budget in sum: {0} bits", decryptor.InvariantNoiseBudget(encryptedSum));
+            Console.WriteLine("Noise budget in product: {0} bits", decryptor.InvariantNoiseBudget(encryptedProduct));
         }
 
         public static void ExampleWeightedAverage()
@@ -222,10 +230,10 @@ namespace SEALNETExamples
 
             // Create encryption parameters.
             var parms = new EncryptionParameters();
-
-            parms.PolyModulus.Set("1x^1024 + 1");
-            parms.CoeffModulus.Set(ChooserEvaluator.DefaultParameterOptions[1024]);
-            parms.PlainModulus.Set(1 << 8);
+            parms.SetPolyModulus("1x^2048 + 1");
+            parms.SetCoeffModulus(ChooserEvaluator.DefaultParameterOptions[2048]);
+            parms.SetPlainModulus(1 << 8);
+            parms.Validate();
 
             // Generate keys.
             Console.WriteLine("Generating keys ...");
@@ -249,7 +257,7 @@ namespace SEALNETExamples
 
             // First we encrypt the rational numbers
             Console.Write("Encrypting ... ");
-            var encryptedRationals = new List<BigPolyArray>();
+            var encryptedRationals = new List<Ciphertext>();
             for (int i = 0; i < 10; ++i)
             {
                 var encodedNumber = encoder.Encode(rationalNumbers[i]);
@@ -259,7 +267,7 @@ namespace SEALNETExamples
 
             // Next we encode the coefficients. There is no reason to encrypt these since they are not private data.
             Console.Write("Encoding ... ");
-            var encodedCoefficients = new List<BigPoly>();
+            var encodedCoefficients = new List<Plaintext>();
             for (int i = 0; i < 10; ++i)
             {
                 encodedCoefficients.Add(encoder.Encode(coefficients[i]));
@@ -271,7 +279,7 @@ namespace SEALNETExamples
 
             // Now compute all the products of the encrypted rational numbers with the plaintext coefficients
             Console.Write("Computing products ... ");
-            var encryptedProducts = new List<BigPolyArray>();
+            var encryptedProducts = new List<Ciphertext>();
             for (int i = 0; i < 10; ++i)
             {
                 /*
@@ -304,9 +312,8 @@ namespace SEALNETExamples
             double result = encoder.Decode(plainResult);
             Console.WriteLine("Weighted average: {0}", result);
 
-            // How much noise did we end up with?
-            Console.WriteLine("Noise in the result: {0}/{1} bits", decryptor.InherentNoiseBits(encryptedResult), 
-                parms.InherentNoiseBitsMax());
+            // How much noise budget are we left with?
+            Console.WriteLine("Noise budget in result: {0} bits", decryptor.InvariantNoiseBudget(encryptedResult));
         }
 
         public static void ExampleParameterSelection()
@@ -346,7 +353,10 @@ namespace SEALNETExamples
 
             // To find an optimized set of parameters, we use ChooserEvaluator.SelectParameters(...).
             var optimalParms = new EncryptionParameters();
-            chooserEvaluator.SelectParameters(cresult, optimalParms);
+            chooserEvaluator.SelectParameters(new List<ChooserPoly> { cresult }, 0, optimalParms);
+
+            // We still need to validate the returned parameters
+            optimalParms.Validate();
 
             Console.WriteLine("done.");
 
@@ -419,9 +429,8 @@ namespace SEALNETExamples
             // Finally print the result
             Console.WriteLine("Polynomial 42x^3-27x+1 evaluated at x=12345: {0}", encoder.DecodeInt64(plainResult));
 
-            // How much noise did we end up with?
-            Console.WriteLine("Noise in the result: {0}/{1} bits", decryptor.InherentNoiseBits(result),
-                optimalParms.InherentNoiseBitsMax());
+            // How much noise budget are we left with?
+            Console.WriteLine("Noise budget in result: {0} bits", decryptor.InvariantNoiseBudget(result));
         }
 
         public static void ExampleBatching()
@@ -435,15 +444,16 @@ namespace SEALNETExamples
             For PolyCRTBuilder it is necessary to have PlainModulus be a prime number congruent to 1 modulo 
             2*degree(PolyModulus). We can use for example the following parameters:
             */
-            parms.PolyModulus.Set("1x^4096 + 1");
-            parms.CoeffModulus.Set(ChooserEvaluator.DefaultParameterOptions[4096]);
-            parms.PlainModulus.Set(40961);
+            parms.SetPolyModulus("1x^4096 + 1");
+            parms.SetCoeffModulus(ChooserEvaluator.DefaultParameterOptions[4096]);
+            parms.SetPlainModulus(40961);
+            parms.Validate();
 
             // Create the PolyCRTBuilder
             var crtbuilder = new PolyCRTBuilder(parms);
             int slotCount = crtbuilder.SlotCount;
 
-            Console.WriteLine("Encryption parameters allow {0} slots.", slotCount);
+            Console.WriteLine($"Encryption parameters allow {slotCount} slots.");
 
             // Create a list of values that are to be stored in the slots. We initialize all values to 0 at this point.
             var values = new List<BigUInt>(slotCount);
@@ -555,9 +565,8 @@ namespace SEALNETExamples
                 Console.Write(toWrite);
             }
 
-            // How much noise did we end up with?
-            Console.WriteLine("Noise in the result: {0}/{1} bits", decryptor.InherentNoiseBits(encryptedScaledSquare),
-                parms.InherentNoiseBitsMax());
+            // How much noise budget are we left with?
+            Console.WriteLine("Noise budget in result: {0} bits", decryptor.InvariantNoiseBudget(encryptedScaledSquare));
         }
 
         public static void ExampleRelinearization()
@@ -566,7 +575,7 @@ namespace SEALNETExamples
 
             /*
             A valid ciphertext consists of at least two polynomials. To read the current size of a ciphertext 
-            the user can use BigPolyArray.Size. A fresh ciphertext always has size 2, and performing 
+            the user can use Ciphertext.Size. A fresh ciphertext always has size 2, and performing 
             homomorphic multiplication results in the output ciphertext growing in size. More precisely, 
             if the input ciphertexts have size M and N, then the output ciphertext after homomorphic 
             multiplication will have size M+N-1.
@@ -618,7 +627,6 @@ namespace SEALNETExamples
             and as such faster to operate on.
             */
             ExampleRelinearizationPart2();
-   
         }
 
         public static void ExampleRelinearizationPart1()
@@ -627,25 +635,16 @@ namespace SEALNETExamples
 
             // Set up encryption parameters
             var parms = new EncryptionParameters();
-            parms.PolyModulus.Set("1x^4096 + 1");
-            parms.CoeffModulus.Set(ChooserEvaluator.DefaultParameterOptions[4096]);
-            parms.PlainModulus.Set(1 << 8);
+            parms.SetPolyModulus("1x^4096 + 1");
+            parms.SetCoeffModulus(ChooserEvaluator.DefaultParameterOptions[4096]);
+            parms.SetPlainModulus(1 << 8);
 
             /*
             The choice of decomposition_bit_count (dbc) can affect the performance of relinearization
             noticeably. A reasonable choice for it is between 1/10 and 1/2 of the significant bit count 
-            of the coefficient modulus (see table below). Sometimes when the dbc needs to be very small
-            (due to noise growth), it might make more sense to move up to a larger PolyModulus and
-            CoeffModulus, and set dbc to be as large as possible.
-            /--------------------------------------------------------\
-            | poly_modulus | coeff_modulus bound | dbc min | dbc max |
-            | -------------|---------------------|-------------------|
-            | 1x^1024 + 1  | 35 bits             | 4       | 13      |
-            | 1x^2048 + 1  | 60 bits             | 6       | 30      |
-            | 1x^4096 + 1  | 116 bits            | 12      | 58      |
-            | 1x^8192 + 1  | 226 bits            | 23      | 113     |
-            | 1x^16384 + 1 | 442 bits            | 45      | 221     |
-            \--------------------------------------------------------/
+            of the coefficient modulus. Sometimes when the dbc needs to be very small (due to noise growth), 
+            it might make more sense to move up to a larger PolyModulus and CoeffModulus, and set dbc to 
+            be as large as possible.
 
             A smaller dbc will make relinearization too slow. A higher dbc will increase noise growth 
             while not making relinearization any faster. Here, the CoeffModulus has 116 significant 
@@ -653,7 +652,10 @@ namespace SEALNETExamples
             noise growth between the relinearizing and non-relinearizing cases due to the decomposition 
             bit count being so large.
             */
-            parms.DecompositionBitCount = 58;
+            parms.SetDecompositionBitCount(58);
+
+            // Validate the parameters
+            parms.Validate();
 
             /*
             By default, KeyGenerator.Generate() will generate no evaluation keys. This means that we 
@@ -674,10 +676,10 @@ namespace SEALNETExamples
             */
 
             // Encrypt plaintexts to generate the four fresh ciphertexts
-            var plain1 = new BigPoly("5");
-            var plain2 = new BigPoly("6");
-            var plain3 = new BigPoly("7");
-            var plain4 = new BigPoly("8");
+            var plain1 = new Plaintext("5");
+            var plain2 = new Plaintext("6");
+            var plain3 = new Plaintext("7");
+            var plain4 = new Plaintext("8");
             Console.WriteLine("Encrypting values { 5, 6, 7, 8 } as { encrypted1, encrypted2, encrypted3, encrypted4 }");
             var encryptor = new Encryptor(parms, publicKey);
             var encrypted1 = encryptor.Encrypt(plain1);
@@ -688,13 +690,12 @@ namespace SEALNETExamples
             // We need a Decryptor to be able to measure the inherent noise
             var decryptor = new Decryptor(parms, secretKey);
 
-            //// What are the noises in the four ciphertexts?
-            var maxNoiseBitCount = parms.InherentNoiseBitsMax();
-            Console.WriteLine("Noises in the four ciphertexts: {0}/{1} bits, {2}/{3} bits, {4}/{5} bits, {6}/{7} bits",
-                decryptor.InherentNoiseBits(encrypted1), maxNoiseBitCount,
-                decryptor.InherentNoiseBits(encrypted2), maxNoiseBitCount,
-                decryptor.InherentNoiseBits(encrypted3), maxNoiseBitCount,
-                decryptor.InherentNoiseBits(encrypted4), maxNoiseBitCount);
+            // What are the noise budgets in the four ciphertexts?
+            Console.WriteLine("Noise budgets in the four ciphertexts: {0} bits, {1} bits, {2} bits, {3} bits",
+                decryptor.InvariantNoiseBudget(encrypted1),
+                decryptor.InvariantNoiseBudget(encrypted2),
+                decryptor.InvariantNoiseBudget(encrypted3),
+                decryptor.InvariantNoiseBudget(encrypted4));
 
             // Construct an Evaluator
             var evaluator = new Evaluator(parms);
@@ -713,11 +714,11 @@ namespace SEALNETExamples
             var encResult = evaluator.Multiply(encProd1, encProd2);
 
             // Now enc_result has size 5
-            Console.WriteLine($"Size of encResult: {encResult.Size}");
+            Console.WriteLine("Size of encResult: {0}", encResult.Size);
 
-            // What is the noise in the result?
-            var noiseBitsNoRelin = decryptor.InherentNoiseBits(encResult);
-            Console.WriteLine($"Noise in encResult: {noiseBitsNoRelin}/{maxNoiseBitCount} bits");
+            // How much noise budget are we left with?
+            var noiseBudgetNoRelin = decryptor.InvariantNoiseBudget(encResult);
+            Console.WriteLine("Noise budget in encResult: {0} bits", noiseBudgetNoRelin);
 
             /*
             We didn't create any evaluation keys, so we can't relinearize at all with the current 
@@ -751,11 +752,11 @@ namespace SEALNETExamples
             encResult = evaluator2.Multiply(encRelinProd1, encRelinProd2);
 
             // Now enc_result has size 3
-            Console.WriteLine($"Size of encResult: {encResult.Size}");
+            Console.WriteLine("Size of encResult: {0}", encResult.Size);
 
-            // What is the noise in the result
-            var noiseBitsRelin = decryptor.InherentNoiseBits(encResult);
-            Console.WriteLine($"Noise in encResult: {noiseBitsRelin}/{maxNoiseBitCount} bits");
+            // How much noise budget are we left with?
+            var noiseBudgetRelin = decryptor.InvariantNoiseBudget(encResult);
+            Console.WriteLine("Noise budget in encResult: {0} bits", noiseBudgetRelin);
 
             /*
             While in this case the noise increased significantly due to relinearization, in other
@@ -771,16 +772,19 @@ namespace SEALNETExamples
             Console.WriteLine("Example 2: Effect on running time and noise in computing [(enc1*enc2)*(enc3*enc4)]^2.");
 
             var parms = new EncryptionParameters();
-            parms.PolyModulus.Set("1x^4096 + 1");
-            parms.CoeffModulus.Set(ChooserEvaluator.DefaultParameterOptions[4096]);
-            parms.PlainModulus.Set(1 << 6);
+            parms.SetPolyModulus("1x^4096 + 1");
+            parms.SetCoeffModulus(ChooserEvaluator.DefaultParameterOptions[4096]);
+            parms.SetPlainModulus(1 << 6);
 
             /*
             We use a relatively small decomposition bit count here to avoid significant noise
             growth from the relinearization operation itself. Make this bigger and you will
             see both increased running time and decreased noise.
             */
-            parms.DecompositionBitCount = 16;
+            parms.SetDecompositionBitCount(16);
+
+            // Validate the parameters
+            parms.Validate();
 
             // We generate the encryption keys and one evaluation key.
             Console.WriteLine("Generating keys ...");
@@ -792,10 +796,10 @@ namespace SEALNETExamples
             var evaluationKeys = generator.EvaluationKeys;
 
             // Encrypt plaintexts to generate the four fresh ciphertexts
-            var plain1 = new BigPoly("4");
-            var plain2 = new BigPoly("3x^1");
-            var plain3 = new BigPoly("2x^2");
-            var plain4 = new BigPoly("1x^3");
+            var plain1 = new Plaintext("4");
+            var plain2 = new Plaintext("3x^1");
+            var plain3 = new Plaintext("2x^2");
+            var plain4 = new Plaintext("1x^3");
             Console.WriteLine("Encrypting values { 4, 3x, 2x^2, x^3 } as { encrypted1, encrypted2, encrypted3, encrypted4 }");
             var encryptor = new Encryptor(parms, publicKey);
             var encrypted1 = encryptor.Encrypt(plain1);
@@ -825,10 +829,10 @@ namespace SEALNETExamples
             Console.WriteLine("Computing encSquare = [encProd]^2 ...");
             var encSquare = evaluator.Square(encProd);
 
-            // Print size and inherent noise of the result. 
-            Console.WriteLine($"Size of encSquare: {encSquare.Size}");
-            Console.WriteLine("Noise in encSquare: {0}/{1} bits",
-                decryptor.InherentNoiseBits(encSquare), parms.InherentNoiseBitsMax());
+            // Print size and noise budget of result. 
+            Console.WriteLine("Size of encSquare: {0}", encSquare.Size);
+            Console.WriteLine("Noise budget in encSquare: {0} bits",
+                decryptor.InvariantNoiseBudget(encSquare));
 
             // Now the same thing but with relinearization
             Console.WriteLine("");
@@ -845,10 +849,9 @@ namespace SEALNETExamples
             Console.WriteLine("Computing encSquare = [encProd]^2 ... ");
             encSquare = evaluator.Square(encProd);
 
-            // Print size and inherent noise of the result. 
-            Console.WriteLine($"Size of encSquare: {encSquare.Size}");
-            Console.WriteLine("Noise in encSquare: {0}/{1} bits",
-                decryptor.InherentNoiseBits(encSquare), parms.InherentNoiseBitsMax());
+            // Print size and noise budget of result. 
+            Console.WriteLine("Size of encSquare: {0}", encSquare.Size);
+            Console.WriteLine("Noise budget in encSquare: {0} bits", decryptor.InvariantNoiseBudget(encSquare));
         }
 
         public static void PrintExampleBanner(string title)

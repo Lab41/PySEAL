@@ -8,7 +8,6 @@
 #include "util/modulus.h"
 #include "util/defines.h"
 
-#include <iostream>
 namespace seal
 {
     namespace util

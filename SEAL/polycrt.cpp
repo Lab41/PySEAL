@@ -22,8 +22,9 @@ namespace seal
         }
     }
 
-    PolyCRTBuilder::PolyCRTBuilder(const EncryptionParameters &parms)
-        : slots_(parms.poly_modulus().significant_coeff_count() - 1), qualifiers_(parms.get_qualifiers())
+    PolyCRTBuilder::PolyCRTBuilder(const EncryptionParameters &parms, const MemoryPoolHandle &pool) :
+        pool_(pool), ntt_tables_(pool_), slot_modulus_(parms.plain_modulus()), poly_modulus_(parms.poly_modulus()),
+        slots_(parms.poly_modulus().significant_coeff_count() - 1), qualifiers_(parms.get_qualifiers())
     {
         // Verify parameters
         if (!qualifiers_.parameters_set)
@@ -35,68 +36,90 @@ namespace seal
             throw invalid_argument("encryption parameters are not valid for batching");
         }
 
-        BigPoly poly_modulus = parms.poly_modulus();
-        BigUInt plain_modulus = parms.plain_modulus();
+        int coeff_bit_count = slot_modulus_.bit_count();
+        int coeff_uint64_count = slot_modulus_.uint64_count();
+        int poly_coeff_count = poly_modulus_.coeff_count();
 
-        int coeff_uint64_count = plain_modulus.uint64_count();
-        int poly_coeff_count = poly_modulus.coeff_count();
+        slot_modulus_.resize(coeff_bit_count);
+        poly_modulus_.resize(poly_coeff_count, coeff_uint64_count * bits_per_uint64);
 
-        // Allocate memory for slot_modulus_ and poly_modulus_
-        uint64_t *slot_modulus_ptr = new uint64_t[coeff_uint64_count];
-        uint64_t *poly_modulus_ptr = new uint64_t[poly_modulus.coeff_count() * coeff_uint64_count];
-
-        // Set slot_modulus_ and poly_modulus_
-        MemoryPool &pool = *MemoryPool::default_pool();
-        set_uint_uint(plain_modulus.pointer(), coeff_uint64_count, slot_modulus_ptr);
-        set_poly_poly(poly_modulus.pointer(), poly_modulus.coeff_count(), poly_modulus.coeff_uint64_count(), poly_coeff_count, coeff_uint64_count, poly_modulus_ptr);
-        slot_modulus_ = Modulus(slot_modulus_ptr, coeff_uint64_count, pool);
-        poly_modulus_ = PolyModulus(poly_modulus_ptr, poly_modulus.coeff_count(), coeff_uint64_count);
+        // Set mod_ and polymod_
+        mod_ = Modulus(slot_modulus_.pointer(), coeff_uint64_count, pool_);
+        polymod_ = PolyModulus(poly_modulus_.pointer(), poly_coeff_count, coeff_uint64_count);
 
         // Reserve space for all of the primitive roots
-        roots_of_unity_ = allocate_uint(coeff_uint64_count * slots_, pool);
+        roots_of_unity_.resize(slots_, coeff_bit_count);
 
-        // Generate the NTTTables
-        if (!ntt_tables_.generate(poly_modulus_.coeff_count_power_of_two(), slot_modulus_))
-        {
-            // Something went wrong.
-            throw invalid_argument("failed to generate NTT tables");
-        }
+        // Copy over NTT tables (switching to local pool)
+        ntt_tables_ = parms.plain_ntt_tables_;
 
         // Fill the vector of roots of unity with all distinct odd powers of generator.
         // These are all the primitive (2*slots_)-th roots of unity in integers modulo slot_modulus_.
         populate_roots_of_unity_vector();
     }
 
-    PolyCRTBuilder::~PolyCRTBuilder()
+    PolyCRTBuilder::PolyCRTBuilder(const PolyCRTBuilder &copy) : pool_(copy.pool_), ntt_tables_(copy.ntt_tables_),
+        slot_modulus_(copy.slot_modulus_), poly_modulus_(copy.poly_modulus_), slots_(copy.slots_),
+        roots_of_unity_(copy.roots_of_unity_), qualifiers_(copy.qualifiers_)
     {
-        delete[] slot_modulus_.get();
-        delete[] poly_modulus_.get();
-        slot_modulus_ = Modulus();
-        poly_modulus_ = PolyModulus();
+        int coeff_uint64_count = slot_modulus_.uint64_count();
+        int poly_coeff_count = poly_modulus_.coeff_count();
+
+        // Set mod_ and polymod_
+        mod_ = Modulus(slot_modulus_.pointer(), coeff_uint64_count, pool_);
+        polymod_ = PolyModulus(poly_modulus_.pointer(), poly_coeff_count, coeff_uint64_count);
     }
 
     void PolyCRTBuilder::populate_roots_of_unity_vector()
     {
-        MemoryPool &pool = *MemoryPool::default_pool();
         int coeff_uint64_count = slot_modulus_.uint64_count();
 
-        //Pointer current_root(allocate_uint(coeff_uint64_count, pool));
-        Pointer generator_sq(allocate_uint(coeff_uint64_count, pool));
-        multiply_uint_uint_mod(ntt_tables_.get_root(), ntt_tables_.get_root(), slot_modulus_, generator_sq.get(), pool);
+        //Pointer current_root(allocate_uint(coeff_uint64_count, pool_));
+        Pointer generator_sq(allocate_uint(coeff_uint64_count, pool_));
+        multiply_uint_uint_mod(ntt_tables_.get_root(), ntt_tables_.get_root(), mod_, generator_sq.get(), pool_);
         
-        uint64_t *destination_ptr = roots_of_unity_.get();
+        uint64_t *destination_ptr = roots_of_unity_.pointer();
         set_uint_uint(ntt_tables_.get_root(), coeff_uint64_count, destination_ptr);
          
-        //Pointer current_root_copy(allocate_uint(coeff_uint64_count, pool));
+        //Pointer current_root_copy(allocate_uint(coeff_uint64_count, pool_));
         
         for (int i = 1; i < slots_; i++)
         {
-            multiply_uint_uint_mod(destination_ptr, generator_sq.get(), slot_modulus_, destination_ptr + coeff_uint64_count, pool);
+            multiply_uint_uint_mod(destination_ptr, generator_sq.get(), mod_, destination_ptr + coeff_uint64_count, pool_);
             destination_ptr += coeff_uint64_count;
         }
     }
 
-    void PolyCRTBuilder::compose(const vector<BigUInt> &values, BigPoly &destination) const
+    void PolyCRTBuilder::compose(vector<uint64_t> values, BigPoly &destination)
+    {
+        // Verify that slot modulus is not too large
+        if (slot_modulus_.uint64_count() > 1)
+        {
+            throw logic_error("plaintext modulus in encryption parameters is too large");
+        }
+
+        // Verify that the slot count matches the size of values
+        if (values.size() != slots_)
+        {
+            throw invalid_argument("incorrect number of input values");
+        }
+
+        vector<BigUInt> newvalues;
+        for (int i = 0; i < values.size(); i++) 
+        {
+#ifdef _DEBUG
+            if (values[i] >= slot_modulus_[0])
+            {
+                throw invalid_argument("input value is larger than slot_modulus");
+            }
+#endif
+            newvalues.emplace_back(BigUInt(slot_modulus_.bit_count(), &values[i])); 
+        }
+        compose(newvalues, destination);
+    }
+
+
+    void PolyCRTBuilder::compose(const vector<BigUInt> &values, BigPoly &destination)
     {
         int coeff_bit_count = slot_modulus_.significant_bit_count();
         int poly_coeff_count = poly_modulus_.coeff_count();
@@ -123,7 +146,7 @@ namespace seal
                 throw invalid_argument("input value has incorrect size");
             }
 #ifdef _DEBUG
-            if (is_greater_than_or_equal_uint_uint(values[i].pointer(), slot_modulus_.get(), coeff_uint64_count))
+            if (is_greater_than_or_equal_uint_uint(values[i].pointer(), slot_modulus_.pointer(), coeff_uint64_count))
             {
                 throw invalid_argument("input value is larger than slot_modulus");
             }
@@ -134,11 +157,10 @@ namespace seal
         // Transform destination using inverse of negacyclic NTT. The slots are in a "permuted" order, 
         // where the value in the slot corresponding to the (2i+1)-st power of the primitive root is in the 
         // location given by negacyclic_ntt_index_scramble(i).
-        MemoryPool &pool = *MemoryPool::default_pool();
-        inverse_ntt_negacyclic_harvey(destination.pointer(), ntt_tables_, pool);
+        inverse_ntt_negacyclic_harvey(destination.pointer(), ntt_tables_, pool_);
     }
 
-    void PolyCRTBuilder::decompose(const BigPoly &poly, vector<BigUInt> &destination) const
+    void PolyCRTBuilder::decompose(const BigPoly &poly, vector<BigUInt> &destination)
     {
         int coeff_bit_count = slot_modulus_.significant_bit_count();
         int poly_coeff_count = poly_modulus_.coeff_count();
@@ -151,12 +173,11 @@ namespace seal
         }
 
         // Make a copy of poly
-        MemoryPool &pool = *MemoryPool::default_pool();
-        Pointer poly_copy(allocate_poly(poly.coeff_count(), poly.coeff_uint64_count(), pool));
+        Pointer poly_copy(allocate_poly(poly.coeff_count(), poly.coeff_uint64_count(), pool_));
         set_poly_poly(poly.pointer(), poly.coeff_count(), poly.coeff_uint64_count(), poly_copy.get());
 
         // Transform destination using negacyclic NTT.
-        ntt_negacyclic_harvey(poly_copy.get(), ntt_tables_, pool);
+        ntt_negacyclic_harvey(poly_copy.get(), ntt_tables_, pool_);
         
         // Create correct size polynomials to destination
         destination.assign(slots_, BigUInt(coeff_bit_count));

@@ -79,7 +79,7 @@ namespace seal
         0-9, A-F, or a-f, most-significant nibble first.
 
         @param[in] hex_value The hexadecimal integer string specifying the initial value
-        @throws std::invalid_argument If hex_value does not adhere to the expected format
+        @throws std::invalid_argument if hex_value does not adhere to the expected format
         */
         BigUInt(const std::string &hex_value);
 
@@ -91,7 +91,7 @@ namespace seal
         @param[in] bit_count The bit width
         @param[in] hex_value The hexadecimal integer string specifying the initial value
         @throws std::invalid_argument if bit_count is negative
-        @throws std::invalid_argument If hex_value does not adhere to the expected format
+        @throws std::invalid_argument if hex_value does not adhere to the expected format
         */
         BigUInt(int bit_count, const std::string &hex_value);
 
@@ -127,7 +127,7 @@ namespace seal
         /**
         Destroys the BigUInt and deallocates the backing array if it is not an aliased BigUInt.
         */
-        virtual ~BigUInt();
+        ~BigUInt();
 
         /**
         Returns whether or not the BigUInt is an alias.
@@ -224,7 +224,7 @@ namespace seal
         are indexed least-significant byte first.
 
         @param[in] index The index of the byte to read
-        @throws std::out_of_range If index is not within [0, byte_count())
+        @throws std::out_of_range if index is not within [0, byte_count())
         @see BigUInt for a detailed description of the format of the backing array.
         */
         std::uint8_t operator[](int index) const;
@@ -237,7 +237,7 @@ namespace seal
         is resized, destroyed, or alias() is called.
 
         @param[in] index The index of the byte to read
-        @throws std::out_of_range If index is not within [0, byte_count())
+        @throws std::out_of_range if index is not within [0, byte_count())
         @see BigUInt for a detailed description of the format of the backing array.
         */
         std::uint8_t &operator[](int index);
@@ -252,7 +252,7 @@ namespace seal
 
         @param[in] bit_count The bit width
         @throws std::invalid_argument if bit_count is negative
-        @throws std::logic_error If the BigUInt is an alias
+        @throws std::logic_error if the BigUInt is an alias
         */
         void resize(int bit_count);
 
@@ -272,7 +272,7 @@ namespace seal
         /**
         Resets an aliased BigUInt into an empty non-alias BigUInt with bit count of zero.
 
-        @throws std::logic_error If BigUInt is not an alias
+        @throws std::logic_error if BigUInt is not an alias
         */
         void unalias();
 
@@ -281,7 +281,7 @@ namespace seal
         value. Only significant bits are used to size the BigUInt.
 
         @param[in] assign The BigUInt whose value should be assigned to the current BigUInt
-        @throws std::logic_error If BigUInt is an alias and the assigned BigUInt is too large to fit the current bit width
+        @throws std::logic_error if BigUInt is an alias and the assigned BigUInt is too large to fit the current bit width
         */
         BigUInt &operator =(const BigUInt &assign);
 
@@ -291,8 +291,8 @@ namespace seal
         0-9, A-F, or a-f, most-significant nibble first.
 
         @param[in] hex_value The hexadecimal integer string specifying the value to assign
-        @throws std::invalid_argument If hex_value does not adhere to the expected format
-        @throws std::logic_error If BigUInt is an alias and the assigned value is too large to fit the current bit width
+        @throws std::invalid_argument if hex_value does not adhere to the expected format
+        @throws std::logic_error if BigUInt is an alias and the assigned value is too large to fit the current bit width
         */
         BigUInt &operator =(const std::string &hex_value);
 
@@ -300,7 +300,7 @@ namespace seal
         Overwrites the BigUInt with the specified integer value, enlarging if needed to fit the value.
 
         @param[in] value The value to assign
-        @throws std::logic_error If BigUInt is an alias and the significant bit count of value is too large to fit the
+        @throws std::logic_error if BigUInt is an alias and the significant bit count of value is too large to fit the
         current bit width
         */
         BigUInt &operator =(std::uint64_t value);
@@ -323,7 +323,7 @@ namespace seal
         /**
         Increments the BigUInt and returns the incremented value. The BigUInt will increment the bit count if needed to fit the carry.
 
-        @throws std::logic_error If BigUInt is an alias and a carry occurs requiring the BigUInt to be resized
+        @throws std::logic_error if BigUInt is an alias and a carry occurs requiring the BigUInt to be resized
         */
         BigUInt &operator ++();
 
@@ -410,7 +410,7 @@ namespace seal
         to be the significant bit count of the first input operand.
 
         @param[in] operand2 The second operand to divide
-        @throws std::invalid_argument If operand2 is zero
+        @throws std::invalid_argument if operand2 is zero
         */
         BigUInt operator /(const BigUInt &operand2) const;
 
@@ -419,7 +419,7 @@ namespace seal
         quotient is set to be the significant bit count of the first input operand.
 
         @param[in] operand2 The second operand to divide
-        @throws std::invalid_argument If operand2 is zero
+        @throws std::invalid_argument if operand2 is zero
         */
         BigUInt operator /(std::uint64_t operand2) const
         {
@@ -433,7 +433,7 @@ namespace seal
         to be the significant bit count of the first input operand.
 
         @param[in] operand2 The second operand to divide
-        @throws std::invalid_argument If operand2 is zero
+        @throws std::invalid_argument iff operand2 is zero
         */
         BigUInt operator %(const BigUInt &operand2) const;
 
@@ -442,7 +442,7 @@ namespace seal
         remainder is set to be the significant bit count of the first input operand.
 
         @param[in] operand2 The second operand to divide
-        @throws std::invalid_argument If operand2 is zero
+        @throws std::invalid_argument if operand2 is zero
         */
         BigUInt operator %(std::uint64_t operand2) const
         {
@@ -654,7 +654,7 @@ namespace seal
         significant bit count and the shift amount.
 
         @param[in] shift The number of bits to shift by
-        @throws std::invalid_argument If shift is negative
+        @throws std::invalid_argument if shift is negative
         */
         BigUInt operator <<(int shift) const;
 
@@ -663,7 +663,7 @@ namespace seal
         count subtracted by the shift amount (clipped to zero if negative).
 
         @param[in] shift The number of bits to shift by
-        @throws std::invalid_argument If shift is negative
+        @throws std::invalid_argument if shift is negative
         */
         BigUInt operator >>(int shift) const;
 
@@ -673,7 +673,7 @@ namespace seal
         bit count of the larger of the two input operands.
 
         @param[in] operand2 The second operand to add
-        @throws std::logic_error If the BigUInt is an alias and the operator attempts to enlarge the BigUInt to fit the result
+        @throws std::logic_error if the BigUInt is an alias and the operator attempts to enlarge the BigUInt to fit the result
         */
         BigUInt &operator +=(const BigUInt &operand2);
 
@@ -683,7 +683,7 @@ namespace seal
         than the significant bit count of the larger of the two input operands.
 
         @param[in] operand2 The second operand to add
-        @throws std::logic_error If the BigUInt is an alias and the operator attempts to enlarge the BigUInt to fit the result
+        @throws std::logic_error if the BigUInt is an alias and the operator attempts to enlarge the BigUInt to fit the result
         */
         BigUInt &operator +=(std::uint64_t operand2)
         {
@@ -698,7 +698,7 @@ namespace seal
         bit count of the second operand.
 
         @param[in] operand2 The second operand to subtract
-        @throws std::logic_error If the BigUInt is an alias and the operator attempts to enlarge the BigUInt to fit the result
+        @throws std::logic_error if the BigUInt is an alias and the operator attempts to enlarge the BigUInt to fit the result
         */
         BigUInt &operator -=(const BigUInt &operand2);
 
@@ -708,7 +708,7 @@ namespace seal
         the significant bit count of the second operand.
 
         @param[in] operand2 The second operand to subtract
-        @throws std::logic_error If the BigUInt is an alias and the operator attempts to enlarge the BigUInt to fit the result
+        @throws std::logic_error if the BigUInt is an alias and the operator attempts to enlarge the BigUInt to fit the result
         */
         BigUInt &operator -=(std::uint64_t operand2)
         {
@@ -723,7 +723,7 @@ namespace seal
         significant bit counts of the two input operands.
 
         @param[in] operand2 The second operand to multiply
-        @throws std::logic_error If the BigUInt is an alias and the operator attempts to enlarge the BigUInt to fit the result
+        @throws std::logic_error if the BigUInt is an alias and the operator attempts to enlarge the BigUInt to fit the result
         */
         BigUInt &operator *=(const BigUInt &operand2);
 
@@ -733,7 +733,7 @@ namespace seal
         the sum of the significant bit counts of the two input operands.
 
         @param[in] operand2 The second operand to multiply
-        @throws std::logic_error If the BigUInt is an alias and the operator attempts to enlarge the BigUInt to fit the result
+        @throws std::logic_error if the BigUInt is an alias and the operator attempts to enlarge the BigUInt to fit the result
         */
         BigUInt &operator *=(std::uint64_t operand2)
         {
@@ -747,7 +747,7 @@ namespace seal
         input operand is not modified. The first operand is never resized.
 
         @param[in] operand2 The second operand to divide
-        @throws std::invalid_argument If operand2 is zero
+        @throws std::invalid_argument if operand2 is zero
         */
         BigUInt &operator /=(const BigUInt &operand2);
 
@@ -756,7 +756,7 @@ namespace seal
         The second input operand is not modified. The first operand is never resized.
 
         @param[in] operand2 The second operand to divide
-        @throws std::invalid_argument If operand2 is zero
+        @throws std::invalid_argument if operand2 is zero
         */
         BigUInt &operator /=(std::uint64_t operand2)
         {
@@ -770,7 +770,7 @@ namespace seal
         input operand is not modified. The first operand is never resized.
 
         @param[in] operand2 The second operand to divide
-        @throws std::invalid_argument If operand2 is zero
+        @throws std::invalid_argument if operand2 is zero
         */
         BigUInt &operator %=(const BigUInt &operand2);
 
@@ -779,7 +779,7 @@ namespace seal
         The second input operand is not modified. The first operand is never resized.
 
         @param[in] operand2 The second operand to divide
-        @throws std::invalid_argument If operand2 is zero
+        @throws std::Invalid_argument if operand2 is zero
         */
         BigUInt &operator %=(std::uint64_t operand2)
         {
@@ -794,7 +794,7 @@ namespace seal
         significant bit count of the second operand.
 
         @param[in] operand2 The second operand to XOR
-        @throws std::logic_error If the BigUInt is an alias and the operator attempts to enlarge the BigUInt to fit the result
+        @throws std::logic_error if the BigUInt is an alias and the operator attempts to enlarge the BigUInt to fit the result
         */
         BigUInt &operator ^=(const BigUInt &operand2);
 
@@ -804,7 +804,7 @@ namespace seal
         is smaller than the significant bit count of the second operand.
 
         @param[in] operand2 The second operand to XOR
-        @throws std::logic_error If the BigUInt is an alias and the operator attempts to enlarge the BigUInt to fit the result
+        @throws std::logic_error if the BigUInt is an alias and the operator attempts to enlarge the BigUInt to fit the result
         */
         BigUInt &operator ^=(std::uint64_t operand2)
         {
@@ -819,7 +819,7 @@ namespace seal
         significant bit count of the second operand.
 
         @param[in] operand2 The second operand to AND
-        @throws std::logic_error If the BigUInt is an alias and the operator attempts to enlarge the BigUInt to fit the result
+        @throws std::logic_error if the BigUInt is an alias and the operator attempts to enlarge the BigUInt to fit the result
         */
         BigUInt &operator &=(const BigUInt &operand2);
 
@@ -829,7 +829,7 @@ namespace seal
         is smaller than the significant bit count of the second operand.
 
         @param[in] operand2 The second operand to AND
-        @throws std::logic_error If the BigUInt is an alias and the operator attempts to enlarge the BigUInt to fit the result
+        @throws std::logic_error if the BigUInt is an alias and the operator attempts to enlarge the BigUInt to fit the result
         */
         BigUInt &operator &=(std::uint64_t operand2)
         {
@@ -844,7 +844,7 @@ namespace seal
         significant bit count of the second operand.
 
         @param[in] operand2 The second operand to OR
-        @throws std::logic_error If the BigUInt is an alias and the operator attempts to enlarge the BigUInt to fit the result
+        @throws std::logic_error if the BigUInt is an alias and the operator attempts to enlarge the BigUInt to fit the result
         */
         BigUInt &operator |=(const BigUInt &operand2);
 
@@ -854,7 +854,7 @@ namespace seal
         is smaller than the significant bit count of the second operand.
 
         @param[in] operand2 The second operand to OR
-        @throws std::logic_error If the BigUInt is an alias and the operator attempts to enlarge the BigUInt to fit the result
+        @throws std::logic_error if the BigUInt is an alias and the operator attempts to enlarge the BigUInt to fit the result
         */
         BigUInt &operator |=(std::uint64_t operand2)
         {
@@ -868,8 +868,8 @@ namespace seal
         significant bit count and the shift amount.
 
         @param[in] shift The number of bits to shift by
-        @throws std::invalid_argument If shift is negative
-        @throws std::logic_error If the BigUInt is an alias and the operator attempts to enlarge the BigUInt to fit the result
+        @throws std::Invalid_argument if shift is negative
+        @throws std::logic_error if the BigUInt is an alias and the operator attempts to enlarge the BigUInt to fit the result
         */
         BigUInt &operator <<=(int shift);
 
@@ -877,7 +877,7 @@ namespace seal
         Right-shifts a BigUInt by the specified amount. The BigUInt is never resized.
 
         @param[in] shift The number of bits to shift by
-        @throws std::invalid_argument If shift is negative
+        @throws std::Invalid_argument if shift is negative
         */
         BigUInt &operator >>=(int shift);
 
@@ -888,8 +888,8 @@ namespace seal
 
         @param[in] operand2 The second operand to divide
         @param[out] remainder The BigUInt to store the remainder
-        @throws std::invalid_argument If operand2 is zero
-        @throws std::logic_error If the remainder is an alias and the operator attempts to enlarge the BigUInt to fit the result
+        @throws std::Invalid_argument if operand2 is zero
+        @throws std::logic_error if the remainder is an alias and the operator attempts to enlarge the BigUInt to fit the result
         */
         BigUInt divrem(const BigUInt &operand2, BigUInt &remainder) const;
 
@@ -900,8 +900,8 @@ namespace seal
 
         @param[in] operand2 The second operand to divide
         @param[out] remainder The BigUInt to store the remainder
-        @throws std::invalid_argument If operand2 is zero
-        @throws std::logic_error If the remainder is an alias which the function attempts to enlarge to fit the result
+        @throws std::Invalid_argument if operand2 is zero
+        @throws std::logic_error if the remainder is an alias which the function attempts to enlarge to fit the result
         */
         BigUInt divrem(std::uint64_t operand2, BigUInt &remainder) const
         {
@@ -915,9 +915,9 @@ namespace seal
         count of the inverse is set to be the significant bit count of the modulus.
 
         @param[in] modulus The modulus to calculate the inverse with respect to
-        @throws std::invalid_argument If modulus is zero
-        @throws std::invalid_argument If modulus is not greater than the BigUInt value
-        @throws std::invalid_argument If the BigUInt value and modulus are not co-prime
+        @throws std::Invalid_argument if modulus is zero
+        @throws std::Invalid_argument if modulus is not greater than the BigUInt value
+        @throws std::Invalid_argument if the BigUInt value and modulus are not co-prime
         */
         BigUInt modinv(const BigUInt &modulus) const;
 
@@ -926,9 +926,9 @@ namespace seal
         count of the inverse is set to be the significant bit count of the modulus.
 
         @param[in] modulus The modulus to calculate the inverse with respect to
-        @throws std::invalid_argument If modulus is zero
-        @throws std::invalid_argument If modulus is not greater than the BigUInt value
-        @throws std::invalid_argument If the BigUInt value and modulus are not co-prime
+        @throws std::Invalid_argument if modulus is zero
+        @throws std::Invalid_argument if modulus is not greater than the BigUInt value
+        @throws std::Invalid_argument if the BigUInt value and modulus are not co-prime
         */
         BigUInt modinv(std::uint64_t modulus) const
         {
@@ -944,9 +944,9 @@ namespace seal
 
         @param[in] modulus The modulus to calculate the inverse with respect to
         @param[out] inverse Stores the inverse if the inverse operation was successful
-        @throws std::invalid_argument If modulus is zero
-        @throws std::invalid_argument If modulus is not greater than the BigUInt value
-        @throws std::logic_error If the inverse is an alias which the function attempts to enlarge to fit the result
+        @throws std::Invalid_argument if modulus is zero
+        @throws std::Invalid_argument if modulus is not greater than the BigUInt value
+        @throws std::logic_error if the inverse is an alias which the function attempts to enlarge to fit the result
         */
         bool trymodinv(const BigUInt &modulus, BigUInt &inverse) const;
 
@@ -957,9 +957,9 @@ namespace seal
 
         @param[in] modulus The modulus to calculate the inverse with respect to
         @param[out] inverse Stores the inverse if the inverse operation was successful
-        @throws std::invalid_argument If modulus is zero
-        @throws std::invalid_argument If modulus is not greater than the BigUInt value
-        @throws std::logic_error If the inverse is an alias which the function attempts to enlarge to fit the result
+        @throws std::Invalid_argument if modulus is zero
+        @throws std::Invalid_argument if modulus is not greater than the BigUInt value
+        @throws std::logic_error if the inverse is an alias which the function attempts to enlarge to fit the result
         */
         bool trymodinv(std::uint64_t modulus, BigUInt &inverse) const
         {
@@ -982,7 +982,7 @@ namespace seal
         BigUInt.
 
         @param[in] stream The stream to load the BigUInt from
-        @throws std::logic_error If BigUInt is an alias and the loaded BigUInt is too large to fit with the current bit width
+        @throws std::logic_error if BigUInt is an alias and the loaded BigUInt is too large to fit with the current bit width
         @see save() to save a BigUInt.
         */
         void load(std::istream &stream);
@@ -1004,7 +1004,7 @@ namespace seal
         are set to be exactly the same as in the current one.
 
         @param[out] destination The BigUInt to overwrite with the duplicate
-        @throws std::logic_error If the destination BigPoly is an alias
+        @throws std::logic_error if the destination BigPoly is an alias
         */
         void duplicate_to(BigUInt &destination) const;
 
@@ -1013,7 +1013,7 @@ namespace seal
         are set to be exactly the same as in the given one.
 
         @param[in] value The BigUInt to duplicate
-        @throws std::logic_error If the current BigPoly is an alias
+        @throws std::logic_error if the current BigPoly is an alias
         */
         void duplicate_from(const BigUInt &value);
         
@@ -1022,7 +1022,7 @@ namespace seal
 
         @param[in] assign The BigUInt to move from
         */
-        BigUInt &operator =(BigUInt &&assign) noexcept;
+        BigUInt &operator =(BigUInt &&assign);
 
         /**
         Creates a new BigUInt by moving an old one.

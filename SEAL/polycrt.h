@@ -42,20 +42,32 @@ namespace seal
     {
     public:
         /**
-        Creates a PolyCRTBuilder instance given a set of encryption parameters.
-        It is necessary that the given set of encryption parameters supports batching.
+        Creates a PolyCRTBuilder instance given a set of encryption parameters. It is necessary that the 
+        given set of encryption parameters supports batching. Optionally, the user can give a reference 
+        to a MemoryPoolHandle object to use a custom memory pool instead of the global memory pool (default).
 
         @param[in] parms The encryption parameters
+        @param[in] pool The memory pool handle
         @throws std::invalid_argument if parms are not valid or do not support batching
         @see EncryptionParameters for more information about encryption parameters.
         @see EncryptionParameterQualifiers for more information about encryption parameters that support batching.
+        @see MemoryPoolHandle for more details on memory pool handles.
         */
-        PolyCRTBuilder(const EncryptionParameters &parms);
+        PolyCRTBuilder(const EncryptionParameters &parms, const MemoryPoolHandle &pool = MemoryPoolHandle::acquire_global());
 
         /**
-        Destroys the PolyCRTBuilder and deallocates all memory used by it.
+        Creates a copy of a PolyCRTBuilder.
+
+        @param[in] copy The PolyCRTBuilder to copy from
         */
-        ~PolyCRTBuilder();
+        PolyCRTBuilder(const PolyCRTBuilder &copy);
+
+        /**
+        Creates a new PolyCRTBuilder by moving an old one.
+
+        @param[in] source The PolyCRTBuilder to move from
+        */
+        PolyCRTBuilder(PolyCRTBuilder &&source) = default;
 
         /**
         Writes a given vector of unsigned integers modulo the plaintext modulus into the slots of a given 
@@ -74,7 +86,26 @@ namespace seal
         @throws std::invalid_argument if the values vector has incorrect size
         @throws std::invalid_argument if the entries in the values vector have incorrect size
         */
-        void compose(const std::vector<BigUInt> &values, BigPoly &destination) const;
+        void compose(const std::vector<BigUInt> &values, BigPoly &destination);
+
+        /**
+        Writes a given vector of unsigned integers (represented by std::uint64_t) modulo the 
+        plaintext modulus into the slots of a given plaintext polynomial.
+
+        @par Format of Parameters
+        The number of elements in the vector of inputs must be equal to the number of slots, which is
+        equal to the degree of the polynomial modulus. Each entry in the vector of inputs must have value
+        less than the plaintext modulus. The destination polynomial will automatically be resized to have 
+        correct size, i.e. the same number of coefficients as the polynomial modulus, and each coefficient 
+        of the same bit count as the plaintext modulus.
+
+        @param[in] values The vector of values to write into the slots
+        @param[out] destination The plaintext polynomial to overwrite with the result
+        @throws std::logic_error if the plaintext modulus is bigger than 64 bits
+        @throws std::invalid_argument if the values vector has incorrect size
+        @throws std::invalid_argument if the entries in the values vector have incorrect size
+        */
+        void compose(std::vector<std::uint64_t> values, BigPoly &destination);
 
         /**
         Writes a given vector of unsigned integers modulo the plaintext modulus into the slots of
@@ -101,6 +132,29 @@ namespace seal
         }
 
         /**
+        Writes a given vector of unsigned integers (represented by std::uint64_t) modulo the
+        plaintext modulus into the slots of a plaintext polynomial, and returns it.
+
+        @par Format of Parameters
+        The number of elements in the vector of inputs must be equal to the number of slots, which is
+        equal to the degree of the polynomial modulus. Each entry in the vector of inputs must have value
+        less than the plaintext modulus. The returned polynomial will automatically be resized to have correct
+        size, i.e. the same number of coefficients as the polynomial modulus, and each coefficient of the
+        same bit count as the plaintext modulus.
+
+        @param[in] values The vector of values to write into the slots
+        @throws std::logic_error if the plaintext modulus is bigger than 64 bits
+        @throws std::invalid_argument if the values vector has incorrect size
+        @throws std::invalid_argument if the entries in the values vector have incorrect size
+        */
+        BigPoly compose(const std::vector<std::uint64_t> &values)
+        {
+            BigPoly destination(poly_modulus_.coeff_count(), slot_modulus_.significant_bit_count());
+            compose(values, destination);
+            return destination;
+        }
+
+        /**
         Reads the values in the slots of a given plaintext polynomial and writes them as the entries of 
         a given vector. This is the inverse of what compose() does.
 
@@ -117,7 +171,7 @@ namespace seal
         @param[out] destination The vector to be overwritten with the values of the slots
         @throws std::invalid_argument if poly has incorrect size
         */
-        void decompose(const BigPoly &poly, std::vector<BigUInt> &destination) const;
+        void decompose(const BigPoly &poly, std::vector<BigUInt> &destination);
 
         /**
         Reads the values in the slots of a given plaintext polynomial and writes them as the entries of
@@ -151,21 +205,27 @@ namespace seal
         }
 
     private:
-        void populate_roots_of_unity_vector();
-        
-        PolyCRTBuilder(const PolyCRTBuilder &copy) = delete;
-
         PolyCRTBuilder &operator =(const PolyCRTBuilder &assign) = delete;
+
+        PolyCRTBuilder &operator =(PolyCRTBuilder &&assign) = delete;
+
+        void populate_roots_of_unity_vector();
+
+        MemoryPoolHandle pool_;
 
         util::NTTTables ntt_tables_;
 
-        util::Modulus slot_modulus_;
+        BigUInt slot_modulus_;
 
-        util::PolyModulus poly_modulus_;
+        BigPoly poly_modulus_;
+
+        util::Modulus mod_;
+
+        util::PolyModulus polymod_;
 
         int slots_;
 
-        util::Pointer roots_of_unity_;
+        BigPoly roots_of_unity_;
 
         EncryptionParameterQualifiers qualifiers_;
     };

@@ -185,7 +185,7 @@ namespace seal
 
 		@param[in] assign The BigPolyArray instance to whose value should be assigned to the current BigPolyArray instance
 		*/
-		BigPolyArray &operator =(BigPolyArray &&assign) noexcept;
+		BigPolyArray &operator =(BigPolyArray &&assign);
 
 		/**
 		Saves the BigPolyArray instance to an output stream. The output is in binary format and not human-readable. The output

@@ -107,10 +107,33 @@ namespace seal
             }
         }
 
-        Modulus::Modulus(Modulus &&move) : modulus_(move.modulus_), uint64_count_(move.uint64_count_), significant_bit_count_(move.significant_bit_count_), 
-            power_of_two_minus_one_(move.power_of_two_minus_one_), inverse_significant_bit_count_(move.inverse_significant_bit_count_)
+        Modulus &Modulus::operator=(const Modulus &assign)
         {
-            inverse_modulus_.acquire(move.inverse_modulus_);
+            if (this == &assign)
+            {
+                return *this;
+            }
+
+            modulus_ = assign.modulus_;
+            uint64_count_ = assign.uint64_count_;
+            significant_bit_count_ = assign.significant_bit_count_;
+            power_of_two_minus_one_ = assign.power_of_two_minus_one_;
+            inverse_significant_bit_count_ = assign.inverse_significant_bit_count_;
+
+            // Copy over inverse modulus if needed
+            inverse_modulus_.release();
+            if (assign.inverse_modulus_.is_set())
+            {
+                inverse_modulus_ = Pointer::Owning(new uint64_t[uint64_count_]);
+                set_uint_uint(assign.inverse_modulus_.get(), uint64_count_, inverse_modulus_.get());
+            }
+
+            return *this;
+        }
+
+        Modulus::Modulus(const Modulus &copy)
+        {
+            operator =(copy);
         }
 
         Modulus &Modulus::operator =(Modulus &&assign)
@@ -120,8 +143,28 @@ namespace seal
             significant_bit_count_ = assign.significant_bit_count_;
             power_of_two_minus_one_ = assign.power_of_two_minus_one_;
             inverse_significant_bit_count_ = assign.inverse_significant_bit_count_;
+
+            // Can throw!
             inverse_modulus_.acquire(assign.inverse_modulus_);
+
+            assign.modulus_ = nullptr;
+            assign.uint64_count_ = 0;
+            assign.significant_bit_count_ = 0;
+            assign.power_of_two_minus_one_ = 0;
+            assign.inverse_significant_bit_count_ = 0;
+
             return *this;
+        }
+
+        Modulus::Modulus(Modulus &&source) noexcept : modulus_(source.modulus_), uint64_count_(source.uint64_count_), 
+            significant_bit_count_(source.significant_bit_count_), power_of_two_minus_one_(source.power_of_two_minus_one_), 
+            inverse_significant_bit_count_(source.inverse_significant_bit_count_), inverse_modulus_(move(source.inverse_modulus_))
+        {
+            source.modulus_ = nullptr;
+            source.uint64_count_ = 0;
+            source.significant_bit_count_ = 0;
+            source.power_of_two_minus_one_ = 0;
+            source.inverse_significant_bit_count_ = 0;
         }
     }
 }

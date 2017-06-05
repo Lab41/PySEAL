@@ -36,6 +36,32 @@ namespace Microsoft
                 }
             }
 
+            KeyGenerator::KeyGenerator(EncryptionParameters ^parms, MemoryPoolHandle ^pool) : generator_(nullptr)
+            {
+                if (parms == nullptr)
+                {
+                    throw gcnew ArgumentNullException("parms cannot be null");
+                }
+                if (pool == nullptr)
+                {
+                    throw gcnew ArgumentNullException("pool cannot be null");
+                }
+                try
+                {
+                    generator_ = new seal::KeyGenerator(parms->GetParameters(), pool->GetHandle());
+                    GC::KeepAlive(parms);
+                    GC::KeepAlive(pool);
+                }
+                catch (const exception &e)
+                {
+                    HandleException(&e);
+                }
+                catch (...)
+                {
+                    HandleException(nullptr);
+                }
+            }
+
             KeyGenerator::KeyGenerator(EncryptionParameters ^parms, BigPoly ^secretKey, BigPolyArray ^publicKey, Microsoft::Research::SEAL::EvaluationKeys ^evaluationKeys)
             {
                 if (parms == nullptr)
@@ -61,6 +87,47 @@ namespace Microsoft
                     GC::KeepAlive(secretKey);
                     GC::KeepAlive(publicKey);
                     GC::KeepAlive(evaluationKeys);
+                }
+                catch (const exception &e)
+                {
+                    HandleException(&e);
+                }
+                catch (...)
+                {
+                    HandleException(nullptr);
+                }
+            }
+
+            KeyGenerator::KeyGenerator(EncryptionParameters ^parms, BigPoly ^secretKey, BigPolyArray ^publicKey, Microsoft::Research::SEAL::EvaluationKeys ^evaluationKeys, MemoryPoolHandle ^pool)
+            {
+                if (parms == nullptr)
+                {
+                    throw gcnew ArgumentNullException("parms cannot be null");
+                }
+                if (secretKey == nullptr)
+                {
+                    throw gcnew ArgumentNullException("secretKey cannot be null");
+                }
+                if (publicKey == nullptr)
+                {
+                    throw gcnew ArgumentNullException("publicKey cannot be null");
+                }
+                if (evaluationKeys == nullptr)
+                {
+                    throw gcnew ArgumentNullException("evaluationKeys cannot be null");
+                }
+                if (pool == nullptr)
+                {
+                    throw gcnew ArgumentNullException("pool cannot be null");
+                }
+                try
+                {
+                    generator_ = new seal::KeyGenerator(parms->GetParameters(), secretKey->GetPolynomial(), publicKey->GetArray(), evaluationKeys->GetKeys(), pool->GetHandle());
+                    GC::KeepAlive(parms);
+                    GC::KeepAlive(secretKey);
+                    GC::KeepAlive(publicKey);
+                    GC::KeepAlive(evaluationKeys);
+                    GC::KeepAlive(pool);
                 }
                 catch (const exception &e)
                 {

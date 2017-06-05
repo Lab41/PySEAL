@@ -6,6 +6,7 @@
 #include "keygenerator.h"
 #include "encoder.h"
 #include <cstdint>
+#include <string>
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 using namespace seal;
@@ -19,12 +20,12 @@ namespace SEALTest
         TEST_METHOD(FVEncryptNegateDecrypt)
         {
             EncryptionParameters parms;
-            BigUInt &coeff_modulus = parms.coeff_modulus();
-            BigUInt &plain_modulus = parms.plain_modulus();
-            BigPoly &poly_modulus = parms.poly_modulus();
-            parms.decomposition_bit_count() = 4;
-            parms.noise_standard_deviation() = 3.19;
-            parms.noise_max_deviation() = 35.06;
+            BigUInt coeff_modulus;
+            BigUInt plain_modulus;
+            BigPoly poly_modulus;
+            parms.set_decomposition_bit_count(4);
+            parms.set_noise_standard_deviation(3.19);
+            parms.set_noise_max_deviation(35.06);
             coeff_modulus.resize(48);
             coeff_modulus = "FFFFFFFFC001";
             plain_modulus.resize(7);
@@ -32,7 +33,10 @@ namespace SEALTest
             poly_modulus.resize(65, 1);
             poly_modulus[0] = 1;
             poly_modulus[64] = 1;
-
+            parms.set_poly_modulus(poly_modulus);
+            parms.set_plain_modulus(plain_modulus);
+            parms.set_coeff_modulus(coeff_modulus);
+            parms.validate();
             KeyGenerator keygen(parms);
             keygen.generate();
 
@@ -71,12 +75,12 @@ namespace SEALTest
         TEST_METHOD(FVEncryptAddDecrypt)
         {
             EncryptionParameters parms;
-            BigUInt &coeff_modulus = parms.coeff_modulus();
-            BigUInt &plain_modulus = parms.plain_modulus();
-            BigPoly &poly_modulus = parms.poly_modulus();
-            parms.decomposition_bit_count() = 4;
-            parms.noise_standard_deviation() = 3.19;
-            parms.noise_max_deviation() = 35.06;
+            BigUInt coeff_modulus;
+            BigUInt plain_modulus;
+            BigPoly poly_modulus;
+            parms.set_decomposition_bit_count(4);
+            parms.set_noise_standard_deviation(3.19);
+            parms.set_noise_max_deviation(35.06);
             coeff_modulus.resize(48);
             coeff_modulus = "FFFFFFFFC001";
             plain_modulus.resize(7);
@@ -84,6 +88,10 @@ namespace SEALTest
             poly_modulus.resize(65, 1);
             poly_modulus[0] = 1;
             poly_modulus[64] = 1;
+            parms.set_poly_modulus(poly_modulus); 
+            parms.set_plain_modulus(plain_modulus);
+            parms.set_coeff_modulus(coeff_modulus);
+            parms.validate();
 
             KeyGenerator keygen(parms);
             keygen.generate();
@@ -137,16 +145,15 @@ namespace SEALTest
 
         }
 
-
         TEST_METHOD(FVEncryptSubDecrypt)
         {
             EncryptionParameters parms;
-            BigUInt &coeff_modulus = parms.coeff_modulus();
-            BigUInt &plain_modulus = parms.plain_modulus();
-            BigPoly &poly_modulus = parms.poly_modulus();
-            parms.decomposition_bit_count() = 4;
-            parms.noise_standard_deviation() = 3.19;
-            parms.noise_max_deviation() = 35.06;
+            BigUInt coeff_modulus;
+            BigUInt plain_modulus;
+            BigPoly poly_modulus;
+            parms.set_decomposition_bit_count(4);
+            parms.set_noise_standard_deviation(3.19);
+            parms.set_noise_max_deviation(35.06);
             coeff_modulus.resize(48);
             coeff_modulus = "FFFFFFFFC001";
             plain_modulus.resize(7);
@@ -154,7 +161,10 @@ namespace SEALTest
             poly_modulus.resize(65, 1);
             poly_modulus[0] = 1;
             poly_modulus[64] = 1;
-
+            parms.set_poly_modulus(poly_modulus);
+            parms.set_plain_modulus(plain_modulus);
+            parms.set_coeff_modulus(coeff_modulus);
+            parms.validate();
             KeyGenerator keygen(parms);
             keygen.generate();
 
@@ -193,12 +203,12 @@ namespace SEALTest
         TEST_METHOD(FVEncryptAddPlainDecrypt)
         {
             EncryptionParameters parms;
-            BigUInt &coeff_modulus = parms.coeff_modulus();
-            BigUInt &plain_modulus = parms.plain_modulus();
-            BigPoly &poly_modulus = parms.poly_modulus();
-            parms.decomposition_bit_count() = 4;
-            parms.noise_standard_deviation() = 3.19;
-            parms.noise_max_deviation() = 35.06;
+            BigUInt coeff_modulus;
+            BigUInt plain_modulus;
+            BigPoly poly_modulus;
+            parms.set_decomposition_bit_count(4);
+            parms.set_noise_standard_deviation(3.19);
+            parms.set_noise_max_deviation(35.06);
             coeff_modulus.resize(48);
             coeff_modulus = "FFFFFFFFC001";
             plain_modulus.resize(7);
@@ -206,7 +216,10 @@ namespace SEALTest
             poly_modulus.resize(65, 1);
             poly_modulus[0] = 1;
             poly_modulus[64] = 1;
-
+            parms.set_poly_modulus(poly_modulus);
+            parms.set_plain_modulus(plain_modulus);
+            parms.set_coeff_modulus(coeff_modulus);
+            parms.validate();
             KeyGenerator keygen(parms);
             keygen.generate();
 
@@ -246,12 +259,12 @@ namespace SEALTest
         TEST_METHOD(FVEncryptSubPlainDecrypt)
         {
             EncryptionParameters parms;
-            BigUInt &coeff_modulus = parms.coeff_modulus();
-            BigUInt &plain_modulus = parms.plain_modulus();
-            BigPoly &poly_modulus = parms.poly_modulus();
-            parms.decomposition_bit_count() = 4;
-            parms.noise_standard_deviation() = 3.19;
-            parms.noise_max_deviation() = 35.06;
+            BigUInt coeff_modulus;
+            BigUInt plain_modulus;
+            BigPoly poly_modulus;
+            parms.set_decomposition_bit_count(4);
+            parms.set_noise_standard_deviation(3.19);
+            parms.set_noise_max_deviation(35.06);
             coeff_modulus.resize(48);
             coeff_modulus = "FFFFFFFFC001";
             plain_modulus.resize(7);
@@ -259,7 +272,10 @@ namespace SEALTest
             poly_modulus.resize(65, 1);
             poly_modulus[0] = 1;
             poly_modulus[64] = 1;
-
+            parms.set_poly_modulus(poly_modulus);
+            parms.set_plain_modulus(plain_modulus);
+            parms.set_coeff_modulus(coeff_modulus);
+            parms.validate();
             KeyGenerator keygen(parms);
             keygen.generate();
 
@@ -299,12 +315,12 @@ namespace SEALTest
         TEST_METHOD(FVEncryptMultiplyPlainDecrypt)
         {
             EncryptionParameters parms;
-            BigUInt &coeff_modulus = parms.coeff_modulus();
-            BigUInt &plain_modulus = parms.plain_modulus();
-            BigPoly &poly_modulus = parms.poly_modulus();
-            parms.decomposition_bit_count() = 4;
-            parms.noise_standard_deviation() = 3.19;
-            parms.noise_max_deviation() = 35.06;
+            BigUInt coeff_modulus;
+            BigUInt plain_modulus;
+            BigPoly poly_modulus;
+            parms.set_decomposition_bit_count(4);
+            parms.set_noise_standard_deviation(3.19);
+            parms.set_noise_max_deviation(35.06);
             coeff_modulus.resize(48);
             coeff_modulus = "FFFFFFFFC001";
             plain_modulus.resize(7);
@@ -312,7 +328,10 @@ namespace SEALTest
             poly_modulus.resize(65, 1);
             poly_modulus[0] = 1;
             poly_modulus[64] = 1;
-
+            parms.set_poly_modulus(poly_modulus);
+            parms.set_plain_modulus(plain_modulus);
+            parms.set_coeff_modulus(coeff_modulus);
+            parms.validate();
             KeyGenerator keygen(parms);
             keygen.generate();
 
@@ -353,12 +372,12 @@ namespace SEALTest
         {
             {
                 EncryptionParameters parms;
-                BigUInt &coeff_modulus = parms.coeff_modulus();
-                BigUInt &plain_modulus = parms.plain_modulus();
-                BigPoly &poly_modulus = parms.poly_modulus();
-                parms.decomposition_bit_count() = 4;
-                parms.noise_standard_deviation() = 3.19;
-                parms.noise_max_deviation() = 35.06;
+                BigUInt coeff_modulus;
+                BigUInt plain_modulus;
+                BigPoly poly_modulus;
+                parms.set_decomposition_bit_count(4);
+                parms.set_noise_standard_deviation(3.19);
+                parms.set_noise_max_deviation(35.06);
                 coeff_modulus.resize(48);
                 coeff_modulus = "FFFFFFFFC001";
                 plain_modulus.resize(7);
@@ -366,7 +385,10 @@ namespace SEALTest
                 poly_modulus.resize(65, 1);
                 poly_modulus[0] = 1;
                 poly_modulus[64] = 1;
-
+                parms.set_poly_modulus(poly_modulus);
+                parms.set_plain_modulus(plain_modulus);
+                parms.set_coeff_modulus(coeff_modulus);
+                parms.validate();
                 KeyGenerator keygen(parms);
                 keygen.generate();
 
@@ -409,19 +431,22 @@ namespace SEALTest
 
             {
                 EncryptionParameters parms;
-                BigUInt &coeff_modulus = parms.coeff_modulus();
-                BigUInt &plain_modulus = parms.plain_modulus();
-                BigPoly &poly_modulus = parms.poly_modulus();
-                parms.decomposition_bit_count() = 4;
-                parms.noise_standard_deviation() = 3.19;
-                parms.noise_max_deviation() = 35.06;
+                BigUInt coeff_modulus;
+                BigUInt plain_modulus;
+                BigPoly poly_modulus;
+                parms.set_decomposition_bit_count(4);
+                parms.set_noise_standard_deviation(3.19);
+                parms.set_noise_max_deviation(35.06);
                 coeff_modulus = "FFFFFFFFFFFFFFFFFFFF";
                 plain_modulus.resize(7);
                 plain_modulus = 1 << 6;
                 poly_modulus.resize(129, 1);
                 poly_modulus[0] = 1;
                 poly_modulus[128] = 1;
-
+                parms.set_poly_modulus(poly_modulus);
+                parms.set_plain_modulus(plain_modulus);
+                parms.set_coeff_modulus(coeff_modulus);
+                parms.validate();
                 KeyGenerator keygen(parms);
                 keygen.generate();
 
@@ -466,19 +491,22 @@ namespace SEALTest
         TEST_METHOD(FVEncryptSquareDecrypt)
         {
             EncryptionParameters parms;
-            BigUInt &coeff_modulus = parms.coeff_modulus();
-            BigUInt &plain_modulus = parms.plain_modulus();
-            BigPoly &poly_modulus = parms.poly_modulus();
-            parms.decomposition_bit_count() = 4;
-            parms.noise_standard_deviation() = 3.19;
-            parms.noise_max_deviation() = 35.06;
+            BigUInt coeff_modulus;
+            BigUInt plain_modulus;
+            BigPoly poly_modulus;
+            parms.set_decomposition_bit_count(4);
+            parms.set_noise_standard_deviation(3.19);
+            parms.set_noise_max_deviation(35.06);
             coeff_modulus = "FFFFFFFFFFFFFFFFFFFF";
             plain_modulus.resize(7);
             plain_modulus = 1 << 6;
             poly_modulus.resize(65, 1);
             poly_modulus[0] = 1;
             poly_modulus[64] = 1;
-
+            parms.set_poly_modulus(poly_modulus);
+            parms.set_plain_modulus(plain_modulus);
+            parms.set_coeff_modulus(coeff_modulus);
+            parms.validate();
             KeyGenerator keygen(parms);
             keygen.generate();
 
@@ -512,12 +540,12 @@ namespace SEALTest
         TEST_METHOD(FVEncryptMultiplyManyDecrypt)
         {
             EncryptionParameters parms;
-            BigUInt &coeff_modulus = parms.coeff_modulus();
-            BigUInt &plain_modulus = parms.plain_modulus();
-            BigPoly &poly_modulus = parms.poly_modulus();
-            parms.decomposition_bit_count() = 4;
-            parms.noise_standard_deviation() = 3.19;
-            parms.noise_max_deviation() = 35.06;
+            BigUInt coeff_modulus;
+            BigUInt plain_modulus;
+            BigPoly poly_modulus;
+            parms.set_decomposition_bit_count(4);
+            parms.set_noise_standard_deviation(3.19);
+            parms.set_noise_max_deviation(35.06);
             coeff_modulus.resize(48);
             coeff_modulus = "FFFFFFFFC001";
             plain_modulus.resize(7);
@@ -525,7 +553,10 @@ namespace SEALTest
             poly_modulus.resize(65, 1);
             poly_modulus[0] = 1;
             poly_modulus[64] = 1;
-
+            parms.set_poly_modulus(poly_modulus);
+            parms.set_plain_modulus(plain_modulus);
+            parms.set_coeff_modulus(coeff_modulus);
+            parms.validate();
             KeyGenerator keygen(parms);
             keygen.generate(3);
 
@@ -587,12 +618,12 @@ namespace SEALTest
         TEST_METHOD(FVEncryptExponentiateDecrypt)
         {
             EncryptionParameters parms;
-            BigUInt &coeff_modulus = parms.coeff_modulus();
-            BigUInt &plain_modulus = parms.plain_modulus();
-            BigPoly &poly_modulus = parms.poly_modulus();
-            parms.decomposition_bit_count() = 2;
-            parms.noise_standard_deviation() = 3.19;
-            parms.noise_max_deviation() = 35.06;
+            BigUInt coeff_modulus;
+            BigUInt plain_modulus;
+            BigPoly poly_modulus;
+            parms.set_decomposition_bit_count(4);
+            parms.set_noise_standard_deviation(3.19);
+            parms.set_noise_max_deviation(35.06);
             coeff_modulus.resize(48);
             coeff_modulus = "FFFFFFFFC001";
             plain_modulus.resize(7);
@@ -600,7 +631,10 @@ namespace SEALTest
             poly_modulus.resize(65, 1);
             poly_modulus[0] = 1;
             poly_modulus[64] = 1;
-
+            parms.set_poly_modulus(poly_modulus);
+            parms.set_plain_modulus(plain_modulus);
+            parms.set_coeff_modulus(coeff_modulus);
+            parms.validate();
             KeyGenerator keygen(parms);
             keygen.generate(1);
 
@@ -626,12 +660,12 @@ namespace SEALTest
         TEST_METHOD(FVEncryptAddManyDecrypt)
         {
             EncryptionParameters parms;
-            BigUInt &coeff_modulus = parms.coeff_modulus();
-            BigUInt &plain_modulus = parms.plain_modulus();
-            BigPoly &poly_modulus = parms.poly_modulus();
-            parms.decomposition_bit_count() = 2;
-            parms.noise_standard_deviation() = 3.19;
-            parms.noise_max_deviation() = 35.06;
+            BigUInt coeff_modulus;
+            BigUInt plain_modulus;
+            BigPoly poly_modulus; 
+            parms.set_decomposition_bit_count(2);
+            parms.set_noise_standard_deviation(3.19);
+            parms.set_noise_max_deviation(35.06);
             coeff_modulus.resize(48);
             coeff_modulus = "FFFFFFFFC001";
             plain_modulus.resize(7);
@@ -639,7 +673,10 @@ namespace SEALTest
             poly_modulus.resize(65, 1);
             poly_modulus[0] = 1;
             poly_modulus[64] = 1;
-
+            parms.set_poly_modulus(poly_modulus);
+            parms.set_plain_modulus(plain_modulus);
+            parms.set_coeff_modulus(coeff_modulus);
+            parms.validate();
             KeyGenerator keygen(parms);
             keygen.generate();
 
@@ -693,6 +730,188 @@ namespace SEALTest
             encrypteds = { encrypted1, encrypted2, encrypted3, encrypted4 };
             product = evaluator.add_many(encrypteds);
             Assert::IsTrue(abs(frac_encoder.decode(decryptor.decrypt(product)) - 115.3626) < 0.000001);
+        }
+
+        TEST_METHOD(TransformPlainToFromNTT)
+        {
+            EncryptionParameters parms;
+            BigUInt coeff_modulus;
+            BigUInt plain_modulus;
+            BigPoly poly_modulus;
+            parms.set_decomposition_bit_count(4);
+            parms.set_noise_standard_deviation(3.19);
+            parms.set_noise_max_deviation(35.06);
+            coeff_modulus.resize(48);
+            coeff_modulus = "FFFFFFFFC001";
+            plain_modulus.resize(7);
+            plain_modulus = 1 << 6;
+            poly_modulus.resize(65, 1);
+            poly_modulus[0] = 1;
+            poly_modulus[64] = 1;
+            parms.set_poly_modulus(poly_modulus);
+            parms.set_plain_modulus(plain_modulus);
+            parms.set_coeff_modulus(coeff_modulus);
+            parms.validate();
+
+            Evaluator evaluator(parms);
+            BigPoly plain;
+
+            plain = "0";
+            evaluator.transform_to_ntt(plain);
+            Assert::IsTrue(plain.to_string() == "0");
+            evaluator.transform_from_ntt(plain);
+            Assert::IsTrue(plain.to_string() == "0");
+
+            plain = "1";
+            evaluator.transform_to_ntt(plain);
+            for (int i = 0; i < 64; i++)
+            {
+                Assert::IsTrue(plain[i].to_string() == "1");
+            }
+            Assert::IsTrue(plain[64].to_string() == "0");
+            evaluator.transform_from_ntt(plain);
+            Assert::IsTrue(plain.to_string() == "1");
+
+            plain = "2";
+            evaluator.transform_to_ntt(plain);
+            for (int i = 0; i < 64; i++)
+            {
+                Assert::IsTrue(plain[i].to_string() == "2");
+            }
+            Assert::IsTrue(plain[64].to_string() == "0");
+            evaluator.transform_from_ntt(plain);
+            Assert::IsTrue(plain.to_string() == "2");
+
+            plain = "Fx^10 + Ex^9 + Dx^8 + Cx^7 + Bx^6 + Ax^5 + 1x^4 + 2x^3 + 3x^2 + 4x^1 + 5";
+            evaluator.transform_to_ntt(plain);
+            evaluator.transform_from_ntt(plain);
+            Assert::IsTrue(plain.to_string() == "Fx^10 + Ex^9 + Dx^8 + Cx^7 + Bx^6 + Ax^5 + 1x^4 + 2x^3 + 3x^2 + 4x^1 + 5");
+        }
+
+        TEST_METHOD(TransformEncryptedToFromNTT)
+        {
+            EncryptionParameters parms;
+            BigUInt coeff_modulus;
+            BigUInt plain_modulus;
+            BigPoly poly_modulus;
+            parms.set_decomposition_bit_count(4);
+            parms.set_noise_standard_deviation(3.19);
+            parms.set_noise_max_deviation(35.06);
+            coeff_modulus.resize(48);
+            coeff_modulus = "FFFFFFFFC001";
+            plain_modulus.resize(7);
+            plain_modulus = 1 << 6;
+            poly_modulus.resize(65, 1);
+            poly_modulus[0] = 1;
+            poly_modulus[64] = 1;
+            parms.set_poly_modulus(poly_modulus);
+            parms.set_plain_modulus(plain_modulus);
+            parms.set_coeff_modulus(coeff_modulus);
+            parms.validate();
+
+            KeyGenerator keygen(parms);
+            keygen.generate();
+
+            Encryptor encryptor(parms, keygen.public_key());
+            Evaluator evaluator(parms);
+            Decryptor decryptor(parms, keygen.secret_key());
+
+            BigPoly plain;
+            BigPolyArray cipher;
+
+            plain = "0";
+            encryptor.encrypt(plain, cipher);
+            evaluator.transform_to_ntt(cipher);
+            evaluator.transform_from_ntt(cipher);
+            decryptor.decrypt(cipher, plain);
+            Assert::IsTrue(plain.to_string() == "0");
+
+            plain = "1";
+            encryptor.encrypt(plain, cipher);
+            evaluator.transform_to_ntt(cipher);
+            evaluator.transform_from_ntt(cipher);
+            decryptor.decrypt(cipher, plain);
+            Assert::IsTrue(plain.to_string() == "1");
+
+            plain = "Fx^10 + Ex^9 + Dx^8 + Cx^7 + Bx^6 + Ax^5 + 1x^4 + 2x^3 + 3x^2 + 4x^1 + 5";
+            encryptor.encrypt(plain, cipher);
+            evaluator.transform_to_ntt(cipher);
+            evaluator.transform_from_ntt(cipher);
+            decryptor.decrypt(cipher, plain);
+            Assert::IsTrue(plain.to_string() == "Fx^10 + Ex^9 + Dx^8 + Cx^7 + Bx^6 + Ax^5 + 1x^4 + 2x^3 + 3x^2 + 4x^1 + 5");
+        }
+
+        TEST_METHOD(FVEncryptMultiplyPlainNTTDecrypt)
+        {
+            EncryptionParameters parms;
+            BigUInt coeff_modulus;
+            BigUInt plain_modulus;
+            BigPoly poly_modulus;
+            parms.set_decomposition_bit_count(4);
+            parms.set_noise_standard_deviation(3.19);
+            parms.set_noise_max_deviation(35.06);
+            coeff_modulus.resize(48);
+            coeff_modulus = "FFFFFFFFC001";
+            plain_modulus.resize(7);
+            plain_modulus = 1 << 6;
+            poly_modulus.resize(65, 1);
+            poly_modulus[0] = 1;
+            poly_modulus[64] = 1;
+            parms.set_poly_modulus(poly_modulus);
+            parms.set_plain_modulus(plain_modulus);
+            parms.set_coeff_modulus(coeff_modulus);
+            parms.validate();
+
+            KeyGenerator keygen(parms);
+            keygen.generate();
+
+            Encryptor encryptor(parms, keygen.public_key());
+            Evaluator evaluator(parms);
+            Decryptor decryptor(parms, keygen.secret_key());
+
+            BigPoly plain;
+            BigPoly plain_multiplier;
+            BigPolyArray cipher;
+
+            plain = "0";
+            encryptor.encrypt(plain, cipher);
+            evaluator.transform_to_ntt(cipher);
+            plain_multiplier = "1";
+            evaluator.transform_to_ntt(plain_multiplier);
+            evaluator.multiply_plain_ntt(cipher, plain_multiplier, cipher);
+            evaluator.transform_from_ntt(cipher);
+            decryptor.decrypt(cipher, plain);
+            Assert::IsTrue(plain.to_string() == "0");
+
+            plain = "2";
+            encryptor.encrypt(plain, cipher);
+            evaluator.transform_to_ntt(cipher);
+            plain_multiplier = "3";
+            evaluator.transform_to_ntt(plain_multiplier);
+            evaluator.multiply_plain_ntt(cipher, plain_multiplier, cipher);
+            evaluator.transform_from_ntt(cipher);
+            decryptor.decrypt(cipher, plain);
+            Assert::IsTrue(plain.to_string() == "6");
+
+            plain = "1";
+            encryptor.encrypt(plain, cipher);
+            evaluator.transform_to_ntt(cipher);
+            plain_multiplier = "Fx^10 + Ex^9 + Dx^8 + Cx^7 + Bx^6 + Ax^5 + 1x^4 + 2x^3 + 3x^2 + 4x^1 + 5";
+            evaluator.transform_to_ntt(plain_multiplier);
+            evaluator.multiply_plain_ntt(cipher, plain_multiplier, cipher);
+            evaluator.transform_from_ntt(cipher);
+            decryptor.decrypt(cipher, plain);
+            Assert::IsTrue(plain.to_string() == "Fx^10 + Ex^9 + Dx^8 + Cx^7 + Bx^6 + Ax^5 + 1x^4 + 2x^3 + 3x^2 + 4x^1 + 5");
+
+            plain = "1x^20";
+            encryptor.encrypt(plain, cipher);
+            evaluator.transform_to_ntt(cipher);
+            plain_multiplier = "Fx^10 + Ex^9 + Dx^8 + Cx^7 + Bx^6 + Ax^5 + 1x^4 + 2x^3 + 3x^2 + 4x^1 + 5";
+            evaluator.transform_to_ntt(plain_multiplier);
+            evaluator.multiply_plain_ntt(cipher, plain_multiplier, cipher);
+            evaluator.transform_from_ntt(cipher);
+            decryptor.decrypt(cipher, plain);
+            Assert::IsTrue(plain.to_string() == "Fx^30 + Ex^29 + Dx^28 + Cx^27 + Bx^26 + Ax^25 + 1x^24 + 2x^23 + 3x^22 + 4x^21 + 5x^20");
         }
     };
 }

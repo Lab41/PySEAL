@@ -102,5 +102,8 @@
     <ClCompile Include="util\ntt.cpp">
       <Filter>Source Files\util</Filter>
     </ClCompile>
+    <ClCompile Include="memorypoolhandle.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

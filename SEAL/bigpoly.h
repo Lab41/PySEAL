@@ -73,7 +73,7 @@ namespace seal
 
         @param[in] coeff_count The number of coefficients
         @param[in] coeff_bit_count The bit width of each coefficient
-        @throws std::invalid_argument If either coeff_count or coeff_bit_count is negative
+        @throws std::invalid_argument if either coeff_count or coeff_bit_count is negative
         */
         BigPoly(int coeff_count, int coeff_bit_count);
 
@@ -92,7 +92,7 @@ namespace seal
         8. Other than the +, no other terms should have whitespace
 
         @param[in] hex_poly The formatted polynomial string specifying the initial value
-        @throws std::invalid_argument If hex_poly does not adhere to the expected format
+        @throws std::invalid_argument if hex_poly does not adhere to the expected format
         */
         BigPoly(const std::string &hex_poly);
 
@@ -114,8 +114,8 @@ namespace seal
         @param[in] coeff_count The number of coefficients
         @param[in] coeff_bit_count The bit width of each coefficient
         @param[in] hex_poly The formatted polynomial string specifying the initial value
-        @throws std::invalid_argument If either coeff_count or coeff_bit_count is negative
-        @throws std::invalid_argument If hex_poly does not adhere to the expected format
+        @throws std::invalid_argument if either coeff_count or coeff_bit_count is negative
+        @throws std::invalid_argument if hex_poly does not adhere to the expected format
         */
         BigPoly(int coeff_count, int coeff_bit_count, const std::string &hex_poly);
 
@@ -128,7 +128,7 @@ namespace seal
         @param[in] coeff_count The number of coefficients
         @param[in] coeff_bit_count The bit width of each coefficient
         @param[in] value The backing array to use
-        @throws std::invalid_argument If coeff_count or coeff_bit_count is negative or value is null
+        @throws std::invalid_argument if coeff_count or coeff_bit_count is negative or value is null
         @see BigPoly for a more detailed description of aliased BigPolys.
         */
         BigPoly(int coeff_count, int coeff_bit_count, std::uint64_t *value);
@@ -144,7 +144,7 @@ namespace seal
         /**
         Destroys the BigPoly and deallocates the backing array if it is not an aliased BigPoly.
         */
-        virtual ~BigPoly();
+        ~BigPoly();
 
         /**
         Returns whether or not the BigPoly is an alias.
@@ -282,7 +282,7 @@ namespace seal
         the BigPoly is resized, destroyed, or alias() is called.
 
         @param[in] coeff_index The index of the coefficient to read
-        @throws std::out_of_range If coeff_index is not within [0, coeff_count())
+        @throws std::out_of_range if coeff_index is not within [0, coeff_count())
         @see BigUInt for operations that can be performed on the coefficients.
         */
         const BigUInt &operator[](int coeff_index) const;
@@ -295,7 +295,7 @@ namespace seal
         the BigPoly is resized, destroyed, or alias() is called.
 
         @param[in] coeff_index The index of the coefficient to read/write
-        @throws std::out_of_range If coeff_index is not within [0, coeff_count())
+        @throws std::out_of_range if coeff_index is not within [0, coeff_count())
         @see BigUInt for operations that can be performed on the coefficients.
         */
         BigUInt &operator[](int coeff_index);
@@ -310,7 +310,7 @@ namespace seal
         modify the other coefficients.
 
         @param[in] start_coeff The index of the first coefficient to set to zero
-        @throws out_of_range If start_coeff is not within [0, coeff_count()]
+        @throws out_of_range if start_coeff is not within [0, coeff_count()]
         */
         void set_zero(int start_coeff);
 
@@ -320,8 +320,8 @@ namespace seal
 
         @param[in] start_coeff The index of the first coefficient to set to zero
         @param[in] length The number of coefficients to set to zero
-        @throws std::out_of_range If start_coeff is not within [0, coeff_count()]
-        @throws std::out_of_range If length is negative or start_coeff + length is not within [0, coeff_count()]
+        @throws std::out_of_range if start_coeff is not within [0, coeff_count()]
+        @throws std::out_of_range if length is negative or start_coeff + length is not within [0, coeff_count()]
         */
         void set_zero(int start_coeff, int length);
 
@@ -332,8 +332,8 @@ namespace seal
 
         @param[in] coeff_count The number of coefficients
         @param[in] coeff_bit_count The bit width of each coefficient
-        @throws std::invalid_argument If either coeff_count or coeff_bit_count is negative
-        @throws std::logic_error If the BigPoly is an alias
+        @throws std::invalid_argument if either coeff_count or coeff_bit_count is negative
+        @throws std::logic_error if the BigPoly is an alias
         */
         void resize(int coeff_count, int coeff_bit_count);
 
@@ -346,7 +346,7 @@ namespace seal
         @param[in] coeff_count The number of coefficients
         @param[in] coeff_bit_count The bit width of each coefficient
         @param[in] value The backing array to use
-        @throws std::invalid_argument If coeff_count or coeff_bit_count is negative or value is null
+        @throws std::invalid_argument if coeff_count or coeff_bit_count is negative or value is null
         @see BigPoly for a more detailed description of aliased BigPolys.
         */
         void alias(int coeff_count, int coeff_bit_count, std::uint64_t *value);
@@ -354,7 +354,7 @@ namespace seal
         /**
         Resets an aliased BigPoly into an empty non-alias BigPoly with coefficient count and bit count of zero.
 
-        @throws std::logic_error If BigPoly is not an alias
+        @throws std::logic_error if BigPoly is not an alias
         */
         void unalias();
 
@@ -363,7 +363,7 @@ namespace seal
         Only significant coefficients and significant coefficient bit counts are used to size the BigPoly.
 
         @param[in] assign The BigPoly whose value should be assigned to the current BigPoly
-        @throws std::logic_error If BigPoly is an alias and the assigned BigPoly is too large to fit the current coefficient count
+        @throws std::logic_error if BigPoly is an alias and the assigned BigPoly is too large to fit the current coefficient count
         and/or bit width
         */
         BigPoly &operator =(const BigPoly& assign);
@@ -384,8 +384,8 @@ namespace seal
         8. Other than the +, no other terms should have whitespace
 
         @param[in] hex_poly The formatted polynomial string specifying the value to set
-        @throws std::invalid_argument If hex_poly does not adhere to the expected format
-        @throws std::logic_error If BigPoly is an alias and the assigned polynomial is too large to fit the current coefficient count
+        @throws std::invalid_argument if hex_poly does not adhere to the expected format
+        @throws std::logic_error if BigPoly is an alias and the assigned polynomial is too large to fit the current coefficient count
         and/or bit width
         */
         BigPoly &operator =(const std::string &hex_poly);
@@ -405,7 +405,7 @@ namespace seal
         BigPoly.
 
         @param[in] stream The stream to load the BigPoly from
-        @throws std::logic_error If BigPoly is an alias and the loaded polynomial is too large to fit the current coefficient count
+        @throws std::logic_error if BigPoly is an alias and the loaded polynomial is too large to fit the current coefficient count
         and/or bit width
         @see save() to save a BigPoly.
         */
@@ -416,7 +416,7 @@ namespace seal
         and the value of the given BigPoly are set to be exactly the same as in the current one.
 
         @param[out] destination The BigPoly to overwrite with the duplicate
-        @throws std::logic_error If the destination BigPoly is an alias
+        @throws std::logic_error if the destination BigPoly is an alias
         */
         void duplicate_to(BigPoly &destination) const;
 
@@ -425,7 +425,7 @@ namespace seal
         and the value of the current BigPoly are set to be exactly the same as in the given one.
 
         @param[in] value The BigPoly to duplicate
-        @throws std::logic_error If the current BigPoly is an alias
+        @throws std::logic_error if the current BigPoly is an alias
         */
         void duplicate_from(const BigPoly &value);
 
@@ -434,7 +434,7 @@ namespace seal
 
         @param[in] assign The BigPoly to move from
         */
-        BigPoly &operator =(BigPoly &&assign) noexcept;
+        BigPoly &operator =(BigPoly &&assign);
 
         /**
         Creates a new BigPoly by moving an old one.

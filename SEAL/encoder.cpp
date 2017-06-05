@@ -11,7 +11,7 @@ using namespace seal::util;
 
 namespace seal
 {
-    BinaryEncoder::BinaryEncoder(const BigUInt &plain_modulus) : plain_modulus_(plain_modulus)
+    BinaryEncoder::BinaryEncoder(const BigUInt &plain_modulus, const MemoryPoolHandle &pool) : pool_(pool), plain_modulus_(plain_modulus)
     {
         if (plain_modulus.significant_bit_count() <= 1)
         {
@@ -23,14 +23,14 @@ namespace seal
         decrement_uint(plain_modulus_.pointer(), plain_modulus_.uint64_count(), neg_one_.pointer());
     }
 
-    BigPoly BinaryEncoder::encode(uint64_t value) const
+    BigPoly BinaryEncoder::encode(uint64_t value)
     {
         BigPoly result;
         encode(value, result);
         return result;
     }
 
-    void BinaryEncoder::encode(uint64_t value, BigPoly &destination) const
+    void BinaryEncoder::encode(uint64_t value, BigPoly &destination)
     {
         int encode_coeff_count = get_significant_bit_count(value);
         if (destination.coeff_count() < encode_coeff_count || destination.coeff_bit_count() == 0)
@@ -50,14 +50,14 @@ namespace seal
         }
     }
 
-    BigPoly BinaryEncoder::encode(int64_t value) const
+    BigPoly BinaryEncoder::encode(int64_t value)
     {
         BigPoly result;
         encode(value, result);
         return result;
     }
 
-    void BinaryEncoder::encode(int64_t value, BigPoly &destination) const
+    void BinaryEncoder::encode(int64_t value, BigPoly &destination)
     {
         if (value < 0)
         {
@@ -87,14 +87,14 @@ namespace seal
         }
     }
 
-    BigPoly BinaryEncoder::encode(const BigUInt &value) const
+    BigPoly BinaryEncoder::encode(const BigUInt &value)
     {
         BigPoly result;
         encode(value, result);
         return result;
     }
 
-    void BinaryEncoder::encode(const BigUInt &value, BigPoly &destination) const
+    void BinaryEncoder::encode(const BigUInt &value, BigPoly &destination)
     {
         int encode_coeff_count = value.significant_bit_count();
         if (destination.coeff_count() < encode_coeff_count || destination.coeff_bit_count() == 0)
@@ -115,7 +115,7 @@ namespace seal
         }
     }
 
-    uint32_t BinaryEncoder::decode_uint32(const BigPoly &poly) const
+    uint32_t BinaryEncoder::decode_uint32(const BigPoly &poly)
     {
         uint64_t value64 = decode_uint64(poly);
         if (value64 > UINT32_MAX)
@@ -127,7 +127,7 @@ namespace seal
         return static_cast<uint32_t>(value64);
     }
 
-    uint64_t BinaryEncoder::decode_uint64(const BigPoly &poly) const
+    uint64_t BinaryEncoder::decode_uint64(const BigPoly &poly)
     {
         BigUInt bigvalue = decode_biguint(poly);
         int bit_count = bigvalue.significant_bit_count();
@@ -141,7 +141,7 @@ namespace seal
         return bit_count > 0 ? bigvalue.pointer()[0] : 0;
     }
 
-    int32_t BinaryEncoder::decode_int32(const BigPoly &poly) const
+    int32_t BinaryEncoder::decode_int32(const BigPoly &poly)
     {
         int64_t value64 = decode_int64(poly);
         if (value64 < INT32_MIN || value64 > INT32_MAX)
@@ -153,20 +153,18 @@ namespace seal
         return static_cast<int32_t>(value64);
     }
 
-    int64_t BinaryEncoder::decode_int64(const BigPoly &poly) const
+    int64_t BinaryEncoder::decode_int64(const BigPoly &poly)
     {
         // Determine plain_modulus width.
         int plain_modulus_bits = plain_modulus_.significant_bit_count();
-
-        MemoryPool &pool = *MemoryPool::default_pool();
         int sig_uint64_count = divide_round_up(plain_modulus_bits, bits_per_uint64);
-        Pointer pos_value(allocate_uint(sig_uint64_count, pool));
+        Pointer pos_value(allocate_uint(sig_uint64_count, pool_));
 
         // Determine coefficient threshold for negative numbers.
         int coeff_neg_threshold_bits = coeff_neg_threshold_.significant_bit_count();
 
         int64_t result = 0;
-        for (int bit_index = poly.significant_coeff_count() - 1; bit_index >= 0; --bit_index)
+        for (int bit_index = poly.significant_coeff_count() - 1; bit_index >= 0; bit_index--)
         {
             const BigUInt &coeff = poly[bit_index];
 
@@ -231,14 +229,12 @@ namespace seal
         return result;
     }
 
-    BigUInt BinaryEncoder::decode_biguint(const BigPoly &poly) const
+    BigUInt BinaryEncoder::decode_biguint(const BigPoly &poly)
     {
         // Determine plain_modulus width.
         int plain_modulus_bits = plain_modulus_.significant_bit_count();
-
-        MemoryPool &pool = *MemoryPool::default_pool();
         int sig_uint64_count = divide_round_up(plain_modulus_bits, bits_per_uint64);
-        Pointer pos_value(allocate_uint(sig_uint64_count, pool));
+        Pointer pos_value(allocate_uint(sig_uint64_count, pool_));
 
         // Determine coefficient threshold for negative numbers.
         int coeff_neg_threshold_bits = coeff_neg_threshold_.significant_bit_count();
@@ -248,7 +244,7 @@ namespace seal
         BigUInt resultint(result_bit_capacity);
         bool result_is_negative = false;
         uint64_t *result = resultint.pointer();
-        for (int bit_index = poly.significant_coeff_count() - 1; bit_index >= 0; --bit_index)
+        for (int bit_index = poly.significant_coeff_count() - 1; bit_index >= 0; bit_index--)
         {
             const BigUInt &coeff = poly[bit_index];
 
@@ -335,14 +331,12 @@ namespace seal
         return resultint;
     }
 
-    void BinaryEncoder::decode_biguint(const BigPoly &poly, BigUInt &destination) const
+    void BinaryEncoder::decode_biguint(const BigPoly &poly, BigUInt &destination)
     {
         // Determine plain_modulus width.
         int plain_modulus_bits = plain_modulus_.significant_bit_count();
-
-        MemoryPool &pool = *MemoryPool::default_pool();
         int sig_uint64_count = divide_round_up(plain_modulus_bits, bits_per_uint64);
-        Pointer pos_value(allocate_uint(sig_uint64_count, pool));
+        Pointer pos_value(allocate_uint(sig_uint64_count, pool_));
 
         // Determine coefficient threshold for negative numbers.
         int coeff_neg_threshold_bits = coeff_neg_threshold_.significant_bit_count();
@@ -352,7 +346,7 @@ namespace seal
         int result_bit_capacity = result_uint64_count * bits_per_uint64;
         bool result_is_negative = false;
         uint64_t *result = destination.pointer();
-        for (int bit_index = poly.significant_coeff_count() - 1; bit_index >= 0; --bit_index)
+        for (int bit_index = poly.significant_coeff_count() - 1; bit_index >= 0; bit_index--)
         {
             const BigUInt &coeff = poly[bit_index];
 
@@ -439,7 +433,7 @@ namespace seal
         }
     }
 
-    BalancedEncoder::BalancedEncoder(const BigUInt &plain_modulus, uint64_t base) : plain_modulus_(plain_modulus), base_(base)
+    BalancedEncoder::BalancedEncoder(const BigUInt &plain_modulus, uint64_t base, const MemoryPoolHandle &pool) : pool_(pool), plain_modulus_(plain_modulus), base_(base)
     {
         if (base <= 2)
         {
@@ -454,7 +448,7 @@ namespace seal
         half_round_up_uint(plain_modulus_.pointer(), plain_modulus_.uint64_count(), coeff_neg_threshold_.pointer());
     }
 
-    BigPoly BalancedEncoder::encode(uint64_t value) const
+    BigPoly BalancedEncoder::encode(uint64_t value)
     {
         BigPoly result;
         encode(value, result);
@@ -462,7 +456,7 @@ namespace seal
         return result;
     }
 
-    void BalancedEncoder::encode(uint64_t value, BigPoly &destination) const
+    void BalancedEncoder::encode(uint64_t value, BigPoly &destination)
     {
         // We estimate the number of coefficients in the expansion
         int encode_coeff_count = ceil(static_cast<double>(get_significant_bit_count(value)) / log2(base_)) + 1;
@@ -492,14 +486,14 @@ namespace seal
         }
     }
 
-    BigPoly BalancedEncoder::encode(int64_t value) const
+    BigPoly BalancedEncoder::encode(int64_t value)
     {
         BigPoly result;
         encode(value, result);
         return result;
     }
 
-    void BalancedEncoder::encode(int64_t value, BigPoly &destination) const
+    void BalancedEncoder::encode(int64_t value, BigPoly &destination)
     {
         if (value < 0)
         {
@@ -544,14 +538,14 @@ namespace seal
         }
     }
 
-    BigPoly BalancedEncoder::encode(const BigUInt &value) const
+    BigPoly BalancedEncoder::encode(const BigUInt &value)
     {
         BigPoly result;
         encode(value, result);
         return result;
     }
 
-    void BalancedEncoder::encode(const BigUInt &value, BigPoly &destination) const
+    void BalancedEncoder::encode(const BigUInt &value, BigPoly &destination)
     {
         if (value.is_zero())
         {
@@ -570,23 +564,22 @@ namespace seal
         int dest_coeff_uint64_count = destination.coeff_uint64_count();
         destination.set_zero();
 
-        MemoryPool &pool = *MemoryPool::default_pool();
-        Pointer base_uint(allocate_uint(encode_uint64_count, pool));
+        Pointer base_uint(allocate_uint(encode_uint64_count, pool_));
         set_uint(base_, encode_uint64_count, base_uint.get());
-        Pointer base_div_two_uint(allocate_uint(encode_uint64_count, pool));
+        Pointer base_div_two_uint(allocate_uint(encode_uint64_count, pool_));
         right_shift_uint(base_uint.get(), 1, encode_uint64_count, base_div_two_uint.get());
-        Pointer mod_minus_base(allocate_uint(dest_coeff_uint64_count, pool));
+        Pointer mod_minus_base(allocate_uint(dest_coeff_uint64_count, pool_));
         sub_uint_uint(plain_modulus_.pointer(), plain_modulus_.uint64_count(), base_uint.get(), encode_uint64_count, false, dest_coeff_uint64_count, mod_minus_base.get());
 
-        Pointer quotient(allocate_uint(encode_uint64_count, pool));
-        Pointer remainder(allocate_uint(encode_uint64_count, pool));
-        Pointer temp(allocate_uint(value.uint64_count(), pool));
+        Pointer quotient(allocate_uint(encode_uint64_count, pool_));
+        Pointer remainder(allocate_uint(encode_uint64_count, pool_));
+        Pointer temp(allocate_uint(value.uint64_count(), pool_));
         set_uint_uint(value.pointer(), value.uint64_count(), temp.get());
 
         int coeff_index = 0;
         while (!is_zero_uint(temp.get(), value.uint64_count()))
         {
-            divide_uint_uint(temp.get(), base_uint.get(), encode_uint64_count, quotient.get(), remainder.get(), pool);
+            divide_uint_uint(temp.get(), base_uint.get(), encode_uint64_count, quotient.get(), remainder.get(), pool_);
             uint64_t *dest_coeff = get_poly_coeff(destination.pointer(), coeff_index, dest_coeff_uint64_count);
             if (is_greater_than_uint_uint(remainder.get(), base_div_two_uint.get(), encode_uint64_count))
             {
@@ -597,14 +590,14 @@ namespace seal
                 set_uint_uint(remainder.get(), encode_uint64_count, dest_coeff_uint64_count, dest_coeff);
             }
             add_uint_uint(temp.get(), base_div_two_uint.get(), encode_uint64_count, temp.get());
-            divide_uint_uint(temp.get(), base_uint.get(), encode_uint64_count, quotient.get(), remainder.get(), pool);
+            divide_uint_uint(temp.get(), base_uint.get(), encode_uint64_count, quotient.get(), remainder.get(), pool_);
             set_uint_uint(quotient.get(), encode_uint64_count, temp.get());
 
             ++coeff_index;
         }
     }
 
-    uint32_t BalancedEncoder::decode_uint32(const BigPoly &poly) const
+    uint32_t BalancedEncoder::decode_uint32(const BigPoly &poly)
     {
         uint64_t value64 = decode_uint64(poly);
         if (value64 > UINT32_MAX)
@@ -616,7 +609,7 @@ namespace seal
         return static_cast<uint32_t>(value64);
     }
 
-    uint64_t BalancedEncoder::decode_uint64(const BigPoly &poly) const
+    uint64_t BalancedEncoder::decode_uint64(const BigPoly &poly)
     {
         BigUInt bigvalue = decode_biguint(poly);
         int bit_count = bigvalue.significant_bit_count();
@@ -630,7 +623,7 @@ namespace seal
         return bit_count > 0 ? bigvalue.pointer()[0] : 0;
     }
 
-    int32_t BalancedEncoder::decode_int32(const BigPoly &poly) const
+    int32_t BalancedEncoder::decode_int32(const BigPoly &poly)
     {
         int64_t value64 = decode_int64(poly);
         if (value64 < INT32_MIN || value64 > INT32_MAX)
@@ -642,20 +635,18 @@ namespace seal
         return static_cast<int32_t>(value64);
     }
 
-    int64_t BalancedEncoder::decode_int64(const BigPoly &poly) const
+    int64_t BalancedEncoder::decode_int64(const BigPoly &poly)
     {
         // Determine plain_modulus width.
         int plain_modulus_bits = plain_modulus_.significant_bit_count();
-
-        MemoryPool &pool = *MemoryPool::default_pool();
         int sig_uint64_count = divide_round_up(plain_modulus_bits, bits_per_uint64);
-        Pointer pos_value(allocate_uint(sig_uint64_count, pool));
+        Pointer pos_value(allocate_uint(sig_uint64_count, pool_));
 
         // Determine coefficient threshold for negative numbers.
         int coeff_neg_threshold_bits = coeff_neg_threshold_.significant_bit_count();
 
         int64_t result = 0;
-        for (int bit_index = poly.significant_coeff_count() - 1; bit_index >= 0; --bit_index)
+        for (int bit_index = poly.significant_coeff_count() - 1; bit_index >= 0; bit_index--)
         {
             const BigUInt &coeff = poly[bit_index];
 
@@ -723,14 +714,12 @@ namespace seal
         return result;
     }
 
-    BigUInt BalancedEncoder::decode_biguint(const BigPoly &poly) const
+    BigUInt BalancedEncoder::decode_biguint(const BigPoly &poly)
     {
         // Determine plain_modulus width.
         int plain_modulus_bits = plain_modulus_.significant_bit_count();
-
-        MemoryPool &pool = *MemoryPool::default_pool();
         int sig_uint64_count = divide_round_up(plain_modulus_bits, bits_per_uint64);
-        Pointer pos_value(allocate_uint(sig_uint64_count, pool));
+        Pointer pos_value(allocate_uint(sig_uint64_count, pool_));
 
         // Determine coefficient threshold for negative numbers.
         int coeff_neg_threshold_bits = coeff_neg_threshold_.significant_bit_count();
@@ -745,7 +734,7 @@ namespace seal
         base_uint = base_;
         BigUInt temp_result(result_bit_capacity);
 
-        for (int bit_index = poly.significant_coeff_count() - 1; bit_index >= 0; --bit_index)
+        for (int bit_index = poly.significant_coeff_count() - 1; bit_index >= 0; bit_index--)
         {
             const BigUInt &coeff = poly[bit_index];
 
@@ -833,14 +822,12 @@ namespace seal
         return resultint;
     }
 
-    void BalancedEncoder::decode_biguint(const BigPoly &poly, BigUInt &destination) const
+    void BalancedEncoder::decode_biguint(const BigPoly &poly, BigUInt &destination)
     {
         // Determine plain_modulus width.
         int plain_modulus_bits = plain_modulus_.significant_bit_count();
-
-        MemoryPool &pool = *MemoryPool::default_pool();
         int sig_uint64_count = divide_round_up(plain_modulus_bits, bits_per_uint64);
-        Pointer pos_value(allocate_uint(sig_uint64_count, pool));
+        Pointer pos_value(allocate_uint(sig_uint64_count, pool_));
 
         // Determine coefficient threshold for negative numbers.
         int coeff_neg_threshold_bits = coeff_neg_threshold_.significant_bit_count();
@@ -855,7 +842,7 @@ namespace seal
         BigUInt temp_result(result_bit_capacity);
         base_uint = base_;
 
-        for (int bit_index = poly.significant_coeff_count() - 1; bit_index >= 0; --bit_index)
+        for (int bit_index = poly.significant_coeff_count() - 1; bit_index >= 0; bit_index--)
         {
             const BigUInt &coeff = poly[bit_index];
 
@@ -943,8 +930,8 @@ namespace seal
         }
     }
 
-    BinaryFractionalEncoder::BinaryFractionalEncoder(const BigUInt &plain_modulus, const BigPoly &poly_modulus, int integer_coeff_count, int fraction_coeff_count) : encoder_(plain_modulus),
-        fraction_coeff_count_(fraction_coeff_count), integer_coeff_count_(integer_coeff_count), poly_modulus_(poly_modulus)
+    BinaryFractionalEncoder::BinaryFractionalEncoder(const BigUInt &plain_modulus, const BigPoly &poly_modulus, int integer_coeff_count, int fraction_coeff_count, const MemoryPoolHandle &pool) 
+        : pool_(pool), encoder_(plain_modulus), fraction_coeff_count_(fraction_coeff_count), integer_coeff_count_(integer_coeff_count), poly_modulus_(poly_modulus)
     {
         if (integer_coeff_count <= 0)
         {
@@ -968,7 +955,7 @@ namespace seal
         }
     }
 
-    BigPoly BinaryFractionalEncoder::encode(double value) const
+    BigPoly BinaryFractionalEncoder::encode(double value)
     {
         // Take care of the integral part
         int64_t value_int = static_cast<int64_t>(value);
@@ -987,8 +974,7 @@ namespace seal
         bool is_negative = value < 0;
 
         //Extract the fractional part
-        MemoryPool &pool = *MemoryPool::default_pool();
-        Pointer encoded_fract(allocate_zero_poly(poly_modulus_.coeff_count(), plain_uint64_count, pool));
+        Pointer encoded_fract(allocate_zero_poly(poly_modulus_.coeff_count(), plain_uint64_count, pool_));
         for (int i = 0; i < fraction_coeff_count_; ++i)
         {
             value *= 2;
@@ -1030,7 +1016,7 @@ namespace seal
         return result;
     }
 
-    double BinaryFractionalEncoder::decode(const BigPoly &poly) const
+    double BinaryFractionalEncoder::decode(const BigPoly &poly)
     {
         if (poly.significant_coeff_count() >= poly_modulus_.significant_coeff_count())
         {
@@ -1065,8 +1051,8 @@ namespace seal
         return static_cast<double>(integral_part) - fractional_part;
     }
 
-    BalancedFractionalEncoder::BalancedFractionalEncoder(const BigUInt &plain_modulus, const BigPoly &poly_modulus, int integer_coeff_count, int fraction_coeff_count, uint64_t base) : encoder_(plain_modulus, base),
-        fraction_coeff_count_(fraction_coeff_count), integer_coeff_count_(integer_coeff_count), poly_modulus_(poly_modulus)
+    BalancedFractionalEncoder::BalancedFractionalEncoder(const BigUInt &plain_modulus, const BigPoly &poly_modulus, int integer_coeff_count, int fraction_coeff_count, uint64_t base, const MemoryPoolHandle &pool) 
+        : pool_(pool), encoder_(plain_modulus, base), fraction_coeff_count_(fraction_coeff_count), integer_coeff_count_(integer_coeff_count), poly_modulus_(poly_modulus)
     {
         if (integer_coeff_count <= 0)
         {
@@ -1091,7 +1077,7 @@ namespace seal
     }
 
     // We encode differently based on whether the base is odd or even.
-    BigPoly BalancedFractionalEncoder::encode(double value) const
+    BigPoly BalancedFractionalEncoder::encode(double value)
     {
         if (encoder_.base_ % 2 == 1)
         {
@@ -1103,7 +1089,7 @@ namespace seal
         }
     }
 
-    BigPoly BalancedFractionalEncoder::encode_odd(double value) const
+    BigPoly BalancedFractionalEncoder::encode_odd(double value)
     {
         // Take care of the integral part
         int64_t value_int = static_cast<int64_t>(round(value));
@@ -1121,8 +1107,7 @@ namespace seal
         int plain_uint64_count = divide_round_up(encoder_.plain_modulus().significant_bit_count(), bits_per_uint64);
 
         // Extract the fractional part
-        MemoryPool &pool = *MemoryPool::default_pool();
-        Pointer encoded_fract(allocate_zero_poly(poly_modulus_.coeff_count(), plain_uint64_count, pool));
+        Pointer encoded_fract(allocate_zero_poly(poly_modulus_.coeff_count(), plain_uint64_count, pool_));
         for (int i = 0; i < fraction_coeff_count_; ++i)
         {
             value *= encoder_.base();
@@ -1170,7 +1155,7 @@ namespace seal
         return result;
     }
 
-    BigPoly BalancedFractionalEncoder::encode_even(double value) const
+    BigPoly BalancedFractionalEncoder::encode_even(double value)
     {
         // Take care of the integral part
         int64_t value_int = static_cast<int64_t>(round(value));
@@ -1196,12 +1181,11 @@ namespace seal
         // coefficients that are less than -1 (we need this because when we encounter a coefficient greater than or equal to b/2, we need 
         // to store base - coefficient instead and add 1 to the coefficient to the left, which might change the sign of the coefficient
         // to the left).
-        MemoryPool &pool = *MemoryPool::default_pool();
 
-        Pointer encoded_fract(allocate_zero_poly(poly_modulus_.coeff_count(), plain_uint64_count, pool));
-        Pointer carry(allocate_zero_poly(poly_modulus_.coeff_count(), 1, pool));
-        Pointer is_less_than_neg_one(allocate_zero_poly(poly_modulus_.coeff_count(), 1, pool));
-        Pointer is_negative(allocate_zero_poly(poly_modulus_.coeff_count(), 1, pool));
+        Pointer encoded_fract(allocate_zero_poly(poly_modulus_.coeff_count(), plain_uint64_count, pool_));
+        Pointer carry(allocate_zero_poly(poly_modulus_.coeff_count(), 1, pool_));
+        Pointer is_less_than_neg_one(allocate_zero_poly(poly_modulus_.coeff_count(), 1, pool_));
+        Pointer is_negative(allocate_zero_poly(poly_modulus_.coeff_count(), 1, pool_));
 
         for (int i = 0; i < fraction_coeff_count_; ++i)
         {
@@ -1320,7 +1304,7 @@ namespace seal
         return result;
     }
 
-    double BalancedFractionalEncoder::decode(const BigPoly &poly) const
+    double BalancedFractionalEncoder::decode(const BigPoly &poly)
     {
         if (poly.significant_coeff_count() >= poly_modulus_.significant_coeff_count())
         {
@@ -1355,15 +1339,27 @@ namespace seal
         return static_cast<double>(integral_part) - fractional_part;
     }
 
-    IntegerEncoder::IntegerEncoder(const BigUInt &plain_modulus, uint64_t base)
+    IntegerEncoder::IntegerEncoder(const BigUInt &plain_modulus, uint64_t base, const MemoryPoolHandle &pool)
     {
         if (base == 2)
         {
-            encoder_ = new BinaryEncoder(plain_modulus);
+            encoder_ = new BinaryEncoder(plain_modulus, pool);
         }
         else
         {
-            encoder_ = new BalancedEncoder(plain_modulus, base);
+            encoder_ = new BalancedEncoder(plain_modulus, base, pool);
+        }
+    }
+
+    IntegerEncoder::IntegerEncoder(const IntegerEncoder &copy)
+    {
+        if (copy.base() == 2)
+        {
+            encoder_ = new BinaryEncoder(*reinterpret_cast<BinaryEncoder*>(copy.encoder_));
+        }
+        else
+        {
+            encoder_ = new BalancedEncoder(*reinterpret_cast<BalancedEncoder*>(copy.encoder_));
         }
     }
 
@@ -1376,15 +1372,67 @@ namespace seal
         }
     }
 
-    FractionalEncoder::FractionalEncoder(const BigUInt &plain_modulus, const BigPoly &poly_modulus, int integer_coeff_count, int fraction_coeff_count, uint64_t base)
+    void IntegerEncoder::encode(uint64_t value, BigPoly &destination)
+    {
+        encoder_->encode(value, destination);
+
+        // Resize to correct size
+        destination.resize(destination.significant_coeff_count(), destination.coeff_bit_count());
+    }
+
+    void IntegerEncoder::encode(int64_t value, BigPoly &destination)
+    {
+        encoder_->encode(value, destination);
+
+        // Resize to correct size
+        destination.resize(destination.significant_coeff_count(), destination.coeff_bit_count());
+    }
+
+    void IntegerEncoder::encode(const BigUInt &value, BigPoly &destination)
+    {
+        encoder_->encode(value, destination);
+
+        // Resize to correct size
+        destination.resize(destination.significant_coeff_count(), destination.coeff_bit_count());
+    }
+
+    void IntegerEncoder::encode(int32_t value, BigPoly &destination)
+    {
+        encoder_->encode(value, destination);
+
+        // Resize to correct size
+        destination.resize(destination.significant_coeff_count(), destination.coeff_bit_count());
+    }
+
+    void IntegerEncoder::encode(uint32_t value, BigPoly &destination)
+    {
+        encoder_->encode(value, destination);
+
+        // Resize to correct size
+        destination.resize(destination.significant_coeff_count(), destination.coeff_bit_count());
+    }
+
+    FractionalEncoder::FractionalEncoder(const BigUInt &plain_modulus, const BigPoly &poly_modulus, int integer_coeff_count, int fraction_coeff_count, uint64_t base, const MemoryPoolHandle &pool)
     {
         if (base == 2)
         {
-            encoder_ = new BinaryFractionalEncoder(plain_modulus, poly_modulus, integer_coeff_count, fraction_coeff_count);
+            encoder_ = new BinaryFractionalEncoder(plain_modulus, poly_modulus, integer_coeff_count, fraction_coeff_count, pool);
         }
         else
         {
-            encoder_ = new BalancedFractionalEncoder(plain_modulus, poly_modulus, integer_coeff_count, fraction_coeff_count, base);
+            encoder_ = new BalancedFractionalEncoder(plain_modulus, poly_modulus, integer_coeff_count, fraction_coeff_count, base, pool);
+        }
+    }
+
+    FractionalEncoder::FractionalEncoder(const FractionalEncoder &copy)
+    {
+        if (copy.base() == 2)
+        {
+            encoder_ = new BinaryFractionalEncoder(*reinterpret_cast<BinaryFractionalEncoder*>(copy.encoder_));
+        }
+        else
+        {
+            encoder_ = new BalancedFractionalEncoder(*reinterpret_cast<BalancedFractionalEncoder*>(copy.encoder_));
         }
     }
 

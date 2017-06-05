@@ -53,8 +53,7 @@ namespace seal
         preencrypt(plain.pointer(), plain.coeff_count(), plain_coeff_uint64_count, destination[0].pointer());
 
         // Generate u 
-        MemoryPool &pool = *MemoryPool::default_pool();
-        Pointer u(allocate_poly(coeff_count, coeff_uint64_count, pool));
+        Pointer u(allocate_poly(coeff_count, coeff_uint64_count, pool_));
         unique_ptr<UniformRandomGenerator> random(random_generator_->create());
 
         set_poly_coeffs_zero_one_negone(u.get(), random.get());
@@ -63,7 +62,7 @@ namespace seal
         // Calculate public_key_[0] * u.
         // Since we (may) need both public_key_[0] and u later, need a temp variable to store the solution.
         // Add temp into destination[0].
-        Pointer temp(allocate_poly(coeff_count, coeff_uint64_count, pool));
+        Pointer temp(allocate_poly(coeff_count, coeff_uint64_count, pool_));
 
         // Multiply both u*public_key_[0] and u*public_key_[1] using the same FFT
         set_zero_uint(coeff_uint64_count, get_poly_coeff(temp.get(), coeff_count - 1, coeff_uint64_count));
@@ -71,13 +70,13 @@ namespace seal
         
         if (qualifiers_.enable_ntt)
         {
-            ntt_double_multiply_poly_nttpoly(u.get(), public_key_[0].pointer(), public_key_[1].pointer(), ntt_tables_, temp.get(), destination[1].pointer(), pool);
+            ntt_double_multiply_poly_nttpoly(u.get(), public_key_[0].pointer(), public_key_[1].pointer(), ntt_tables_, temp.get(), destination[1].pointer(), pool_);
         }
         else if(!qualifiers_.enable_ntt && qualifiers_.enable_nussbaumer)
         {
             int coeff_count_power = polymod_.coeff_count_power_of_two(); 
-            nussbaumer_multiply_poly_poly_coeffmod(u.get(), public_key_[0].pointer(), coeff_count_power, mod_, temp.get(), pool); 
-            nussbaumer_multiply_poly_poly_coeffmod(u.get(), public_key_[1].pointer(), coeff_count_power, mod_, destination[1].pointer(), pool);
+            nussbaumer_multiply_poly_poly_coeffmod(u.get(), public_key_[0].pointer(), coeff_count_power, mod_, temp.get(), pool_); 
+            nussbaumer_multiply_poly_poly_coeffmod(u.get(), public_key_[1].pointer(), coeff_count_power, mod_, destination[1].pointer(), pool_);
         }
         else
         {
@@ -109,11 +108,10 @@ namespace seal
         }
 
         // Multiply plain by scalar coeff_div_plain_modulus_ and reposition if in upper-half.
-        MemoryPool &pool = *MemoryPool::default_pool();
         if (plain == destination)
         {
             // If plain and destination are same poly, then need another storage for multiply output.
-            Pointer temp(allocate_uint(coeff_uint64_count, pool));
+            Pointer temp(allocate_uint(coeff_uint64_count, pool_));
             for (int i = 0; i < plain_coeff_count; i++)
             {
                 multiply_uint_uint(plain, plain_coeff_uint64_count, coeff_div_plain_modulus_.pointer(), coeff_uint64_count, coeff_uint64_count, temp.get());
@@ -239,16 +237,16 @@ namespace seal
         set_zero_uint(coeff_uint64_count, poly);
     }
 
-    Encryptor::Encryptor(const EncryptionParameters &parms, const BigPolyArray &public_key) :
-        poly_modulus_(parms.poly_modulus()), coeff_modulus_(parms.coeff_modulus()), plain_modulus_(parms.plain_modulus()), public_key_(public_key),
+    Encryptor::Encryptor(const EncryptionParameters &parms, const BigPolyArray &public_key, const MemoryPoolHandle &pool) :
+       pool_(pool), poly_modulus_(parms.poly_modulus()), coeff_modulus_(parms.coeff_modulus()), plain_modulus_(parms.plain_modulus()), public_key_(public_key),
         noise_standard_deviation_(parms.noise_standard_deviation()), noise_max_deviation_(parms.noise_max_deviation()), 
         random_generator_(parms.random_generator() != nullptr ? parms.random_generator() : UniformRandomGeneratorFactory::default_factory()),
-        qualifiers_(parms.get_qualifiers())
+        ntt_tables_(pool_), qualifiers_(parms.get_qualifiers())
     {
         // Verify parameters
         if (!qualifiers_.parameters_set)
         {
-            throw invalid_argument("encryption parameters are not set correctly");
+            throw invalid_argument("encryption parameters are not valid");
         }
 
         int coeff_count = poly_modulus_.significant_coeff_count();
@@ -278,10 +276,9 @@ namespace seal
         }
 
         // Calculate coeff_modulus / plain_modulus.
-        MemoryPool &pool = *MemoryPool::default_pool();
         coeff_div_plain_modulus_.resize(coeff_bit_count);
-        Pointer temp(allocate_uint(coeff_uint64_count, pool));
-        divide_uint_uint(coeff_modulus_.pointer(), plain_modulus_.pointer(), coeff_uint64_count, coeff_div_plain_modulus_.pointer(), temp.get(), pool);
+        Pointer temp(allocate_uint(coeff_uint64_count, pool_));
+        divide_uint_uint(coeff_modulus_.pointer(), plain_modulus_.pointer(), coeff_uint64_count, coeff_div_plain_modulus_.pointer(), temp.get(), pool_);
 
         // Calculate upper_half_increment.
         upper_half_increment_.resize(coeff_bit_count);
@@ -294,15 +291,27 @@ namespace seal
 
         // Initialize moduli.
         polymod_ = PolyModulus(poly_modulus_.pointer(), coeff_count, coeff_uint64_count);
-        mod_ = Modulus(coeff_modulus_.pointer(), coeff_uint64_count, pool);
+        mod_ = Modulus(coeff_modulus_.pointer(), coeff_uint64_count, pool_);
 
         // Generate NTT tables if needed
         if (qualifiers_.enable_ntt)
         {
-            if (!ntt_tables_.generate(polymod_.coeff_count_power_of_two(), mod_))
-            {
-                throw invalid_argument("failed to generate NTT tables");
-            }
+            // Copy over NTT tables (switching to local pool)
+            ntt_tables_ = parms.ntt_tables_;
         }
+    }
+
+    Encryptor::Encryptor(const Encryptor &copy) : pool_(copy.pool_), poly_modulus_(copy.poly_modulus_), coeff_modulus_(copy.coeff_modulus_),
+        plain_modulus_(copy.plain_modulus_), upper_half_threshold_(copy.upper_half_threshold_), upper_half_increment_(copy.upper_half_increment_),
+        coeff_div_plain_modulus_(copy.coeff_div_plain_modulus_), public_key_(copy.public_key_), noise_standard_deviation_(copy.noise_standard_deviation_),
+        noise_max_deviation_(copy.noise_max_deviation_), random_generator_(copy.random_generator_), ntt_tables_(copy.ntt_tables_), qualifiers_(copy.qualifiers_)
+    {
+        int coeff_count = poly_modulus_.significant_coeff_count();
+        int coeff_bit_count = coeff_modulus_.significant_bit_count();
+        int coeff_uint64_count = divide_round_up(coeff_bit_count, bits_per_uint64);
+
+        // Initialize moduli.
+        polymod_ = PolyModulus(poly_modulus_.pointer(), coeff_count, coeff_uint64_count);
+        mod_ = Modulus(coeff_modulus_.pointer(), coeff_uint64_count, pool_);
     }
 }

@@ -27,9 +27,14 @@ namespace seal
     }
 
     BigPolyArray::BigPolyArray(BigPolyArray &&source) noexcept : 
-        value_(nullptr), polys_(nullptr), size_(0), coeff_count_(0), coeff_bit_count_(0)
+        value_(source.value_), polys_(source.polys_), size_(source.size_), coeff_count_(source.coeff_count_), coeff_bit_count_(source.coeff_bit_count_)
     {
-        operator =(move(source));
+        // Manually reset source without deallocating
+        source.value_ = nullptr;
+        source.polys_ = nullptr;
+        source.size_ = 0;
+        source.coeff_count_ = 0;
+        source.coeff_bit_count_ = 0;
     }
 
     BigPolyArray::~BigPolyArray()
@@ -229,14 +234,8 @@ namespace seal
         return *this;
     }
 
-    BigPolyArray &BigPolyArray::operator =(BigPolyArray &&assign) noexcept
+    BigPolyArray &BigPolyArray::operator =(BigPolyArray &&assign)
     {
-        // Do nothing if same thing.
-        if (&assign == this)
-        {
-            return *this;
-        }
-
         // Deallocate currently allocated pointers
         reset();
 

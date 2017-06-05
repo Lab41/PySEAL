@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <utility>
 #include "encryptionparams.h"
 #include "evaluationkeys.h"
 #include "util/mempool.h"
@@ -8,6 +9,8 @@
 #include "util/polymodulus.h"
 #include "util/ntt.h"
 #include "util/crt.h"
+#include "memorypoolhandle.h"
+#include "ciphertext.h"
 
 namespace seal
 {
@@ -20,27 +23,29 @@ namespace seal
     the size of the ciphertext in such a way that if the input ciphertexts have size M and N, then the
     output ciphertext will have size M+N-1. The multiplication operation will require M*N polynomial
     multiplications to be performed. To read the current size of a ciphertext the user can use
-    BigPolyArray::size().
+    BigPolyArray::size(). 
     
     A relinearization operation can be used to reduce the size of a ciphertext to any smaller size
     (but at least 2), potentially improving the performance of a subsequent multiplication using it.
-    However, relinearization grows the inherent noise in a ciphertext by an additive factor proportional
-    to 2^DBC, and relinearizing from size K to L will require 2*(K-L)*[floor(log_2(coeff_modulus)/DBC)+1]
-    polynomial multiplications. Here DBC denotes the decomposition bit count set in the encryption parameters. 
+    However, relinearization consumes the invariant noise budget in a ciphertext by an additive factor 
+    proportional to 2^DBC, and relinearizing from size K to L will require 2*(K-L)*[floor(log_2(coeff_modulus)/DBC)+1]
+    polynomial multiplications, where DBC denotes the decomposition bit count set in the encryption parameters. 
     Note that the larger the decomposition bit count is, the faster relinearization will be, but also the
-    inherent noise growth will be larger. In typical cases, however, the user might not want to relinearize
-    at all as even the computational cost of a relinearization might be larger than what might be gained
-    from a subsequent multiplication with a ciphertext of smaller size.
+    more invariant noise budget will be consumed.
 
     Relinearization requires the key generator to generate evaluation keys. More specifically, to relinearize
     a ciphertext of size K down to any size smaller than K (but at least 2), at least K-2 evaluation keys will
     be needed. These have to be given as an input parameter to the constructor of Evaluator.
 
-    @par Inherent Noise
-    Technically speaking, the inherent noise of a ciphertext is a polynomial, but the condition for decryption working
-    depends on the size of the largest absolute value of its coefficients. This is what we will call the "noise", the 
-    "inherent noise", or the "error", in this documentation. Typically multiplication will be the most heavy operation 
-    in terms of noise growth. The reader is referred to the description of the encryption scheme for more details.
+    @par Invariant Noise Budget
+    The invariant noise polynomial of a ciphertext is a rational coefficient polynomial, such that
+    a ciphertext decrypts correctly as long as the coefficients of the invariant noise polynomial are
+    of absolute value less than 1/2. Thus, we call the infinity-norm of the invariant noise polynomial
+    the invariant noise, and for correct decryption require it to be less than 1/2. If v denotes the
+    invariant noise, we define the invariant noise budget as -log2(2v). Thus, the invariant noise budget
+    starts from some initial value, which depends on the encryption parameters, and decreases to 0 when
+    computations are performed. When the budget reaches 0, the ciphertext becomes too noisy to decrypt
+    correctly.
     */
     class Evaluator
     {
@@ -48,25 +53,49 @@ namespace seal
         /**
         Creates an Evaluator instance initialized with the specified encryption parameters and
         evaluation keys. If no evaluation keys will be needed, one can simply pass a newly 
-        created empty instance of EvaluationKeys to the function.
+        created empty instance of EvaluationKeys to the function. Optionally, the user can 
+        give a reference to a MemoryPoolHandle object to use a custom memory pool instead of 
+        the global memory pool (default).
 
         @param[in] parms The encryption parameters
         @param[in] evaluation_keys The evaluation keys
+        @param[in] pool The memory pool handle
         @throws std::invalid_argument if encryption parameters or evaluation keys are not valid
         @see EncryptionParameters for more details on valid encryption parameters.
+        @see MemoryPoolHandle for more details on memory pool handles.
         */
-        Evaluator(const EncryptionParameters &parms, const EvaluationKeys &evaluation_keys);
+        Evaluator(const EncryptionParameters &parms, const EvaluationKeys &evaluation_keys, 
+            const MemoryPoolHandle &pool = MemoryPoolHandle::acquire_global());
 
         /**
         Creates an Evaluator instance initialized with the specified encryption parameters.
+        Optionally, the user can give a reference to a MemoryPoolHandle object to use a custom 
+        memory pool instead of the global memory pool (default).
 
         @param[in] parms The encryption parameters
+        @param[in] pool The memory pool handle
         @throws std::invalid_argument if encryption parameters are not valid
         @see EncryptionParameters for more details on valid encryption parameters.
+        @see MemoryPoolHandle for more details on memory pool handles.
         */
-        Evaluator(const EncryptionParameters &parms) : Evaluator(parms, EvaluationKeys())
+        Evaluator(const EncryptionParameters &parms, const MemoryPoolHandle &pool = MemoryPoolHandle::acquire_global())
+            : Evaluator(parms, EvaluationKeys(), pool)
         {
         }
+
+        /**
+        Creates a copy of a Evaluator.
+
+        @param[in] copy The Evaluator to copy from
+        */
+        Evaluator(const Evaluator &copy);
+
+        /**
+        Creates a new Evaluator by moving an old one.
+
+        @param[in] source The Evaluator to move from
+        */
+        Evaluator(Evaluator &&source) = default;
 
         /**
         Negates a ciphertext and stores the result in the destination parameter.
@@ -136,6 +165,32 @@ namespace seal
         BigPolyArray add_many(const std::vector<BigPolyArray> &encrypteds)
         {
             BigPolyArray result;
+            add_many(encrypteds, result);
+            return result;
+        }
+
+        /**
+        Adds together an number of ciphertexts stored as elements of std::vector<Ciphertext>
+        and stores the result in the destination parameter.
+
+        @param[in] encrypteds The ciphertexts to add
+        @param[out] destination The ciphertext to overwrite with the addition result
+        @throws std::invalid_argument if encrypteds is empty
+        @throws std::invalid_argument if the ciphertexts are not valid for the encryption parameters
+        */
+        void add_many(const std::vector<Ciphertext> &encrypteds, Ciphertext &destination);
+
+        /**
+        Adds together an number of ciphertexts stored as elements of std::vector<Ciphertext>
+        and returns the result.
+
+        @param[in] encrypteds The ciphertexts to add
+        @throws std::invalid_argument if encrypteds is empty
+        @throws std::invalid_argument if the ciphertexts are not valid for the encryption parameters
+        */
+        Ciphertext add_many(const std::vector<Ciphertext> &encrypteds)
+        {
+            Ciphertext result;
             add_many(encrypteds, result);
             return result;
         }
@@ -264,6 +319,31 @@ namespace seal
         }
 
         /**
+        Multiplies a vector of ciphertexts together and returns the result. Relinearization is performed after
+        every multiplication, so enough encryption keys must have been given to the constructor of the Evaluator.
+
+        @param[in] encrypteds The vector of ciphertexts to multiply
+        @throws std::invalid_argument if the encrypteds vector is empty
+        @throws std::invalid_argument if the ciphertexts are not valid ciphertexts for the encryption parameters
+        */
+        Ciphertext multiply_many(std::vector<Ciphertext> encrypteds);
+
+        /**
+        Multiplies a vector of ciphertexts together and stores the result in the destination parameter.
+        Relinearization is performed after every multiplication, so enough encryption keys must have been given
+        to the constructor of the Evaluator.
+
+        @param[in] encrypteds The vector of ciphertexts to multiply
+        @param[out] destination The ciphertext to overwrite with the multiplication result
+        @throws std::invalid_argument if the encrypteds vector is empty
+        @throws std::invalid_argument if the ciphertexts are not valid ciphertexts for the encryption parameters
+        */
+        void multiply_many(std::vector<Ciphertext> &encrypteds, Ciphertext &destination)
+        {
+            destination = multiply_many(encrypteds);
+        }
+
+        /**
         Raises a ciphertext to the specified power and stores the result in the destination parameter. 
         
         Exponentiation to power 0 is not allowed and will result in the library throwing an invalid argument
@@ -385,7 +465,7 @@ namespace seal
         @param[in] encrypted The ciphertext to multiply
         @param[in] plain The plaintext to multiply
         @param[out] destination The ciphertext to overwrite with the multiplication result
-        @throws std::invalid_argument if the ciphertexts are not valid for the encryption parameters
+        @throws std::invalid_argument if the encrypted is not valid for the encryption parameters
         @throws std::invalid_argument if the plaintext's significant coefficient count or coefficient
         values are too large to represent with the encryption parameters
         @throws std::invalid_argument if the plaintext multiplier is zero
@@ -406,7 +486,7 @@ namespace seal
         
         @param[in] encrypted The ciphertext to multiply
         @param[in] plain The plaintext to multiply
-        @throws std::invalid_argument if the ciphertexts are not valid for the encryption parameters
+        @throws std::invalid_argument if the encrypted is not valid for the encryption parameters
         @throws std::invalid_argument if the plaintext's significant coefficient count or coefficient
         values are too large to represent with the encryption parameters
         @throws std::invalid_argument if the plaintext multiplier is zero
@@ -426,15 +506,127 @@ namespace seal
             return evaluation_keys_;
         }
 
-    private:
-        Evaluator(const Evaluator &copy) = delete;
+        /*
+        Transform a plaintext from coefficient domain to NTT domain, with respect to the coefficient 
+        modulus. This function first embeds integers modulo the plaintext modulus to integers modulo 
+        the coefficient modulus, and then performs David Harvey's NTT on the resulting polynomial.
 
+        Ciphertexts in the NTT domain can be added as usual, and multiplied by plaintext polynomials
+        (also in the NTT domain) using multiply_plain_ntt, but cannot be homomorphically multiplied
+        with other ciphertexts without first transforming both inputs to coefficient domain with
+        transform_from_ntt.
+
+        @param[in] plain The plaintext to transform
+        @throws std::logic_error if the encryption parameters do not support NTT
+        @throws std::invalid_argument if plain is not valid for the encryption parameters
+        */
+        void transform_to_ntt(BigPoly &plain);
+ 
+        /*
+        Transform a plaintext from NTT domain to coefficient domain, with respect to the coefficient
+        modulus. This function first performs David Harvey's inverse NTT, and follows it by an inverse
+        of the coefficient embedding performed by transform_to_ntt(BigPoly &plain). 
+        
+        Ciphertexts in the NTT domain can be added as usual, and multiplied by plaintext polynomials 
+        (also in the NTT domain) using multiply_plain_ntt, but cannot be homomorphically multiplied
+        with other ciphertexts without first transforming both inputs to coefficient domain with 
+        transform_from_ntt.
+
+        @param[in] plain_ntt The plaintext to transform
+        @throws std::logic_error if the encryption parameters do not support NTT
+        @throws std::invalid_argument if plain_ntt is not valid for the encryption parameters
+        */
+        void transform_from_ntt(BigPoly &plain_ntt);
+
+        /*
+        Transform a ciphertext from coefficient domain to NTT domain, with respect to the coefficient
+        modulus. This function performs David Harvey's NTT separately on each of the polynomials
+        in the given BigPolyArray. 
+        
+        Ciphertexts in the NTT domain can be added as usual, and multiplied 
+        by plaintext polynomials (also in the NTT domain) using multiply_plain_ntt, but cannot be
+        homomorphically multiplied with other ciphertexts without first transforming both inputs
+        to coefficient domain with transform_from_ntt.
+
+        @param[in] encrypted The ciphertext to transform
+        @throws std::logic_error if the encryption parameters do not support NTT
+        @throws std::invalid_argument if encrypted is not valid for the encryption parameters
+        */
+        void transform_to_ntt(BigPolyArray &encrypted);
+
+        /*
+        Transform a ciphertext from NTT domain to coefficient domain, with respect to the coefficient
+        modulus. This function performs David Harvey's inverse NTT separately on each of the polynomials
+        in the given BigPolyArray. 
+        
+        Ciphertexts in the NTT domain can be added as usual, and multiplied by plaintext polynomials
+        (also in the NTT domain) using multiply_plain_ntt, but cannot be homomorphically multiplied
+        with other ciphertexts without first transforming both inputs to coefficient domain with
+        transform_from_ntt.
+
+        @param[in] encrypted_ntt The ciphertext to transform
+        @throws std::logic_error if the encryption parameters do not support NTT
+        @throws std::invalid_argument if encrypted_ntt is not valid for the encryption parameters
+        */
+        void transform_from_ntt(BigPolyArray &encrypted_ntt);
+
+        /*
+        Multiplies a ciphertext with a plaintext, assuming both are already transformed to NTT domain.
+        The result ciphertext remains in the NTT domain, and can be transformed back to coefficient
+        domain with transform_from_ntt.
+
+        Ciphertexts in the NTT domain can be added as usual, and multiplied by plaintext polynomials
+        (also in the NTT domain) using multiply_plain_ntt, but cannot be homomorphically multiplied
+        with other ciphertexts without first transforming both inputs to coefficient domain with
+        transform_from_ntt.
+
+        @param[in] encrypted_ntt The ciphertext to multiply (in NTT domain)
+        @param[in] plain_ntt The plaintext to multiply (in NTT domain)
+        @param[out] destination_ntt The ciphertext to overwrite with the multiplication result (in NTT domain)
+        @throws std::logic_error if the encryption parameters do not support NTT
+        @throws std::invalid_argument if encrypted_ntt is not valid for the encryption parameters
+        @throws std::invalid_argument if the plaintext's significant coefficient count or coefficient
+        values are too large to represent with the encryption parameters
+        @throws std::invalid_argument if the plaintext multiplier is zero
+        */
+        void multiply_plain_ntt(const BigPolyArray &encrypted_ntt, const BigPoly &plain_ntt, BigPolyArray &destination_ntt);
+
+        /*
+        Multiplies a ciphertext with a plaintext, assuming both are already transformed to NTT domain,
+        and returns the result. The result ciphertext remains in the NTT domain, and can be transformed 
+        back to coefficient domain with transform_from_ntt.
+
+        Ciphertexts in the NTT domain can be added as usual, and multiplied by plaintext polynomials
+        (also in the NTT domain) using multiply_plain_ntt, but cannot be homomorphically multiplied
+        with other ciphertexts without first transforming both inputs to coefficient domain with
+        transform_from_ntt.
+
+        @param[in] encrypted_ntt The ciphertext to multiply (in NTT domain)
+        @param[in] plain_ntt The plaintext to multiply (in NTT domain)
+        @throws std::logic_error if the encryption parameters do not support NTT
+        @throws std::invalid_argument if encrypted_ntt is not valid for the encryption parameters
+        @throws std::invalid_argument if the plaintext's significant coefficient count or coefficient
+        values are too large to represent with the encryption parameters
+        @throws std::invalid_argument if the plaintext multiplier is zero
+        */
+        BigPolyArray multiply_plain_ntt(const BigPolyArray &encrypted_ntt, const BigPoly &plain_ntt)
+        {
+            BigPolyArray result_ntt;
+            multiply_plain_ntt(encrypted_ntt, plain_ntt, result_ntt);
+            return result_ntt;
+        }
+
+    private:
         Evaluator &operator =(const Evaluator &assign) = delete;
+
+        Evaluator &operator =(Evaluator &&assign) = delete;
 
         void preencrypt(const std::uint64_t *plain, int plain_coeff_count, int plain_coeff_uint64_count, std::uint64_t *destination);
 
         void relinearize_one_step(const std::uint64_t *encrypted, int encrypted_size, std::uint64_t *destination, util::MemoryPool &pool);
 
+        MemoryPoolHandle pool_;
+        
         BigPoly poly_modulus_;
 
         BigUInt coeff_modulus_;

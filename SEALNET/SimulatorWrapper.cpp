@@ -21,6 +21,15 @@ namespace Microsoft
                 simulationEvaluator_ = new seal::SimulationEvaluator();
             }
 
+            SimulationEvaluator::SimulationEvaluator(MemoryPoolHandle ^pool) : simulationEvaluator_(nullptr)
+            {
+                if (pool == nullptr)
+                {
+                    throw gcnew ArgumentNullException("pool cannot be null");
+                }
+                simulationEvaluator_ = new seal::SimulationEvaluator(pool->GetHandle());
+            }
+
             SimulationEvaluator::~SimulationEvaluator()
             {
                 this->!SimulationEvaluator();
@@ -33,6 +42,65 @@ namespace Microsoft
                     delete simulationEvaluator_;
                     simulationEvaluator_ = nullptr;
                 }
+            }
+
+            Simulation ^SimulationEvaluator::GetFresh(EncryptionParameters ^parms, int plainMaxCoeffCount, BigUInt ^plainMaxAbsValue)
+            {
+                if (simulationEvaluator_ == nullptr)
+                {
+                    throw gcnew ObjectDisposedException("SimulationEvaluator is disposed");
+                }
+                if (parms == nullptr)
+                {
+                    throw gcnew ArgumentNullException("parms cannot be null");
+                }
+                if (plainMaxAbsValue == nullptr)
+                {
+                    throw gcnew ArgumentNullException("plainMaxAbsValue cannot be null");
+                }
+                try
+                {
+                    auto result = gcnew Simulation(simulationEvaluator_->get_fresh(parms->GetParameters(), plainMaxCoeffCount, plainMaxAbsValue->GetUInt()));
+                    GC::KeepAlive(parms);
+                    GC::KeepAlive(plainMaxAbsValue);
+                    return result;
+                }
+                catch (const exception &e)
+                {
+                    HandleException(&e);
+                }
+                catch (...)
+                {
+                    HandleException(nullptr);
+                }
+                throw gcnew Exception("Unexpected exception");
+            }
+
+            Simulation ^SimulationEvaluator::GetFresh(EncryptionParameters ^parms, int plainMaxCoeffCount, System::UInt64 plainMaxAbsValue)
+            {
+                if (simulationEvaluator_ == nullptr)
+                {
+                    throw gcnew ObjectDisposedException("SimulationEvaluator is disposed");
+                }
+                if (parms == nullptr)
+                {
+                    throw gcnew ArgumentNullException("parms cannot be null");
+                }
+                try
+                {
+                    auto result = gcnew Simulation(simulationEvaluator_->get_fresh(parms->GetParameters(), plainMaxCoeffCount, plainMaxAbsValue));
+                    GC::KeepAlive(parms);
+                    return result;
+                }
+                catch (const exception &e)
+                {
+                    HandleException(&e);
+                }
+                catch (...)
+                {
+                    HandleException(nullptr);
+                }
+                throw gcnew Exception("Unexpected exception");
             }
 
             Simulation ^SimulationEvaluator::Relinearize(Simulation ^simulation)
@@ -58,7 +126,6 @@ namespace Microsoft
                     HandleException(nullptr);
                 }
                 throw gcnew Exception("Unexpected exception");
-
             }
             
             Simulation ^SimulationEvaluator::Relinearize(Simulation ^simulation, int destinationSize)
@@ -305,7 +372,7 @@ namespace Microsoft
                 throw gcnew Exception("Unexpected exception");
             }
 
-            Simulation ^SimulationEvaluator::AddPlain(Simulation ^simulation)
+            Simulation ^SimulationEvaluator::AddPlain(Simulation ^simulation, int plainMaxCoeffCount, BigUInt ^plainMaxAbsValue)
             {
                 if (simulationEvaluator_ == nullptr)
                 {
@@ -315,10 +382,15 @@ namespace Microsoft
                 {
                     throw gcnew ArgumentNullException("simulation cannot be null");
                 }
+                if (plainMaxAbsValue == nullptr)
+                {
+                    throw gcnew ArgumentNullException("plainMaxAbsValue cannot be null");
+                }
                 try
                 {
-                    auto result = gcnew Simulation(simulationEvaluator_->add_plain(simulation->GetSimulation()));
+                    auto result = gcnew Simulation(simulationEvaluator_->add_plain(simulation->GetSimulation(), plainMaxCoeffCount, plainMaxAbsValue->GetUInt()));
                     GC::KeepAlive(simulation);
+                    GC::KeepAlive(plainMaxAbsValue);
                     return result;
                 }
                 catch (const exception &e)
@@ -332,7 +404,7 @@ namespace Microsoft
                 throw gcnew Exception("Unexpected exception");
             }
 
-            Simulation ^SimulationEvaluator::SubPlain(Simulation ^simulation)
+            Simulation ^SimulationEvaluator::AddPlain(Simulation ^simulation, int plainMaxCoeffCount, UInt64 plainMaxAbsValue)
             {
                 if (simulationEvaluator_ == nullptr)
                 {
@@ -344,8 +416,69 @@ namespace Microsoft
                 }
                 try
                 {
-                    auto result = gcnew Simulation(simulationEvaluator_->sub_plain(simulation->GetSimulation()));
+                    auto result = gcnew Simulation(simulationEvaluator_->add_plain(simulation->GetSimulation(), plainMaxCoeffCount, plainMaxAbsValue));
                     GC::KeepAlive(simulation);
+                    GC::KeepAlive(plainMaxAbsValue);
+                    return result;
+                }
+                catch (const exception &e)
+                {
+                    HandleException(&e);
+                }
+                catch (...)
+                {
+                    HandleException(nullptr);
+                }
+                throw gcnew Exception("Unexpected exception");
+            }
+
+            Simulation ^SimulationEvaluator::SubPlain(Simulation ^simulation, int plainMaxCoeffCount, BigUInt ^plainMaxAbsValue)
+            {
+                if (simulationEvaluator_ == nullptr)
+                {
+                    throw gcnew ObjectDisposedException("SimulationEvaluator is disposed");
+                }
+                if (simulation == nullptr)
+                {
+                    throw gcnew ArgumentNullException("simulation cannot be null");
+                }
+                if (plainMaxAbsValue == nullptr)
+                {
+                    throw gcnew ArgumentNullException("plainMaxAbsValue cannot be null");
+                }
+                try
+                {
+                    auto result = gcnew Simulation(simulationEvaluator_->sub_plain(simulation->GetSimulation(), plainMaxCoeffCount, plainMaxAbsValue->GetUInt()));
+                    GC::KeepAlive(simulation);
+                    GC::KeepAlive(plainMaxAbsValue);
+                    return result;
+                }
+                catch (const exception &e)
+                {
+                    HandleException(&e);
+                }
+                catch (...)
+                {
+                    HandleException(nullptr);
+                }
+                throw gcnew Exception("Unexpected exception");
+            }
+
+            Simulation ^SimulationEvaluator::SubPlain(Simulation ^simulation, int plainMaxCoeffCount, UInt64 plainMaxAbsValue)
+            {
+                if (simulationEvaluator_ == nullptr)
+                {
+                    throw gcnew ObjectDisposedException("SimulationEvaluator is disposed");
+                }
+                if (simulation == nullptr)
+                {
+                    throw gcnew ArgumentNullException("simulation cannot be null");
+                }
+                try
+                {
+                    auto result = gcnew Simulation(simulationEvaluator_->sub_plain(simulation->GetSimulation(), plainMaxCoeffCount, plainMaxAbsValue));
+                    GC::KeepAlive(simulation);
+                    GC::KeepAlive(plainMaxAbsValue);
                     return result;
                 }
                 catch (const exception &e)
@@ -469,49 +602,13 @@ namespace Microsoft
                 }
             }
 
-            BigUInt ^Simulation::Noise::get()
+            int Simulation::InvariantNoiseBudget::get()
             {
                 if (simulation_ == nullptr)
                 {
                     throw gcnew ObjectDisposedException("Simulation is disposed");
                 }
-                return gcnew BigUInt(simulation_->noise());
-            }
-
-            BigUInt ^Simulation::MaxNoise::get()
-            {
-                if (simulation_ == nullptr)
-                {
-                    throw gcnew ObjectDisposedException("Simulation is disposed");
-                }
-                return gcnew BigUInt(simulation_->max_noise());
-            }
-
-            int Simulation::MaxNoiseBits::get()
-            {
-                if (simulation_ == nullptr)
-                {
-                    throw gcnew ObjectDisposedException("Simulation is disposed");
-                }
-                return simulation_->max_noise_bits();
-            }
-
-            int Simulation::NoiseBits::get()
-            {
-                if (simulation_ == nullptr)
-                {
-                    throw gcnew ObjectDisposedException("Simulation is disposed");
-                }
-                return simulation_->noise_bits();
-            }
-
-            int Simulation::NoiseBitsLeft::get()
-            {
-                if (simulation_ == nullptr)
-                {
-                    throw gcnew ObjectDisposedException("Simulation is disposed");
-                }
-                return simulation_->noise_bits_left();
+                return simulation_->invariant_noise_budget();
             }
 
             int Simulation::Size::get()
@@ -521,24 +618,6 @@ namespace Microsoft
                     throw gcnew ObjectDisposedException("Simulation is disposed");
                 }
                 return simulation_->size();
-            }
-
-            BigUInt ^Simulation::CoeffModulus::get()
-            {
-                if (simulation_ == nullptr)
-                {
-                    throw gcnew ObjectDisposedException("Simulation is disposed");
-                }
-                return gcnew BigUInt(simulation_->coeff_modulus());
-            }
-
-            BigUInt ^Simulation::PlainModulus::get()
-            {
-                if (simulation_ == nullptr)
-                {
-                    throw gcnew ObjectDisposedException("Simulation is disposed");
-                }
-                return gcnew BigUInt(simulation_->plain_modulus());
             }
 
             bool Simulation::Decrypts()
@@ -562,7 +641,7 @@ namespace Microsoft
                 throw gcnew Exception("Unexpected exception");
             }
 
-            bool Simulation::Decrypts(int noiseGap)
+            bool Simulation::Decrypts(int budgetGap)
             {
                 if (simulation_ == nullptr)
                 {
@@ -570,7 +649,7 @@ namespace Microsoft
                 }
                 try
                 {
-                    return simulation_->decrypts(noiseGap);
+                    return simulation_->decrypts(budgetGap);
                 }
                 catch (const exception &e)
                 {
@@ -583,7 +662,7 @@ namespace Microsoft
                 throw gcnew Exception("Unexpected exception");
             }
 
-            Simulation::Simulation(EncryptionParameters ^parms) : simulation_(nullptr)
+            Simulation::Simulation(EncryptionParameters ^parms, int noiseBudget, int ciphertextSize)
             {
                 if (parms == nullptr)
                 {
@@ -591,34 +670,8 @@ namespace Microsoft
                 }
                 try
                 {
-                    simulation_ = new seal::Simulation(parms->GetParameters());
+                    simulation_ = new seal::Simulation(parms->GetParameters(), noiseBudget, ciphertextSize);
                     GC::KeepAlive(parms);
-                }
-                catch (const exception &e)
-                {
-                    HandleException(&e);
-                }
-                catch (...)
-                {
-                    HandleException(nullptr);
-                }
-            }
-
-            Simulation::Simulation(EncryptionParameters ^parms, BigUInt ^noise, int ciphertextSize)
-            {
-                if (parms == nullptr)
-                {
-                    throw gcnew ArgumentNullException("parms cannot be null");
-                }
-                if (noise == nullptr)
-                {
-                    throw gcnew ArgumentNullException("noise cannot be null");
-                }
-                try
-                {
-                    simulation_ = new seal::Simulation(parms->GetParameters(), noise->GetUInt(), ciphertextSize);
-                    GC::KeepAlive(parms);
-                    GC::KeepAlive(noise);
                 }
                 catch (const exception &e)
                 {

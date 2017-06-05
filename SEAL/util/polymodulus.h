@@ -13,6 +13,14 @@ namespace seal
 
             PolyModulus(const std::uint64_t *poly, int coeff_count, int coeff_uint64_count);
 
+            PolyModulus &operator =(const PolyModulus &assign) = default;
+
+            PolyModulus(const PolyModulus &copy) = default;
+
+            PolyModulus &operator =(PolyModulus &&assign) noexcept;
+
+            PolyModulus(PolyModulus &&source) noexcept;
+
             const std::uint64_t *get() const
             {
                 return poly_;

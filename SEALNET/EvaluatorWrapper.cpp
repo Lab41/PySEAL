@@ -42,6 +42,37 @@ namespace Microsoft
                 }
             }
 
+            Evaluator::Evaluator(EncryptionParameters ^parms, Microsoft::Research::SEAL::EvaluationKeys ^evaluationKeys, MemoryPoolHandle ^pool) : evaluator_(nullptr)
+            {
+                if (parms == nullptr)
+                {
+                    throw gcnew ArgumentNullException("parms cannot be null");
+                }
+                if (evaluationKeys == nullptr)
+                {
+                    throw gcnew ArgumentNullException("evaluationKeys cannot be null");
+                }
+                if (pool == nullptr)
+                {
+                    throw gcnew ArgumentNullException("pool cannot be null");
+                }
+                try
+                {
+                    evaluator_ = new seal::Evaluator(parms->GetParameters(), evaluationKeys->GetKeys(), pool->GetHandle());
+                    GC::KeepAlive(parms);
+                    GC::KeepAlive(evaluationKeys);
+                    GC::KeepAlive(pool);
+                }
+                catch (const exception &e)
+                {
+                    HandleException(&e);
+                }
+                catch (...)
+                {
+                    HandleException(nullptr);
+                }
+            }
+
             Evaluator::Evaluator(EncryptionParameters ^parms) : evaluator_(nullptr)
             {
                 if (parms == nullptr)
@@ -52,6 +83,53 @@ namespace Microsoft
                 {
                     evaluator_ = new seal::Evaluator(parms->GetParameters());
                     GC::KeepAlive(parms);
+                }
+                catch (const exception &e)
+                {
+                    HandleException(&e);
+                }
+                catch (...)
+                {
+                    HandleException(nullptr);
+                }
+            }
+
+            Evaluator::Evaluator(EncryptionParameters ^parms, MemoryPoolHandle ^pool) : evaluator_(nullptr)
+            {
+                if (parms == nullptr)
+                {
+                    throw gcnew ArgumentNullException("parms cannot be null");
+                }
+                if (pool == nullptr)
+                {
+                    throw gcnew ArgumentNullException("pool cannot be null");
+                }
+                try
+                {
+                    evaluator_ = new seal::Evaluator(parms->GetParameters(), pool->GetHandle());
+                    GC::KeepAlive(parms);
+                    GC::KeepAlive(pool);
+                }
+                catch (const exception &e)
+                {
+                    HandleException(&e);
+                }
+                catch (...)
+                {
+                    HandleException(nullptr);
+                }
+            }
+
+            Evaluator::Evaluator(Evaluator ^copy) : evaluator_(nullptr)
+            {
+                if (copy == nullptr)
+                {
+                    throw gcnew ArgumentNullException("copy cannot be null");
+                }
+                try
+                {
+                    evaluator_ = new seal::Evaluator(copy->GetEvaluator());
+                    GC::KeepAlive(copy);
                 }
                 catch (const exception &e)
                 {
@@ -204,7 +282,7 @@ namespace Microsoft
                 }
                 if (encrypteds == nullptr)
                 {
-                    throw gcnew ArgumentNullException("encrypteds");
+                    throw gcnew ArgumentNullException("encrypteds cannot be null");
                 }
                 if (destination == nullptr)
                 {
@@ -217,13 +295,53 @@ namespace Microsoft
                     {
                         if (poly == nullptr)
                         {
-                            throw gcnew ArgumentNullException("encrypted cannot be null");
+                            throw gcnew ArgumentNullException("encrypteds cannot be null");
                         }
                         v_encrypteds.emplace_back(poly->GetArray());
                         GC::KeepAlive(poly);
                     }
 
                     evaluator_->add_many(v_encrypteds, destination->GetArray());
+                    GC::KeepAlive(destination);
+                }
+                catch (const exception &e)
+                {
+                    HandleException(&e);
+                }
+                catch (...)
+                {
+                    HandleException(nullptr);
+                }
+            }
+
+            void Evaluator::AddMany(List<Ciphertext^> ^encrypteds, Ciphertext ^destination)
+            {
+                if (evaluator_ == nullptr)
+                {
+                    throw gcnew ObjectDisposedException("Evaluator is disposed");
+                }
+                if (encrypteds == nullptr)
+                {
+                    throw gcnew ArgumentNullException("encrypteds cannot be null");
+                }
+                if (destination == nullptr)
+                {
+                    throw gcnew ArgumentNullException("destination cannot be null");
+                }
+                try
+                {
+                    vector<seal::Ciphertext> v_encrypteds;
+                    for each (Ciphertext ^poly in encrypteds)
+                    {
+                        if (poly == nullptr)
+                        {
+                            throw gcnew ArgumentNullException("encrypteds cannot be null");
+                        }
+                        v_encrypteds.emplace_back(poly->GetCiphertext());
+                        GC::KeepAlive(poly);
+                    }
+
+                    evaluator_->add_many(v_encrypteds, destination->GetCiphertext());
                     GC::KeepAlive(destination);
                 }
                 catch (const exception &e)
@@ -253,13 +371,49 @@ namespace Microsoft
                     {
                         if (poly == nullptr)
                         {
-                            throw gcnew ArgumentNullException("encrypteds cannot contain null values null");
+                            throw gcnew ArgumentNullException("encrypteds cannot be null");
                         }
                         v_encrypteds.emplace_back(poly->GetArray());
                         GC::KeepAlive(poly);
                     }
 
                     return gcnew BigPolyArray(evaluator_->add_many(v_encrypteds));
+                }
+                catch (const exception &e)
+                {
+                    HandleException(&e);
+                }
+                catch (...)
+                {
+                    HandleException(nullptr);
+                }
+                throw gcnew Exception("Unexpected exception");
+            }
+
+            Ciphertext ^Evaluator::AddMany(List<Ciphertext^> ^encrypteds)
+            {
+                if (evaluator_ == nullptr)
+                {
+                    throw gcnew ObjectDisposedException("Evaluator is disposed");
+                }
+                if (encrypteds == nullptr)
+                {
+                    throw gcnew ArgumentNullException("encrypteds cannot be null");
+                }
+                try
+                {
+                    vector<seal::Ciphertext> v_encrypteds;
+                    for each (Ciphertext ^poly in encrypteds)
+                    {
+                        if (poly == nullptr)
+                        {
+                            throw gcnew ArgumentNullException("encrypteds cannot be null");
+                        }
+                        v_encrypteds.emplace_back(poly->GetCiphertext());
+                        GC::KeepAlive(poly);
+                    }
+
+                    return gcnew Ciphertext(evaluator_->add_many(v_encrypteds));
                 }
                 catch (const exception &e)
                 {
@@ -799,13 +953,53 @@ namespace Microsoft
                     {
                         if (polyarray == nullptr)
                         {
-                            throw gcnew ArgumentNullException("encrypteds cannot contain null values");
+                            throw gcnew ArgumentNullException("encrypteds cannot be null");
                         }
                         v_encrypteds.emplace_back(polyarray->GetArray());
                         GC::KeepAlive(polyarray);
                     }
 
                     evaluator_->multiply_many(v_encrypteds, destination->GetArray());
+                    GC::KeepAlive(destination);
+                }
+                catch (const exception &e)
+                {
+                    HandleException(&e);
+                }
+                catch (...)
+                {
+                    HandleException(nullptr);
+                }
+            }
+
+            void Evaluator::MultiplyMany(List<Ciphertext^> ^encrypteds, Ciphertext ^destination)
+            {
+                if (evaluator_ == nullptr)
+                {
+                    throw gcnew ObjectDisposedException("Evaluator is disposed");
+                }
+                if (encrypteds == nullptr)
+                {
+                    throw gcnew ArgumentNullException("encrypteds cannot be null");
+                }
+                if (destination == nullptr)
+                {
+                    throw gcnew ArgumentNullException("destination cannot be null");
+                }
+                try
+                {
+                    vector<seal::Ciphertext> v_encrypteds;
+                    for each (Ciphertext ^polyarray in encrypteds)
+                    {
+                        if (polyarray == nullptr)
+                        {
+                            throw gcnew ArgumentNullException("encrypteds cannot be null");
+                        }
+                        v_encrypteds.emplace_back(polyarray->GetCiphertext());
+                        GC::KeepAlive(polyarray);
+                    }
+
+                    evaluator_->multiply_many(v_encrypteds, destination->GetCiphertext());
                     GC::KeepAlive(destination);
                 }
                 catch (const exception &e)
@@ -835,13 +1029,49 @@ namespace Microsoft
                     {
                         if (polyarray == nullptr)
                         {
-                            throw gcnew ArgumentNullException("encrypteds cannot contain null values");
+                            throw gcnew ArgumentNullException("encrypteds cannot be null");
                         }
                         v_encrypteds.emplace_back(polyarray->GetArray());
                         GC::KeepAlive(polyarray);
                     }
 
                     return gcnew BigPolyArray(evaluator_->multiply_many(v_encrypteds));
+                }
+                catch (const exception &e)
+                {
+                    HandleException(&e);
+                }
+                catch (...)
+                {
+                    HandleException(nullptr);
+                }
+                throw gcnew Exception("Unexpected exception");
+            }
+
+            Ciphertext ^Evaluator::MultiplyMany(List<Ciphertext^> ^encrypteds)
+            {
+                if (evaluator_ == nullptr)
+                {
+                    throw gcnew ObjectDisposedException("Evaluator is disposed");
+                }
+                if (encrypteds == nullptr)
+                {
+                    throw gcnew ArgumentNullException("encrypteds cannot be null");
+                }
+                try
+                {
+                    vector<seal::Ciphertext> v_encrypteds;
+                    for each (Ciphertext ^polyarray in encrypteds)
+                    {
+                        if (polyarray == nullptr)
+                        {
+                            throw gcnew ArgumentNullException("encrypteds cannot be null");
+                        }
+                        v_encrypteds.emplace_back(polyarray->GetCiphertext());
+                        GC::KeepAlive(polyarray);
+                    }
+
+                    return gcnew Ciphertext(evaluator_->multiply_many(v_encrypteds));
                 }
                 catch (const exception &e)
                 {
@@ -898,6 +1128,173 @@ namespace Microsoft
                 {
                     auto result = gcnew BigPolyArray(evaluator_->exponentiate(encrypted->GetArray(), exponent));
                     GC::KeepAlive(encrypted);
+                    return result;
+                }
+                catch (const exception &e)
+                {
+                    HandleException(&e);
+                }
+                catch (...)
+                {
+                    HandleException(nullptr);
+                }
+                throw gcnew Exception("Unexpected exception");
+            }
+
+            void Evaluator::TransformToNTT(BigPoly ^plain)
+            {
+                if (evaluator_ == nullptr)
+                {
+                    throw gcnew ObjectDisposedException("Evaluator is disposed");
+                }
+                if (plain == nullptr)
+                {
+                    throw gcnew ArgumentNullException("plain cannot be null");
+                }
+                try
+                {
+                    evaluator_->transform_to_ntt(plain->GetPolynomial());
+                    GC::KeepAlive(plain);
+                }
+                catch (const exception &e)
+                {
+                    HandleException(&e);
+                }
+                catch (...)
+                {
+                    HandleException(nullptr);
+                }
+            }
+
+            void Evaluator::TransformToNTT(BigPolyArray ^encrypted)
+            {
+                if (evaluator_ == nullptr)
+                {
+                    throw gcnew ObjectDisposedException("Evaluator is disposed");
+                }
+                if (encrypted == nullptr)
+                {
+                    throw gcnew ArgumentNullException("encrypted cannot be null");
+                }
+                try
+                {
+                    evaluator_->transform_to_ntt(encrypted->GetArray());
+                    GC::KeepAlive(encrypted);
+                }
+                catch (const exception &e)
+                {
+                    HandleException(&e);
+                }
+                catch (...)
+                {
+                    HandleException(nullptr);
+                }
+            }
+
+            void Evaluator::TransformFromNTT(BigPoly ^plainNTT)
+            {
+                if (evaluator_ == nullptr)
+                {
+                    throw gcnew ObjectDisposedException("Evaluator is disposed");
+                }
+                if (plainNTT == nullptr)
+                {
+                    throw gcnew ArgumentNullException("plainNTT cannot be null");
+                }
+                try
+                {
+                    evaluator_->transform_from_ntt(plainNTT->GetPolynomial());
+                    GC::KeepAlive(plainNTT);
+                }
+                catch (const exception &e)
+                {
+                    HandleException(&e);
+                }
+                catch (...)
+                {
+                    HandleException(nullptr);
+                }
+            }
+
+            void Evaluator::TransformFromNTT(BigPolyArray ^encryptedNTT)
+            {
+                if (evaluator_ == nullptr)
+                {
+                    throw gcnew ObjectDisposedException("Evaluator is disposed");
+                }
+                if (encryptedNTT == nullptr)
+                {
+                    throw gcnew ArgumentNullException("encryptedNTT cannot be null");
+                }
+                try
+                {
+                    evaluator_->transform_from_ntt(encryptedNTT->GetArray());
+                    GC::KeepAlive(encryptedNTT);
+                }
+                catch (const exception &e)
+                {
+                    HandleException(&e);
+                }
+                catch (...)
+                {
+                    HandleException(nullptr);
+                }
+            }
+
+            void Evaluator::MultiplyPlainNTT(BigPolyArray ^encryptedNTT, BigPoly ^plainNTT, BigPolyArray ^destinationNTT)
+            {
+                if (evaluator_ == nullptr)
+                {
+                    throw gcnew ObjectDisposedException("Evaluator is disposed");
+                }
+                if (encryptedNTT == nullptr)
+                {
+                    throw gcnew ArgumentNullException("encryptedNTT cannot be null");
+                }
+                if (plainNTT == nullptr)
+                {
+                    throw gcnew ArgumentNullException("plainNTT cannot be null");
+                }
+                if (destinationNTT == nullptr)
+                {
+                    throw gcnew ArgumentNullException("destinationNTT cannot be null");
+                }
+                try
+                {
+                    evaluator_->multiply_plain_ntt(encryptedNTT->GetArray(), plainNTT->GetPolynomial(), destinationNTT->GetArray());
+                    GC::KeepAlive(encryptedNTT);
+                    GC::KeepAlive(plainNTT);
+                    GC::KeepAlive(destinationNTT);
+                }
+                catch (const exception &e)
+                {
+                    HandleException(&e);
+                }
+                catch (...)
+                {
+                    HandleException(nullptr);
+                }
+            }
+
+            BigPolyArray ^ Evaluator::MultiplyPlainNTT(BigPolyArray ^encryptedNTT, BigPoly ^plainNTT)
+            {
+                if (evaluator_ == nullptr)
+                {
+                    throw gcnew ObjectDisposedException("Evaluator is disposed");
+                }
+                if (encryptedNTT == nullptr)
+                {
+                    throw gcnew ArgumentNullException("encryptedNTT cannot be null");
+                }
+                if (plainNTT == nullptr)
+                {
+                    throw gcnew ArgumentNullException("plainNTT cannot be null");
+                }
+                try
+                {
+                    auto  result = gcnew BigPolyArray(evaluator_->multiply_plain_ntt(encryptedNTT->GetArray(), plainNTT->GetPolynomial()));
+                    GC::KeepAlive(encryptedNTT);
+                    GC::KeepAlive(plainNTT);
                     return result;
                 }
                 catch (const exception &e)

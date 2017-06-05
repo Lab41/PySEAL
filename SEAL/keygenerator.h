@@ -1,11 +1,13 @@
 #pragma once
 
 #include <memory>
+#include <utility>
 #include "encryptionparams.h"
 #include "util/modulus.h"
 #include "util/polymodulus.h"
 #include "evaluationkeys.h"
 #include "util/ntt.h"
+#include "memorypoolhandle.h"
 
 namespace seal
 {
@@ -22,29 +24,36 @@ namespace seal
     {
     public:
         /**
-        Creates an KeyGenerator instance initialized with the specified encryption parameters.
+        Creates an KeyGenerator instance initialized with the specified encryption parameters. Optionally, 
+        the user can give a reference to a MemoryPoolHandle object to use a custom memory pool instead of 
+        the global memory pool (default).
 
         @param[in] parms The encryption parameters
+        @param[in] pool The memory pool handle
         @throws std::invalid_argument if encryption parameters are not valid
         @see EncryptionParameters for more details on valid encryption parameters.
+        @see MemoryPoolHandle for more details on memory pool handles.
         */
-        KeyGenerator(const EncryptionParameters &parms);
+        KeyGenerator(const EncryptionParameters &parms, const MemoryPoolHandle &pool = MemoryPoolHandle::acquire_global());
 
         /**
         Creates an KeyGenerator instance initialized with the specified encryption parameters and specified
         previously generated keys. This can be used to increase the number of evaluation keys (using GenerateEvaluationKeys()) 
         from what had earlier been generated. If no evaluation keys had been generated earlier, one can simply pass a newly 
-        created empty instance of EvaluationKeys to the function.
+        created empty instance of EvaluationKeys to the function. Optionally, the user can give a reference to a MemoryPoolHandle 
+        object to use a custom memory pool instead of the global memory pool (default).
 
         @param[in] parms The encryption parameters
         @param[in] secret_key A previously generated secret key
         @param[in] public_key A previously generated public key
         @param[in] evaluation_keys A previously generated set of evaluation keys
+        @param[in] pool The memory pool handle
         @throws std::invalid_argument if encryption parameters are not valid
         @throws std::invalid_argument if secret, public or evaluation keys are not valid
         @see EncryptionParameters for more details on valid encryption parameters.
+        @see MemoryPoolHandle for more details on memory pool handles.
         */
-        KeyGenerator(const EncryptionParameters &parms, const BigPoly &secret_key, const BigPolyArray &public_key, EvaluationKeys &evaluation_keys);
+        KeyGenerator(const EncryptionParameters &parms, const BigPoly &secret_key, const BigPolyArray &public_key, EvaluationKeys &evaluation_keys, const MemoryPoolHandle &pool = MemoryPoolHandle::acquire_global());
 
         /**
         Generates new matching set of secret key, public key, and any number of evaluation keys.
@@ -106,6 +115,10 @@ namespace seal
 
         KeyGenerator &operator =(const KeyGenerator &assign) = delete;
 
+        KeyGenerator(KeyGenerator &&source) = delete;
+
+        KeyGenerator &operator =(KeyGenerator &&assign) = delete;
+
         void set_poly_coeffs_zero_one_negone(uint64_t *poly, UniformRandomGenerator *random) const;
 
         void set_poly_coeffs_normal(uint64_t *poly, UniformRandomGenerator *random) const;
@@ -114,7 +127,9 @@ namespace seal
 
         void populate_evaluation_factors();
 
-        void compute_secret_key_array(int max_power); 
+        void compute_secret_key_array(int max_power);
+
+        MemoryPoolHandle pool_;
 
         BigPoly poly_modulus_;
 
@@ -151,6 +166,5 @@ namespace seal
         EncryptionParameterQualifiers qualifiers_;
 
         BigPolyArray secret_key_array_;
-
     };
 }

@@ -1,7 +1,8 @@
 #pragma once
 
 #include "keygenerator.h"
-#include "BigPolyArrayWrapper.h"
+#include "EncryptionParamsWrapper.h"
+#include "EvaluationKeysWrapper.h"
 
 namespace Microsoft
 {
@@ -9,12 +10,6 @@ namespace Microsoft
     {
         namespace SEAL
         {
-            ref class EncryptionParameters;
-
-            ref class BigPoly;
-
-            ref class EvaluationKeys;
-
             /**
             <summary>Generates matching secret key, public key, and evaluation keys for encryption, decryption, and evaluation
             functions.</summary>
@@ -47,6 +42,23 @@ namespace Microsoft
                 KeyGenerator(EncryptionParameters ^parms);
 
                 /**
+                <summary>Creates a KeyGenerator instance initialized with the specified encryption parameters.</summary>
+
+                <remarks>
+                Creates a KeyGenerator instance initialized with the specified encryption parameters. The user can 
+                give a <see cref="MemoryPoolHandle "/> object to use a custom memory pool instead of the global 
+                memory pool (default).
+                </remarks>
+                <param name="parms">The encryption parameters</param>
+                <param name="pool">The memory pool handle</param>
+                <exception cref="System::ArgumentNullException">if parms or pool is null</exception>
+                <exception cref="System::ArgumentException">if encryption parameters are not valid</exception>
+                <seealso cref="EncryptionParameters">See EncryptionParameters for more details on valid encryption parameters.</seealso>
+                <seealso cref="MemoryPoolHandle">See MemoryPoolHandle for more details on memory pool handles.</seealso>
+                */
+                KeyGenerator(EncryptionParameters ^parms, MemoryPoolHandle ^pool);
+
+                /**
                 <summary>Creates an KeyGenerator instance initialized with the specified encryption parameters and specified
                 previously generated keys.</summary>
 
@@ -70,6 +82,33 @@ namespace Microsoft
                 parameters.</seealso>
                 */
                 KeyGenerator(EncryptionParameters ^parms, BigPoly ^secretKey, BigPolyArray ^publicKey, EvaluationKeys ^evaluationKeys);
+
+                /**
+                <summary>Creates an KeyGenerator instance initialized with the specified encryption parameters and specified
+                previously generated keys.</summary>
+
+                <remarks>
+                <para>
+                Creates an KeyGenerator instance initialized with the specified encryption parameters and specified
+                previously generated keys. This can be used to increase the number of evaluation keys (using
+                <see cref="GenerateEvaluationKeys()" />) from what had earlier been generated. If no evaluation keys
+                had been generated earlier, one can simply pass a newly created empty instance of <see cref="EvaluationKeys" />
+                to the function. The user can give a <see cref="MemoryPoolHandle "/> object to use a custom memory pool 
+                instead of the global memory pool (default).
+                </para>
+                </remarks>
+                <param name="parms">The encryption parameters</param>
+                <param name="secretKey">A previously generated secret key</param>
+                <param name="publicKey">A previously generated public key</param>
+                <param name="evaluationKeys">A previously generated set of evaluation keys</param>
+                <param name="pool">The memory pool handle</param>
+                <exception cref="System::ArgumentNullException">if parms, secretKey, publicKey, evaluationKeys, or pool is null</exception>
+                <exception cref="System::ArgumentException">if encryption parameters are not valid</exception>
+                <exception cref="System::ArgumentException">if secret, public or evaluation keys are not valid</exception>
+                <seealso cref="EncryptionParameters">See EncryptionParameters for more details on valid encryption parameters.</seealso>
+                <seealso cref="MemoryPoolHandle">See MemoryPoolHandle for more details on memory pool handles.</seealso>
+                */
+                KeyGenerator(EncryptionParameters ^parms, BigPoly ^secretKey, BigPolyArray ^publicKey, EvaluationKeys ^evaluationKeys, MemoryPoolHandle ^pool);
 
                 /**
                 <summary>Generates new matching set of secret key and public key.</summary>

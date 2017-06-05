@@ -18,13 +18,13 @@ namespace SEALTest
         TEST_METHOD(FVEncryptAddsNoise)
         {
             EncryptionParameters parms;
-            BigUInt &coeff_modulus = parms.coeff_modulus();
-            BigUInt &plain_modulus = parms.plain_modulus();
-            BigPoly &poly_modulus = parms.poly_modulus();
+            BigUInt coeff_modulus;
+            BigUInt plain_modulus;
+            BigPoly poly_modulus; 
             {
-                parms.decomposition_bit_count() = 4;
-                parms.noise_standard_deviation() = 3.19;
-                parms.noise_max_deviation() = 35.06;
+                parms.set_decomposition_bit_count(4);
+                parms.set_noise_standard_deviation(3.19);
+                parms.set_noise_max_deviation(35.06);
                 coeff_modulus.resize(48);
                 coeff_modulus = "FFFFFFFFC001";
                 plain_modulus.resize(7);
@@ -32,7 +32,10 @@ namespace SEALTest
                 poly_modulus.resize(65, 1);
                 poly_modulus[0] = 1;
                 poly_modulus[64] = 1;
-
+                parms.set_poly_modulus(const_cast<const BigPoly &>(poly_modulus));
+                parms.set_plain_modulus(const_cast<const BigUInt &>(plain_modulus));
+                parms.set_coeff_modulus(const_cast<const BigUInt &>(coeff_modulus));
+                parms.validate();
                 BalancedEncoder encoder(plain_modulus);
 
                 KeyGenerator keygen(parms);
@@ -56,14 +59,18 @@ namespace SEALTest
             {
                 // Testing that decryption is correct when the coeff_modulus has more than 1 uint64 count and 
                 // the Nussbaumer path.
-                parms.noise_standard_deviation() = 3.19;
-                parms.noise_max_deviation() = 35.06;
+                parms.set_noise_standard_deviation(3.19);
+                parms.set_noise_max_deviation(35.06);
                 coeff_modulus = "FFFFFFFFFFFFFFFFFFFFFFFF";
                 plain_modulus.resize(7);
                 plain_modulus = 1 << 6;
                 poly_modulus.resize(65, 1);
                 poly_modulus[0] = 1;
                 poly_modulus[64] = 1;
+                parms.set_poly_modulus(const_cast<const BigPoly &>(poly_modulus));
+                parms.set_plain_modulus(const_cast<const BigUInt &>(plain_modulus));
+                parms.set_coeff_modulus(const_cast<const BigUInt &>(coeff_modulus));
+                parms.validate();
 
                 BalancedEncoder encoder(plain_modulus);
 
@@ -92,14 +99,17 @@ namespace SEALTest
             {
                 // Testing that decryption is correct when the plain modulus has more than 1 uint64 count and 
                 // the Nussbaumer path.
-                parms.noise_standard_deviation() = 3.19;
-                parms.noise_max_deviation() = 35.06;
+                parms.set_noise_standard_deviation(3.19);
+                parms.set_noise_max_deviation(35.06);
                 coeff_modulus = "FFFFFFFFFFFFFFFFFFFFFFFF";
                 plain_modulus = "FFFFFFFFFFFFFFFFF";
                 poly_modulus.resize(65, 1);
                 poly_modulus[0] = 1;
                 poly_modulus[64] = 1;
-
+                parms.set_poly_modulus(const_cast<const BigPoly &>(poly_modulus));
+                parms.set_plain_modulus(const_cast<const BigUInt &>(plain_modulus));
+                parms.set_coeff_modulus(const_cast<const BigUInt &>(coeff_modulus));
+                parms.validate();
                 BalancedEncoder encoder(plain_modulus);
 
                 KeyGenerator keygen(parms);
@@ -128,22 +138,26 @@ namespace SEALTest
         TEST_METHOD(FVEncryptDecrypt)
         {
             EncryptionParameters parms;
-            BigUInt &coeff_modulus = parms.coeff_modulus();
-            BigUInt &plain_modulus = parms.plain_modulus();
-            BigPoly &poly_modulus = parms.poly_modulus();
-            parms.decomposition_bit_count() = 4;
-            parms.noise_standard_deviation() = 3.19;
-            parms.noise_max_deviation() = 35.06;
+            BigUInt coeff_modulus; 
+            BigUInt plain_modulus;
+            BigPoly poly_modulus;
+            parms.set_decomposition_bit_count(4);
+            parms.set_noise_standard_deviation(3.19);
+            parms.set_noise_max_deviation(35.06);
             
             plain_modulus.resize(7);
             plain_modulus = 1 << 6;
             poly_modulus.resize(65, 1);
             poly_modulus[0] = 1;
             poly_modulus[64] = 1;
-
+            parms.set_poly_modulus(const_cast<const BigPoly &>(poly_modulus));
+            parms.set_plain_modulus(const_cast<const BigUInt &>(plain_modulus));
             {
                 coeff_modulus.resize(48);
                 coeff_modulus = "FFFFFFFFC001";
+                parms.set_coeff_modulus(const_cast<const BigUInt &>(coeff_modulus));
+                parms.validate();
+
                 KeyGenerator keygen(parms);
                 keygen.generate();
 
@@ -184,6 +198,10 @@ namespace SEALTest
             //Testing the Nussbaumer path.
             {
                 coeff_modulus = "FFFFFFFFFFFFFFFF";
+                parms.set_coeff_modulus(const_cast<const BigUInt &>(coeff_modulus));
+
+                parms.validate();
+
                 KeyGenerator keygen(parms);
                 keygen.generate();
 

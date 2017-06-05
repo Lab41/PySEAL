@@ -1,32 +1,38 @@
 #pragma once
 
-#include "encryptionparams.h"
-#include "bigpoly.h"
-#include "biguint.h"
+#include <utility>
 #include <string>
 #include <vector>
-
+#include "encryptionparams.h"
+#include "memorypoolhandle.h"
+#include "bigpoly.h"
+#include "biguint.h"
 
 namespace seal
 {
     /**
-    Models the inherent noise in a ciphertext based on given EncryptionParameters object.
+    Models the invariant noise budget in a ciphertext based on given EncryptionParameters object.
     When performing arithmetic operations on encrypted data, the quality of the ciphertexts will degrade,
-    i.e. the inherent noise in them will grow, until at a certain point decryption will fail to work.
-    The Simulation object together with SimulationEvaluator can help the user understand how inherent
-    noise grows in different homomorphic operations, and to adjust the encryption parameters accordingly.
+    i.e. the invariant noise budget will be consumed, until at a certain point the budget will reach 0, and
+    decryption will fail to work. The Simulation object together with SimulationEvaluator can help the user 
+    understand how the invariant noise budget is consumed in different homomorphic operations, and to adjust 
+    the encryption parameters accordingly.
     
-    Instances of Simulation can be manipulated using SimulationEvaluator, which has a public API similar to Evaluator,
-    making existing code easy to run on simulations instead of running it on actual encrypted data. In other words,
-    using SimulationEvaluator, simulations can be added, multiplied, subtracted, negated, etc., and the result is always
-    a new Simulation object whose inherent noise is obtained using average-case analysis of the noise behavior in the 
-    encryption scheme.
+    Instances of Simulation can be manipulated using SimulationEvaluator, which has a public API similar 
+    to Evaluator, making existing code easy to run on simulations instead of running it on actual encrypted 
+    data. In other words, using SimulationEvaluator, simulations can be added, multiplied, subtracted, 
+    negated, etc., and the result is always a new Simulation object whose noise budget is obtained using 
+    heuristic worst-case analysis of the noise behavior in the encryption scheme.
 
-    @par Inherent Noise
-    Technically speaking, the inherent noise of a ciphertext is a polynomial, but the condition for decryption working
-    depends on the size of the largest absolute value of its coefficients. It is really the size of this
-    largest absolute value that Simulation is simulating, and that we will call the "noise", the "inherent noise",
-    or the "error", in this documentation. The reader is referred to the description of the encryption scheme for more details.
+    @par Invariant Noise Budget
+    The invariant noise polynomial of a ciphertext is a rational coefficient polynomial, such that
+    a ciphertext decrypts correctly as long as the coefficients of the invariant noise polynomial are
+    of absolute value less than 1/2. Thus, we call the infinity-norm of the invariant noise polynomial
+    the invariant noise, and for correct decryption require it to be less than 1/2. If v denotes the
+    invariant noise, we define the invariant noise budget as -log2(2v). Thus, the invariant noise budget
+    starts from some initial value, which depends on the encryption parameters, and decreases to 0 when
+    computations are performed. When the budget reaches 0, the ciphertext becomes too noisy to decrypt
+    correctly.
 
     @see SimulationEvaluator for manipulating instances of Simulation.
     */
@@ -34,97 +40,35 @@ namespace seal
     {
     public:
         /**
-        Creates a simulation of a fresh ciphertext encrypted with the specified encryption parameters.
+        Creates a simulation of a ciphertext encrypted with the specified encryption parameters and given
+        invariant noise budget. The given noise budget must be at least zero, and at most the significant
+        bit count of the coefficient modulus minus two.
 
         @param[in] parms The encryption parameters
-        @throws std::invalid_argument if encryption parameters are not valid
-        @see EncryptionParameters for more details on valid encryption parameters.
-        */
-        Simulation(const EncryptionParameters &parms);
-
-        /**
-        Creates a simulation of a ciphertext encrypted with the specified encryption parameters and given inherent noise.
-
-        @param[in] parms The encryption parameters
-        @param[in] noise The inherent noise in the created ciphertext
+        @param[in] noise_budget The invariant noise budget of the created ciphertext
         @param[in] ciphertext_size The size of the created ciphertext
         @throws std::invalid_argument if encryption parameters are not valid
-        @throws std::invalid_argument if noise is bigger than the given coefficient modulus
+        @throws std::invalid_argument if noise_budget is not in the valid range
         @throws std::invalid_argument if ciphertext_size is less than 2
         @see EncryptionParameters for more details on valid encryption parameters.
         */
-        Simulation(const EncryptionParameters &parms, const BigUInt &noise, int ciphertext_size);
+        Simulation(EncryptionParameters &parms, int noise_budget, int ciphertext_size);
 
         /**
-        Returns a reference to the value of inherent noise (represented by BigUInt) that is being simulated. If the
-        returned value is larger than that returned by max_noise(), the encryption parameters used are possibly
-        not large enough to support the performed homomorphic operations.
-
-        @warning The average-case estimates used by the simulator are typically conservative, so the size of noise tends
-        to be overestimated.
-        @see noise_bits() to instead return the bit length of the value of inherent noise that is being simulated.
-        */
-        const BigUInt &noise() const
-        {
-            return noise_;
-        }
-
-        /**
-        Returns a reference to the maximal value of inherent noise (represented by BigUInt) that a ciphertext encrypted
-        using the given encryption parameters can contain and still decrypt correctly. If noise() returns a value larger than this,
-        the encryption parameters used are possibly not large enough to support the performed homomorphic operations.
-       */
-        const BigUInt &max_noise() const
-        {
-            return max_noise_;
-        }
-
-        /**
-        Returns the bit length of the maximal value of inherent noise that a ciphertext encrypted using the given 
-        encryption parameters can contain and still decrypt correctly. If noise_bits() returns a value larger than this,
+        Returns the invariant noise budget that is being simulated. If the returned value is less than or equal to 0,
         the encryption parameters used are possibly not large enough to support the performed homomorphic operations.
         */
-        int max_noise_bits() const
-        {
-            return max_noise_.significant_bit_count();
-        }
+        int invariant_noise_budget() const;
 
         /**
-        Returns the bit length of the value of inherent noise that is being simulated.
+        Returns true or false depending on whether the encryption parameters were large enough to support 
+        the performed homomorphic operations. The budget_gap parameter can be used to ensure that a certain
+        amount of noise budget remains unused.
 
-        @warning The average-case estimates used by the simulator are typically conservative, so the amount of noise tends
-        to be overestimated.
+        @param[in] budget_gap The amount of noise budget (bits) that should remain unused
+        @throws std::invalid_argument if budget_gap is negative
         */
-        int noise_bits() const
-        {
-            return noise_.significant_bit_count();
-        }
-
-        /**
-        Returns the difference between the bit lengths of the return values of max_noise() and of noise(). This gives
-        the user a convenient tool for estimating how many, if any, arithmetic operations can still be performed on the
-        encrypted data before it becomes impossible to decrypt. If the return value is negative, the encryption parameters
-        used are not large enough to support the performed arithmetic operations.
-
-        @warning The average-case estimates used by the simulator are typically conservative, so the amount of noise tends
-        to be overestimated.
-        */
-        int noise_bits_left() const
-        {
-            return max_noise_bits() - noise_bits();
-        }
-
-        /**
-        Returns true or false depending on whether the encryption parameters were large enough to support the performed
-        homomorphic operations. The noise_gap parameter can be used to leave a certain number of bits between the
-        simulated noise and the noise ceiling to guarantee decryption to work despite probabilistic effects.
-
-        @warning The average-case estimates used by the simulator are typically conservative, so the amount of noise tends
-        to be overestimated, and decryption might work even if decrypts() returns false.
-        @param[in] noise_gap The number of bits left between the simulated noise and the noise ceiling
-        @throws std::invalid_argument if noise_gap is negative
-        */
-        bool decrypts(int noise_gap = 0) const;
+        bool decrypts(int budget_gap = 0) const;
 
         /**
         Returns the size of the ciphertext whose noise is modeled by the simulation.
@@ -135,25 +79,13 @@ namespace seal
             return ciphertext_size_;
         }
 
-        /**
-        Returns a reference to the coefficient modulus.
-        */
-        const BigUInt &coeff_modulus() const
-        {
-            return coeff_modulus_;
-        }
-
-        /**
-        Returns a reference to the plaintext modulus.
-        */
-        const BigUInt &plain_modulus() const
-        {
-            return plain_modulus_;
-        }
-
     private:
-        Simulation(const BigUInt &noise, const BigUInt &max_noise, const BigUInt &coeff_modulus, const BigUInt &plain_modulus, int poly_modulus_coeff_count,
-            double noise_standard_deviation, double noise_max_deviation, int decomposition_bit_count, int ciphertext_size_);
+        /**
+        Creates a simulation of a ciphertext encrypted with the specified encryption parameters and given
+        invariant noise. The invariant noise is interpreted as having been scaled by the coefficient modulus.
+        */
+        Simulation(const BigUInt &noise, const BigUInt &coeff_modulus, const BigUInt &plain_modulus, int poly_modulus_coeff_count,
+            double noise_standard_deviation, double noise_max_deviation, int decomposition_bit_count, int ciphertext_size);
 
         /**
         Compares the encryption parameters given in the constructor to those of the argument simulation.
@@ -166,13 +98,9 @@ namespace seal
         }
 
         /**
-        Sets the inherent noise to correspond to that of a freshly encrypted ciphertext using an average-case estimate.
+        Stores the current noise scaled by coeff_modulus_.
         */
-        void set_initial_noise_estimate();
-
         BigUInt noise_;
-
-        BigUInt max_noise_;
 
         BigUInt coeff_modulus_;
 
@@ -196,46 +124,92 @@ namespace seal
     ciphertexts (represented by BigPoly). This makes existing code easy to run on Simulation
     objects instead of running it on actual encrypted data.
     
-    Simulation objects model the inherent noise in a ciphertext based on given encryption parameters.
+    Simulation objects model the invariant noise budget in a ciphertext based on given encryption parameters.
     When performing homomorphic operations on encrypted data, the quality of the ciphertexts will degrade,
-    i.e. the inherent noise in them will grow, until at a certain point decryption will fail to work.
-    The Simulation object together with SimulationEvaluator can help the user understand how the inherent
-    noise grows in different homomorphic operations, and to adjust the encryption parameters accordingly.
+    i.e. the invariant noise budget will be consumed, until at a certain point the budget will reach 0, and
+    decryption will fail to work. The Simulation object together with SimulationEvaluator can help the user 
+    understand how the noise budget is consumed in different homomorphic operations, and to adjust the 
+    encryption parameters accordingly.
 
-    SimulationEvaluator allows the user to simulate the effect of homomorphic operations on the inherent
-    noise in encrypted data. These homomorphic operations include addition, multiplication, subtraction,
-    negation, etc., and the result is always a new Simulation object whose inherent noise is obtained using
-    average-case analysis of the encryption scheme.
+    SimulationEvaluator allows the user to simulate the effect of homomorphic operations on the invariant
+    noise budget in encrypted data. These homomorphic operations include addition, multiplication, 
+    subtraction, negation, etc., and the result is always a new Simulation object whose noise budget
+    is obtained using heuristic worst-case analysis of the encryption scheme.
 
-    @par Inherent Noise
-    Technically speaking, the inherent noise of a ciphertext is a polynomial, but the condition for decryption working
-    depends on the size of the largest absolute value of its coefficients. It is really the size of this
-    largest absolute value that Simulation is simulating, and that we will call the "noise", the "inherent noise",
-    or the "error", in this documentation. The reader is referred to the description of the encryption scheme for more details.
+    @par Invariant Noise Budget
+    The invariant noise polynomial of a ciphertext is a rational coefficient polynomial, such that
+    a ciphertext decrypts correctly as long as the coefficients of the invariant noise polynomial are
+    of absolute value less than 1/2. Thus, we call the infinity-norm of the invariant noise polynomial
+    the invariant noise, and for correct decryption require it to be less than 1/2. If v denotes the
+    invariant noise, we define the invariant noise budget as -log2(2v). Thus, the invariant noise budget
+    starts from some initial value, which depends on the encryption parameters, and decreases to 0 when
+    computations are performed. When the budget reaches 0, the ciphertext becomes too noisy to decrypt
+    correctly.
 
     @par Thread Safety
     The SimulationEvaluator class is not thread-safe and a separate SimulationEvaluator instance is needed
     for each potentially concurrent usage.
 
-    @warning Accuracy of the average-case analysis depends on the encryption parameters.
     @see Simulation for the object modeling the noise in ciphertexts.
     */
     class SimulationEvaluator
     {
     public:
         /**
-        Simulates inherent noise growth in Evaluator::multiply_many() and returns the result.
+        Creates a new SimulationEvaluator. Optionally, the user can give a reference to a MemoryPoolHandle 
+        object to use a custom memory pool instead of the global memory pool (default).
+
+        @param[in] pool The memory pool handle
+        @see MemoryPoolHandle for more details on memory pool handles.
+        */
+        SimulationEvaluator(const MemoryPoolHandle &pool = MemoryPoolHandle::acquire_global()) : pool_(pool)
+        {
+        }
+
+        /**
+        Creates a Simulation object corresponding to a freshly encrypted ciphertext. The noise is estimated
+        based on the given encryption parameters, and size parameters of a virtual input plaintext polynomial, 
+        namely an upper bound plain_max_coeff_count on the number of non-zero coefficients in the polynomial, 
+        and an upper bound plain_max_abs_value (represented by BigUInt) on the absolute value (modulo the plaintext 
+        modulus) of the polynomial coefficients.
+
+        @param[in] parms The encryption parameters
+        @param[in] plain_max_coeff_count An upper bound on the number of non-zero coefficients in the underlying plaintext
+        @param[in] plain_max_abs_value An upper bound on the absolute value of the coefficients in the underlying plaintext
+        @throws std::invalid_argument if plain_max_coeff_count is negative or bigger than the degree of the polynomial modulus
+        @throws std::invalid_argument if plain_max_abs_value is bigger than the plaintext modulus divided by 2
+        */
+        Simulation get_fresh(EncryptionParameters &parms, int plain_max_coeff_count, const BigUInt &plain_max_abs_value);
+
+        /**
+        Creates a Simulation object corresponding to a freshly encrypted ciphertext. The noise is estimated
+        based on the given encryption parameters, and size parameters of a virtual input plaintext polynomial,
+        namely an upper bound plain_max_coeff_count on the number of non-zero coefficients in the polynomial,
+        and an upper bound plain_max_abs_value (represented by std::uint64_t) on the absolute value (modulo the 
+        plaintext modulus) of the polynomial coefficients.
+
+        @param[in] parms The encryption parameters
+        @param[in] plain_max_coeff_count An upper bound on the number of non-zero coefficients in the underlying plaintext
+        @param[in] plain_max_abs_value An upper bound on the absolute value of the coefficients in the underlying plaintext
+        @throws std::invalid_argument if plain_max_coeff_count is negative or bigger than the degree of the polynomial modulus
+        @throws std::invalid_argument if plain_max_abs_value is bigger than plaintext modulus divided by 2
+        */
+        Simulation get_fresh(EncryptionParameters &parms, int plain_max_coeff_count, std::uint64_t plain_max_abs_value);
+
+        /**
+        Simulates noise budget consumption in Evaluator::multiply_many() and returns the result.
 
         @param[in] simulations The vector of Simulation objects to multiply
         @throws std::invalid_argument if the simulations vector is empty
-        @throws std::invalid_argument if at least two of the elements in the simulations vector were constructed with different encryption parameters
+        @throws std::invalid_argument if at least two of the elements in the simulations vector were 
+        constructed with different encryption parameters
         @throws std::invalid_argument if any of elements in the simulations vector has size() less than 2
         @see Evaluator::multiply_many() for the corresponding operation on ciphertexts.
         */
         Simulation multiply_many(std::vector<Simulation> simulations);
 
         /**
-        Simulates inherent noise growth in Evaluator::add() and returns the result.
+        Simulates noise budget consumption in Evaluator::add() and returns the result.
 
         @param[in] simulation1 The first Simulation object to add
         @param[in] simulation2 The second Simulation object to add
@@ -246,7 +220,7 @@ namespace seal
         Simulation add(const Simulation &simulation1, const Simulation &simulation2);
 
         /**
-        Simulates inherent noise growth in Evaluator::add_many() and returns the result.
+        Simulates noise budget consumption in Evaluator::add_many() and returns the result.
 
         @param[in] simulations The simulations to add
         @throws std::invalid_argument if simulations is empty
@@ -257,7 +231,7 @@ namespace seal
         Simulation add_many(const std::vector<Simulation> &simulations);
 
         /**
-        Simulates inherent noise growth in Evaluator::sub() and returns the result.
+        Simulates noise budget consumption in Evaluator::sub() and returns the result.
 
         @param[in] simulation1 The Simulation object to subtract from
         @param[in] simulation2 The Simulation object to subtract
@@ -268,7 +242,7 @@ namespace seal
         Simulation sub(const Simulation &simulation1, const Simulation &simulation2);
 
         /**
-        Simulates inherent noise growth in Evaluator::multiply_plain() given an upper bound for the maximum number of
+        Simulates noise budget consumption in Evaluator::multiply_plain() given an upper bound for the maximum number of
         non-zero coefficients and an upper bound for their absolute value (represented by BigUInt) in the encoding of
         the plaintext multiplier and returns the result.
 
@@ -283,7 +257,7 @@ namespace seal
         Simulation multiply_plain(const Simulation &simulation, int plain_max_coeff_count, const BigUInt &plain_max_abs_value);
 
         /**
-        Simulates inherent noise growth in Evaluator::multiply_plain() given an upper bound for the maximum number of
+        Simulates noise budget consumption in Evaluator::multiply_plain() given an upper bound for the maximum number of
         non-zero coefficients and an upper bound for their absolute value (represented by std::uint64_t) in the encoding of
         the plain-text multiplier and returns the result.
 
@@ -298,25 +272,55 @@ namespace seal
         Simulation multiply_plain(const Simulation &simulation, int plain_max_coeff_count, std::uint64_t plain_max_abs_value);
 
         /**
-        Simulates inherent noise growth in Evaluator::add_plain() and returns the result.
+        Simulates noise budget consumption in Evaluator::add_plain() and returns the result.
 
         @param[in] simulation The Simulation object to add to
+        @param[in] plain_max_coeff_count An upper bound on the number of non-zero coefficients in the plain polynomial to add
+        @param[in] plain_max_abs_value An upper bound (represented by BigUInt) on the absolute value of coefficients in the plain polynomial to add
         @throws std::invalid_argument if simulation has size() less than 2
+        @throws std::invalid_argument if plain_max_coeff_count is out of range
         @see Evaluator::add_plain() for the corresponding operation on ciphertexts.
         */
-        Simulation add_plain(const Simulation &simulation);
+        Simulation add_plain(const Simulation &simulation, int plain_max_coeff_count, const BigUInt &plain_max_abs_value);
 
         /**
-        Simulates inherent noise growth in Evaluator::sub_plain() and returns the result.
+        Simulates noise budget consumption in Evaluator::add_plain() and returns the result.
+
+        @param[in] simulation The Simulation object to add to
+        @param[in] plain_max_coeff_count An upper bound on the number of non-zero coefficients in the plain polynomial to add
+        @param[in] plain_max_abs_value An upper bound (represented by std::uint64_t) on the absolute value of coefficients in the plain polynomial to add
+        @throws std::invalid_argument if simulation has size() less than 2
+        @throws std::invalid_argument if plain_max_coeff_count is out of range
+        @see Evaluator::add_plain() for the corresponding operation on ciphertexts.
+        */
+        Simulation add_plain(const Simulation &simulation, int plain_max_coeff_count, std::uint64_t plain_max_abs_value);
+
+        /**
+        Simulates noise budget consumption in Evaluator::sub_plain() and returns the result.
 
         @param[in] simulation The Simulation object to subtract from
+        @param[in] plain_max_coeff_count An upper bound on the number of non-zero coefficients in the plain polynomial to subtract
+        @param[in] plain_max_abs_value An upper bound (represented by BigUInt) on the absolute value of coefficients in the plain polynomial to subtract
         @throws std::invalid_argument if simulation has size() less than 2
+        @throws std::invalid_argument if plain_max_coeff_count is out of range
         @see Evaluator::sub_plain() for the corresponding operation on ciphertexts.
         */
-        Simulation sub_plain(const Simulation &simulation);
+        Simulation sub_plain(const Simulation &simulation, int plain_max_coeff_count, const BigUInt &plain_max_abs_value);
 
         /**
-        Simulates inherent noise growth in Evaluator::exponentiate() and returns the result.
+        Simulates noise budget consumption in Evaluator::sub_plain() and returns the result.
+
+        @param[in] simulation The Simulation object to subtract from
+        @param[in] plain_max_coeff_count An upper bound on the number of non-zero coefficients in the plain polynomial to subtract
+        @param[in] plain_max_abs_value An upper bound (represented by std::uint64_t) on the absolute value of coefficients in the plain polynomial to subtract
+        @throws std::invalid_argument if simulation has size() less than 2
+        @throws std::invalid_argument if plain_max_coeff_count is out of range
+        @see Evaluator::sub_plain() for the corresponding operation on ciphertexts.
+        */
+        Simulation sub_plain(const Simulation &simulation, int plain_max_coeff_count, std::uint64_t plain_max_abs_value);
+
+        /**
+        Simulates noise budget consumption in Evaluator::exponentiate() and returns the result.
 
         @param[in] simulation The Simulation object to raise to a power
         @param[in] exponent The power to raise the Simulation object to
@@ -327,7 +331,7 @@ namespace seal
         Simulation exponentiate(const Simulation &simulation, std::uint64_t exponent);
 
         /**
-        Simulates inherent noise growth in Evaluator::negate() and returns the result.
+        Simulates noise budget consumption in Evaluator::negate() and returns the result.
 
         @param[in] simulation The Simulation object to negate
         @throws std::invalid_argument if simulation has size() less than 2
@@ -336,7 +340,7 @@ namespace seal
         Simulation negate(const Simulation &simulation);
 
         /**
-        Simulates inherent noise growth in Evaluator::multiply() and returns the result.
+        Simulates noise budget consumption in Evaluator::multiply() and returns the result.
 
         @param[in] simulation1 The first Simulation object to multiply
         @param[in] simulation2 The second Simulation object to multiply
@@ -347,7 +351,7 @@ namespace seal
         Simulation multiply(const Simulation &simulation1, const Simulation &simulation2);
 
         /**
-        Simulates inherent noise growth in Evaluator::square() and returns the result.
+        Simulates noise budget consumption in Evaluator::square() and returns the result.
 
         @param[in] simulation The Simulation object to square
         @throws std::invalid_argument if simulation has size() less than 2
@@ -356,7 +360,7 @@ namespace seal
         Simulation square(const Simulation &simulation);
 
         /**
-        Simulates inherent noise growth in Evaluator::relinearize() and returns the result.
+        Simulates noise budget consumption in Evaluator::relinearize() and returns the result.
 
         @param[in] simulation The Simulation object to relinearize
         @param[in] destination_size The size of the ciphertext (represented by the output simulation) after relinearization, defaults to 2
@@ -365,5 +369,12 @@ namespace seal
         @see Evaluator::relinearize() for the corresponding operation on ciphertexts.
         */
         Simulation relinearize(const Simulation &simulation, int destination_size = 2);
+
+    private:
+        SimulationEvaluator &operator =(const SimulationEvaluator &assign) = delete;
+
+        SimulationEvaluator &operator =(SimulationEvaluator &&assign) = delete;
+
+        MemoryPoolHandle pool_;
     };
 }

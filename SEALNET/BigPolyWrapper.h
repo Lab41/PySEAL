@@ -1,7 +1,7 @@
 #pragma once
 
 #include "bigpoly.h"
-#include "EvaluatorWrapper.h"
+#include "BigUIntWrapper.h"
 
 namespace Microsoft
 {
@@ -9,8 +9,6 @@ namespace Microsoft
     {
         namespace SEAL
         {
-            ref class BigUInt;
-
             ref class BigPolyArray;
 
             ref class BigPolyArithmetic;
@@ -33,14 +31,14 @@ namespace Microsoft
             </para>
 
             <para>
-            A BigPoly's coefficients are stored sequentially, index-zero coefficient first, in a contiguous <see cref="System::UInt64"/>
-            array. The width of each coefficient is rounded up to the next <see cref="System::UInt64"/> width (i.e., to the next 64-bit
-            boundary). The <see cref="CoeffUInt64Count"/> function returns the number of <see cref="System::UInt64"/> values used per
-            coefficient. The <see cref="UInt64Count"/> function returns the number of <see cref="System::UInt64"/> values used to store
+            A BigPoly's coefficients are stored sequentially, index-zero coefficient first, in a contiguous System::UInt64
+            array. The width of each coefficient is rounded up to the next System::UInt64 width (i.e., to the next 64-bit
+            boundary). The <see cref="CoeffUInt64Count"/> function returns the number of System::UInt64 values used per
+            coefficient. The <see cref="UInt64Count"/> function returns the number of System::UInt64 values used to store
             all coefficients. Each coefficient is stored in an identical format to <see cref="BigUInt"/>, with the least quad word first
-            and the order of bits for each quad word dependent on the architecture's <see cref="System::UInt64"/> representation. For
+            and the order of bits for each quad word dependent on the architecture's System::UInt64 representation. For
             each coefficient, the bits higher than the coefficient bit count must be set to zero to prevent undefined behavior. The
-            <see cref="Pointer"/> function returns a pointer to the first <see cref="System::UInt64"/> of the array.
+            <see cref="Pointer"/> function returns a pointer to the first System::UInt64 of the array.
             </para>
 
             <para>
@@ -60,7 +58,7 @@ namespace Microsoft
 
             <para>
             An aliased BigPoly (which can be determined with <see cref="IsAlias"/>) is a special type of BigPoly that does not manage
-            its underlying <see cref="System::UInt64"/> pointer that stores the coefficients. An aliased BigPoly supports most of the
+            its underlying System::UInt64 pointer that stores the coefficients. An aliased BigPoly supports most of the
             same operations as a non-aliased BigPoly, including reading/writing the coefficients and assignment, however an
             aliased BigPoly does not internally allocate or deallocate its backing array and, therefore, does not support resizing.
             Any attempt, either explicitly or implicitly, to resize the BigPoly will result in an exception being thrown. Aliased
@@ -204,9 +202,9 @@ namespace Microsoft
                 }
 
                 /**
-                <summary>Returns the total number of <see cref="System::UInt64"/> in the backing array to store all of the coefficients of the BigPoly.</summary>
+                <summary>Returns the total number of System::UInt64 in the backing array to store all of the coefficients of the BigPoly.</summary>
 
-                <seealso cref="CoeffUInt64Count">See CoeffUInt64Count to determine the number of <see cref="System::UInt64"/> values used for each
+                <seealso cref="CoeffUInt64Count">See CoeffUInt64Count to determine the number of System::UInt64 values used for each
                 individual coefficient.</seealso>
                 <seealso cref="BigPoly">See BigPoly for a more detailed description of the format of the backing array.</seealso>
                 */
@@ -215,9 +213,9 @@ namespace Microsoft
                 }
 
                 /**
-                <summary>Returns the number of <see cref="System::UInt64"/> in the backing array used to store each coefficient.</summary>
+                <summary>Returns the number of System::UInt64 in the backing array used to store each coefficient.</summary>
 
-                <seealso cref="UInt64Count">See UInt64Count to determine the total number of <see cref="System::UInt64"/> values used to
+                <seealso cref="UInt64Count">See UInt64Count to determine the total number of System::UInt64 values used to
                 store all of the coefficients.</seealso>
                 <seealso cref="BigPoly">See BigPoly for a more detailed description of the format of the backing array.</seealso>
                 */
@@ -238,7 +236,7 @@ namespace Microsoft
                 The pointer is valid only until the backing array is freed, which occurs when the BigPoly is resized or destroyed.
                 </para>
                 </remarks>
-                <seealso cref="CoeffUInt64Count">See CoeffUInt64Count to determine the number of <see cref="System::UInt64"/> values used for each
+                <seealso cref="CoeffUInt64Count">See CoeffUInt64Count to determine the number of System::UInt64 values used for each
                 coefficient in the backing array.</seealso>
                 <seealso cref="BigPoly">See BigPoly for a more detailed description of the format of the backing array.</seealso>
                 */

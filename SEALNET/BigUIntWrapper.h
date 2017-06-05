@@ -23,14 +23,14 @@ namespace Microsoft
             </para>
 
             <para>
-            The backing array for a BigUInt stores its unsigned integer value as a contiguous <see cref="System::UInt64"/> array.
-            Each <see cref="System::UInt64"/> in the array sequentially represents 64-bits of the integer value, with the least
+            The backing array for a BigUInt stores its unsigned integer value as a contiguous System::UInt64 array.
+            Each System::UInt64 in the array sequentially represents 64-bits of the integer value, with the least
             significant quad-word storing the lower 64-bits and the order of the bits for each quad word dependent on the
-            architecture's <see cref="System::UInt64"/> representation. The size of the array equals the bit count of the BigUInt
-            (which can be read with <see cref="BitCount"/>) rounded up to the next <see cref="System::UInt64"/> boundary (i.e.,
+            architecture's System::UInt64 representation. The size of the array equals the bit count of the BigUInt
+            (which can be read with <see cref="BitCount"/>) rounded up to the next System::UInt64 boundary (i.e.,
             rounded up to the next 64-bit boundary). The <see cref="UInt64Count"/> property returns the number of
-            <see cref="System::UInt64"/> in the backing array. The <see cref="Pointer"/> property returns a pointer to the first
-            <see cref="System::UInt64"/> in the array. Additionally, the index property allows accessing the individual bytes of
+            System::UInt64 in the backing array. The <see cref="Pointer"/> property returns a pointer to the first
+            System::UInt64 in the array. Additionally, the index property allows accessing the individual bytes of
             the integer value in a platform-independent way - for example, reading the third byte will always return bits 16-24
             of the BigUInt value regardless of the platform being little-endian or big-endian.
             </para>
@@ -49,7 +49,7 @@ namespace Microsoft
 
             <para>
             An aliased BigUInt (which can be determined with <see cref="IsAlias"/>) is a special type of BigUInt that does not
-            manage its underlying <see cref="System::UInt64"/> pointer used to store the value. An aliased BigUInt supports most
+            manage its underlying System::UInt64 pointer used to store the value. An aliased BigUInt supports most
             of the same operations as a non-aliased BigUInt, including reading and writing the value, however an aliased BigUInt
             does not internally allocate or deallocate its backing array and, therefore, does not support resizing. Any attempt,
             either explicitly or implicitly, to resize the BigUInt will result in an exception being thrown. Aliased BigUInt's
@@ -192,7 +192,7 @@ namespace Microsoft
                 when the BigUInt is resized or destroyed.
                 </remarks>
 
-                <seealso cref="UInt64Count">See UInt64Count to determine the number of <see cref="System::UInt64"/> values in the
+                <seealso cref="UInt64Count">See UInt64Count to determine the number of System::UInt64 values in the
                 backing array.</seealso>
                 <seealso cref="BigUInt">See BigUInt for a detailed description of the format of the backing array.</seealso>
                 */

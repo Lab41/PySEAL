@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
       <Configuration>Debug</Configuration>
@@ -20,37 +20,37 @@
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{6E40CF27-0C74-44D8-91FF-A30D622840CE}</ProjectGuid>
-    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.6.2</TargetFrameworkVersion>
     <Keyword>ManagedCProj</Keyword>
     <RootNamespace>SEALNET</RootNamespace>
-    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.15063.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
     <CLRSupport>true</CLRSupport>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
     <CLRSupport>true</CLRSupport>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
     <CLRSupport>true</CLRSupport>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
     <CLRSupport>true</CLRSupport>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
@@ -190,6 +190,7 @@
     <ClCompile Include="BigPolyWrapper.cpp" />
     <ClCompile Include="BigUIntWrapper.cpp" />
     <ClCompile Include="ChooserWrapper.cpp" />
+    <ClCompile Include="CiphertextWrapper.cpp" />
     <ClCompile Include="Common.cpp" />
     <ClCompile Include="DecryptorWrapper.cpp" />
     <ClCompile Include="EncoderWrapper.cpp" />
@@ -198,6 +199,8 @@
     <ClCompile Include="EvaluationKeysWrapper.cpp" />
     <ClCompile Include="EvaluatorWrapper.cpp" />
     <ClCompile Include="KeyGeneratorWrapper.cpp" />
+    <ClCompile Include="MemoryPoolHandleWrapper.cpp" />
+    <ClCompile Include="PlaintextWrapper.cpp" />
     <ClCompile Include="PolyCRTWrapper.cpp" />
     <ClCompile Include="SimulatorWrapper.cpp" />
     <ClCompile Include="UtilitiesWrapper.cpp" />
@@ -208,6 +211,7 @@
     <ClInclude Include="BigPolyWrapper.h" />
     <ClInclude Include="BigUIntWrapper.h" />
     <ClInclude Include="ChooserWrapper.h" />
+    <ClInclude Include="CiphertextWrapper.h" />
     <ClInclude Include="Common.h" />
     <ClInclude Include="DecryptorWrapper.h" />
     <ClInclude Include="EncoderWrapper.h" />
@@ -216,6 +220,8 @@
     <ClInclude Include="EvaluationKeysWrapper.h" />
     <ClInclude Include="EvaluatorWrapper.h" />
     <ClInclude Include="KeyGeneratorWrapper.h" />
+    <ClInclude Include="MemoryPoolHandleWrapper.h" />
+    <ClInclude Include="PlaintextWrapper.h" />
     <ClInclude Include="PolyCRTWrapper.h" />
     <ClInclude Include="SimulatorWrapper.h" />
     <ClInclude Include="UtilitiesWrapper.h" />

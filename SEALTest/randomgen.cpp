@@ -124,12 +124,12 @@ namespace SEALTest
             CustomRandomEngineFactory factory;
             
             EncryptionParameters parms;
-            BigUInt &coeff_modulus = parms.coeff_modulus();
-            BigUInt &plain_modulus = parms.plain_modulus();
-            BigPoly &poly_modulus = parms.poly_modulus();
-            parms.decomposition_bit_count() = 4;
-            parms.noise_standard_deviation() = 3.19;
-            parms.noise_max_deviation() = 35.06;
+            BigUInt coeff_modulus;
+            BigUInt plain_modulus;
+            BigPoly poly_modulus;
+            parms.set_decomposition_bit_count(4);
+            parms.set_noise_standard_deviation(3.19);
+            parms.set_noise_max_deviation(35.06);
             coeff_modulus.resize(48);
             coeff_modulus = "FFFFFFFFC001";
             plain_modulus.resize(7);
@@ -137,7 +137,11 @@ namespace SEALTest
             poly_modulus.resize(65, 1);
             poly_modulus[0] = 1;
             poly_modulus[64] = 1;
-            parms.random_generator() = &factory;
+            parms.set_poly_modulus(const_cast<const BigPoly &>(poly_modulus));
+            parms.set_plain_modulus(const_cast<const BigUInt &>(plain_modulus));
+            parms.set_coeff_modulus(const_cast<const BigUInt &>(coeff_modulus));
+            parms.set_random_generator(&factory);
+            parms.validate();
 
             Assert::AreEqual(0, CustomRandomEngine::count());
 

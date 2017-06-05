@@ -1,6 +1,7 @@
 #pragma once
 
 #include "encoder.h"
+#include "EncryptionParamsWrapper.h"
 
 namespace Microsoft
 {
@@ -8,10 +9,6 @@ namespace Microsoft
     {
         namespace SEAL
         {
-            ref class BigPoly;
-
-            ref class BigUInt;
-
             ref class BinaryFractionalEncoder;
 
             ref class BalancedFractionalEncoder;
@@ -66,6 +63,29 @@ namespace Microsoft
                 <exception cref="System::ArgumentException">if plainModulus is not at least 2</exception>
                 */
                 BinaryEncoder(BigUInt ^plainModulus);
+
+                /**
+                <summary>Creates a BinaryEncoder object.</summary>
+                <remarks>
+                Creates a BinaryEncoder object. The constructor takes as input a reference to the plaintext modulus 
+                (represented by <see cref="BigUInt"/>). The user can give a <see cref="MemoryPoolHandle "/> object 
+                to use a custom memory pool instead of the global memory pool (default).
+                </remarks>
+                <param name="plainModulus">The plaintext modulus (represented by BigUInt)</param>
+                <param name="pool">The memory pool handle</param>
+                <exception cref="System::ArgumentNullException">if plainModulus or pool is null</exception>
+                <exception cref="System::ArgumentException">if plainModulus is not at least 2</exception>
+                <seealso cref="MemoryPoolHandle">See MemoryPoolHandle for more details on memory pool handles.</seealso>
+                */
+                BinaryEncoder(BigUInt ^plainModulus, MemoryPoolHandle ^pool);
+
+                /**
+                <summary>Creates a copy of a BinaryEncoder.</summary>
+
+                <param name="copy">The BinaryEncoder to copy from</param>
+                <exception cref="System::ArgumentNullException">if copy is null</exception>
+                */
+                BinaryEncoder(BinaryEncoder ^copy);
 
                 /**
                 <summary>Destroys the BinaryEncoder.</summary>
@@ -282,6 +302,7 @@ namespace Microsoft
                 */
                 void Encode(System::UInt32 value, BigPoly ^destination);
 
+            internal:
                 /**
                 <summary>Returns a reference to the underlying C++ BinaryEncoder.</summary>
                 */
@@ -341,7 +362,7 @@ namespace Microsoft
                 <summary>Creates a BalancedEncoder object.</summary>
                 <remarks>
                 Creates a BalancedEncoder object with base set to 3. The constructor takes as input a reference to the 
-                plaintext modulus (represented by<see cref="BigUInt"/>).
+                plaintext modulus (represented by <see cref="BigUInt"/>).
                 </remarks>
                 <param name="plainModulus">The plaintext modulus (represented by BigUInt)</param>
                 <exception cref="System::ArgumentNullException">if plainModulus is null</exception>
@@ -352,17 +373,57 @@ namespace Microsoft
                 /**
                 <summary>Creates a BalancedEncoder object.</summary>
                 <remarks>
+                Creates a BalancedEncoder object with base set to 3. The constructor takes as input a reference to the 
+                plaintext modulus (represented by <see cref="BigUInt"/>). The user can give a <see cref="MemoryPoolHandle "/>
+                object to use a custom memory pool instead of the global memory pool (default).
+                </remarks>
+                <param name="plainModulus">The plaintext modulus (represented by BigUInt)</param>
+                <param name="pool">The memory pool handle</param>
+                <exception cref="System::ArgumentNullException">if plainModulus or pool is null</exception>
+                <exception cref="System::ArgumentException">if plainModulus is not at least 2</exception>
+                <seealso cref="MemoryPoolHandle">See MemoryPoolHandle for more details on memory pool handles.</seealso>
+                */
+                BalancedEncoder(BigUInt ^plainModulus, MemoryPoolHandle ^pool);
+
+                /**
+                <summary>Creates a BalancedEncoder object.</summary>
+                <remarks>
                 Creates a BalancedEncoder object. The constructor takes as input a reference to the plaintext modulus 
-                (represented by <see cref="BigUInt"/>), and optionally an integer, at least 3, that is used as a base 
+                (represented by <see cref="BigUInt"/>), and an integer, at least 3, that is used as a base 
                 in the encoding.
                 </remarks>
                 <param name="plainModulus">The plaintext modulus (represented by BigUInt)</param>
-                <param name="base">The base to be used for encoding (default value is 3)</param>
+                <param name="base">The base to be used for encoding</param>
                 <exception cref="System::ArgumentNullException">if plainModulus is null</exception>
                 <exception cref="System::ArgumentException">if base is not an integer and at least 3</exception>
                 <exception cref="System::ArgumentException">if plainModulus is not at least base</exception>
                 */
                 BalancedEncoder(BigUInt ^plainModulus, System::UInt64 base);
+
+                /**
+                <summary>Creates a BalancedEncoder object.</summary>
+                <remarks>
+                Creates a BalancedEncoder object. The constructor takes as input a reference to the plaintext modulus
+                (represented by <see cref="BigUInt"/>), and an integer, at least 3, that is used as a base
+                in the encoding. The user can give a <see cref="MemoryPoolHandle "/> object to use a custom
+                memory pool instead of the global memory pool (default).
+                </remarks>
+                <param name="plainModulus">The plaintext modulus (represented by BigUInt)</param>
+                <param name="base">The base to be used for encoding</param>
+                <exception cref="System::ArgumentNullException">if plainModulus or pool is null</exception>
+                <exception cref="System::ArgumentException">if base is not an integer and at least 3</exception>
+                <exception cref="System::ArgumentException">if plainModulus is not at least base</exception>
+                <seealso cref="MemoryPoolHandle">See MemoryPoolHandle for more details on memory pool handles.</seealso>
+                */
+                BalancedEncoder(BigUInt ^plainModulus, System::UInt64 base, MemoryPoolHandle ^pool);
+
+                /**
+                <summary>Creates a copy of a BalancedEncoder.</summary>
+
+                <param name="copy">The BalancedEncoder to copy from</param>
+                <exception cref="System::ArgumentNullException">if copy is null</exception>
+                */
+                BalancedEncoder(BalancedEncoder ^copy);
 
                 /**
                 <summary>Destroys the BalancedEncoder.</summary>
@@ -585,6 +646,7 @@ namespace Microsoft
                 */
                 void Encode(System::UInt32 value, BigPoly ^destination);
 
+            internal:
                 /**
                 <summary>Returns a reference to the underlying C++ BalancedEncoder.</summary>
                 */
@@ -666,6 +728,41 @@ namespace Microsoft
                 BinaryFractionalEncoder(BigUInt ^plainModulus, BigPoly ^polyModulus, int integerCoeffCount, int fractionCoeffCount);
 
                 /**
+                <summary>Creates a new BinaryFractionalEncoder object.</summary>
+                <remarks>
+                Creates a new BinaryFractionalEncoder object. The constructor takes as input a reference to the plaintext modulus,
+                a reference to the polynomial modulus, and the numbers of coefficients that are reserved for
+                the integral and fractional parts. The coefficients for the integral part are counted starting from the low-degree 
+                end of the polynomial, and the coefficients for the fractional part are counted from the high-degree end. 
+                The user can give a <see cref="MemoryPoolHandle "/> object to use a custom memory pool instead of the 
+                global memory pool (default).
+                </remarks>
+                <param name="plainModulus">The plaintext modulus (represented by <see cref="BigUInt"/>)</param>
+                <param name="polyModulus">The polynomial modulus (represented by <see cref="BigPoly"/>)</param>
+                <param name="integerCoeffCount">The number of polynomial coefficients reserved for the integral part</param>
+                <param name="fractionCoeffCount">The number of polynomial coefficients reserved for the fractional part</param>
+                <param name="pool">The memory pool handle</param>
+                <exception cref="System::ArgumentNullException">if plainModulus, polyModulus, or pool is null</exception>
+                <exception cref="System::ArgumentException">if plainModulus is not at least 2</exception>
+                <exception cref="System::ArgumentException">if integerCoeffCount is not strictly positive</exception>
+                <exception cref="System::ArgumentException">if fractionCoeffCount is not strictly positive</exception>
+                <exception cref="System::ArgumentException">if polyModulus is zero</exception>
+                <exception cref="System::ArgumentException">if polyModulus is too small for the integral and fractional
+                parts</exception>
+                <seealso cref="MemoryPoolHandle">See MemoryPoolHandle for more details on memory pool handles.</seealso>
+                */
+                BinaryFractionalEncoder(BigUInt ^plainModulus, BigPoly ^polyModulus, int integerCoeffCount, 
+                    int fractionCoeffCount, MemoryPoolHandle ^pool);
+
+                /**
+                <summary>Creates a copy of a BinaryFractionalEncoder.</summary>
+
+                <param name="copy">The BinaryFractionalEncoder to copy from</param>
+                <exception cref="System::ArgumentNullException">if copy is null</exception>
+                */
+                BinaryFractionalEncoder(BinaryFractionalEncoder ^copy);
+
+                /**
                 <summary>Destroys the BinaryFractionalEncoder.</summar>
                 */
                 ~BinaryFractionalEncoder();
@@ -730,6 +827,7 @@ namespace Microsoft
                     System::UInt64 get();
                 }
 
+            internal:
                 /**
                 <summary>Returns a reference to the underlying C++ BinaryFractionalEncoder.</summary>
                 */
@@ -745,10 +843,10 @@ namespace Microsoft
             <para>
             Encodes floating point numbers into plaintext polynomials that Encryptor can encrypt. An instance of the
             BalancedFractionalEncoder class converts a double-precision floating-point number into a plaintext polynomial by
-            computing its balanced base-b representation, encoding the integral part as in <see cref="BalancedEncoder"/>, and the fractional
-            part as the highest degree terms of the plaintext polynomial, with signs inverted. Decoding the polynomial back into a
-            double amounts to evaluating the low degree part at X=b, negating the coefficients of the high degree part and
-            evaluating it at X=1/b.
+            computing its balanced base-b representation, encoding the integral part as in <see cref="BalancedEncoder"/>, and the 
+            fractional part as the highest degree terms of the plaintext polynomial, with signs inverted. Decoding the polynomial
+            back into a double amounts to evaluating the low degree part at X=b, negating the coefficients of the high degree 
+            part and evaluating it at X=1/b.
             </para>
             <para>
             Addition and multiplication on the double side translate into addition and multiplication on the encoded plaintext
@@ -818,6 +916,32 @@ namespace Microsoft
                 <remarks>
                 Creates a new BalancedFractionalEncoder object. The constructor takes as input a reference to the plaintext modulus,
                 a reference to the polynomial modulus, and the numbers of coefficients that are reserved for
+                the integral and fractional parts. The base used for encoding is taken to be 3.
+                The coefficients for the integral part are counted starting from the low-degree end of the polynomial, and the
+                coefficients for the fractional part are counted from the high-degree end. The user can give a 
+                <see cref="MemoryPoolHandle "/> object to use a custom memory pool instead of the global memory pool (default).
+                </remarks>
+                <param name="plainModulus">The plaintext modulus (represented by <see cref="BigUInt"/>)</param>
+                <param name="polyModulus">The polynomial modulus (represented by <see cref="BigPoly"/>)</param>
+                <param name="integerCoeffCount">The number of polynomial coefficients reserved for the integral part</param>
+                <param name="fractionCoeffCount">The number of polynomial coefficients reserved for the fractional part</param>
+                <param name="pool">The memory pool handle</param>
+                <exception cref="System::ArgumentNullException">if plainModulus, polyModulus, or pool is null</exception>
+                <exception cref="System::ArgumentException">if plainModulus is not at least 2</exception>
+                <exception cref="System::ArgumentException">if integerCoeffCount is not strictly positive</exception>
+                <exception cref="System::ArgumentException">if fractionCoeffCount is not strictly positive</exception>
+                <exception cref="System::ArgumentException">if polyModulus is zero</exception>
+                <exception cref="System::ArgumentException">if polyModulus is too small for the integral and fractional
+                parts</exception>
+                <seealso cref="MemoryPoolHandle">See MemoryPoolHandle for more details on memory pool handles.</seealso>
+                */
+                BalancedFractionalEncoder(BigUInt ^plainModulus, BigPoly ^polyModulus, int integerCoeffCount, int fractionCoeffCount, MemoryPoolHandle ^pool);
+
+                /**
+                <summary>Creates a new BalancedFractionalEncoder object.</summary>
+                <remarks>
+                Creates a new BalancedFractionalEncoder object. The constructor takes as input a reference to the plaintext modulus,
+                a reference to the polynomial modulus, and the numbers of coefficients that are reserved for
                 the integral and fractional parts, and an odd integer, at least 3, that is used as the base in the encoding.
                 The coefficients for the integral part are counted starting from the low-degree end of the polynomial, and the
                 coefficients for the fractional part are counted from the high-degree end.
@@ -826,7 +950,7 @@ namespace Microsoft
                 <param name="polyModulus">The polynomial modulus (represented by <see cref="BigPoly"/>)</param>
                 <param name="integerCoeffCount">The number of polynomial coefficients reserved for the integral part</param>
                 <param name="fractionCoeffCount">The number of polynomial coefficients reserved for the fractional part</param>
-                <param name="base">The base to be used for encoding (default value is 3)</param>
+                <param name="base">The base to be used for encoding</param>
                 <exception cref="System::ArgumentNullException">if plainModulus or polyModulus is null</exception>
                 <exception cref="System::ArgumentException">if plainModulus is not at least (base + 1) / 2</exception>
                 <exception cref="System::ArgumentException">if integerCoeffCount is not strictly positive</exception>
@@ -837,6 +961,42 @@ namespace Microsoft
                 <exception cref="System::ArgumentException">if base is not an odd integer and at least 3</exception>
                 */
                 BalancedFractionalEncoder(BigUInt ^plainModulus, BigPoly ^polyModulus, int integerCoeffCount, int fractionCoeffCount, System::UInt64 base);
+
+                /**
+                <summary>Creates a new BalancedFractionalEncoder object.</summary>
+                <remarks>
+                Creates a new BalancedFractionalEncoder object. The constructor takes as input a reference to the plaintext modulus,
+                a reference to the polynomial modulus, and the numbers of coefficients that are reserved for
+                the integral and fractional parts, and an odd integer, at least 3, that is used as the base in the encoding.
+                The coefficients for the integral part are counted starting from the low-degree end of the polynomial, and the
+                coefficients for the fractional part are counted from the high-degree end. The user can give a 
+                <see cref="MemoryPoolHandle "/> object to use a custom memory pool instead of the global memory pool (default).
+                </remarks>
+                <param name="plainModulus">The plaintext modulus (represented by <see cref="BigUInt"/>)</param>
+                <param name="polyModulus">The polynomial modulus (represented by <see cref="BigPoly"/>)</param>
+                <param name="integerCoeffCount">The number of polynomial coefficients reserved for the integral part</param>
+                <param name="fractionCoeffCount">The number of polynomial coefficients reserved for the fractional part</param>
+                <param name="base">The base to be used for encoding</param>
+                <param name="pool">The memory pool handle</param>
+                <exception cref="System::ArgumentNullException">if plainModulus, polyModulus, or pool is null</exception>
+                <exception cref="System::ArgumentException">if plainModulus is not at least (base + 1) / 2</exception>
+                <exception cref="System::ArgumentException">if integerCoeffCount is not strictly positive</exception>
+                <exception cref="System::ArgumentException">if fractionCoeffCount is not strictly positive</exception>
+                <exception cref="System::ArgumentException">if polyModulus is zero</exception>
+                <exception cref="System::ArgumentException">if polyModulus is too small for the integral and fractional
+                parts</exception>
+                <exception cref="System::ArgumentException">if base is not an odd integer and at least 3</exception>
+                <seealso cref="MemoryPoolHandle">See MemoryPoolHandle for more details on memory pool handles.</seealso>
+                */
+                BalancedFractionalEncoder(BigUInt ^plainModulus, BigPoly ^polyModulus, int integerCoeffCount, int fractionCoeffCount, System::UInt64 base, MemoryPoolHandle ^pool);
+
+                /**
+                <summary>Creates a copy of a BalancedFractionalEncoder.</summary>
+
+                <param name="copy">The BalancedFractionalEncoder to copy from</param>
+                <exception cref="System::ArgumentNullException">if copy is null</exception>
+                */
+                BalancedFractionalEncoder(BalancedFractionalEncoder ^copy);
 
                 /**
                 <summary>Destroys the BalancedFractionalEncoder.</summary>
@@ -903,6 +1063,7 @@ namespace Microsoft
                     System::UInt64 get();
                 }
 
+            internal:
                 /**
                 <summary>Returns a reference to the underlying C++ BalancedFractionalEncoder.</summary>
                 */
@@ -979,8 +1140,23 @@ namespace Microsoft
                 /**
                 <summary>Creates an IntegerEncoder object.</summary>
                 <remarks>
-                Creates an IntegerEncoder object. The constructor takes as input a reference to the plaintext modulus (represented by
-                <see cref="BigUInt"/>), and optionally an integer, at least 2, that is used as a base in the encoding.
+                Creates an IntegerEncoder object with base set to 2. The constructor takes as input a reference to the
+                plaintext modulus (represented by <see cref="BigUInt"/>). The user can give a <see cref="MemoryPoolHandle "/> 
+                object to use a custom memory pool instead of the global memory pool (default).
+                </remarks>
+                <param name="plainModulus">The plaintext modulus (represented by BigUInt)</param>
+                <param name="pool">The memory pool handle</param>
+                <exception cref="System::ArgumentNullException">if plainModulus or pool is null</exception>
+                <exception cref="System::ArgumentException">if plainModulus is not at least 2</exception>
+                <seealso cref="MemoryPoolHandle">See MemoryPoolHandle for more details on memory pool handles.</seealso>
+                */
+                IntegerEncoder(BigUInt ^plainModulus, MemoryPoolHandle ^pool);
+
+                /**
+                <summary>Creates an IntegerEncoder object.</summary>
+                <remarks>
+                Creates an IntegerEncoder object. The constructor takes as input a reference to the plaintext modulus 
+                (represented by <see cref="BigUInt"/>), and an integer, at least 2, that is used as a base in the encoding.
                 </remarks>
                 <param name="plainModulus">The plaintext modulus (represented by BigUInt)</param>
                 <param name="base">The base to be used for encoding (default value is 2)</param>
@@ -989,6 +1165,32 @@ namespace Microsoft
                 <exception cref="System::ArgumentException">if plainModulus is not at least base</exception>
                 */
                 IntegerEncoder(BigUInt ^plainModulus, System::UInt64 base);
+
+                /**
+                <summary>Creates an IntegerEncoder object.</summary>
+                <remarks>
+                Creates an IntegerEncoder object. The constructor takes as input a reference to the plaintext modulus 
+                (represented by <see cref="BigUInt"/>), and an integer, at least 2, that is used as a base 
+                in the encoding. The user can give a <see cref="MemoryPoolHandle "/> object to use a custom memory 
+                pool instead of the global memory pool (default).
+                </remarks>
+                <param name="plainModulus">The plaintext modulus (represented by BigUInt)</param>
+                <param name="base">The base to be used for encoding (default value is 2)</param>
+                <param name="pool">The memory pool handle</param>
+                <exception cref="System::ArgumentNullException">if plainModulus or pool is null</exception>
+                <exception cref="System::ArgumentException">if base is not an integer and at least 2</exception>
+                <exception cref="System::ArgumentException">if plainModulus is not at least base</exception>
+                <seealso cref="MemoryPoolHandle">See MemoryPoolHandle for more details on memory pool handles.</seealso>
+                */
+                IntegerEncoder(BigUInt ^plainModulus, System::UInt64 base, MemoryPoolHandle ^pool);
+
+                /**
+                <summary>Creates a copy of a IntegerEncoder.</summary>
+
+                <param name="copy">The IntegerEncoder to copy from</param>
+                <exception cref="System::ArgumentNullException">if copy is null</exception>
+                */
+                IntegerEncoder(IntegerEncoder ^copy);
 
                 /**
                 <summary>Destroys the IntegerEncoder.</summary>
@@ -1215,6 +1417,7 @@ namespace Microsoft
                 */
                 void Encode(System::UInt32 value, BigPoly ^destination);
 
+            internal:
                 /**
                 <summary>Returns a reference to the underlying C++ IntegerEncoder.</summary>
                 */
@@ -1309,7 +1512,34 @@ namespace Microsoft
                 FractionalEncoder(BigUInt ^plainModulus, BigPoly ^polyModulus, int integerCoeffCount, int fractionCoeffCount);
 
                 /**
-                <summary>Creates a new BalancedFractionalEncoder object.</summary>
+                <summary>Creates a new FractionalEncoder object.</summary>
+                <remarks>
+                Creates a new FractionalEncoder object. The constructor takes as input a reference
+                to the plaintext modulus, a reference to the polynomial modulus,
+                and the numbers of coefficients that are reserved for the integral and fractional parts.
+                The base used for encoding is taken to be 2. The coefficients for the integral part are
+                counted starting from the low-degree end of the polynomial, and the coefficients for the
+                fractional part are counted from the high-degree end. The user can give a <see cref="MemoryPoolHandle "/>
+                object to use a custom memory pool instead of the global memory pool (default).
+                </remarks>
+                <param name="plainModulus">The plaintext modulus (represented by <see cref="BigUInt"/>)</param>
+                <param name="polyModulus">The polynomial modulus (represented by <see cref="BigPoly"/>)</param>
+                <param name="integerCoeffCount">The number of polynomial coefficients reserved for the integral part</param>
+                <param name="fractionCoeffCount">The number of polynomial coefficients reserved for the fractional part</param>
+                <param name="pool">The memory pool handle</param>
+                <exception cref="System::ArgumentNullException">if plainModulus, polyModulus, or pool is null</exception>
+                <exception cref="System::ArgumentException">if plainModulus is not at least 2</exception>
+                <exception cref="System::ArgumentException">if integerCoeffCount is not strictly positive</exception>
+                <exception cref="System::ArgumentException">if fractionCoeffCount is not strictly positive</exception>
+                <exception cref="System::ArgumentException">if polyModulus is zero</exception>
+                <exception cref="System::ArgumentException">if polyModulus is too small for the integral and fractional parts</exception>
+                <seealso cref="MemoryPoolHandle">See MemoryPoolHandle for more details on memory pool handles.</seealso>
+                */
+                FractionalEncoder(BigUInt ^plainModulus, BigPoly ^polyModulus, int integerCoeffCount, int fractionCoeffCount,
+                    MemoryPoolHandle ^pool);
+
+                /**
+                <summary>Creates a new FractionalEncoder object.</summary>
                 <remarks>
                 Creates a new FractionalEncoder object. The constructor takes as input a reference
                 to the plaintext modulus, a reference to the polynomial modulus,
@@ -1322,7 +1552,7 @@ namespace Microsoft
                 <param name="polyModulus">The polynomial modulus (represented by <see cref="BigPoly"/>)</param>
                 <param name="integerCoeffCount">The number of polynomial coefficients reserved for the integral part</param>
                 <param name="fractionCoeffCount">The number of polynomial coefficients reserved for the fractional part</param>
-                <param name="base">The base to be used for encoding (default value is 2)</param>
+                <param name="base">The base to be used for encoding</param>
                 <exception cref="System::ArgumentNullException">if plainModulus or polyModulus is null</exception>
                 <exception cref="System::ArgumentException">if plainModulus is not at least base</exception>
                 <exception cref="System::ArgumentException">if integerCoeffCount is not strictly positive</exception>
@@ -1332,7 +1562,47 @@ namespace Microsoft
                 parts</exception>
                 <exception cref="System::ArgumentException">if base is not an integer and at least 2</exception>
                 */
-                FractionalEncoder(BigUInt ^plainModulus, BigPoly ^polyModulus, int integerCoeffCount, int fractionCoeffCount, System::UInt64 base);
+                FractionalEncoder(BigUInt ^plainModulus, BigPoly ^polyModulus, int integerCoeffCount, int fractionCoeffCount, 
+                    System::UInt64 base);
+
+                /**
+                <summary>Creates a new FractionalEncoder object.</summary>
+                <remarks>
+                Creates a new FractionalEncoder object. The constructor takes as input a reference
+                to the plaintext modulus, a reference to the polynomial modulus,
+                and the numbers of coefficients that are reserved for the integral and fractional parts,
+                and an integer, at least 2, that is used as the base in the encoding. The coefficients
+                for the integral part are counted starting from the low-degree end of the polynomial,
+                and the coefficients for the fractional part are counted from the high-degree end.
+                The user can give a <see cref="MemoryPoolHandle "/> object to use a custom memory pool 
+                instead of the global memory pool (default).
+                </remarks>
+                <param name="plainModulus">The plaintext modulus (represented by <see cref="BigUInt"/>)</param>
+                <param name="polyModulus">The polynomial modulus (represented by <see cref="BigPoly"/>)</param>
+                <param name="integerCoeffCount">The number of polynomial coefficients reserved for the integral part</param>
+                <param name="fractionCoeffCount">The number of polynomial coefficients reserved for the fractional part</param>
+                <param name="base">The base to be used for encoding</param>
+                <param name="pool">The memory pool handle</param>
+                <exception cref="System::ArgumentNullException">if plainModulus, polyModulus, or pool is null</exception>
+                <exception cref="System::ArgumentException">if plainModulus is not at least base</exception>
+                <exception cref="System::ArgumentException">if integerCoeffCount is not strictly positive</exception>
+                <exception cref="System::ArgumentException">if fractionCoeffCount is not strictly positive</exception>
+                <exception cref="System::ArgumentException">if polyModulus is zero</exception>
+                <exception cref="System::ArgumentException">if polyModulus is too small for the integral and fractional
+                parts</exception>
+                <exception cref="System::ArgumentException">if base is not an integer and at least 2</exception>
+                <seealso cref="MemoryPoolHandle">See MemoryPoolHandle for more details on memory pool handles.</seealso>
+                */
+                FractionalEncoder(BigUInt ^plainModulus, BigPoly ^polyModulus, int integerCoeffCount, int fractionCoeffCount, 
+                    System::UInt64 base, MemoryPoolHandle ^pool);
+
+                /**
+                <summary>Creates a copy of a FractionalEncoder.</summary>
+
+                <param name="copy">The FractionalEncoder to copy from</param>
+                <exception cref="System::ArgumentNullException">if copy is null</exception>
+                */
+                FractionalEncoder(FractionalEncoder ^copy);
 
                 /**
                 <summary>Destroys the FractionalEncoder.</summary>
@@ -1399,6 +1669,8 @@ namespace Microsoft
                     System::UInt64 get();
                 }
 
+
+            internal:
                 /**
                 <summary>Returns a reference to the underlying C++ FractionalEncoder.</summary>
                 */

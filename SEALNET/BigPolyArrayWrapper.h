@@ -1,6 +1,7 @@
 #pragma once
 
 #include "bigpolyarray.h"
+#include "BigPolyWrapper.h"
 
 namespace Microsoft
 {
@@ -8,8 +9,6 @@ namespace Microsoft
     {
         namespace SEAL
         {
-            ref class BigPoly;
-
             /**
             <summary>Represents an array of BigPoly objects.</summary>
 

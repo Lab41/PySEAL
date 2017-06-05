@@ -10,31 +10,34 @@ namespace SEALNETTest
         [TestMethod]
         public void FVEncryptNegateDecryptNET()
         {
-            var parms = new EncryptionParameters
-            {
-                DecompositionBitCount = 4,
-                NoiseStandardDeviation = 3.19,
-                NoiseMaxDeviation = 35.06
-            };
-            var coeffModulus = parms.CoeffModulus;
-            coeffModulus.Resize(48);
+            var parms = new EncryptionParameters(MemoryPoolHandle.AcquireNew());
+            parms.SetDecompositionBitCount(4);
+            parms.SetNoiseStandardDeviation(3.19);
+            parms.SetNoiseMaxDeviation(35.06);
+
+            var coeffModulus = new BigUInt(48);
             coeffModulus.Set("FFFFFFFFC001");
-            var plainModulus = parms.PlainModulus;
-            plainModulus.Resize(7);
+            parms.SetCoeffModulus(coeffModulus);
+
+            var plainModulus = new BigUInt(7);
             plainModulus.Set(1 << 6);
-            var polyModulus = parms.PolyModulus;
-            polyModulus.Resize(65, 1);
+            parms.SetPlainModulus(plainModulus);
+
+            var polyModulus = new BigPoly(65, 1);
             polyModulus[0].Set(1);
             polyModulus[64].Set(1);
+            parms.SetPolyModulus(polyModulus);
 
-            var keygen = new KeyGenerator(parms);
+            parms.Validate();
+
+            var keygen = new KeyGenerator(parms, MemoryPoolHandle.AcquireNew());
             keygen.Generate();
 
-            var encoder = new BinaryEncoder(parms.PlainModulus);
+            var encoder = new BinaryEncoder(parms.PlainModulus, MemoryPoolHandle.AcquireNew());
 
-            var encryptor = new Encryptor(parms, keygen.PublicKey);
-            var evaluator = new Evaluator(parms);
-            var decryptor = new Decryptor(parms, keygen.SecretKey);
+            var encryptor = new Encryptor(parms, keygen.PublicKey, MemoryPoolHandle.AcquireNew());
+            var evaluator = new Evaluator(parms, MemoryPoolHandle.AcquireNew());
+            var decryptor = new Decryptor(parms, keygen.SecretKey, MemoryPoolHandle.AcquireNew());
 
             var encrypted = encryptor.Encrypt(encoder.Encode(0x12345678));
             var negated = evaluator.Negate(encrypted);
@@ -64,31 +67,34 @@ namespace SEALNETTest
         [TestMethod]
         public void FVEncryptAddDecryptNET()
         {
-            var parms = new EncryptionParameters
-            {
-                DecompositionBitCount = 4,
-                NoiseStandardDeviation = 3.19,
-                NoiseMaxDeviation = 35.06
-            };
-            var coeffModulus = parms.CoeffModulus;
-            coeffModulus.Resize(48);
+            var parms = new EncryptionParameters(MemoryPoolHandle.AcquireNew());
+            parms.SetDecompositionBitCount(4);
+            parms.SetNoiseStandardDeviation(3.19);
+            parms.SetNoiseMaxDeviation(35.06);
+
+            var coeffModulus = new BigUInt(48);
             coeffModulus.Set("FFFFFFFFC001");
-            var plainModulus = parms.PlainModulus;
-            plainModulus.Resize(7);
+            parms.SetCoeffModulus(coeffModulus);
+
+            var plainModulus = new BigUInt(7);
             plainModulus.Set(1 << 6);
-            var polyModulus = parms.PolyModulus;
-            polyModulus.Resize(65, 1);
+            parms.SetPlainModulus(plainModulus);
+
+            var polyModulus = new BigPoly(65, 1);
             polyModulus[0].Set(1);
             polyModulus[64].Set(1);
+            parms.SetPolyModulus(polyModulus);
 
-            var keygen = new KeyGenerator(parms);
+            parms.Validate();
+
+            var keygen = new KeyGenerator(parms, MemoryPoolHandle.AcquireNew());
             keygen.Generate();
 
-            var encoder = new BinaryEncoder(parms.PlainModulus);
+            var encoder = new BinaryEncoder(parms.PlainModulus, MemoryPoolHandle.AcquireNew());
 
-            var encryptor = new Encryptor(parms, keygen.PublicKey);
-            var evaluator = new Evaluator(parms);
-            var decryptor = new Decryptor(parms, keygen.SecretKey);
+            var encryptor = new Encryptor(parms, keygen.PublicKey, MemoryPoolHandle.AcquireNew());
+            var evaluator = new Evaluator(parms, MemoryPoolHandle.AcquireNew());
+            var decryptor = new Decryptor(parms, keygen.SecretKey, MemoryPoolHandle.AcquireNew());
 
             var encrypted1 = encryptor.Encrypt(encoder.Encode(0x12345678));
             var encrypted2 = encryptor.Encrypt(encoder.Encode(0x54321));
@@ -119,31 +125,34 @@ namespace SEALNETTest
         [TestMethod]
         public void FVEncryptSubDecryptNET()
         {
-            var parms = new EncryptionParameters
-            {
-                DecompositionBitCount = 4,
-                NoiseStandardDeviation = 3.19,
-                NoiseMaxDeviation = 35.06
-            };
-            var coeffModulus = parms.CoeffModulus;
-            coeffModulus.Resize(48);
+            var parms = new EncryptionParameters(MemoryPoolHandle.AcquireNew());
+            parms.SetDecompositionBitCount(4);
+            parms.SetNoiseStandardDeviation(3.19);
+            parms.SetNoiseMaxDeviation(35.06);
+
+            var coeffModulus = new BigUInt(48);
             coeffModulus.Set("FFFFFFFFC001");
-            var plainModulus = parms.PlainModulus;
-            plainModulus.Resize(7);
+            parms.SetCoeffModulus(coeffModulus);
+
+            var plainModulus = new BigUInt(7);
             plainModulus.Set(1 << 6);
-            var polyModulus = parms.PolyModulus;
-            polyModulus.Resize(65, 1);
+            parms.SetPlainModulus(plainModulus);
+
+            var polyModulus = new BigPoly(65, 1);
             polyModulus[0].Set(1);
             polyModulus[64].Set(1);
+            parms.SetPolyModulus(polyModulus);
 
-            var keygen = new KeyGenerator(parms);
+            parms.Validate();
+
+            var keygen = new KeyGenerator(parms, MemoryPoolHandle.AcquireNew());
             keygen.Generate();
 
-            var encoder = new BinaryEncoder(parms.PlainModulus);
+            var encoder = new BinaryEncoder(parms.PlainModulus, MemoryPoolHandle.AcquireNew());
 
-            var encryptor = new Encryptor(parms, keygen.PublicKey);
-            var evaluator = new Evaluator(parms);
-            var decryptor = new Decryptor(parms, keygen.SecretKey);
+            var encryptor = new Encryptor(parms, keygen.PublicKey, MemoryPoolHandle.AcquireNew());
+            var evaluator = new Evaluator(parms, MemoryPoolHandle.AcquireNew());
+            var decryptor = new Decryptor(parms, keygen.SecretKey, MemoryPoolHandle.AcquireNew());
 
             var encrypted1 = encryptor.Encrypt(encoder.Encode(0x12345678));
             var encrypted2 = encryptor.Encrypt(encoder.Encode(0x54321));
@@ -174,31 +183,34 @@ namespace SEALNETTest
         [TestMethod]
         public void FVEncryptAddPlainDecryptNET()
         {
-            var parms = new EncryptionParameters
-            {
-                DecompositionBitCount = 4,
-                NoiseStandardDeviation = 3.19,
-                NoiseMaxDeviation = 35.06
-            };
-            var coeffModulus = parms.CoeffModulus;
-            coeffModulus.Resize(48);
+            var parms = new EncryptionParameters(MemoryPoolHandle.AcquireNew());
+            parms.SetDecompositionBitCount(4);
+            parms.SetNoiseStandardDeviation(3.19);
+            parms.SetNoiseMaxDeviation(35.06);
+
+            var coeffModulus = new BigUInt(48);
             coeffModulus.Set("FFFFFFFFC001");
-            var plainModulus = parms.PlainModulus;
-            plainModulus.Resize(7);
+            parms.SetCoeffModulus(coeffModulus);
+
+            var plainModulus = new BigUInt(7);
             plainModulus.Set(1 << 6);
-            var polyModulus = parms.PolyModulus;
-            polyModulus.Resize(65, 1);
+            parms.SetPlainModulus(plainModulus);
+
+            var polyModulus = new BigPoly(65, 1);
             polyModulus[0].Set(1);
             polyModulus[64].Set(1);
+            parms.SetPolyModulus(polyModulus);
 
-            var keygen = new KeyGenerator(parms);
+            parms.Validate();
+
+            var keygen = new KeyGenerator(parms, MemoryPoolHandle.AcquireNew());
             keygen.Generate();
 
-            var encoder = new BinaryEncoder(parms.PlainModulus);
+            var encoder = new BinaryEncoder(parms.PlainModulus, MemoryPoolHandle.AcquireNew());
 
-            var encryptor = new Encryptor(parms, keygen.PublicKey);
-            var evaluator = new Evaluator(parms);
-            var decryptor = new Decryptor(parms, keygen.SecretKey);
+            var encryptor = new Encryptor(parms, keygen.PublicKey, MemoryPoolHandle.AcquireNew());
+            var evaluator = new Evaluator(parms, MemoryPoolHandle.AcquireNew());
+            var decryptor = new Decryptor(parms, keygen.SecretKey, MemoryPoolHandle.AcquireNew());
 
             var encrypted1 = encryptor.Encrypt(encoder.Encode(0x12345678));
             var plain2 = encoder.Encode(0x54321);
@@ -229,31 +241,34 @@ namespace SEALNETTest
         [TestMethod]
         public void FVEncryptSubPlainDecryptNET()
         {
-            var parms = new EncryptionParameters
-            {
-                DecompositionBitCount = 4,
-                NoiseStandardDeviation = 3.19,
-                NoiseMaxDeviation = 35.06
-            };
-            var coeffModulus = parms.CoeffModulus;
-            coeffModulus.Resize(48);
+            var parms = new EncryptionParameters(MemoryPoolHandle.AcquireNew());
+            parms.SetDecompositionBitCount(4);
+            parms.SetNoiseStandardDeviation(3.19);
+            parms.SetNoiseMaxDeviation(35.06);
+
+            var coeffModulus = new BigUInt(48);
             coeffModulus.Set("FFFFFFFFC001");
-            var plainModulus = parms.PlainModulus;
-            plainModulus.Resize(7);
+            parms.SetCoeffModulus(coeffModulus);
+
+            var plainModulus = new BigUInt(7);
             plainModulus.Set(1 << 6);
-            var polyModulus = parms.PolyModulus;
-            polyModulus.Resize(65, 1);
+            parms.SetPlainModulus(plainModulus);
+
+            var polyModulus = new BigPoly(65, 1);
             polyModulus[0].Set(1);
             polyModulus[64].Set(1);
+            parms.SetPolyModulus(polyModulus);
 
-            var keygen = new KeyGenerator(parms);
+            parms.Validate();
+
+            var keygen = new KeyGenerator(parms, MemoryPoolHandle.AcquireNew());
             keygen.Generate();
 
-            var encoder = new BinaryEncoder(parms.PlainModulus);
+            var encoder = new BinaryEncoder(parms.PlainModulus, MemoryPoolHandle.AcquireNew());
 
-            var encryptor = new Encryptor(parms, keygen.PublicKey);
-            var evaluator = new Evaluator(parms);
-            var decryptor = new Decryptor(parms, keygen.SecretKey);
+            var encryptor = new Encryptor(parms, keygen.PublicKey, MemoryPoolHandle.AcquireNew());
+            var evaluator = new Evaluator(parms, MemoryPoolHandle.AcquireNew());
+            var decryptor = new Decryptor(parms, keygen.SecretKey, MemoryPoolHandle.AcquireNew());
 
             var encrypted1 = encryptor.Encrypt(encoder.Encode(0x12345678));
             var plain2 = encoder.Encode(0x54321);
@@ -284,31 +299,34 @@ namespace SEALNETTest
         [TestMethod]
         public void FVEncryptMultiplyPlainDecryptNET()
         {
-            var parms = new EncryptionParameters
-            {
-                DecompositionBitCount = 4,
-                NoiseStandardDeviation = 3.19,
-                NoiseMaxDeviation = 35.06
-            };
-            var coeffModulus = parms.CoeffModulus;
-            coeffModulus.Resize(48);
+            var parms = new EncryptionParameters(MemoryPoolHandle.AcquireNew());
+            parms.SetDecompositionBitCount(4);
+            parms.SetNoiseStandardDeviation(3.19);
+            parms.SetNoiseMaxDeviation(35.06);
+
+            var coeffModulus = new BigUInt(48);
             coeffModulus.Set("FFFFFFFFC001");
-            var plainModulus = parms.PlainModulus;
-            plainModulus.Resize(7);
+            parms.SetCoeffModulus(coeffModulus);
+
+            var plainModulus = new BigUInt(7);
             plainModulus.Set(1 << 6);
-            var polyModulus = parms.PolyModulus;
-            polyModulus.Resize(65, 1);
+            parms.SetPlainModulus(plainModulus);
+
+            var polyModulus = new BigPoly(65, 1);
             polyModulus[0].Set(1);
             polyModulus[64].Set(1);
+            parms.SetPolyModulus(polyModulus);
 
-            var keygen = new KeyGenerator(parms);
+            parms.Validate();
+
+            var keygen = new KeyGenerator(parms, MemoryPoolHandle.AcquireNew());
             keygen.Generate();
 
-            var encoder = new BinaryEncoder(parms.PlainModulus);
+            var encoder = new BinaryEncoder(parms.PlainModulus, MemoryPoolHandle.AcquireNew());
 
-            var encryptor = new Encryptor(parms, keygen.PublicKey);
-            var evaluator = new Evaluator(parms);
-            var decryptor = new Decryptor(parms, keygen.SecretKey);
+            var encryptor = new Encryptor(parms, keygen.PublicKey, MemoryPoolHandle.AcquireNew());
+            var evaluator = new Evaluator(parms, MemoryPoolHandle.AcquireNew());
+            var decryptor = new Decryptor(parms, keygen.SecretKey, MemoryPoolHandle.AcquireNew());
 
             var encrypted1 = encryptor.Encrypt(encoder.Encode(0x12345678));
             var plain2 = encoder.Encode(0x54321);
@@ -339,31 +357,34 @@ namespace SEALNETTest
         [TestMethod]
         public void FVEncryptMultiplyManyDecryptNET()
         {
-            var parms = new EncryptionParameters
-            {
-                DecompositionBitCount = 4,
-                NoiseStandardDeviation = 3.19,
-                NoiseMaxDeviation = 35.06
-            };
-            var coeffModulus = parms.CoeffModulus;
-            coeffModulus.Resize(48);
+            var parms = new EncryptionParameters(MemoryPoolHandle.AcquireNew());
+            parms.SetDecompositionBitCount(4);
+            parms.SetNoiseStandardDeviation(3.19);
+            parms.SetNoiseMaxDeviation(35.06);
+
+            var coeffModulus = new BigUInt(48);
             coeffModulus.Set("FFFFFFFFC001");
-            var plainModulus = parms.PlainModulus;
-            plainModulus.Resize(7);
-            plainModulus.Set(1 << 4);
-            var polyModulus = parms.PolyModulus;
-            polyModulus.Resize(65, 1);
+            parms.SetCoeffModulus(coeffModulus);
+
+            var plainModulus = new BigUInt(7);
+            plainModulus.Set(1 << 6);
+            parms.SetPlainModulus(plainModulus);
+
+            var polyModulus = new BigPoly(65, 1);
             polyModulus[0].Set(1);
             polyModulus[64].Set(1);
+            parms.SetPolyModulus(polyModulus);
 
-            var keygen = new KeyGenerator(parms);
+            parms.Validate();
+
+            var keygen = new KeyGenerator(parms, MemoryPoolHandle.AcquireNew());
             keygen.Generate(1);
 
-            var encoder = new BinaryEncoder(parms.PlainModulus);
+            var encoder = new BinaryEncoder(parms.PlainModulus, MemoryPoolHandle.AcquireNew());
 
-            var encryptor = new Encryptor(parms, keygen.PublicKey);
-            var evaluator = new Evaluator(parms, keygen.EvaluationKeys);
-            var decryptor = new Decryptor(parms, keygen.SecretKey);
+            var encryptor = new Encryptor(parms, keygen.PublicKey, MemoryPoolHandle.AcquireNew());
+            var evaluator = new Evaluator(parms, keygen.EvaluationKeys, MemoryPoolHandle.AcquireNew());
+            var decryptor = new Decryptor(parms, keygen.SecretKey, MemoryPoolHandle.AcquireNew());
 
             var encrypted1 = encryptor.Encrypt(encoder.Encode(2));
             var encrypted2 = encryptor.Encrypt(encoder.Encode(-3));
@@ -405,31 +426,34 @@ namespace SEALNETTest
         [TestMethod]
         public void FVEncryptAddManyDecryptNET()
         {
-            var parms = new EncryptionParameters
-            {
-                DecompositionBitCount = 4,
-                NoiseStandardDeviation = 3.19,
-                NoiseMaxDeviation = 35.06
-            };
-            var coeffModulus = parms.CoeffModulus;
-            coeffModulus.Resize(48);
+            var parms = new EncryptionParameters(MemoryPoolHandle.AcquireNew());
+            parms.SetDecompositionBitCount(4);
+            parms.SetNoiseStandardDeviation(3.19);
+            parms.SetNoiseMaxDeviation(35.06);
+
+            var coeffModulus = new BigUInt(48);
             coeffModulus.Set("FFFFFFFFC001");
-            var plainModulus = parms.PlainModulus;
-            plainModulus.Resize(7);
-            plainModulus.Set(1 << 4);
-            var polyModulus = parms.PolyModulus;
-            polyModulus.Resize(65, 1);
+            parms.SetCoeffModulus(coeffModulus);
+
+            var plainModulus = new BigUInt(7);
+            plainModulus.Set(1 << 6);
+            parms.SetPlainModulus(plainModulus);
+
+            var polyModulus = new BigPoly(65, 1);
             polyModulus[0].Set(1);
             polyModulus[64].Set(1);
+            parms.SetPolyModulus(polyModulus);
 
-            var keygen = new KeyGenerator(parms);
+            parms.Validate();
+
+            var keygen = new KeyGenerator(parms, MemoryPoolHandle.AcquireNew());
             keygen.Generate();
 
-            var encoder = new BinaryEncoder(parms.PlainModulus);
+            var encoder = new BinaryEncoder(parms.PlainModulus, MemoryPoolHandle.AcquireNew());
 
-            var encryptor = new Encryptor(parms, keygen.PublicKey);
-            var evaluator = new Evaluator(parms);
-            var decryptor = new Decryptor(parms, keygen.SecretKey);
+            var encryptor = new Encryptor(parms, keygen.PublicKey, MemoryPoolHandle.AcquireNew());
+            var evaluator = new Evaluator(parms, MemoryPoolHandle.AcquireNew());
+            var decryptor = new Decryptor(parms, keygen.SecretKey, MemoryPoolHandle.AcquireNew());
 
             var encrypted1 = encryptor.Encrypt(encoder.Encode(5));
             var encrypted2 = encryptor.Encrypt(encoder.Encode(6));
@@ -467,7 +491,7 @@ namespace SEALNETTest
             product = evaluator.AddMany(encrypteds);
             Assert.AreEqual(145677, encoder.DecodeInt32(decryptor.Decrypt(product)));
 
-            BalancedFractionalEncoder fracEncoder = new BalancedFractionalEncoder(plainModulus, polyModulus, 10, 15);
+            BalancedFractionalEncoder fracEncoder = new BalancedFractionalEncoder(plainModulus, polyModulus, 10, 15, MemoryPoolHandle.AcquireNew());
             encrypted1 = encryptor.Encrypt(fracEncoder.Encode(3.1415));
             encrypted2 = encryptor.Encrypt(fracEncoder.Encode(12.345));
             encrypted3 = encryptor.Encrypt(fracEncoder.Encode(98.765));
@@ -480,31 +504,34 @@ namespace SEALNETTest
         [TestMethod]
         public void FVEncryptExponentiateDecryptNET()
         {
-            var parms = new EncryptionParameters
-            {
-                DecompositionBitCount = 4,
-                NoiseStandardDeviation = 3.19,
-                NoiseMaxDeviation = 35.06
-            };
-            var coeffModulus = parms.CoeffModulus;
-            coeffModulus.Resize(48);
+            var parms = new EncryptionParameters(MemoryPoolHandle.AcquireNew());
+            parms.SetDecompositionBitCount(4);
+            parms.SetNoiseStandardDeviation(3.19);
+            parms.SetNoiseMaxDeviation(35.06);
+
+            var coeffModulus = new BigUInt(48);
             coeffModulus.Set("FFFFFFFFC001");
-            var plainModulus = parms.PlainModulus;
-            plainModulus.Resize(7);
-            plainModulus.Set(1 << 4);
-            var polyModulus = parms.PolyModulus;
-            polyModulus.Resize(65, 1);
+            parms.SetCoeffModulus(coeffModulus);
+
+            var plainModulus = new BigUInt(7);
+            plainModulus.Set(1 << 6);
+            parms.SetPlainModulus(plainModulus);
+
+            var polyModulus = new BigPoly(65, 1);
             polyModulus[0].Set(1);
             polyModulus[64].Set(1);
+            parms.SetPolyModulus(polyModulus);
 
-            var keygen = new KeyGenerator(parms);
+            parms.Validate();
+
+            var keygen = new KeyGenerator(parms, MemoryPoolHandle.AcquireNew());
             keygen.Generate(1);
 
-            var encoder = new BinaryEncoder(parms.PlainModulus);
+            var encoder = new BinaryEncoder(parms.PlainModulus, MemoryPoolHandle.AcquireNew());
 
-            var encryptor = new Encryptor(parms, keygen.PublicKey);
-            var evaluator = new Evaluator(parms, keygen.EvaluationKeys);
-            var decryptor = new Decryptor(parms, keygen.SecretKey);
+            var encryptor = new Encryptor(parms, keygen.PublicKey, MemoryPoolHandle.AcquireNew());
+            var evaluator = new Evaluator(parms, keygen.EvaluationKeys, MemoryPoolHandle.AcquireNew());
+            var decryptor = new Decryptor(parms, keygen.SecretKey, MemoryPoolHandle.AcquireNew());
 
             var encrypted = encryptor.Encrypt(encoder.Encode(5));
             var power = evaluator.Exponentiate(encrypted, 1);
@@ -522,31 +549,34 @@ namespace SEALNETTest
         [TestMethod]
         public void FVEncryptFFTMultiplyDecryptNET()
         {
-            var parms = new EncryptionParameters
-            {
-                DecompositionBitCount = 4,
-                NoiseStandardDeviation = 3.19,
-                NoiseMaxDeviation = 35.06
-            };
-            var coeffModulus = parms.CoeffModulus;
-            coeffModulus.Resize(48);
+            var parms = new EncryptionParameters(MemoryPoolHandle.AcquireNew());
+            parms.SetDecompositionBitCount(4);
+            parms.SetNoiseStandardDeviation(3.19);
+            parms.SetNoiseMaxDeviation(35.06);
+
+            var coeffModulus = new BigUInt(48);
             coeffModulus.Set("FFFFFFFFC001");
-            var plainModulus = parms.PlainModulus;
-            plainModulus.Resize(7);
+            parms.SetCoeffModulus(coeffModulus);
+
+            var plainModulus = new BigUInt(7);
             plainModulus.Set(1 << 6);
-            var polyModulus = parms.PolyModulus;
-            polyModulus.Resize(65, 1);
+            parms.SetPlainModulus(plainModulus);
+
+            var polyModulus = new BigPoly(65, 1);
             polyModulus[0].Set(1);
             polyModulus[64].Set(1);
+            parms.SetPolyModulus(polyModulus);
 
-            var keygen = new KeyGenerator(parms);
+            parms.Validate();
+
+            var keygen = new KeyGenerator(parms, MemoryPoolHandle.AcquireNew());
             keygen.Generate();
 
-            var encoder = new BinaryEncoder(parms.PlainModulus);
+            var encoder = new BinaryEncoder(parms.PlainModulus, MemoryPoolHandle.AcquireNew());
 
-            var encryptor = new Encryptor(parms, keygen.PublicKey);
-            var evaluator = new Evaluator(parms);
-            var decryptor = new Decryptor(parms, keygen.SecretKey);
+            var encryptor = new Encryptor(parms, keygen.PublicKey, MemoryPoolHandle.AcquireNew());
+            var evaluator = new Evaluator(parms, MemoryPoolHandle.AcquireNew());
+            var decryptor = new Decryptor(parms, keygen.SecretKey, MemoryPoolHandle.AcquireNew());
 
             var encrypted1 = encryptor.Encrypt(encoder.Encode(0x12345678));
             var encrypted2 = encryptor.Encrypt(encoder.Encode(0x54321));
@@ -583,31 +613,34 @@ namespace SEALNETTest
         public void FVEncryptMultiplyDecryptNET()
         {
             {
-                var parms = new EncryptionParameters
-                {
-                    DecompositionBitCount = 4,
-                    NoiseStandardDeviation = 3.19,
-                    NoiseMaxDeviation = 35.06
-                };
-                var coeffModulus = parms.CoeffModulus;
-                coeffModulus.Resize(48);
+                var parms = new EncryptionParameters(MemoryPoolHandle.AcquireNew());
+                parms.SetDecompositionBitCount(4);
+                parms.SetNoiseStandardDeviation(3.19);
+                parms.SetNoiseMaxDeviation(35.06);
+
+                var coeffModulus = new BigUInt(48);
                 coeffModulus.Set("FFFFFFFFC001");
-                var plainModulus = parms.PlainModulus;
-                plainModulus.Resize(7);
+                parms.SetCoeffModulus(coeffModulus);
+
+                var plainModulus = new BigUInt(7);
                 plainModulus.Set(1 << 6);
-                var polyModulus = parms.PolyModulus;
-                polyModulus.Resize(65, 1);
+                parms.SetPlainModulus(plainModulus);
+
+                var polyModulus = new BigPoly(65, 1);
                 polyModulus[0].Set(1);
                 polyModulus[64].Set(1);
+                parms.SetPolyModulus(polyModulus);
 
-                var keygen = new KeyGenerator(parms);
+                parms.Validate();
+
+                var keygen = new KeyGenerator(parms, MemoryPoolHandle.AcquireNew());
                 keygen.Generate();
 
-                var encoder = new BinaryEncoder(parms.PlainModulus);
+                var encoder = new BinaryEncoder(parms.PlainModulus, MemoryPoolHandle.AcquireNew());
 
-                var encryptor = new Encryptor(parms, keygen.PublicKey);
-                var evaluator = new Evaluator(parms);
-                var decryptor = new Decryptor(parms, keygen.SecretKey);
+                var encryptor = new Encryptor(parms, keygen.PublicKey, MemoryPoolHandle.AcquireNew());
+                var evaluator = new Evaluator(parms, MemoryPoolHandle.AcquireNew());
+                var decryptor = new Decryptor(parms, keygen.SecretKey, MemoryPoolHandle.AcquireNew());
 
                 var encrypted1 = encryptor.Encrypt(encoder.Encode(0x12345678));
                 var encrypted2 = encryptor.Encrypt(encoder.Encode(0x54321));
@@ -641,31 +674,34 @@ namespace SEALNETTest
             }
 
             {
-                var parms = new EncryptionParameters
-                {
-                    DecompositionBitCount = 4,
-                    NoiseStandardDeviation = 3.19,
-                    NoiseMaxDeviation = 35.06
-                };
-                var coeffModulus = parms.CoeffModulus;
-                coeffModulus.Resize(48);
-                coeffModulus.Set("FFFFFFFFFFFFFFFFFFFF");
-                var plainModulus = parms.PlainModulus;
-                plainModulus.Resize(7);
+                var parms = new EncryptionParameters(MemoryPoolHandle.AcquireNew());
+                parms.SetDecompositionBitCount(4);
+                parms.SetNoiseStandardDeviation(3.19);
+                parms.SetNoiseMaxDeviation(35.06);
+
+                var coeffModulus = new BigUInt(48);
+                coeffModulus.Set("FFFFFFFFC001");
+                parms.SetCoeffModulus(coeffModulus);
+
+                var plainModulus = new BigUInt(7);
                 plainModulus.Set(1 << 6);
-                var polyModulus = parms.PolyModulus;
-                polyModulus.Resize(129, 1);
+                parms.SetPlainModulus(plainModulus);
+
+                var polyModulus = new BigPoly(129, 1);
                 polyModulus[0].Set(1);
                 polyModulus[128].Set(1);
+                parms.SetPolyModulus(polyModulus);
 
-                var keygen = new KeyGenerator(parms);
+                parms.Validate();
+
+                var keygen = new KeyGenerator(parms, MemoryPoolHandle.AcquireNew());
                 keygen.Generate();
 
-                var encoder = new BinaryEncoder(parms.PlainModulus);
+                var encoder = new BinaryEncoder(parms.PlainModulus, MemoryPoolHandle.AcquireNew());
 
-                var encryptor = new Encryptor(parms, keygen.PublicKey);
-                var evaluator = new Evaluator(parms);
-                var decryptor = new Decryptor(parms, keygen.SecretKey);
+                var encryptor = new Encryptor(parms, keygen.PublicKey, MemoryPoolHandle.AcquireNew());
+                var evaluator = new Evaluator(parms, MemoryPoolHandle.AcquireNew());
+                var decryptor = new Decryptor(parms, keygen.SecretKey, MemoryPoolHandle.AcquireNew());
 
                 var encrypted1 = encryptor.Encrypt(encoder.Encode(0x12345678));
                 var encrypted2 = encryptor.Encrypt(encoder.Encode(0x54321));
@@ -700,33 +736,36 @@ namespace SEALNETTest
         }
 
         [TestMethod]
-        public void FVEncryptSquareDecrypt()
+        public void FVEncryptSquareDecryptNET()
         {
-            var parms = new EncryptionParameters
-            {
-                DecompositionBitCount = 4,
-                NoiseStandardDeviation = 3.19,
-                NoiseMaxDeviation = 35.06
-            };
-            var coeffModulus = parms.CoeffModulus;
-            coeffModulus.Resize(48);
-            coeffModulus.Set("FFFFFFFFFFFFFFFFFFFF");
-            var plainModulus = parms.PlainModulus;
-            plainModulus.Resize(7);
+            var parms = new EncryptionParameters(MemoryPoolHandle.AcquireNew());
+            parms.SetDecompositionBitCount(4);
+            parms.SetNoiseStandardDeviation(3.19);
+            parms.SetNoiseMaxDeviation(35.06);
+
+            var coeffModulus = new BigUInt(48);
+            coeffModulus.Set("FFFFFFFFC001");
+            parms.SetCoeffModulus(coeffModulus);
+
+            var plainModulus = new BigUInt(7);
             plainModulus.Set(1 << 6);
-            var polyModulus = parms.PolyModulus;
-            polyModulus.Resize(65, 1);
+            parms.SetPlainModulus(plainModulus);
+
+            var polyModulus = new BigPoly(65, 1);
             polyModulus[0].Set(1);
             polyModulus[64].Set(1);
+            parms.SetPolyModulus(polyModulus);
 
-            var keygen = new KeyGenerator(parms);
+            parms.Validate();
+
+            var keygen = new KeyGenerator(parms, MemoryPoolHandle.AcquireNew());
             keygen.Generate();
 
-            var encoder = new BalancedEncoder(parms.PlainModulus);
+            var encoder = new BalancedEncoder(parms.PlainModulus, MemoryPoolHandle.AcquireNew());
 
-            var encryptor = new Encryptor(parms, keygen.PublicKey);
-            var evaluator = new Evaluator(parms);
-            var decryptor = new Decryptor(parms, keygen.SecretKey);
+            var encryptor = new Encryptor(parms, keygen.PublicKey, MemoryPoolHandle.AcquireNew());
+            var evaluator = new Evaluator(parms, MemoryPoolHandle.AcquireNew());
+            var decryptor = new Decryptor(parms, keygen.SecretKey, MemoryPoolHandle.AcquireNew());
 
             var encrypted1 = encryptor.Encrypt(encoder.Encode(1));
             var product = evaluator.Square(encrypted1);
@@ -747,6 +786,194 @@ namespace SEALNETTest
             encrypted1 = encryptor.Encrypt(encoder.Encode(123));
             product = evaluator.Square(encrypted1);
             Assert.AreEqual(15129UL, encoder.DecodeUInt64(decryptor.Decrypt(product)));
+        }
+
+        [TestMethod]
+        public void TransformPlainToFromNTTNET()
+        {
+            var parms = new EncryptionParameters(MemoryPoolHandle.AcquireNew());
+            parms.SetDecompositionBitCount(4);
+            parms.SetNoiseStandardDeviation(3.19);
+            parms.SetNoiseMaxDeviation(35.06);
+
+            var coeffModulus = new BigUInt(48);
+            coeffModulus.Set("FFFFFFFFC001");
+            parms.SetCoeffModulus(coeffModulus);
+
+            var plainModulus = new BigUInt(7);
+            plainModulus.Set(1 << 6);
+            parms.SetPlainModulus(plainModulus);
+
+            var polyModulus = new BigPoly(65, 1);
+            polyModulus[0].Set(1);
+            polyModulus[64].Set(1);
+            parms.SetPolyModulus(polyModulus);
+
+            parms.Validate();
+
+            var evaluator = new Evaluator(parms, MemoryPoolHandle.AcquireNew());
+            var plain = new BigPoly(65, 1);
+
+            plain.Set("0");
+            evaluator.TransformToNTT(plain);
+            Assert.IsTrue(plain.ToString() == "0");
+            evaluator.TransformFromNTT(plain);
+            Assert.IsTrue(plain.ToString() == "0");
+
+            plain.Set("1");
+            evaluator.TransformToNTT(plain);
+            for (int i = 0; i < 64; i++)
+            {
+                Assert.IsTrue(plain[i].ToString() == "1");
+            }
+            Assert.IsTrue(plain[64].ToString() == "0");
+            evaluator.TransformFromNTT(plain);
+            Assert.IsTrue(plain.ToString() == "1");
+
+            plain.Set("2");
+            evaluator.TransformToNTT(plain);
+            for (int i = 0; i < 64; i++)
+            {
+                Assert.IsTrue(plain[i].ToString() == "2");
+            }
+            Assert.IsTrue(plain[64].ToString() == "0");
+            evaluator.TransformFromNTT(plain);
+            Assert.IsTrue(plain.ToString() == "2");
+
+            plain.Set("Fx^10 + Ex^9 + Dx^8 + Cx^7 + Bx^6 + Ax^5 + 1x^4 + 2x^3 + 3x^2 + 4x^1 + 5");
+            evaluator.TransformToNTT(plain);
+            evaluator.TransformFromNTT(plain);
+            Assert.IsTrue(plain.ToString() == "Fx^10 + Ex^9 + Dx^8 + Cx^7 + Bx^6 + Ax^5 + 1x^4 + 2x^3 + 3x^2 + 4x^1 + 5");
+        }
+
+        [TestMethod]
+        public void TransformEncryptedToFromNTTNET()
+        {
+            var parms = new EncryptionParameters(MemoryPoolHandle.AcquireNew());
+            parms.SetDecompositionBitCount(4);
+            parms.SetNoiseStandardDeviation(3.19);
+            parms.SetNoiseMaxDeviation(35.06);
+
+            var coeffModulus = new BigUInt(48);
+            coeffModulus.Set("FFFFFFFFC001");
+            parms.SetCoeffModulus(coeffModulus);
+
+            var plainModulus = new BigUInt(7);
+            plainModulus.Set(1 << 6);
+            parms.SetPlainModulus(plainModulus);
+
+            var polyModulus = new BigPoly(65, 1);
+            polyModulus[0].Set(1);
+            polyModulus[64].Set(1);
+            parms.SetPolyModulus(polyModulus);
+
+            parms.Validate();
+
+            var keygen = new KeyGenerator(parms, MemoryPoolHandle.AcquireNew());
+            keygen.Generate();
+
+            var encryptor = new Encryptor(parms, keygen.PublicKey, MemoryPoolHandle.AcquireNew());
+            var evaluator = new Evaluator(parms, MemoryPoolHandle.AcquireNew());
+            var decryptor = new Decryptor(parms, keygen.SecretKey, MemoryPoolHandle.AcquireNew());
+
+            var plain = new BigPoly(65, 1);
+            var cipher = new BigPolyArray(2, 65, 1);
+
+            plain.Set("0");
+            encryptor.Encrypt(plain, cipher);
+            evaluator.TransformToNTT(cipher);
+            evaluator.TransformFromNTT(cipher);
+            decryptor.Decrypt(cipher, plain);
+            Assert.IsTrue(plain.ToString() == "0");
+
+            plain.Set("1");
+            encryptor.Encrypt(plain, cipher);
+            evaluator.TransformToNTT(cipher);
+            evaluator.TransformFromNTT(cipher);
+            decryptor.Decrypt(cipher, plain);
+            Assert.IsTrue(plain.ToString() == "1");
+
+            plain.Set("Fx^10 + Ex^9 + Dx^8 + Cx^7 + Bx^6 + Ax^5 + 1x^4 + 2x^3 + 3x^2 + 4x^1 + 5");
+            encryptor.Encrypt(plain, cipher);
+            evaluator.TransformToNTT(cipher);
+            evaluator.TransformFromNTT(cipher);
+            decryptor.Decrypt(cipher, plain);
+            Assert.IsTrue(plain.ToString() == "Fx^10 + Ex^9 + Dx^8 + Cx^7 + Bx^6 + Ax^5 + 1x^4 + 2x^3 + 3x^2 + 4x^1 + 5");
+        }
+
+        [TestMethod]
+        public void FVEncryptMultiplyPlainNTTDecryptNET()
+        {
+            var parms = new EncryptionParameters(MemoryPoolHandle.AcquireNew());
+            parms.SetDecompositionBitCount(4);
+            parms.SetNoiseStandardDeviation(3.19);
+            parms.SetNoiseMaxDeviation(35.06);
+
+            var coeffModulus = new BigUInt(48);
+            coeffModulus.Set("FFFFFFFFC001");
+            parms.SetCoeffModulus(coeffModulus);
+
+            var plainModulus = new BigUInt(7);
+            plainModulus.Set(1 << 6);
+            parms.SetPlainModulus(plainModulus);
+
+            var polyModulus = new BigPoly(65, 1);
+            polyModulus[0].Set(1);
+            polyModulus[64].Set(1);
+            parms.SetPolyModulus(polyModulus);
+
+            parms.Validate();
+
+            var keygen = new KeyGenerator(parms, MemoryPoolHandle.AcquireNew());
+            keygen.Generate();
+
+            var encryptor = new Encryptor(parms, keygen.PublicKey, MemoryPoolHandle.AcquireNew());
+            var evaluator = new Evaluator(parms, MemoryPoolHandle.AcquireNew());
+            var decryptor = new Decryptor(parms, keygen.SecretKey, MemoryPoolHandle.AcquireNew());
+
+            var plain = new BigPoly(65, 1);
+            var plainMultiplier = new BigPoly(65, 1);
+            var cipher = new BigPolyArray(2, 65, 1);
+
+            plain.Set("0");
+            encryptor.Encrypt(plain, cipher);
+            evaluator.TransformToNTT(cipher);
+            plainMultiplier.Set("1");
+            evaluator.TransformToNTT(plainMultiplier);
+            evaluator.MultiplyPlainNTT(cipher, plainMultiplier, cipher);
+            evaluator.TransformFromNTT(cipher);
+            decryptor.Decrypt(cipher, plain);
+            Assert.IsTrue(plain.ToString() == "0");
+
+            plain.Set("2");
+            encryptor.Encrypt(plain, cipher);
+            evaluator.TransformToNTT(cipher);
+            plainMultiplier.Set("3");
+            evaluator.TransformToNTT(plainMultiplier);
+            evaluator.MultiplyPlainNTT(cipher, plainMultiplier, cipher);
+            evaluator.TransformFromNTT(cipher);
+            decryptor.Decrypt(cipher, plain);
+            Assert.IsTrue(plain.ToString() == "6");
+
+            plain.Set("1");
+            encryptor.Encrypt(plain, cipher);
+            evaluator.TransformToNTT(cipher);
+            plainMultiplier.Set("Fx^10 + Ex^9 + Dx^8 + Cx^7 + Bx^6 + Ax^5 + 1x^4 + 2x^3 + 3x^2 + 4x^1 + 5");
+            evaluator.TransformToNTT(plainMultiplier);
+            evaluator.MultiplyPlainNTT(cipher, plainMultiplier, cipher);
+            evaluator.TransformFromNTT(cipher);
+            decryptor.Decrypt(cipher, plain);
+            Assert.IsTrue(plain.ToString() == "Fx^10 + Ex^9 + Dx^8 + Cx^7 + Bx^6 + Ax^5 + 1x^4 + 2x^3 + 3x^2 + 4x^1 + 5");
+
+            plain.Set("1x^20");
+            encryptor.Encrypt(plain, cipher);
+            evaluator.TransformToNTT(cipher);
+            plainMultiplier.Set("Fx^10 + Ex^9 + Dx^8 + Cx^7 + Bx^6 + Ax^5 + 1x^4 + 2x^3 + 3x^2 + 4x^1 + 5");
+            evaluator.TransformToNTT(plainMultiplier);
+            evaluator.MultiplyPlainNTT(cipher, plainMultiplier, cipher);
+            evaluator.TransformFromNTT(cipher);
+            decryptor.Decrypt(cipher, plain);
+            Assert.IsTrue(plain.ToString() == "Fx^30 + Ex^29 + Dx^28 + Cx^27 + Bx^26 + Ax^25 + 1x^24 + 2x^23 + 3x^22 + 4x^21 + 5x^20");
         }
     }
 }

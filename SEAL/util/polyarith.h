@@ -9,6 +9,10 @@ namespace seal
 {
     namespace util
     {
+        void rightshift_poly_coeffs(std::uint64_t *poly, int coeff_count, int coeff_uint64_count, int shift_amount, MemoryPool &pool); 
+
+        void modulo_poly_coeffs_uint64(uint64_t *poly, int coeff_count, uint64_t mod, MemoryPool &pool); 
+
         void modulo_poly_coeffs(std::uint64_t *poly, int coeff_count, const Modulus &modulus, MemoryPool &pool);
 
         void negate_poly(const std::uint64_t *poly, int coeff_count, int coeff_uint64_count, std::uint64_t *result);
@@ -24,6 +28,7 @@ namespace seal
         void sub_poly_poly_coeffmod(const std::uint64_t *operand1, const std::uint64_t *operand2, int coeff_count, const std::uint64_t *coeff_modulus, int coeff_uint64_count, std::uint64_t *result);
 
         void multiply_poly_scalar_coeffmod(const std::uint64_t *poly, int coeff_count, const std::uint64_t *scalar, const Modulus &modulus, std::uint64_t *result, MemoryPool &pool);
+
 
         void multiply_poly_poly(const std::uint64_t *operand1, int operand1_coeff_count, int operand1_coeff_uint64_count, const std::uint64_t *operand2, int operand2_coeff_count, int operand2_coeff_uint64_count,
             int result_coeff_count, int result_coeff_uint64_count, std::uint64_t *result, MemoryPool &pool);

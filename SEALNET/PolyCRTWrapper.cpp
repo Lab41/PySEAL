@@ -36,12 +36,59 @@ namespace Microsoft
                 }
             }
 
+            PolyCRTBuilder::PolyCRTBuilder(EncryptionParameters ^parms, MemoryPoolHandle ^pool) : polyCRTBuilder_(nullptr)
+            {
+                if (parms == nullptr)
+                {
+                    throw gcnew ArgumentNullException("parms cannot be null");
+                }
+                if (pool == nullptr)
+                {
+                    throw gcnew ArgumentNullException("pool cannot be null");
+                }
+                try
+                {
+                    polyCRTBuilder_ = new seal::PolyCRTBuilder(parms->GetParameters(), pool->GetHandle());
+                    GC::KeepAlive(parms);
+                    GC::KeepAlive(pool);
+                }
+                catch (const exception &e)
+                {
+                    HandleException(&e);
+                }
+                catch (...)
+                {
+                    HandleException(nullptr);
+                }
+            }
+
             PolyCRTBuilder::!PolyCRTBuilder()
             {
                 if (polyCRTBuilder_ != nullptr)
                 {
                     delete polyCRTBuilder_;
                     polyCRTBuilder_ = nullptr;
+                }
+            }
+
+            PolyCRTBuilder::PolyCRTBuilder(PolyCRTBuilder ^copy) : polyCRTBuilder_(nullptr)
+            {
+                if (copy == nullptr)
+                {
+                    throw gcnew ArgumentNullException("copy cannot be null");
+                }
+                try
+                {
+                    polyCRTBuilder_ = new seal::PolyCRTBuilder(copy->GetPolyCRTBuilder());
+                    GC::KeepAlive(copy);
+                }
+                catch (const exception &e)
+                {
+                    HandleException(&e);
+                }
+                catch (...)
+                {
+                    HandleException(nullptr);
                 }
             }
 
@@ -99,6 +146,41 @@ namespace Microsoft
                 }
             }
 
+            void PolyCRTBuilder::Compose(List<UInt64> ^values, BigPoly ^destination)
+            {
+                if (polyCRTBuilder_ == nullptr)
+                {
+                    throw gcnew ObjectDisposedException("PolyCRTBuilder is disposed");
+                }
+                if (values == nullptr)
+                {
+                    throw gcnew ArgumentNullException("values cannot be null");
+                }
+                if (destination == nullptr)
+                {
+                    throw gcnew ArgumentNullException("destination cannot be null");
+                }
+                try
+                {
+                    vector<std::uint64_t> v_values;
+                    for each (UInt64 val in values)
+                    {
+                        v_values.emplace_back(val);
+                    }
+
+                    polyCRTBuilder_->compose(v_values, destination->GetPolynomial());
+                    GC::KeepAlive(destination);
+                }
+                catch (const exception &e)
+                {
+                    HandleException(&e);
+                }
+                catch (...)
+                {
+                    HandleException(nullptr);
+                }
+            }
+
             BigPoly ^PolyCRTBuilder::Compose(List<BigUInt^> ^values)
             {
                 if (polyCRTBuilder_ == nullptr)
@@ -120,6 +202,37 @@ namespace Microsoft
                         }
                         v_values.emplace_back(val->GetUInt());
                         GC::KeepAlive(val);
+                    }
+
+                    return gcnew BigPoly(polyCRTBuilder_->compose(v_values));
+                }
+                catch (const exception &e)
+                {
+                    HandleException(&e);
+                }
+                catch (...)
+                {
+                    HandleException(nullptr);
+                }
+                throw gcnew Exception("Unexpected exception");
+            }
+
+            BigPoly ^PolyCRTBuilder::Compose(List<UInt64> ^values)
+            {
+                if (polyCRTBuilder_ == nullptr)
+                {
+                    throw gcnew ObjectDisposedException("PolyCRTBuilder is disposed");
+                }
+                if (values == nullptr)
+                {
+                    throw gcnew ArgumentNullException("values cannot be null");
+                }
+                try
+                {
+                    vector<std::uint64_t> v_values;
+                    for each (UInt64 val in values)
+                    {
+                        v_values.emplace_back(val);
                     }
 
                     return gcnew BigPoly(polyCRTBuilder_->compose(v_values));

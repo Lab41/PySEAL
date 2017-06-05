@@ -1,7 +1,7 @@
 #pragma once
 
 #include "encryptor.h"
-#include "BigPolyArrayWrapper.h"
+#include "EncryptionParamsWrapper.h"
 
 namespace Microsoft
 {
@@ -9,17 +9,13 @@ namespace Microsoft
     {
         namespace SEAL
         {
-            ref class EncryptionParameters;
-
-            ref class BigPoly;
-
             /**
             <summary>Encrypts BigPoly objects into BigPolyArray objects.</summary>
 
             <remarks>
             <para>
             Encrypts BigPoly objects into BigPolyArray objects. Constructing an Encryptor requires the encryption parameters 
-            (set through an <see cref="EncryptionParameters"/> object) and an BigPolyArray. The private and evaluation keys are not 
+            (set through an <see cref="EncryptionParameters"/> object) and an BigPolyArray. The secret and evaluation keys are not 
             needed for encryption.
             </para>
             </remarks>
@@ -37,6 +33,33 @@ namespace Microsoft
                 parameters.</seealso>
                 */
                 Encryptor(EncryptionParameters ^parms, BigPolyArray ^publicKey);
+
+                /**
+                <summary>Creates a Encryptor instances initialized with the specified encryption parameters and public key.</summary>
+
+                <remarks>
+                Creates a Encryptor instances initialized with the specified encryption parameters and public key.
+                The user can give a <see cref="MemoryPoolHandle "/> object to use a custom memory pool instead
+                of the global memory pool (default).
+                </remarks>
+                <param name="parms">The encryption parameters</param>
+                <param name="publicKey">The public key</param>
+                <param name="pool">The memory pool handle</param>
+                <exception cref="System::ArgumentNullException">if parms, publicKey, or pool is null</exception>
+                <exception cref="System::ArgumentException">if encryption parameters or public key are not valid</exception>
+                <seealso cref="EncryptionParameters">See EncryptionParameters for more details on valid encryption
+                parameters.</seealso>
+                <seealso cref="MemoryPoolHandle">See MemoryPoolHandle for more details on memory pool handles.</seealso>
+                */
+                Encryptor(EncryptionParameters ^parms, BigPolyArray ^publicKey, MemoryPoolHandle ^pool);
+
+                /**
+                <summary>Creates a copy of a Encryptor.</summary>
+
+                <param name="copy">The Encryptor to copy from</param>
+                <exception cref="System::ArgumentNullException">if copy is null</exception>
+                */
+                Encryptor(Encryptor ^copy);
 
                 /**
                 <summary>Returns the public key used by the Encryptor.</summary>
@@ -95,12 +118,11 @@ namespace Microsoft
                 */
                 !Encryptor();
 
+            internal:
                 /**
                 <summary>Returns a reference to the underlying C++ Encryptor.</summary>
                 */
                 seal::Encryptor &GetEncryptor();
-
-            internal:
 
             private:
                 seal::Encryptor *encryptor_;

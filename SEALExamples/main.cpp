@@ -1,6 +1,6 @@
 #include <iostream>
 #include <vector>
-#include <sstream>
+#include <string>
 #include <chrono>
 #include "seal.h"
 
@@ -66,25 +66,28 @@ void example_basics()
     i.e. a polynomial of the form "1x^(power-of-2) + 1". We recommend using polynomials of
     degree at least 1024.
     */
-    parms.poly_modulus() = "1x^2048 + 1";
+    parms.set_poly_modulus("1x^2048 + 1");
 
     /*
     Next we choose the coefficient modulus. SEAL comes with default values for the coefficient
     modulus for some of the most reasonable choices of poly_modulus. They are as follows:
 
-    /---------------------------------------------------\
-    | poly_modulus | default coeff_modulus              |
-    | -------------|------------------------------------|
-    | 1x^1024 + 1  | 2^35 - 2^14 + 2^11 + 1 (35 bits)   |
-    | 1x^2048 + 1  | 2^60 - 2^14 + 1 (60 bits)          |
-    | 1x^4096 + 1  | 2^116 - 2^18 + 1 (116 bits)        |
-    | 1x^8192 + 1  | 2^226 - 2^26 + 1 (226 bits)        |
-    | 1x^16384 + 1 | 2^435 - 2^33 + 1 (435 bits)        |
-    \---------------------------------------------------/
+    /----------------------------------------------------------------------\
+    | poly_modulus | default coeff_modulus                      | security |
+    | -------------|--------------------------------------------|----------|
+    | 1x^2048 + 1  | 2^60 - 2^14 + 1 (60 bits)                  | 115 bit  |
+    | 1x^4096 + 1  | 2^116 - 2^18 + 1 (116 bits)                | 119 bit  |
+    | 1x^8192 + 1  | 2^226 - 2^26 + 1 (226 bits)                | 123 bit  |
+    | 1x^16384 + 1 | 2^435 - 2^33 + 1 (435 bits)                | 130 bit  |
+    | 1x^32768 + 1 | 2^889 - 2^54 - 2^53 - 2^52 + 1 (889 bits)  | 128 bit  |
+    \----------------------------------------------------------------------/
 
     These can be conveniently accessed using ChooserEvaluator::default_parameter_options(), 
     which returns the above list of options as an std::map, keyed by the degree of the polynomial 
-    modulus.
+    modulus. The security levels are estimated based on https://eprint.iacr.org/2015/046 and
+    https://eprint.iacr.org/2017/047. We strongly recommend that the user consult an expert in 
+    the security of RLWE-based cryptography to estimate the security of a particular choice
+    of parameters.
     
     The user can also easily choose their custom coefficient modulus. For best performance, it should 
     be a prime of the form 2^A - B, where B is congruent to 1 modulo 2*degree(poly_modulus), and as small 
@@ -94,15 +97,15 @@ void example_basics()
     in the security of RLWE-based cryptography when selecting their parameters to ensure an appropriate level 
     of security.
 
-    The size of coeff_modulus affects the upper bound on the "inherent noise" that a ciphertext can contain
-    before becoming corrupted. More precisely, every ciphertext starts with a certain amount of noise in it,
-    which grows in all homomorphic operations - in particular in multiplication. Once a ciphertext contains
-    too much noise, it becomes impossible to decrypt. The upper bound on the noise is roughly given by 
-    coeff_modulus/plain_modulus (see below), so increasing coeff_modulus will allow the user to perform more
+    The size of coeff_modulus affects the total noise budget that a freshly encrypted ciphertext has. More 
+    precisely, every ciphertext starts with a certain amount of noise budget, which is consumed in homomorphic
+    operations - in particular in multiplication. Once the noise budget reaches 0, the ciphertext becomes 
+    impossible to decrypt. The total noise budget in a freshly encrypted ciphertext is very roughly given by 
+    log2(coeff_modulus/plain_modulus), so increasing coeff_modulus will allow the user to perform more
     homomorphic operations on the ciphertexts without corrupting them. However, we must again warn that
     increasing coeff_modulus has a strong negative effect on the security level.
     */
-    parms.coeff_modulus() = ChooserEvaluator::default_parameter_options().at(2048);
+    parms.set_coeff_modulus(ChooserEvaluator::default_parameter_options().at(2048));
 
     /*
     Now we set the plaintext modulus. This can be any positive integer, even though here we take it to be a 
@@ -111,10 +114,17 @@ void example_basics()
     On the other hand, a larger plaintext modulus typically allows for better homomorphic integer arithmetic,
     although this depends strongly on which encoder is used to encode integers into plaintext polynomials.
     */
-    parms.plain_modulus() = 1 << 8;
+    parms.set_plain_modulus(1 << 8);
 
     /*
-    Plaintext elements in the FV scheme are polynomials (represented by the BigPoly class) with coefficients 
+    Once all parameters are set, we need to call EncryptionParameters::validate(), which evaluates the
+    properties of the parameters, their validity for homomorphic encryption, and performs some important
+    pre-computation.
+    */
+    parms.validate();
+
+    /*
+    Plaintext elements in the FV scheme are polynomials (represented by the Plaintext class) with coefficients 
     integers modulo plain_modulus. To encrypt for example integers instead, one must use an "encoding scheme", 
     i.e. a specific way of representing integers as such polynomials. SEAL comes with a few basic encoders:
 
@@ -162,8 +172,8 @@ void example_basics()
     // Encode two integers as polynomials.
     const int value1 = 5;
     const int value2 = -7;
-    BigPoly encoded1 = encoder.encode(value1);
-    BigPoly encoded2 = encoder.encode(value2);
+    Plaintext encoded1 = encoder.encode(value1);
+    Plaintext encoded2 = encoder.encode(value2);
     cout << "Encoded " << value1 << " as polynomial " << encoded1.to_string() << endl;
     cout << "Encoded " << value2 << " as polynomial " << encoded2.to_string() << endl;
     
@@ -172,36 +182,36 @@ void example_basics()
     KeyGenerator generator(parms);
     generator.generate();
     cout << "... key generation complete" << endl;
-    BigPolyArray public_key = generator.public_key();
-    BigPoly secret_key = generator.secret_key();
+    Ciphertext public_key = generator.public_key();
+    Plaintext secret_key = generator.secret_key();
 
     // Encrypt values.
     cout << "Encrypting values..." << endl;
     Encryptor encryptor(parms, public_key);
-    BigPolyArray encrypted1 = encryptor.encrypt(encoded1);
-    BigPolyArray encrypted2 = encryptor.encrypt(encoded2);
+    Ciphertext encrypted1 = encryptor.encrypt(encoded1);
+    Ciphertext encrypted2 = encryptor.encrypt(encoded2);
 
     // Perform arithmetic on encrypted values.
     cout << "Performing arithmetic on ecrypted numbers ..." << endl;
     Evaluator evaluator(parms);
     cout << "Performing homomorphic negation ..." << endl;
-    BigPolyArray encryptednegated1 = evaluator.negate(encrypted1);
+    Ciphertext encryptednegated1 = evaluator.negate(encrypted1);
     cout << "Performing homomorphic addition ..." << endl;
-    BigPolyArray encryptedsum = evaluator.add(encrypted1, encrypted2);
+    Ciphertext encryptedsum = evaluator.add(encrypted1, encrypted2);
     cout << "Performing homomorphic subtraction ..." << endl;
-    BigPolyArray encrypteddiff = evaluator.sub(encrypted1, encrypted2);
+    Ciphertext encrypteddiff = evaluator.sub(encrypted1, encrypted2);
     cout << "Performing homomorphic multiplication ..." << endl;
-    BigPolyArray encryptedproduct = evaluator.multiply(encrypted1, encrypted2);
+    Ciphertext encryptedproduct = evaluator.multiply(encrypted1, encrypted2);
 
     // Decrypt results.
     cout << "Decrypting results ..." << endl;
     Decryptor decryptor(parms, secret_key);
-    BigPoly decrypted1 = decryptor.decrypt(encrypted1);
-    BigPoly decrypted2 = decryptor.decrypt(encrypted2);
-    BigPoly decryptednegated1 = decryptor.decrypt(encryptednegated1);
-    BigPoly decryptedsum = decryptor.decrypt(encryptedsum);
-    BigPoly decrypteddiff = decryptor.decrypt(encrypteddiff);
-    BigPoly decryptedproduct = decryptor.decrypt(encryptedproduct);
+    Plaintext decrypted1 = decryptor.decrypt(encrypted1);
+    Plaintext decrypted2 = decryptor.decrypt(encrypted2);
+    Plaintext decryptednegated1 = decryptor.decrypt(encryptednegated1);
+    Plaintext decryptedsum = decryptor.decrypt(encryptedsum);
+    Plaintext decrypteddiff = decryptor.decrypt(encrypteddiff);
+    Plaintext decryptedproduct = decryptor.decrypt(encryptedproduct);
 
     // Decode results.
     int decoded1 = encoder.decode_int32(decrypted1);
@@ -219,16 +229,15 @@ void example_basics()
     cout << "Encrypted subtraction of " << value1 << " and " << value2 << " = " << decodeddiff << endl;
     cout << "Encrypted multiplication of " << value1 << " and " << value2 << " = " << decodedproduct << endl;
 
-    // How did the noise grow in these operations?
-    int max_noise_bit_count = parms.inherent_noise_bits_max();
-    cout << "Noise in encryption of " << value1 << ": " << decryptor.inherent_noise_bits(encrypted1)
-        << "/" << max_noise_bit_count << " bits" << endl;
-    cout << "Noise in encryption of " << value2 << ": " << decryptor.inherent_noise_bits(encrypted2)
-        << "/" << max_noise_bit_count << " bits" << endl;
-    cout << "Noise in the sum: " << decryptor.inherent_noise_bits(encryptedsum)
-        << "/" << max_noise_bit_count << " bits" << endl;
-    cout << "Noise in the product: " << decryptor.inherent_noise_bits(encryptedproduct)
-        << "/" << max_noise_bit_count << " bits" << endl;
+    // How much noise budget did we use in these operations?
+    cout << "Noise budget in encryption of " << value1 << ": " 
+        << decryptor.invariant_noise_budget(encrypted1) << " bits" << endl;
+    cout << "Noise budget in encryption of " << value2 << ": "
+        << decryptor.invariant_noise_budget(encrypted2) << " bits" << endl;
+    cout << "Noise budget in sum: "
+        << decryptor.invariant_noise_budget(encryptedsum) << " bits" << endl;
+    cout << "Noise budget in product: "
+        << decryptor.invariant_noise_budget(encryptedproduct) << " bits" << endl;
 }
 
 void example_weighted_average()
@@ -245,18 +254,18 @@ void example_weighted_average()
 
     // Create encryption parameters
     EncryptionParameters parms;
-
-    parms.poly_modulus() = "1x^1024 + 1";
-    parms.coeff_modulus() = ChooserEvaluator::default_parameter_options().at(1024);
-    parms.plain_modulus() = 1 << 8;
+    parms.set_poly_modulus("1x^2048 + 1");
+    parms.set_coeff_modulus(ChooserEvaluator::default_parameter_options().at(2048));
+    parms.set_plain_modulus(1 << 8);
+    parms.validate();
 
     // Generate keys.
     cout << "Generating keys ..." << endl;
     KeyGenerator generator(parms);
     generator.generate();
     cout << "... key generation complete" << endl;
-    BigPolyArray public_key = generator.public_key();
-    BigPoly secret_key = generator.secret_key();
+    Ciphertext public_key = generator.public_key();
+    Plaintext secret_key = generator.secret_key();
 
     /*
     We will need a fractional encoder for dealing with the rational numbers. Here we reserve 
@@ -272,41 +281,37 @@ void example_weighted_average()
 
     // First we encrypt the rational numbers
     cout << "Encrypting ... ";
-    vector<BigPolyArray> encrypted_rationals;
-    for (int i = 0; i < 10; ++i)
+    vector<Ciphertext> encrypted_rationals;
+    for (int i = 0; i < 10; i++)
     {
-        BigPoly encoded_number = encoder.encode(rational_numbers[i]);
+        Plaintext encoded_number = encoder.encode(rational_numbers[i]);
         encrypted_rationals.emplace_back(encryptor.encrypt(encoded_number));
-        ostringstream rational;
-        rational << rational_numbers[i];
-        cout << rational.str().substr(0,6) << ((i < 9) ? ", " : ".\n");
+        cout << to_string(rational_numbers[i]).substr(0,6) << ((i < 9) ? ", " : ".\n");
     }
 
     // Next we encode the coefficients. There is no reason to encrypt these since they are not private data.
     cout << "Encoding ... ";
-    vector<BigPoly> encoded_coefficients;
-    for (int i = 0; i < 10; ++i)
+    vector<Plaintext> encoded_coefficients;
+    for (int i = 0; i < 10; i++)
     {
         encoded_coefficients.emplace_back(encoder.encode(coefficients[i]));
-        ostringstream coefficient;
-        coefficient << coefficients[i];
-        cout << coefficient.str().substr(0,6) << ((i < 9) ? ", " : ".\n");
+        cout << to_string(coefficients[i]).substr(0,6) << ((i < 9) ? ", " : ".\n");
     }
     
     // We also need to encode 0.1. We will multiply the result by this to perform division by 10.
-    BigPoly div_by_ten = encoder.encode(0.1);
+    Plaintext div_by_ten = encoder.encode(0.1);
 
     // Now compute all the products of the encrypted rational numbers with the plaintext coefficients
     cout << "Computing products ... ";
-    vector<BigPolyArray> encrypted_products;
-    for (int i = 0; i < 10; ++i)
+    vector<Ciphertext> encrypted_products;
+    for (int i = 0; i < 10; i++)
     {
         /*
         We use Evaluator::multiply_plain(...) instead of Evaluator::multiply(...) (which would 
         require also the coefficient to be encrypted). This has much better noise growth
         behavior than multiplying two encrypted numbers does.
         */
-        BigPolyArray enc_plain_product = evaluator.multiply_plain(encrypted_rationals[i], encoded_coefficients[i]);
+        Ciphertext enc_plain_product = evaluator.multiply_plain(encrypted_rationals[i], encoded_coefficients[i]);
         encrypted_products.emplace_back(enc_plain_product);
     }
     cout << "done." << endl;
@@ -314,26 +319,25 @@ void example_weighted_average()
     // Now we add together these products. The most convenient way to do that is
     // to use the function Evaluator::add_many(...).
     cout << "Add up all 10 ciphertexts ... ";
-    BigPolyArray encrypted_dot_product = evaluator.add_many(encrypted_products);
+    Ciphertext encrypted_dot_product = evaluator.add_many(encrypted_products);
     cout << " done." << endl;
 
     // Finally we divide by 10 to obtain the result.
     cout << "Divide by 10 ... ";
-    BigPolyArray encrypted_result = evaluator.multiply_plain(encrypted_dot_product, div_by_ten);
+    Ciphertext encrypted_result = evaluator.multiply_plain(encrypted_dot_product, div_by_ten);
     cout << "done." << endl;
 
     // Decrypt
     cout << "Decrypting ... ";
-    BigPoly plain_result = decryptor.decrypt(encrypted_result);
+    Plaintext plain_result = decryptor.decrypt(encrypted_result);
     cout << "done." << endl;
 
     // Print the result
     double result = encoder.decode(plain_result);
     cout << "Weighted average: " << result << endl;
 
-    // How much noise did we end up with?
-    cout << "Noise in the result: " << decryptor.inherent_noise_bits(encrypted_result)
-        << "/" << parms.inherent_noise_bits_max() << " bits" << endl;
+    // How much noise budget are we left with?
+    cout << "Noise budget in result: " << decryptor.invariant_noise_budget(encrypted_result) << " bits" << endl;
 }
 
 void example_parameter_selection()
@@ -373,7 +377,10 @@ void example_parameter_selection()
 
     // To find an optimized set of parameters, we use ChooserEvaluator::select_parameters(...).
     EncryptionParameters optimal_parms;
-    chooser_evaluator.select_parameters(cresult, optimal_parms);
+    chooser_evaluator.select_parameters({ cresult }, 0, optimal_parms);
+    
+    // We still need to validate the returned parameters
+    optimal_parms.validate();
 
     cout << "done." << endl;
 
@@ -398,8 +405,8 @@ void example_parameter_selection()
     */
     generator.generate(1);
     cout << "... key generation complete" << endl;
-    BigPolyArray public_key = generator.public_key();
-    BigPoly secret_key = generator.secret_key();
+    Ciphertext public_key = generator.public_key();
+    Plaintext secret_key = generator.secret_key();
     EvaluationKeys evk = generator.evaluation_keys();
 
     // Create the encoding/encryption tools
@@ -410,45 +417,44 @@ void example_parameter_selection()
 
     // Now perform the computations on real encrypted data.
     int input_value = 12345;
-    BigPoly plain_input = encoder.encode(input_value);
+    Plaintext plain_input = encoder.encode(input_value);
     cout << "Encoded " << input_value << " as polynomial " << plain_input.to_string() << endl;
 
     cout << "Encrypting ... ";
-    BigPolyArray input = encryptor.encrypt(plain_input);
+    Ciphertext input = encryptor.encrypt(plain_input);
     cout << "done." << endl;
 
     // Compute the first term
     cout << "Computing first term ... ";
-    BigPolyArray cubed_input = evaluator.exponentiate(input, 3);
-    BigPolyArray term1 = evaluator.multiply_plain(cubed_input, encoder.encode(42));
+    Ciphertext cubed_input = evaluator.exponentiate(input, 3);
+    Ciphertext term1 = evaluator.multiply_plain(cubed_input, encoder.encode(42));
     cout << "done." << endl;
 
     // Compute the second term
     cout << "Computing second term ... ";
-    BigPolyArray term2 = evaluator.multiply_plain(input, encoder.encode(27));
+    Ciphertext term2 = evaluator.multiply_plain(input, encoder.encode(27));
     cout << "done." << endl;
 
     // Subtract the first two terms
     cout << "Subtracting first two terms ... ";
-    BigPolyArray sum12 = evaluator.sub(term1, term2);
+    Ciphertext sum12 = evaluator.sub(term1, term2);
     cout << "done." << endl;
 
     // Add the constant term 1
     cout << "Adding one ... ";
-    BigPolyArray result = evaluator.add_plain(sum12, encoder.encode(1));
+    Ciphertext result = evaluator.add_plain(sum12, encoder.encode(1));
     cout << "done." << endl;
 
     // Decrypt and decode
     cout << "Decrypting ... ";
-    BigPoly plain_result = decryptor.decrypt(result);
+    Plaintext plain_result = decryptor.decrypt(result);
     cout << "done." << endl;
     
     // Finally print the result
     cout << "Polynomial 42x^3-27x+1 evaluated at x=12345: " << encoder.decode_int64(plain_result) << endl;
 
-    // How much noise did we end up with?
-    cout << "Noise in the result: " << decryptor.inherent_noise_bits(result)
-        << "/" << optimal_parms.inherent_noise_bits_max() << " bits" << endl;
+    // How much noise budget are we left with?
+    cout << "Noise budget in result: " << decryptor.invariant_noise_budget(result) << " bits" << endl;
 }
 
 void example_batching()
@@ -462,9 +468,10 @@ void example_batching()
     For PolyCRTBuilder it is necessary to have plain_modulus be a prime number congruent to 1 modulo 
     2*degree(poly_modulus). We can use for example the following parameters:
     */
-    parms.poly_modulus() = "1x^4096 + 1";
-    parms.coeff_modulus() = ChooserEvaluator::default_parameter_options().at(4096);
-    parms.plain_modulus() = 40961;
+    parms.set_poly_modulus("1x^4096 + 1");
+    parms.set_coeff_modulus(ChooserEvaluator::default_parameter_options().at(4096));
+    parms.set_plain_modulus(40961);
+    parms.validate();
 
     // Create the PolyCRTBuilder
     PolyCRTBuilder crtbuilder(parms);
@@ -489,7 +496,7 @@ void example_batching()
     {
         cout << "(" << i << ", " << values[i].to_dec_string() << ")" << ((i != 5) ? ", " : "\n");
     }
-    BigPoly plain_composed_poly = crtbuilder.compose(values);
+    Plaintext plain_composed_poly = crtbuilder.compose(values);
 
     // Let's do some homomorphic operations now. First we need all the encryption tools.
     // Generate keys.
@@ -497,8 +504,8 @@ void example_batching()
     KeyGenerator generator(parms);
     generator.generate();
     cout << "... key generation complete" << endl;
-    BigPolyArray public_key = generator.public_key();
-    BigPoly secret_key = generator.secret_key();
+    Ciphertext public_key = generator.public_key();
+    Plaintext secret_key = generator.secret_key();
 
     // Create the encryption tools
     Encryptor encryptor(parms, public_key);
@@ -507,16 +514,16 @@ void example_batching()
 
     // Encrypt plain_composed_poly
     cout << "Encrypting ... ";
-    BigPolyArray encrypted_composed_poly = encryptor.encrypt(plain_composed_poly);
+    Ciphertext encrypted_composed_poly = encryptor.encrypt(plain_composed_poly);
     cout << "done." << endl;
 
     // Let's square the encrypted_composed_poly
     cout << "Squaring the encrypted polynomial ... ";
-    BigPolyArray encrypted_square = evaluator.square(encrypted_composed_poly);
+    Ciphertext encrypted_square = evaluator.square(encrypted_composed_poly);
     cout << "done." << endl;
 
     cout << "Decrypting the squared polynomial ... ";
-    BigPoly plain_square = decryptor.decrypt(encrypted_square);
+    Plaintext plain_square = decryptor.decrypt(encrypted_square);
     cout << "done." << endl;
     
     // Print the squared slots
@@ -538,7 +545,7 @@ void example_batching()
     plain_coeff_vector[5] = 9;
 
     // Use PolyCRTBuilder to compose plain_coeff_vector into a polynomial
-    BigPoly plain_coeff_poly = crtbuilder.compose(plain_coeff_vector);
+    Plaintext plain_coeff_poly = crtbuilder.compose(plain_coeff_vector);
 
     // Print the coefficient vector
     cout << "Coefficient slot contents (slot, value): ";
@@ -549,12 +556,12 @@ void example_batching()
 
     // Now use multiply_plain to multiply each encrypted slot with the corresponding coefficient
     cout << "Multiplying squared slots with the coefficients ... ";
-    BigPolyArray encrypted_scaled_square = evaluator.multiply_plain(encrypted_square, plain_coeff_poly);
+    Ciphertext encrypted_scaled_square = evaluator.multiply_plain(encrypted_square, plain_coeff_poly);
     cout << " done." << endl;
     
     // Decrypt it
     cout << "Decrypting the scaled squared polynomial ... ";
-    BigPoly plain_scaled_square = decryptor.decrypt(encrypted_scaled_square);
+    Plaintext plain_scaled_square = decryptor.decrypt(encrypted_scaled_square);
     cout << "done." << endl;
 
     // Print the scaled squared slots
@@ -565,9 +572,8 @@ void example_batching()
         cout << "(" << i << ", " << values[i].to_dec_string() << ")" << ((i != 5) ? ", " : "\n");
     }
 
-    // How much noise did we end up with?
-    cout << "Noise in the result: " << decryptor.inherent_noise_bits(encrypted_scaled_square)
-        << "/" << parms.inherent_noise_bits_max() << " bits" << endl;
+    // How much noise budget are we left with?
+    cout << "Noise budget in result: " << decryptor.invariant_noise_budget(encrypted_scaled_square) << " bits" << endl;
 }
 
 void example_relinearization()
@@ -576,7 +582,7 @@ void example_relinearization()
 
     /*
     A valid ciphertext consists of at least two polynomials. To read the current size of a ciphertext 
-    the user can use BigPolyArray::size(). A fresh ciphertext always has size 2, and performing 
+    the user can use Ciphertext::size(). A fresh ciphertext always has size 2, and performing 
     homomorphic multiplication results in the output ciphertext growing in size. More precisely, 
     if the input ciphertexts have size M and N, then the output ciphertext after homomorphic 
     multiplication will have size M+N-1.
@@ -633,25 +639,16 @@ void example_relinearization_part1()
 
     // Set up encryption parameters
     EncryptionParameters parms;
-    parms.poly_modulus() = "1x^4096 + 1";
-    parms.coeff_modulus() = ChooserEvaluator::default_parameter_options().at(4096);
-    parms.plain_modulus() = 1 << 8;
+    parms.set_poly_modulus("1x^4096 + 1");
+    parms.set_coeff_modulus(ChooserEvaluator::default_parameter_options().at(4096));
+    parms.set_plain_modulus(1 << 8);
 
     /*
     The choice of decomposition_bit_count (dbc) can affect the performance of relinearization
     noticeably. A reasonable choice for it is between 1/10 and 1/2 of the significant bit count 
-    of the coefficient modulus (see table below). Sometimes when the dbc needs to be very small
-    (due to noise growth), it might make more sense to move up to a larger poly_modulus and
-    coeff_modulus, and set dbc to be as large as possible.
-    /--------------------------------------------------------\
-    | poly_modulus | coeff_modulus bound | dbc min | dbc max |
-    | -------------|---------------------|-------------------|
-    | 1x^1024 + 1  | 35 bits             | 4       | 13      |
-    | 1x^2048 + 1  | 60 bits             | 6       | 30      |
-    | 1x^4096 + 1  | 116 bits            | 12      | 58      |
-    | 1x^8192 + 1  | 226 bits            | 23      | 113     |
-    | 1x^16384 + 1 | 435 bits            | 44      | 218     |
-    \--------------------------------------------------------/
+    of the coefficient modulus. Sometimes when the dbc needs to be very small (due to noise growth), 
+    it might make more sense to move up to a larger poly_modulus and coeff_modulus, and set dbc to 
+    be as large as possible.
 
     A smaller dbc will make relinearization too slow. A higher dbc will increase noise growth 
     while not making relinearization any faster. Here, the coeff_modulus has 116 significant 
@@ -659,7 +656,10 @@ void example_relinearization_part1()
     noise growth between the relinearizing and non-relinearizing cases due to the decomposition 
     bit count being so large.
     */
-    parms.decomposition_bit_count() = 58;
+    parms.set_decomposition_bit_count(58);
+
+    // Validate the parameters
+    parms.validate();
 
     /*
     By default, KeyGenerator::generate() will generate no evaluation keys. This means that we 
@@ -671,8 +671,8 @@ void example_relinearization_part1()
     KeyGenerator generator(parms);
     generator.generate();
     cout << "... key generation complete" << endl;
-    BigPolyArray public_key = generator.public_key();
-    BigPoly secret_key = generator.secret_key();
+    Ciphertext public_key = generator.public_key();
+    Plaintext secret_key = generator.secret_key();
 
     /*
     Suppose we want to homomorphically multiply four ciphertexts together. Does it make sense 
@@ -680,35 +680,35 @@ void example_relinearization_part1()
     */
 
     // Encrypt plaintexts to generate the four fresh ciphertexts
-    BigPoly plain1("5");
-    BigPoly plain2("6");
-    BigPoly plain3("7");
-    BigPoly plain4("8");
+    Plaintext plain1("5");
+    Plaintext plain2("6");
+    Plaintext plain3("7");
+    Plaintext plain4("8");
     cout << "Encrypting values { 5, 6, 7, 8 } as { encrypted1, encrypted2, encrypted3, encrypted4 }" << endl;
     Encryptor encryptor(parms, public_key);
-    BigPolyArray encrypted1 = encryptor.encrypt(plain1);
-    BigPolyArray encrypted2 = encryptor.encrypt(plain2);
-    BigPolyArray encrypted3 = encryptor.encrypt(plain3);
-    BigPolyArray encrypted4 = encryptor.encrypt(plain4);
+    Ciphertext encrypted1 = encryptor.encrypt(plain1);
+    Ciphertext encrypted2 = encryptor.encrypt(plain2);
+    Ciphertext encrypted3 = encryptor.encrypt(plain3);
+    Ciphertext encrypted4 = encryptor.encrypt(plain4);
 
     // We need a Decryptor to be able to measure the inherent noise
     Decryptor decryptor(parms, secret_key);
 
-    // What are the noises in the four ciphertexts?
-    cout << "Noises in the four ciphertexts: "
-        << decryptor.inherent_noise_bits(encrypted1) << "/" << parms.inherent_noise_bits_max() << " bits, "
-        << decryptor.inherent_noise_bits(encrypted2) << "/" << parms.inherent_noise_bits_max() << " bits, "
-        << decryptor.inherent_noise_bits(encrypted3) << "/" << parms.inherent_noise_bits_max() << " bits, "
-        << decryptor.inherent_noise_bits(encrypted4) << "/" << parms.inherent_noise_bits_max() << " bits" << endl;
+    // What are the noise budgets in the four ciphertexts?
+    cout << "Noise budgets in the four ciphertexts: "
+        << decryptor.invariant_noise_budget(encrypted1) << " bits, "
+        << decryptor.invariant_noise_budget(encrypted2) << " bits, "
+        << decryptor.invariant_noise_budget(encrypted3) << " bits, "
+        << decryptor.invariant_noise_budget(encrypted4) << " bits" << endl;
 
     // Construct an Evaluator
     Evaluator evaluator(parms);
 
     // Perform first part of computation
     cout << "Computing enc_prod1 as encrypted1*encrypted2 ..." << endl;
-    BigPolyArray enc_prod1 = evaluator.multiply(encrypted1, encrypted2);
+    Ciphertext enc_prod1 = evaluator.multiply(encrypted1, encrypted2);
     cout << "Computing enc_prod2 as encrypted3*encrypted4 ..." << endl;
-    BigPolyArray enc_prod2 = evaluator.multiply(encrypted3, encrypted4);
+    Ciphertext enc_prod2 = evaluator.multiply(encrypted3, encrypted4);
 
     // First the result with no relinearization
     cout << endl;
@@ -716,15 +716,14 @@ void example_relinearization_part1()
 
     // Compute product of all four
     cout << "Computing result as enc_prod1*enc_prod2 ..." << endl;
-    BigPolyArray enc_result = evaluator.multiply(enc_prod1, enc_prod2);
+    Ciphertext enc_result = evaluator.multiply(enc_prod1, enc_prod2);
 
     // Now enc_result has size 5
     cout << "Size of enc_result: " << enc_result.size() << endl;
 
-    // What is the noise in the result?
-    int noise_bits_norelin = decryptor.inherent_noise_bits(enc_result);
-    cout << "Noise in enc_result: " << noise_bits_norelin
-        << "/" << parms.inherent_noise_bits_max() << " bits" << endl;
+    // How much noise budget are we left with?
+    int noise_budget_norelin = decryptor.invariant_noise_budget(enc_result);
+    cout << "Noise budget in enc_result: " << noise_budget_norelin << " bits" << endl;
 
     /*
     We didn't create any evaluation keys, so we can't relinearize at all with the current
@@ -750,8 +749,8 @@ void example_relinearization_part1()
 
     // What if we do intermediate relinearization of enc_prod1 and enc_prod2?
     cout << "Relinearizing enc_prod1 and enc_prod2 to size 2 ..." << endl;
-    BigPolyArray enc_relin_prod1 = evaluator2.relinearize(enc_prod1);
-    BigPolyArray enc_relin_prod2 = evaluator2.relinearize(enc_prod2);
+    Ciphertext enc_relin_prod1 = evaluator2.relinearize(enc_prod1);
+    Ciphertext enc_relin_prod2 = evaluator2.relinearize(enc_prod2);
 
     // Now multiply the relinearized products together
     cout << "Computing enc_result as enc_relin_prod1*enc_relin_prod2 ..." << endl;
@@ -760,10 +759,9 @@ void example_relinearization_part1()
     // Now enc_result has size 3
     cout << "Size of enc_result: " << enc_result.size() << endl;
 
-    // What is the noise in the result?
-    int noise_bits_relin = decryptor.inherent_noise_bits(enc_result);
-    cout << "Noise in enc_result: " << noise_bits_relin
-        << "/" << parms.inherent_noise_bits_max() << " bits" << endl;
+    // How much noise budget are we left with?
+    int noise_budget_relin = decryptor.invariant_noise_budget(enc_result);
+    cout << "Noise budget in enc_result: " << noise_budget_relin << " bits" << endl;
 
     /*
     While in this case the noise increased significantly due to relinearization, in other
@@ -780,37 +778,40 @@ void example_relinearization_part2()
 
     // Set up encryption parameters
     EncryptionParameters parms;
-    parms.poly_modulus() = "1x^4096 + 1";
-    parms.coeff_modulus() = ChooserEvaluator::default_parameter_options().at(4096);
-    parms.plain_modulus() = 1 << 6;
+    parms.set_poly_modulus("1x^4096 + 1");
+    parms.set_coeff_modulus(ChooserEvaluator::default_parameter_options().at(4096));
+    parms.set_plain_modulus(1 << 6);
 
     /*
     We use a relatively small decomposition bit count here to avoid significant noise
     growth from the relinearization operation itself. Make this bigger and you will
     see both increased running time and decreased noise.
     */
-    parms.decomposition_bit_count() = 16;
+    parms.set_decomposition_bit_count(16);
+
+    // Validate the parameters
+    parms.validate();
 
     // We generate the encryption keys and one evaluation key.
     cout << "Generating keys ..." << endl;
     KeyGenerator generator(parms);
     generator.generate(1);
     cout << "... key generation complete" << endl;
-    BigPolyArray public_key = generator.public_key();
-    BigPoly secret_key = generator.secret_key();
+    Ciphertext public_key = generator.public_key();
+    Plaintext secret_key = generator.secret_key();
     EvaluationKeys evaluation_keys = generator.evaluation_keys();
 
     // Encrypt plaintexts to generate the four fresh ciphertexts
-    BigPoly plain1("4");
-    BigPoly plain2("3x^1");
-    BigPoly plain3("2x^2");
-    BigPoly plain4("1x^3");
+    Plaintext plain1("4");
+    Plaintext plain2("3x^1");
+    Plaintext plain3("2x^2");
+    Plaintext plain4("1x^3");
     cout << "Encrypting values { 4, 3x^1, 2x^2, x^3 } as { encrypted1, encrypted2, encrypted3, encrypted4 }" << endl;
     Encryptor encryptor(parms, public_key);
-    BigPolyArray encrypted1 = encryptor.encrypt(plain1);
-    BigPolyArray encrypted2 = encryptor.encrypt(plain2);
-    BigPolyArray encrypted3 = encryptor.encrypt(plain3);
-    BigPolyArray encrypted4 = encryptor.encrypt(plain4);
+    Ciphertext encrypted1 = encryptor.encrypt(plain1);
+    Ciphertext encrypted2 = encryptor.encrypt(plain2);
+    Ciphertext encrypted3 = encryptor.encrypt(plain3);
+    Ciphertext encrypted4 = encryptor.encrypt(plain4);
 
     // We need a Decryptor to be able to measure the inherent noise
     Decryptor decryptor(parms, secret_key);
@@ -819,10 +820,10 @@ void example_relinearization_part2()
     Evaluator evaluator(parms, evaluation_keys);
 
     cout << "Computing enc_prod12 = encrypted1*encrypted2 ..." << endl;
-    BigPolyArray enc_prod12 = evaluator.multiply(encrypted1, encrypted2);
+    Ciphertext enc_prod12 = evaluator.multiply(encrypted1, encrypted2);
 
     cout << "Computing enc_prod34 = encrypted3*encrypted4 ..." << endl;
-    BigPolyArray enc_prod34 = evaluator.multiply(encrypted3, encrypted4);
+    Ciphertext enc_prod34 = evaluator.multiply(encrypted3, encrypted4);
 
     // First the result with no relinearization
     cout << endl;
@@ -832,19 +833,18 @@ void example_relinearization_part2()
 
     // Compute product of all four
     cout << "Computing enc_prod = enc_prod12*enc_prod34 ..." << endl;
-    BigPolyArray enc_prod = evaluator.multiply(enc_prod12, enc_prod34);
+    Ciphertext enc_prod = evaluator.multiply(enc_prod12, enc_prod34);
 
-    cout << "Computing enc_square =  [enc_prod]^2 ..." << endl;
-    BigPolyArray enc_square = evaluator.square(enc_prod);
+    cout << "Computing enc_square = [enc_prod]^2 ..." << endl;
+    Ciphertext enc_square = evaluator.square(enc_prod);
 
     auto time_norelin_end = chrono::high_resolution_clock::now();
     cout << "Time (without relinearization): " << chrono::duration_cast<chrono::microseconds>(time_norelin_end - time_norelin_start).count()
         << " microseconds" << endl;
 
-    // Print size and inherent noise of the result. 
+    // Print size and noise budget of result. 
     cout << "Size of enc_square: " << enc_square.size() << endl;
-    cout << "Noise in enc_square: " << decryptor.inherent_noise_bits(enc_square) 
-        << "/" << parms.inherent_noise_bits_max() << " bits" << endl;
+    cout << "Noise budget in enc_square: " << decryptor.invariant_noise_budget(enc_square) << " bits" << endl;
 
     // Now the same thing but with relinearization
     cout << endl;
@@ -853,8 +853,8 @@ void example_relinearization_part2()
     auto time_relin_start = chrono::high_resolution_clock::now();
 
     cout << "Relinearizing enc_prod12 and enc_prod34 to size 2 ..." << endl;
-    BigPolyArray enc_relin_prod12 = evaluator.relinearize(enc_prod12);
-    BigPolyArray enc_relin_prod34 = evaluator.relinearize(enc_prod34);
+    Ciphertext enc_relin_prod12 = evaluator.relinearize(enc_prod12);
+    Ciphertext enc_relin_prod34 = evaluator.relinearize(enc_prod34);
 
     // Now multiply the relinearized products together
     cout << "Computing enc_prod = enc_relin_prod12*enc_relin_prod34... " << endl;
@@ -867,9 +867,9 @@ void example_relinearization_part2()
     cout << "Time (with relinearization): " << chrono::duration_cast<chrono::microseconds>(time_relin_end - time_relin_start).count()
         << " microseconds" << endl;
 
-    // Print size and inherent noise of the result. 
+    // Print size and noise budget of result. 
     cout << "Size of enc_square: " << enc_square.size() << endl;
-    cout << "Noise in enc_square: " << decryptor.inherent_noise_bits(enc_square) << "/" << parms.inherent_noise_bits_max() << " bits" << endl;
+    cout << "Noise budget in enc_square: " << decryptor.invariant_noise_budget(enc_square) << " bits" << endl;
 }
 
 void example_timing()
@@ -976,18 +976,20 @@ void example_timing()
 
     EncryptionParameters parms;
 
-    parms.poly_modulus() = "1x^1024 + 1";
-    parms.coeff_modulus() = ChooserEvaluator::default_parameter_options().at(1024);
-    parms.plain_modulus() = 1 << 6;
-    parms.decomposition_bit_count() = 16;
+    parms.set_poly_modulus("1x^2048 + 1");
+    parms.set_coeff_modulus(ChooserEvaluator::default_parameter_options().at(2048));
+    parms.set_plain_modulus(1 << 6);
+    parms.set_decomposition_bit_count(16);
+    parms.validate();
 
     performance_test(parms);
     cout << endl;
 
-    parms.poly_modulus() = "1x^2048 + 1";
-    parms.coeff_modulus() = ChooserEvaluator::default_parameter_options().at(2048);
-    parms.plain_modulus() = 1 << 6;
-    parms.decomposition_bit_count() = 32;
+    parms.set_poly_modulus("1x^4096 + 1");
+    parms.set_coeff_modulus(ChooserEvaluator::default_parameter_options().at(4096));
+    parms.set_plain_modulus(1 << 6);
+    parms.set_decomposition_bit_count(32);
+    parms.validate();
 
     performance_test(parms);
     cout << endl;

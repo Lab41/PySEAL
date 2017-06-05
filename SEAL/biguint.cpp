@@ -786,14 +786,8 @@ namespace seal
         *this = value;
     }
 
-    BigUInt &BigUInt::operator =(BigUInt &&assign) noexcept
+    BigUInt &BigUInt::operator =(BigUInt &&assign)
     {
-        // Do nothing if same thing.
-        if (&assign == this)
-        {
-            return *this;
-        }
-
         // Deallocate any memory allocated.
         reset();
 
@@ -810,8 +804,11 @@ namespace seal
         return *this;
     }
 
-    BigUInt::BigUInt(BigUInt &&source) noexcept : value_(nullptr), bit_count_(0), is_alias_(false)
+    BigUInt::BigUInt(BigUInt &&source) noexcept : value_(source.value_), bit_count_(source.bit_count_), is_alias_(source.is_alias_)
     {
-        operator =(move(source));
+        // Pointer in source has been taken over so set it to nullptr
+        source.value_ = nullptr;
+        source.is_alias_ = false;
+        source.bit_count_ = 0;
     }
 }

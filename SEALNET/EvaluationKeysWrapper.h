@@ -1,7 +1,7 @@
 #pragma once
 
 #include "evaluationkeys.h"
-#include "BigPolyArrayWrapper.h"
+#include "EncryptionParamsWrapper.h"
 
 namespace Microsoft
 {

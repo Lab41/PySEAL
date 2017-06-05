@@ -14,14 +14,14 @@ namespace seal
 {
     const map<int, BigUInt> ChooserEvaluator::default_parameter_options_
     {
-        /*
-        Polynomial modulus: 1x^1024 + 1
-        Coefficient modulus: 2^35 - 2^14 + 2^11 + 1
-        Hex form: 7FFFFC801
-        NTT prime: Yes
-        Plain modulus recommendation: Power of 2 up to 2^11
-        */
-        { 1024, BigUInt("7FFFFC801") },
+        ///*
+        //Polynomial modulus: 1x^1024 + 1
+        //Coefficient modulus: 2^35 - 2^14 + 2^11 + 1
+        //Hex form: 7FFFFC801
+        //NTT prime: Yes
+        //Plain modulus recommendation: Power of 2 up to 2^11
+        //*/
+        //{ 1024, BigUInt("7FFFFC801") },
         
         /*
         Polynomial modulus: 1x^2048 + 1
@@ -50,26 +50,35 @@ namespace seal
         */
         { 8192, BigUInt("3FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFC000001") },
 
-        ///*
-        //Polynomial modulus: 1x^16384 + 1
-        //Coefficient modulus: 2^435 - 2^33 + 1
-        //Hex form: 7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFE00000001
-        //NTT prime: Yes
-        //Plain modulus recommendation: Power of 2 up to 2^26
-        //*/
+        /*
+        Polynomial modulus: 1x^16384 + 1
+        Coefficient modulus: 2^435 - 2^33 + 1
+        Hex form: 7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFE00000001
+        NTT prime: Yes
+        Plain modulus recommendation: Power of 2 up to 2^33
+        */
         { 16384, BigUInt("7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFE00000001") },
+
+        /*
+        Polynomial modulus: 1x^32768 + 1
+        Coefficient modulus: 2^889 - 2^54 - 2^53 - 2^52 + 1
+        Hex form: 1FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF90000000000001
+        NTT prime: Yes
+        Plain modulus recommendation: Power of 2 up to 2^52
+        */
+        { 32768, BigUInt("1FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF90000000000001") },
     };
 
     const double ChooserEvaluator::default_noise_standard_deviation_ = 3.19;
 
-    const double ChooserEvaluator::default_noise_max_deviation_ = 15.95;
+    const double ChooserEvaluator::default_noise_max_deviation_ = 19.14;
 
     ChooserPoly::ChooserPoly() : max_coeff_count_(0), max_abs_value_(), comp_(nullptr)
     {
     }
 
     ChooserPoly::ChooserPoly(int max_coeff_count, const BigUInt &max_abs_value) :
-        max_coeff_count_(max_coeff_count), max_abs_value_(max_abs_value), comp_(new FreshComputation())
+        max_coeff_count_(max_coeff_count), max_abs_value_(max_abs_value), comp_(new FreshComputation(max_coeff_count, max_abs_value))
     {
         if (max_coeff_count <= 0)
         {
@@ -82,7 +91,7 @@ namespace seal
     }
 
     ChooserPoly::ChooserPoly(int max_coeff_count, uint64_t max_abs_value) :
-        max_coeff_count_(max_coeff_count), comp_(new FreshComputation())
+        max_coeff_count_(max_coeff_count), max_abs_value_(bits_per_uint64, max_abs_value) 
     {
         if (max_coeff_count <= 0)
         {
@@ -92,9 +101,7 @@ namespace seal
         {
             max_coeff_count_ = 1;
         }
-        BigUInt max_abs_value_uint;
-        max_abs_value_uint = max_abs_value;
-        max_abs_value_ = max_abs_value_uint;
+        comp_ = new FreshComputation(max_coeff_count_, max_abs_value_);
     }
 
     ChooserPoly::ChooserPoly(int max_coeff_count, const BigUInt &max_abs_value, Computation *comp) :
@@ -109,7 +116,6 @@ namespace seal
         {
             max_coeff_count_ = 1;
         }
-
         /*
         if (comp == nullptr)
         {
@@ -119,7 +125,7 @@ namespace seal
     }
 
     ChooserPoly::ChooserPoly(int max_coeff_count, uint64_t max_abs_value, Computation *comp) :
-        max_coeff_count_(max_coeff_count), comp_(comp)
+        max_coeff_count_(max_coeff_count), max_abs_value_(bits_per_uint64, max_abs_value), comp_(comp)
     {
         if (max_coeff_count <= 0)
         {
@@ -129,9 +135,6 @@ namespace seal
         {
             max_coeff_count_ = 1;
         }
-        BigUInt max_abs_value_uint;
-        max_abs_value_uint = max_abs_value;
-        max_abs_value_ = max_abs_value_uint;
         /*
         if (comp == nullptr)
         {
@@ -163,7 +166,7 @@ namespace seal
         return *this;
     }
 
-    ChooserPoly ChooserEvaluator::add(const ChooserPoly &operand1, const ChooserPoly &operand2) const
+    ChooserPoly ChooserEvaluator::add(const ChooserPoly &operand1, const ChooserPoly &operand2)
     {
         if (operand1.max_coeff_count_ <= 0 || operand1.comp_ == nullptr)
         {
@@ -177,7 +180,7 @@ namespace seal
         return ChooserPoly(max(operand1.max_coeff_count_, operand2.max_coeff_count_), operand1.max_abs_value_ + operand2.max_abs_value_, new AddComputation(*operand1.comp_, *operand2.comp_));
     }
 
-    ChooserPoly ChooserEvaluator::add_many(const std::vector<ChooserPoly> &operands) const
+    ChooserPoly ChooserEvaluator::add_many(const std::vector<ChooserPoly> &operands)
     {
         if (operands.empty())
         {
@@ -204,10 +207,9 @@ namespace seal
             }
         }
 
-        MemoryPool &pool = *MemoryPool::default_pool();
         int sum_max_abs_value_bit_count = operands[largest_abs_value_index].max_abs_value_.significant_bit_count() + get_significant_bit_count(operands.size());
         int sum_max_abs_value_uint64_count = divide_round_up(sum_max_abs_value_bit_count, bits_per_uint64);
-        Pointer sum_max_abs_value(allocate_zero_uint(sum_max_abs_value_uint64_count, pool));
+        Pointer sum_max_abs_value(allocate_zero_uint(sum_max_abs_value_uint64_count, pool_));
 
         vector<Computation*> comps;
         for (size_t i = 0; i < operands.size(); ++i)
@@ -219,7 +221,7 @@ namespace seal
         return ChooserPoly(sum_max_coeff_count, BigUInt(sum_max_abs_value_bit_count, sum_max_abs_value.get()), new AddManyComputation(comps));
     }
 
-    ChooserPoly ChooserEvaluator::sub(const ChooserPoly &operand1, const ChooserPoly &operand2) const
+    ChooserPoly ChooserEvaluator::sub(const ChooserPoly &operand1, const ChooserPoly &operand2)
     {
         if (operand1.max_coeff_count_ <= 0 || operand1.comp_ == nullptr)
         {
@@ -233,7 +235,7 @@ namespace seal
         return ChooserPoly(max(operand1.max_coeff_count_, operand2.max_coeff_count_), operand1.max_abs_value_ + operand2.max_abs_value_, new SubComputation(*operand1.comp_, *operand2.comp_));
     }
 
-    ChooserPoly ChooserEvaluator::multiply(const ChooserPoly &operand1, const ChooserPoly &operand2) const
+    ChooserPoly ChooserEvaluator::multiply(const ChooserPoly &operand1, const ChooserPoly &operand2)
     {
         if (operand1.max_coeff_count_ <= 0 || operand1.comp_ == nullptr)
         {
@@ -252,23 +254,22 @@ namespace seal
         int prod_bit_count = operand1.max_abs_value_.significant_bit_count() + operand2.max_abs_value_.significant_bit_count() + get_significant_bit_count(growth_factor) + 1;
         int prod_uint64_count = divide_round_up(prod_bit_count, bits_per_uint64);
 
-        MemoryPool &pool = *MemoryPool::default_pool();
-        Pointer prod_max_abs_value(allocate_zero_uint(prod_uint64_count, pool));
-        ConstPointer wide_operand2_max_abs_value(duplicate_uint_if_needed(operand2.max_abs_value_.pointer(), operand2.max_abs_value_.uint64_count(), prod_uint64_count, false, pool));
+        Pointer prod_max_abs_value(allocate_zero_uint(prod_uint64_count, pool_));
+        ConstPointer wide_operand2_max_abs_value(duplicate_uint_if_needed(operand2.max_abs_value_.pointer(), operand2.max_abs_value_.uint64_count(), prod_uint64_count, false, pool_));
 
         multiply_uint_uint(&growth_factor, 1, operand1.max_abs_value_.pointer(), operand1.max_abs_value_.uint64_count(), prod_uint64_count, prod_max_abs_value.get());
-        ConstPointer temp_pointer(duplicate_uint_if_needed(prod_max_abs_value.get(), prod_uint64_count, prod_uint64_count, true, pool));
+        ConstPointer temp_pointer(duplicate_uint_if_needed(prod_max_abs_value.get(), prod_uint64_count, prod_uint64_count, true, pool_));
         multiply_uint_uint(wide_operand2_max_abs_value.get(), prod_uint64_count, temp_pointer.get(), prod_uint64_count, prod_uint64_count, prod_max_abs_value.get());
 
         return ChooserPoly(operand1.max_coeff_count_ + operand2.max_coeff_count_ - 1, BigUInt(prod_bit_count, prod_max_abs_value.get()), new MultiplyComputation(*operand1.comp_, *operand2.comp_));
     }
 
-    ChooserPoly ChooserEvaluator::square(const ChooserPoly &operand) const
+    ChooserPoly ChooserEvaluator::square(const ChooserPoly &operand)
     {
         return multiply(operand, operand);
     }
 
-    ChooserPoly ChooserEvaluator::relinearize(const ChooserPoly &operand, int destination_size) const
+    ChooserPoly ChooserEvaluator::relinearize(const ChooserPoly &operand, int destination_size)
     {
         if (operand.max_coeff_count_ <= 0 || operand.comp_ == nullptr)
         {
@@ -278,7 +279,7 @@ namespace seal
         return ChooserPoly(operand.max_coeff_count_, operand.max_abs_value_, new RelinearizeComputation(*operand.comp_, destination_size));
     }
 
-    ChooserPoly ChooserEvaluator::multiply_plain(const ChooserPoly &operand, int plain_max_coeff_count, const BigUInt &plain_max_abs_value) const
+    ChooserPoly ChooserEvaluator::multiply_plain(const ChooserPoly &operand, int plain_max_coeff_count, const BigUInt &plain_max_abs_value)
     {
         if (operand.max_coeff_count_ <= 0 || operand.comp_ == nullptr)
         {
@@ -301,23 +302,22 @@ namespace seal
         int prod_bit_count = operand.max_abs_value_.significant_bit_count() + plain_max_abs_value.significant_bit_count() + get_significant_bit_count(growth_factor) + 1;
         int prod_uint64_count = divide_round_up(prod_bit_count, bits_per_uint64);
 
-        MemoryPool &pool = *MemoryPool::default_pool();
-        Pointer prod_max_abs_value(allocate_zero_uint(prod_uint64_count, pool));
-        ConstPointer wide_operand_max_abs_value(duplicate_uint_if_needed(operand.max_abs_value_.pointer(), operand.max_abs_value_.uint64_count(), prod_uint64_count, false, pool));
+        Pointer prod_max_abs_value(allocate_zero_uint(prod_uint64_count, pool_));
+        ConstPointer wide_operand_max_abs_value(duplicate_uint_if_needed(operand.max_abs_value_.pointer(), operand.max_abs_value_.uint64_count(), prod_uint64_count, false, pool_));
 
         multiply_uint_uint(&growth_factor, 1, plain_max_abs_value.pointer(), plain_max_abs_value.uint64_count(), prod_uint64_count, prod_max_abs_value.get());
-        ConstPointer temp_pointer(duplicate_uint_if_needed(prod_max_abs_value.get(), prod_uint64_count, prod_uint64_count, true, pool));
+        ConstPointer temp_pointer(duplicate_uint_if_needed(prod_max_abs_value.get(), prod_uint64_count, prod_uint64_count, true, pool_));
         multiply_uint_uint(wide_operand_max_abs_value.get(), prod_uint64_count, temp_pointer.get(), prod_uint64_count, prod_uint64_count, prod_max_abs_value.get());
 
         return ChooserPoly(operand.max_coeff_count_ + plain_max_coeff_count - 1, BigUInt(prod_bit_count, prod_max_abs_value.get()), new MultiplyPlainComputation(*operand.comp_, plain_max_coeff_count, plain_max_abs_value));
     }
 
-    ChooserPoly ChooserEvaluator::multiply_plain(const ChooserPoly &operand, int plain_max_coeff_count, uint64_t plain_max_abs_value) const
+    ChooserPoly ChooserEvaluator::multiply_plain(const ChooserPoly &operand, int plain_max_coeff_count, uint64_t plain_max_abs_value) 
     {
-        return multiply_plain(operand, plain_max_coeff_count, BigUInt(64, plain_max_abs_value));
+        return multiply_plain(operand, plain_max_coeff_count, BigUInt(bits_per_uint64, plain_max_abs_value));
     }
 
-    ChooserPoly ChooserEvaluator::multiply_plain(const ChooserPoly &operand, const ChooserPoly &plain_chooser_poly) const
+    ChooserPoly ChooserEvaluator::multiply_plain(const ChooserPoly &operand, const ChooserPoly &plain_chooser_poly)
     {
         if (plain_chooser_poly.comp_ != nullptr)
         {
@@ -326,7 +326,7 @@ namespace seal
         return multiply_plain(operand, plain_chooser_poly.max_coeff_count_, plain_chooser_poly.max_abs_value_);
     }
 
-    ChooserPoly ChooserEvaluator::add_plain(const ChooserPoly &operand, int plain_max_coeff_count, const BigUInt &plain_max_abs_value) const
+    ChooserPoly ChooserEvaluator::add_plain(const ChooserPoly &operand, int plain_max_coeff_count, const BigUInt &plain_max_abs_value)
     {
         if (operand.max_coeff_count_ <= 0 || operand.comp_ == nullptr)
         {
@@ -338,22 +338,22 @@ namespace seal
         }
         if (plain_max_abs_value.is_zero())
         {
-            return ChooserPoly(operand.max_coeff_count_, operand.max_abs_value_, new AddPlainComputation(*operand.comp_));
+            return ChooserPoly(operand.max_coeff_count_, operand.max_abs_value_, new AddPlainComputation(*operand.comp_, plain_max_coeff_count, plain_max_abs_value));
         }
         if (operand.max_abs_value_.is_zero())
         {
-            return ChooserPoly(plain_max_coeff_count, plain_max_abs_value, new AddPlainComputation(*operand.comp_));
+            return ChooserPoly(plain_max_coeff_count, plain_max_abs_value, new AddPlainComputation(*operand.comp_, plain_max_coeff_count, plain_max_abs_value));
         }
 
-        return ChooserPoly(max(operand.max_coeff_count_, plain_max_coeff_count), operand.max_abs_value_ + plain_max_abs_value, new AddPlainComputation(*operand.comp_));
+        return ChooserPoly(max(operand.max_coeff_count_, plain_max_coeff_count), operand.max_abs_value_ + plain_max_abs_value, new AddPlainComputation(*operand.comp_, plain_max_coeff_count, plain_max_abs_value));
     }
 
-    ChooserPoly ChooserEvaluator::add_plain(const ChooserPoly &operand, int plain_max_coeff_count, uint64_t plain_max_abs_value) const
+    ChooserPoly ChooserEvaluator::add_plain(const ChooserPoly &operand, int plain_max_coeff_count, uint64_t plain_max_abs_value)
     {
-        return add_plain(operand, plain_max_coeff_count, BigUInt(64, plain_max_abs_value));
+        return add_plain(operand, plain_max_coeff_count, BigUInt(bits_per_uint64, plain_max_abs_value));
     }
 
-    ChooserPoly ChooserEvaluator::add_plain(const ChooserPoly &operand, const ChooserPoly &plain_chooser_poly) const
+    ChooserPoly ChooserEvaluator::add_plain(const ChooserPoly &operand, const ChooserPoly &plain_chooser_poly)
     {
         if (plain_chooser_poly.comp_ != nullptr)
         {
@@ -362,7 +362,7 @@ namespace seal
         return add_plain(operand, plain_chooser_poly.max_coeff_count_, plain_chooser_poly.max_abs_value_);
     }
 
-    ChooserPoly ChooserEvaluator::sub_plain(const ChooserPoly &operand, int plain_max_coeff_count, const BigUInt &plain_max_abs_value) const
+    ChooserPoly ChooserEvaluator::sub_plain(const ChooserPoly &operand, int plain_max_coeff_count, const BigUInt &plain_max_abs_value)
     {
         if (operand.max_coeff_count_ <= 0 || operand.comp_ == nullptr)
         {
@@ -374,22 +374,22 @@ namespace seal
         }
         if (plain_max_abs_value.is_zero())
         {
-            return ChooserPoly(operand.max_coeff_count_, operand.max_abs_value_, new SubPlainComputation(*operand.comp_));
+            return ChooserPoly(operand.max_coeff_count_, operand.max_abs_value_, new SubPlainComputation(*operand.comp_, plain_max_coeff_count, plain_max_abs_value));
         }
         if (operand.max_abs_value_.is_zero())
         {
-            return ChooserPoly(plain_max_coeff_count, plain_max_abs_value, new SubPlainComputation(*operand.comp_));
+            return ChooserPoly(plain_max_coeff_count, plain_max_abs_value, new SubPlainComputation(*operand.comp_, plain_max_coeff_count, plain_max_abs_value));
         }
 
-        return ChooserPoly(max(operand.max_coeff_count_, plain_max_coeff_count), operand.max_abs_value_ + plain_max_abs_value, new SubPlainComputation(*operand.comp_));
+        return ChooserPoly(max(operand.max_coeff_count_, plain_max_coeff_count), operand.max_abs_value_ + plain_max_abs_value, new SubPlainComputation(*operand.comp_, plain_max_coeff_count, plain_max_abs_value));
     }
 
-    ChooserPoly ChooserEvaluator::sub_plain(const ChooserPoly &operand, int plain_max_coeff_count, uint64_t plain_max_abs_value) const
+    ChooserPoly ChooserEvaluator::sub_plain(const ChooserPoly &operand, int plain_max_coeff_count, uint64_t plain_max_abs_value)
     {
-        return sub_plain(operand, plain_max_coeff_count, BigUInt(64, plain_max_abs_value));
+        return sub_plain(operand, plain_max_coeff_count, BigUInt(bits_per_uint64, plain_max_abs_value));
     }
 
-    ChooserPoly ChooserEvaluator::sub_plain(const ChooserPoly &operand, const ChooserPoly &plain_chooser_poly) const
+    ChooserPoly ChooserEvaluator::sub_plain(const ChooserPoly &operand, const ChooserPoly &plain_chooser_poly)
     {
         if (plain_chooser_poly.comp_ != nullptr)
         {
@@ -398,7 +398,7 @@ namespace seal
         return sub_plain(operand, plain_chooser_poly.max_coeff_count_, plain_chooser_poly.max_abs_value_);
     }
 
-    ChooserPoly ChooserEvaluator::exponentiate(const ChooserPoly &operand, uint64_t exponent) const
+    ChooserPoly ChooserEvaluator::exponentiate(const ChooserPoly &operand, uint64_t exponent)
     {
         if (operand.max_coeff_count_ <= 0 || operand.comp_ == nullptr)
         {
@@ -420,18 +420,17 @@ namespace seal
         int result_bit_count = exponent * operand.max_abs_value_.significant_bit_count() + get_significant_bit_count(growth_factor) + 1;
         int result_uint64_count = divide_round_up(result_bit_count, bits_per_uint64);
 
-        MemoryPool &pool = *MemoryPool::default_pool();
-        Pointer result_max_abs_value(allocate_uint(result_uint64_count, pool));
+        Pointer result_max_abs_value(allocate_uint(result_uint64_count, pool_));
 
-        util::exponentiate_uint(operand.max_abs_value_.pointer(), operand.max_abs_value_.uint64_count(), &exponent, 1, result_uint64_count, result_max_abs_value.get(), pool);
+        util::exponentiate_uint(operand.max_abs_value_.pointer(), operand.max_abs_value_.uint64_count(), &exponent, 1, result_uint64_count, result_max_abs_value.get(), pool_);
 
-        ConstPointer temp_pointer(duplicate_uint_if_needed(result_max_abs_value.get(), result_uint64_count, result_uint64_count, true, pool));
+        ConstPointer temp_pointer(duplicate_uint_if_needed(result_max_abs_value.get(), result_uint64_count, result_uint64_count, true, pool_));
         multiply_uint_uint(&growth_factor, 1, temp_pointer.get(), result_uint64_count, result_uint64_count, result_max_abs_value.get());
 
         return ChooserPoly(exponent * (operand.max_coeff_count_ - 1) + 1, BigUInt(result_bit_count, result_max_abs_value.get()), new ExponentiateComputation(*operand.comp_, exponent));
     }
 
-    ChooserPoly ChooserEvaluator::negate(const ChooserPoly &operand) const
+    ChooserPoly ChooserEvaluator::negate(const ChooserPoly &operand)
     {
         if (operand.max_coeff_count_ <= 0 || operand.comp_ == nullptr)
         {
@@ -440,7 +439,7 @@ namespace seal
         return ChooserPoly(operand.max_coeff_count_, operand.max_abs_value_, new NegateComputation(*operand.comp_));
     }
 
-    ChooserPoly ChooserEvaluator::multiply_many(const vector<ChooserPoly> &operands) const
+    ChooserPoly ChooserEvaluator::multiply_many(const vector<ChooserPoly> &operands)
     {
         if (operands.empty())
         {
@@ -476,35 +475,28 @@ namespace seal
         prod_max_abs_value_bit_count += get_significant_bit_count(growth_factor);
         int prod_max_abs_value_uint64_count = divide_round_up(prod_max_abs_value_bit_count, bits_per_uint64);
 
-        MemoryPool &pool = *MemoryPool::default_pool();
-        Pointer prod_max_abs_value(allocate_zero_uint(prod_max_abs_value_uint64_count, pool));
+        Pointer prod_max_abs_value(allocate_zero_uint(prod_max_abs_value_uint64_count, pool_));
         *prod_max_abs_value.get() = growth_factor;
         for (size_t i = 0; i < operands.size(); ++i)
         {
-            ConstPointer temp_pointer(duplicate_uint_if_needed(prod_max_abs_value.get(), prod_max_abs_value_uint64_count, prod_max_abs_value_uint64_count, true, pool));
+            ConstPointer temp_pointer(duplicate_uint_if_needed(prod_max_abs_value.get(), prod_max_abs_value_uint64_count, prod_max_abs_value_uint64_count, true, pool_));
             multiply_uint_uint(temp_pointer.get(), prod_max_abs_value_uint64_count, operands[i].max_abs_value_.pointer(), operands[i].max_abs_value_.uint64_count(), prod_max_abs_value_uint64_count, prod_max_abs_value.get());
         }
 
         return ChooserPoly(prod_max_coeff_count, BigUInt(prod_max_abs_value_bit_count, prod_max_abs_value.get()), new MultiplyManyComputation(comps));
     }
 
-    bool ChooserEvaluator::select_parameters(const ChooserPoly &operand, EncryptionParameters &destination) const
+    bool ChooserEvaluator::select_parameters(const std::vector<ChooserPoly> &operands, int budget_gap, EncryptionParameters &destination)
     {
-        return select_parameters(vector<ChooserPoly>{operand}, destination);
+        return select_parameters(operands, budget_gap, default_noise_standard_deviation_, default_noise_max_deviation_, default_parameter_options_, destination);
     }
 
-    bool ChooserEvaluator::select_parameters(const std::vector<ChooserPoly> &operands, EncryptionParameters &destination) const
+    bool ChooserEvaluator::select_parameters(const std::vector<ChooserPoly> &operands, int budget_gap, double noise_standard_deviation, double noise_max_deviation, const std::map<int, BigUInt> &parameter_options, EncryptionParameters &destination)
     {
-        return select_parameters(operands, default_noise_standard_deviation_, default_noise_max_deviation_, default_parameter_options_, destination);
-    }
-
-    bool ChooserEvaluator::select_parameters(const ChooserPoly &operand, double noise_standard_deviation, double noise_max_deviation, const std::map<int, BigUInt> &parameter_options, EncryptionParameters &destination) const
-    {
-        return select_parameters(vector<ChooserPoly>{operand}, noise_standard_deviation, noise_max_deviation, parameter_options, destination);
-    }
-
-    bool ChooserEvaluator::select_parameters(const std::vector<ChooserPoly> &operands, double noise_standard_deviation, double noise_max_deviation, const std::map<int, BigUInt> &parameter_options, EncryptionParameters &destination) const
-    {
+        if (budget_gap < 0)
+        {
+            throw std::invalid_argument("budget_gap cannot be negative");
+        }
         if (noise_standard_deviation < 0)
         {
             throw invalid_argument("noise_standard_deviation can not be negative");
@@ -539,8 +531,9 @@ namespace seal
 
         // We restrict to plain moduli that are powers of two. Here largest_bit_count is the largest positive
         // coefficient that we can expect to appear. Thus, we need one more bit.
-        destination.plain_modulus() = 1;
-        destination.plain_modulus() <<= largest_bit_count;
+        BigUInt new_plain_modulus(1, 1);
+        new_plain_modulus <<= largest_bit_count;
+        destination.set_plain_modulus(new_plain_modulus);
 
         bool found_good_parms = false;
         map<int, BigUInt>::const_iterator iter = parameter_options.begin();
@@ -555,23 +548,24 @@ namespace seal
             if (dimension > largest_coeff_count && destination.plain_modulus() < iter->second)
             {
                 // Set the polynomial
-                destination.coeff_modulus() = iter->second;
-                destination.poly_modulus().resize(dimension + 1, 1);
-                destination.poly_modulus().set_zero();
-                destination.poly_modulus()[0] = 1;
-                destination.poly_modulus()[dimension] = 1;
+                destination.set_coeff_modulus(iter->second);
+                BigPoly new_poly_modulus(dimension + 1, 1);
+                new_poly_modulus.set_zero();
+                new_poly_modulus[0] = 1;
+                new_poly_modulus[dimension] = 1;
+                destination.set_poly_modulus(new_poly_modulus);
 
                 // The bound needed for GapSVP->search-LWE reduction
                 //parms.noise_standard_deviation() = round(sqrt(dimension / (2 * 3.1415)) + 0.5);
 
                 // Use constant (small) standard deviation.
-                destination.noise_standard_deviation() = noise_standard_deviation;
+                destination.set_noise_standard_deviation(noise_standard_deviation);
 
                 // We truncate the gaussian at noise_max_deviation.
-                destination.noise_max_deviation() = noise_max_deviation;
+                destination.set_noise_max_deviation(noise_max_deviation);
 
                 // Start initially with the maximum decomposition_bit_count, then decrement until decrypts().
-                destination.decomposition_bit_count() = destination.coeff_modulus().significant_bit_count();
+                destination.set_decomposition_bit_count(destination.coeff_modulus().significant_bit_count());
                 
                 // If decomposition_bit_count = destination.coeff_modulus().significant_bit_count() works, then
                 // the computation did not involve any relinearization operations, because relinearizing with 
@@ -579,24 +573,22 @@ namespace seal
                 // This way we can detect whether relinearization was needed, and if not, to signal this we set
                 // the decomposition bit count to 0.
                 found_good_parms = true;
-                for (size_t i = 0; i < operands.size(); ++i)
+
+                for (size_t i = 0; i < operands.size(); i++)
                 {
                     // If one of the operands does not decrypt, set found_good_parms to false.
-                    // We call decrypts() with parameter noise_gap == 10 since SimulationEvaluator::multiply_norelin
-                    // sometimes underestimates the noise growth in the first multiplication performed, and we want to
-                    // ensure proper decryption even in this case. The expert user might want to change the number 10
-                    // to something smaller.
-                    found_good_parms = operands[i].simulate(destination).decrypts(10) ? found_good_parms : false;
-                }
-                if (found_good_parms)
-                {
-                    destination.decomposition_bit_count() = 0;
+                    found_good_parms = operands[i].simulate(destination).decrypts(budget_gap) ? found_good_parms : false;
                 }
 
-                // We bound the decomposition bit count value by 1/10 of the maximum. A too small
+                if (found_good_parms)
+                {
+                    destination.set_decomposition_bit_count(0);
+                }
+
+                // We bound the decomposition bit count value by 1/5 of the maximum. A too small
                 // decomposition bit count slows down multiplication significantly. This is not an
                 // issue when the user wants to use multiply_norelin() instead of multiply(), as it
-                // only affects the relinearization step. The fraction 1/10 is by no means an optimal 
+                // only affects the relinearization step. The fraction 1/5 is by no means an optimal 
                 // choice. An expert user might want to tweak this value to be smaller or larger 
                 // depending on their use case.
                 int min_decomposition_bit_count = (destination.coeff_modulus().significant_bit_count() + 9) / 10;
@@ -609,15 +601,13 @@ namespace seal
                     for (size_t i = 0; i < operands.size(); ++i)
                     {
                         // If one of the operands does not decrypt, set found_good_parms to false.
-                        // We call decrypts() with parameter noise_gap == 10 since SimulationEvaluator::multiply_norelin
-                        // sometimes underestimates the noise growth in the first multiplication performed, and we want to
-                        // ensure proper decryption even in this case. The expert user might want to change the number 10
-                        // to something smaller.
-                        found_good_parms = operands[i].simulate(destination).decrypts(10) ? found_good_parms : false;
+                        // We call decrypts() with parameter budget_gap == 0
+                        found_good_parms = operands[i].simulate(destination).decrypts(budget_gap) ? found_good_parms : false;
                     }
+
                     if (!found_good_parms)
                     {
-                        --destination.decomposition_bit_count();
+                        destination.set_decomposition_bit_count(destination.decomposition_bit_count() - 1);
                     }
                     else
                     {
@@ -625,24 +615,24 @@ namespace seal
                         // a little bit without hurting performance at all.
                         int old_dbc = destination.decomposition_bit_count();
                         int num_parts = (destination.coeff_modulus().significant_bit_count() + (old_dbc - 1))/ old_dbc;
-                        destination.decomposition_bit_count() = (destination.coeff_modulus().significant_bit_count() + (num_parts - 1)) / num_parts;
+                        destination.set_decomposition_bit_count((destination.coeff_modulus().significant_bit_count() + (num_parts - 1)) / num_parts);
                     }
                 }
             }
 
             // This dimension/coeff_modulus are to small. Move on to the next pair.
-            ++iter;
+            iter++;
         }
         
         if (!found_good_parms)
         {
             destination = EncryptionParameters();
         }
-
+        
         return found_good_parms;
     }
 
-    Simulation ChooserPoly::simulate(const EncryptionParameters &parms) const
+    Simulation ChooserPoly::simulate(EncryptionParameters &parms) const
     {
         if (comp_ == nullptr)
         {
@@ -669,7 +659,7 @@ namespace seal
             delete comp_;
             comp_ = nullptr;
         }
-        comp_ = new FreshComputation();
+        comp_ = new FreshComputation(max_coeff_count_, max_abs_value_);
     }
 
     ChooserEncoder::ChooserEncoder(uint64_t base) : encoder_(BigUInt(get_significant_bit_count(base), base), base)

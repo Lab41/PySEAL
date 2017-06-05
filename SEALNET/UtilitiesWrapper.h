@@ -1,7 +1,7 @@
 #pragma once
 
 #include "utilities.h"
-#include "BigPolyArrayWrapper.h"
+#include "EncryptionParamsWrapper.h"
 
 namespace Microsoft
 {
@@ -9,12 +9,6 @@ namespace Microsoft
     {
         namespace SEAL
         {
-            ref class BigUInt;
-
-            ref class BigPoly;
-
-            ref class EncryptionParameters;
-
             ref class Simulation;
 
             public ref class Utilities abstract sealed

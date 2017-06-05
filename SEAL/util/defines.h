@@ -12,14 +12,13 @@
 // Microsoft Visual Studio 2012 or newer
 #if (_MSC_VER >= 1700)
 
+// X64
+#ifdef _M_X64
+
 // Use compiler intrinsics for better performance
 #define ENABLE_INTRIN
 
-#ifdef ENABLE_INTRIN
 #include <intrin.h>
-
-// X64
-#ifdef _M_X64
 
 #pragma intrinsic(_addcarry_u64)
 #define ADD_CARRY_UINT64(operand1, operand2, carry, result) _addcarry_u64(          \
@@ -36,18 +35,19 @@
     reinterpret_cast<unsigned long long*>(result))
 
 #pragma intrinsic(_BitScanReverse64)
-#define MSB_INDEX_UINT64(result, value) _BitScanReverse64(result, value);
+#define MSB_INDEX_UINT64(result, value) _BitScanReverse64(result, value)
 
-#endif //_M_X64
-
-// All architectures
 #pragma intrinsic(_umul128)
 #define MULTIPLY_UINT64(operand1, operand2, carry) _umul128(                        \
     static_cast<unsigned long long>(operand1),                                      \
     static_cast<unsigned long long>(operand2),                                      \
     reinterpret_cast<unsigned long long*>(carry))
 
-#endif //ENABLE_INTRIN
+#else //_M_X64
+
+#undef ENABLE_INTRIN
+
+#endif //_M_X64
 
 #endif //_MSC_VER
 
@@ -117,6 +117,6 @@
 #endif
 
 #ifndef MSB_INDEX_UINT64
-#define MSB_INDEX_UINT64(result, value) get_msb_index_generic(result, value);
+#define MSB_INDEX_UINT64(result, value) get_msb_index_generic(result, value)
 //#pragma message("MSB_INDEX_UINT64 not defined. Using get_msb_index_generic (see util/defines.h).")
 #endif

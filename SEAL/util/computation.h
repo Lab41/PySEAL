@@ -1,6 +1,7 @@
 #pragma once
 
 #include "encryptionparams.h"
+#include "biguint.h"
 #include "simulator.h"
 
 namespace seal
@@ -10,7 +11,7 @@ namespace seal
         class Computation
         {
         public:
-            virtual Simulation simulate(const EncryptionParameters &parms) = 0;
+            virtual Simulation simulate(EncryptionParameters &parms) = 0;
 
             virtual Computation *clone() = 0;
 
@@ -22,11 +23,11 @@ namespace seal
         class FreshComputation : public Computation
         {
         public:
-            FreshComputation();
+            FreshComputation(int max_coeff_count, const BigUInt &plain_max_abs_value);
 
             ~FreshComputation();
 
-            Simulation simulate(const EncryptionParameters &parms) override;
+            Simulation simulate(EncryptionParameters &parms) override;
 
             FreshComputation *clone() override;
 
@@ -34,6 +35,10 @@ namespace seal
             FreshComputation(const FreshComputation &copy) = delete;
 
             FreshComputation &operator =(const FreshComputation &copy) = delete;
+
+            int plain_max_coeff_count_;
+
+            BigUInt plain_max_abs_value_;
         };
 
         class AddComputation : public Computation
@@ -43,7 +48,7 @@ namespace seal
 
             ~AddComputation();
 
-            Simulation simulate(const EncryptionParameters &parms) override;
+            Simulation simulate(EncryptionParameters &parms) override;
 
             AddComputation *clone() override;
 
@@ -64,7 +69,7 @@ namespace seal
 
             ~AddManyComputation();
 
-            Simulation simulate(const EncryptionParameters &parms) override;
+            Simulation simulate(EncryptionParameters &parms) override;
 
             AddManyComputation *clone() override;
 
@@ -83,7 +88,7 @@ namespace seal
 
             ~SubComputation();
 
-            Simulation simulate(const EncryptionParameters &parms) override;
+            Simulation simulate(EncryptionParameters &parms) override;
 
             SubComputation *clone() override;
 
@@ -104,7 +109,7 @@ namespace seal
 
             ~MultiplyComputation();
 
-            Simulation simulate(const EncryptionParameters &parms) override;
+            Simulation simulate(EncryptionParameters &parms) override;
 
             MultiplyComputation *clone() override;
 
@@ -125,7 +130,7 @@ namespace seal
 
             ~RelinearizeComputation();
 
-            Simulation simulate(const EncryptionParameters &parms) override;
+            Simulation simulate(EncryptionParameters &parms) override;
 
             RelinearizeComputation *clone() override;
 
@@ -145,11 +150,9 @@ namespace seal
         public:
             MultiplyPlainComputation(Computation &input, int plain_max_coeff_count, const BigUInt &plain_max_abs_value);
 
-            MultiplyPlainComputation(Computation &input, int plain_max_coeff_count, std::uint64_t plain_max_abs_value);
-
             ~MultiplyPlainComputation();
 
-            Simulation simulate(const EncryptionParameters &parms) override;
+            Simulation simulate(EncryptionParameters &parms) override;
 
             MultiplyPlainComputation *clone() override;
 
@@ -168,11 +171,11 @@ namespace seal
         class AddPlainComputation : public Computation
         {
         public:
-            AddPlainComputation(Computation &input);
+            AddPlainComputation(Computation &input, int plain_max_coeff_count, const BigUInt &plain_max_abs_value);
 
             ~AddPlainComputation();
 
-            Simulation simulate(const EncryptionParameters &parms) override;
+            Simulation simulate(EncryptionParameters &parms) override;
 
             AddPlainComputation *clone() override;
 
@@ -182,16 +185,20 @@ namespace seal
             AddPlainComputation &operator =(const AddPlainComputation &copy) = delete;
 
             Computation *input_;
+
+            int plain_max_coeff_count_;
+
+            BigUInt plain_max_abs_value_;
         };
 
         class SubPlainComputation : public Computation
         {
         public:
-            SubPlainComputation(Computation &input);
+            SubPlainComputation(Computation &input, int plain_max_coeff_count, const BigUInt &plain_max_abs_value);
 
             ~SubPlainComputation();
 
-            Simulation simulate(const EncryptionParameters &parms) override;
+            Simulation simulate(EncryptionParameters &parms) override;
 
             SubPlainComputation *clone() override;
 
@@ -201,6 +208,10 @@ namespace seal
             SubPlainComputation &operator =(const SubPlainComputation &copy) = delete;
 
             Computation *input_;
+
+            int plain_max_coeff_count_;
+
+            BigUInt plain_max_abs_value_;
         };
 
         class NegateComputation : public Computation
@@ -210,7 +221,7 @@ namespace seal
 
             ~NegateComputation();
 
-            Simulation simulate(const EncryptionParameters &parms) override;
+            Simulation simulate(EncryptionParameters &parms) override;
 
             NegateComputation *clone() override;
 
@@ -229,7 +240,7 @@ namespace seal
 
             ~ExponentiateComputation();
 
-            Simulation simulate(const EncryptionParameters &parms) override;
+            Simulation simulate(EncryptionParameters &parms) override;
 
             ExponentiateComputation *clone() override;
 
@@ -250,7 +261,7 @@ namespace seal
 
             ~MultiplyManyComputation();
 
-            Simulation simulate(const EncryptionParameters &parms) override;
+            Simulation simulate(EncryptionParameters &parms) override;
 
             MultiplyManyComputation *clone() override;
 

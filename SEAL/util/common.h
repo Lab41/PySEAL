@@ -226,12 +226,12 @@ namespace seal
             }
 
             unsigned long result;
-            MSB_INDEX_UINT64(&result, value)
+            MSB_INDEX_UINT64(&result, value);
             return result + 1;
         }
 
         std::string uint64_to_hex_string(const std::uint64_t *value, int uint64_count);
-
+        
         class MemoryPool;
         std::string uint64_to_dec_string(const std::uint64_t *value, int uint64_count, MemoryPool &pool);
 

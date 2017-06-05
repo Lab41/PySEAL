@@ -102,9 +102,6 @@
     <ClInclude Include="util\polymodulus.h">
       <Filter>Header Files\util</Filter>
     </ClInclude>
-    <ClInclude Include="util\randomtostd.h">
-      <Filter>Header Files\util</Filter>
-    </ClInclude>
     <ClInclude Include="util\uintarith.h">
       <Filter>Header Files\util</Filter>
     </ClInclude>
@@ -137,6 +134,18 @@
     </ClInclude>
     <ClInclude Include="util\defines.h">
       <Filter>Header Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="memorypoolhandle.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="util\randomtostd.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="plaintext.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ciphertext.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -244,6 +253,12 @@
     </ClCompile>
     <ClCompile Include="util\crt.cpp">
       <Filter>Source Files\util</Filter>
+    </ClCompile>
+    <ClCompile Include="plaintext.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ciphertext.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

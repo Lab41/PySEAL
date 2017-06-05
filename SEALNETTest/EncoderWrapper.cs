@@ -11,7 +11,7 @@ namespace SEALNETTest
         public void BinaryEncodeDecodeBigUIntNET()
         {
             var modulus = new BigUInt("FFFFFFFFFFFFFFFF");
-            var encoder = new BinaryEncoder(modulus);
+            var encoder = new BinaryEncoder(modulus, MemoryPoolHandle.AcquireNew());
 
             var value = new BigUInt(64);
             value.Set("0");
@@ -76,7 +76,7 @@ namespace SEALNETTest
             Assert.AreEqual(value, encoder.DecodeBigUInt(poly6));
 
             modulus.Set(1024);
-            var encoder2 = new BinaryEncoder(modulus);
+            var encoder2 = new BinaryEncoder(modulus, MemoryPoolHandle.AcquireNew());
             var poly7 = new BigPoly(4, 10);
             poly7[0].Set(1023); // -1   (*1)
             poly7[1].Set(512);  // -512 (*2)
@@ -90,7 +90,7 @@ namespace SEALNETTest
         public void BinaryEncodeDecodeUInt64NET()
         {
             var modulus = new BigUInt("FFFFFFFFFFFFFFFF");
-            var encoder = new BinaryEncoder(modulus);
+            var encoder = new BinaryEncoder(modulus, MemoryPoolHandle.AcquireNew());
 
             var poly = encoder.Encode(0UL);
             Assert.AreEqual(0, poly.GetSignificantCoeffCount());
@@ -147,7 +147,7 @@ namespace SEALNETTest
             Assert.AreEqual((1UL + 500 * 2 + 1023 * 4), encoder.DecodeUInt64(poly6));
 
             modulus.Set(1024);
-            var encoder2 = new BinaryEncoder(modulus);
+            var encoder2 = new BinaryEncoder(modulus, MemoryPoolHandle.AcquireNew());
             var poly7 = new BigPoly(4, 10);
             poly7[0].Set(1023); // -1   (*1)
             poly7[1].Set(512);  // -512 (*2)
@@ -160,7 +160,7 @@ namespace SEALNETTest
         public void BinaryEncodeDecodeUInt32NET()
         {
             var modulus = new BigUInt("FFFFFFFFFFFFFFFF");
-            var encoder = new BinaryEncoder(modulus);
+            var encoder = new BinaryEncoder(modulus, MemoryPoolHandle.AcquireNew());
 
             var poly = encoder.Encode(0U);
             Assert.AreEqual(0, poly.GetSignificantCoeffCount());
@@ -217,7 +217,7 @@ namespace SEALNETTest
             Assert.AreEqual(1U + 500 * 2 + 1023 * 4, encoder.DecodeUInt32(poly6));
 
             modulus.Set(1024);
-            var encoder2 = new BinaryEncoder(modulus);
+            var encoder2 = new BinaryEncoder(modulus, MemoryPoolHandle.AcquireNew());
             var poly7 = new BigPoly(4, 10);
             poly7[0].Set(1023); // -1   (*1)
             poly7[1].Set(512);  // -512 (*2)
@@ -230,7 +230,7 @@ namespace SEALNETTest
         public void BinaryEncodeDecodeInt64NET()
         {
             var modulus = new BigUInt("FFFFFFFFFFFFFFFF");
-            var encoder = new BinaryEncoder(modulus);
+            var encoder = new BinaryEncoder(modulus, MemoryPoolHandle.AcquireNew());
 
             var poly = encoder.Encode(0L);
             Assert.AreEqual(0, poly.GetSignificantCoeffCount());
@@ -325,7 +325,7 @@ namespace SEALNETTest
             Assert.AreEqual(-1073L, encoder.DecodeInt64(poly10));
 
             modulus.Set("FFFF");
-            var encoder2 = new BinaryEncoder(modulus);
+            var encoder2 = new BinaryEncoder(modulus, MemoryPoolHandle.AcquireNew());
             var poly11 = new BigPoly(6, 64);
             poly11[0].Set(1);
             poly11[1].Set("FFFE"); // -1
@@ -340,7 +340,7 @@ namespace SEALNETTest
         public void BinaryEncodeDecodeInt32NET()
         {
             var modulus = new BigUInt("FFFFFFFFFFFFFFFF");
-            var encoder = new BinaryEncoder(modulus);
+            var encoder = new BinaryEncoder(modulus, MemoryPoolHandle.AcquireNew());
 
             var poly = encoder.Encode(0);
             Assert.AreEqual(0, poly.GetSignificantCoeffCount());
@@ -435,7 +435,7 @@ namespace SEALNETTest
             Assert.AreEqual(-1073, encoder.DecodeInt32(poly10));
 
             modulus.Set("FFFF");
-            var encoder2 = new BinaryEncoder(modulus);
+            var encoder2 = new BinaryEncoder(modulus, MemoryPoolHandle.AcquireNew());
             var poly11 = new BigPoly(6, 64);
             poly11[0].Set(1);
             poly11[1].Set("FFFE"); // -1
@@ -450,7 +450,7 @@ namespace SEALNETTest
         public void BalancedEncodeDecodeBigUIntNET()
         {
             var modulus = new BigUInt("10000");
-            var encoder = new BalancedEncoder(modulus, 3);
+            var encoder = new BalancedEncoder(modulus, 3, MemoryPoolHandle.AcquireNew());
 
             var value = new BigUInt(64);
             value.Set("0");
@@ -518,7 +518,7 @@ namespace SEALNETTest
             value.Set(1 + 500 * 3 + 1023 * 9);
             Assert.AreEqual(value, encoder.DecodeBigUInt(poly6));
 
-            var encoder2 = new BalancedEncoder(modulus, 7);
+            var encoder2 = new BalancedEncoder(modulus, 7, MemoryPoolHandle.AcquireNew());
             var poly7 = new BigPoly(4, 16);
             poly7[0].Set(123); // 123   (*1)
             poly7[1].Set("FFFF");  // -1 (*7)
@@ -527,7 +527,7 @@ namespace SEALNETTest
             value.Set(123 + -1 * 7 + 511 * 49 + 1 * 343);
             Assert.AreEqual(value, encoder2.DecodeBigUInt(poly7));
 
-            var encoder3 = new BalancedEncoder(modulus, 6);
+            var encoder3 = new BalancedEncoder(modulus, 6, MemoryPoolHandle.AcquireNew());
             var poly8 = new BigPoly(4, 16);
             poly8[0].Set(5);
             poly8[1].Set(4);
@@ -536,7 +536,7 @@ namespace SEALNETTest
             value.Set(5 + 4 * 6 + 3 * 36 + 2 * 216);
             Assert.AreEqual(value, encoder3.DecodeBigUInt(poly8));
 
-            var encoder4 = new BalancedEncoder(modulus, 10);
+            var encoder4 = new BalancedEncoder(modulus, 10, MemoryPoolHandle.AcquireNew());
             var poly9 = new BigPoly(4, 16);
             poly9[0].Set(1);
             poly9[1].Set(2);
@@ -568,7 +568,7 @@ namespace SEALNETTest
         public void BalancedEncodeDecodeUInt64NET()
         {
             var modulus = new BigUInt("10000");
-            var encoder = new BalancedEncoder(modulus, 3);
+            var encoder = new BalancedEncoder(modulus, 3, MemoryPoolHandle.AcquireNew());
 
             var poly = encoder.Encode(0UL);
             Assert.AreEqual(0, poly.GetSignificantCoeffCount());
@@ -628,7 +628,7 @@ namespace SEALNETTest
             poly6[2].Set(1023);
             Assert.AreEqual((1UL + 500 * 3 + 1023 * 9), encoder.DecodeUInt64(poly6));
 
-            var encoder2 = new BalancedEncoder(modulus, 7);
+            var encoder2 = new BalancedEncoder(modulus, 7, MemoryPoolHandle.AcquireNew());
             var poly7 = new BigPoly(4, 16);
             poly7[0].Set(123); // 123   (*1)
             poly7[1].Set("FFFF");  // -1 (*7)
@@ -636,7 +636,7 @@ namespace SEALNETTest
             poly7[3].Set(1);    // 1    (*343)
             Assert.AreEqual((UInt64)(123 + -1 * 7 + 511 * 49 + 1 * 343), encoder2.DecodeUInt64(poly7));
 
-            var encoder3 = new BalancedEncoder(modulus, 6);
+            var encoder3 = new BalancedEncoder(modulus, 6, MemoryPoolHandle.AcquireNew());
             var poly8 = new BigPoly(4, 16);
             poly8[0].Set(5);
             poly8[1].Set(4);
@@ -645,7 +645,7 @@ namespace SEALNETTest
             UInt64 value = 5 + 4 * 6 + 3 * 36 + 2 * 216;
             Assert.AreEqual(value, encoder3.DecodeUInt64(poly8));
 
-            var encoder4 = new BalancedEncoder(modulus, 10);
+            var encoder4 = new BalancedEncoder(modulus, 10, MemoryPoolHandle.AcquireNew());
             var poly9 = new BigPoly(4, 16);
             poly9[0].Set(1);
             poly9[1].Set(2);
@@ -677,7 +677,7 @@ namespace SEALNETTest
         public void BalancedEncodeDecodeUInt32NET()
         {
             var modulus = new BigUInt("10000");
-            var encoder = new BalancedEncoder(modulus, 3);
+            var encoder = new BalancedEncoder(modulus, 3, MemoryPoolHandle.AcquireNew());
 
             var poly = encoder.Encode(0U);
             Assert.AreEqual(0, poly.GetSignificantCoeffCount());
@@ -737,7 +737,7 @@ namespace SEALNETTest
             poly6[2].Set(1023);
             Assert.AreEqual(1U + 500 * 3 + 1023 * 9, encoder.DecodeUInt32(poly6));
 
-            var encoder2 = new BalancedEncoder(modulus, 7);
+            var encoder2 = new BalancedEncoder(modulus, 7, MemoryPoolHandle.AcquireNew());
             var poly7 = new BigPoly(4, 16);
             poly7[0].Set(123); // 123   (*1)
             poly7[1].Set("FFFF");  // -1 (*7)
@@ -745,7 +745,7 @@ namespace SEALNETTest
             poly7[3].Set(1);    // 1    (*343)
             Assert.AreEqual((UInt32)(123 + -1 * 7 + 511 * 49 + 1 * 343), encoder2.DecodeUInt32(poly7));
 
-            var encoder3 = new BalancedEncoder(modulus, 6);
+            var encoder3 = new BalancedEncoder(modulus, 6, MemoryPoolHandle.AcquireNew());
             var poly8 = new BigPoly(4, 16);
             poly8[0].Set(5);
             poly8[1].Set(4);
@@ -754,7 +754,7 @@ namespace SEALNETTest
             UInt64 value = 5 + 4 * 6 + 3 * 36 + 2 * 216;
             Assert.AreEqual(value, encoder3.DecodeUInt32(poly8));
 
-            var encoder4 = new BalancedEncoder(modulus, 10);
+            var encoder4 = new BalancedEncoder(modulus, 10, MemoryPoolHandle.AcquireNew());
             var poly9 = new BigPoly(4, 16);
             poly9[0].Set(1);
             poly9[1].Set(2);
@@ -786,7 +786,7 @@ namespace SEALNETTest
         public void BalancedEncodeDecodeInt64NET()
         {
             var modulus = new BigUInt("10000");
-            var encoder = new BalancedEncoder(modulus, 3);
+            var encoder = new BalancedEncoder(modulus, 3, MemoryPoolHandle.AcquireNew());
 
             var poly = encoder.Encode(0L);
             Assert.AreEqual(0, poly.GetSignificantCoeffCount());
@@ -885,7 +885,7 @@ namespace SEALNETTest
             Assert.AreEqual("FFFF", poly10[0].ToString());
             Assert.AreEqual(-30724L, encoder.DecodeInt64(poly10));
 
-            var encoder2 = new BalancedEncoder(modulus, 13);
+            var encoder2 = new BalancedEncoder(modulus, 13, MemoryPoolHandle.AcquireNew());
             var poly11 = encoder2.Encode(-126375543984L);
             Assert.AreEqual(11, poly11.GetSignificantCoeffCount());
             Assert.AreEqual(modulus.BitCount, poly11.CoeffBitCount);
@@ -903,7 +903,7 @@ namespace SEALNETTest
             Assert.AreEqual(-126375543984L, encoder2.DecodeInt64(poly11));
 
             modulus.Set("FFFF");
-            var encoder3 = new BalancedEncoder(modulus, 7);
+            var encoder3 = new BalancedEncoder(modulus, 7, MemoryPoolHandle.AcquireNew());
             var poly12 = new BigPoly(6, 16);
             poly12[0].Set(1);
             poly12[1].Set("FFFE"); // -1
@@ -913,7 +913,7 @@ namespace SEALNETTest
             poly12[5].Set("7FFE"); // 32766
             Assert.AreEqual(1L + -1 * 7 + -2 * 49 + -32767 * 343 + 32767 * 2401 + 32766 * 16807, encoder3.DecodeInt64(poly12));
 
-            var encoder4 = new BalancedEncoder(modulus, 6);
+            var encoder4 = new BalancedEncoder(modulus, 6, MemoryPoolHandle.AcquireNew());
             poly8 = new BigPoly(4, 16);
             poly8[0].Set(5);
             poly8[1].Set(4);
@@ -922,7 +922,7 @@ namespace SEALNETTest
             Int64 value = 5 + 4 * 6 + 3 * 36 - 2 * 216;
             Assert.AreEqual(value, encoder4.DecodeInt64(poly8));
 
-            var encoder5 = new BalancedEncoder(modulus, 10);
+            var encoder5 = new BalancedEncoder(modulus, 10, MemoryPoolHandle.AcquireNew());
             poly9 = new BigPoly(4, 16);
             poly9[0].Set(1);
             poly9[1].Set(2);
@@ -954,7 +954,7 @@ namespace SEALNETTest
         public void BalancedEncodeDecodeInt32NET()
         {
             var modulus = new BigUInt("10000");
-            var encoder = new BalancedEncoder(modulus, 3);
+            var encoder = new BalancedEncoder(modulus, 3, MemoryPoolHandle.AcquireNew());
 
             var poly = encoder.Encode(0);
             Assert.AreEqual(0, poly.GetSignificantCoeffCount());
@@ -1054,7 +1054,7 @@ namespace SEALNETTest
             Assert.AreEqual(-30724, encoder.DecodeInt32(poly10));
 
             modulus.Set("FFFF");
-            var encoder2 = new BalancedEncoder(modulus, 7);
+            var encoder2 = new BalancedEncoder(modulus, 7, MemoryPoolHandle.AcquireNew());
             var poly12 = new BigPoly(6, 16);
             poly12[0].Set(1);
             poly12[1].Set("FFFE"); // -1
@@ -1064,7 +1064,7 @@ namespace SEALNETTest
             poly12[5].Set("7FFE"); // 32766
             Assert.AreEqual(1 + -1 * 7 + -2 * 49 + -32767 * 343 + 32767 * 2401 + 32766 * 16807, encoder2.DecodeInt32(poly12));
 
-            var encoder4 = new BalancedEncoder(modulus, 6);
+            var encoder4 = new BalancedEncoder(modulus, 6, MemoryPoolHandle.AcquireNew());
             poly8 = new BigPoly(4, 16);
             poly8[0].Set(5);
             poly8[1].Set(4);
@@ -1073,7 +1073,7 @@ namespace SEALNETTest
             Int32 value = 5 + 4 * 6 + 3 * 36 - 2 * 216;
             Assert.AreEqual(value, encoder4.DecodeInt32(poly8));
 
-            var encoder5 = new BalancedEncoder(modulus, 10);
+            var encoder5 = new BalancedEncoder(modulus, 10, MemoryPoolHandle.AcquireNew());
             poly9 = new BigPoly(4, 16);
             poly9[0].Set(1);
             poly9[1].Set(2);
@@ -1106,7 +1106,7 @@ namespace SEALNETTest
         {
             var polyModulus = new BigPoly("1x^1024 + 1");
             var modulus = new BigUInt("10000");
-            var encoder = new BinaryFractionalEncoder(modulus, polyModulus, 500, 50);
+            var encoder = new BinaryFractionalEncoder(modulus, polyModulus, 500, 50, MemoryPoolHandle.AcquireNew());
 
             var poly = new BigPoly(encoder.Encode(0.0));
             Assert.AreEqual(polyModulus.CoeffCount, poly.CoeffCount);
@@ -1154,7 +1154,7 @@ namespace SEALNETTest
 
             for(ulong b=3; b<20; b+=2)
             {
-                var encoder = new BalancedFractionalEncoder(modulus, polyModulus, 500, 50, b);
+                var encoder = new BalancedFractionalEncoder(modulus, polyModulus, 500, 50, b, MemoryPoolHandle.AcquireNew());
 
                 poly = encoder.Encode(0.0);
                 Assert.AreEqual(polyModulus.CoeffCount, poly.CoeffCount);

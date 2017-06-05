@@ -1,6 +1,7 @@
 #pragma once
 
 #include "simulator.h"
+#include "EncryptionParamsWrapper.h"
 #include "EvaluatorWrapper.h"
 
 namespace Microsoft
@@ -8,40 +9,37 @@ namespace Microsoft
     namespace Research
     {
         namespace SEAL
-        {
-            ref class EncryptionParameters;
-
-            ref class BigUInt;
-
-            ref class BigPoly;
-            
+        {   
             ref class SimulationEvaluator;
 
-            ref class Evaluator;
-
             /**
-            <summary>Models the inherent noise in a ciphertext based on given EncryptionParameters object.</summary>
+            <summary>Models the invariant noise budget in a ciphertext based on given EncryptionParameters object.</summary>
 
             <remarks>
             <para>
-            Models the inherent noise in a ciphertext based on given <see cref="EncryptionParameters"/> object. When performing arithmetic
-            operations on encrypted data, the quality of the ciphertexts will degrade, i.e. the inherent noise in them will grow,
-            until at a certain point decryption will fail to work. The Simulation object together with <see cref="SimulationEvaluator"/> can
-            help the user understand how inherent noise grows in different homomorphic operations, and to adjust the encryption
-            parameters accordingly.
+            Models the invariant noise budget in a ciphertext based on given <see cref="EncryptionParameters"/> object.
+            When performing arithmetic operations on encrypted data, the quality of the ciphertexts will degrade,
+            i.e. the invariant noise budget will be consumed, until at a certain point the budget will reach 0, and
+            decryption will fail to work. The Simulation object together with <see cref="SimulationEvaluator"/> can 
+            help the user understand how the invariant noise budget is consumed in different homomorphic operations, 
+            and to adjust the encryption parameters accordingly.
             </para>
             <para>
-            Instances of Simulation can be manipulated using <see cref="SimulationEvaluator"/>, which has a public API similar to Evaluator,
-            making existing code easy to run on simulations instead of running it on actual encrypted data. In other words, using
-            <see cref="SimulationEvaluator"/>, simulations can be added, multiplied, subtracted, negated, etc., and the result is always a new
-            Simulation object whose inherent noise is obtained using average-case analysis of the noise behavior in the encryption
-            scheme.
+            Instances of Simulation can be manipulated using <see cref="SimulationEvaluator"/>, which has a public API similar 
+            to Evaluator, making existing code easy to run on simulations instead of running it on actual encrypted data. In 
+            other words, using <see cref="SimulationEvaluator"/>, simulations can be added, multiplied, subtracted, negated, etc., 
+            and the result is always a new Simulation object whose noise budget is obtained using  heuristic worst-case analysis 
+            of the noise behavior in the encryption scheme.
             </para>
             <para>
-            Technically speaking, the inherent noise of a ciphertext is a polynomial, but the condition for decryption working
-            depends on the size of the largest absolute value of its coefficients. It is really the size of this largest absolute
-            value that Simulation is simulating, and that we will call the "noise", the "inherent noise", or the "error", in this
-            documentation. The reader is referred to the description of the encryption scheme for more details.
+            The invariant noise polynomial of a ciphertext is a rational coefficient polynomial, such that
+            a ciphertext decrypts correctly as long as the coefficients of the invariant noise polynomial are
+            of absolute value less than 1/2. Thus, we call the infinity-norm of the invariant noise polynomial
+            the invariant noise, and for correct decryption require it to be less than 1/2. If v denotes the
+            invariant noise, we define the invariant noise budget as -log2(2v). Thus, the invariant noise budget
+            starts from some initial value, which depends on the encryption parameters, and decreases to 0 when
+            computations are performed. When the budget reaches 0, the ciphertext becomes too noisy to decrypt
+            correctly.
             </para>
             </remarks>
             <seealso cref="SimulationEvaluator">See SimulationEvaluator for manipulating instances of Simulation.</seealso>
@@ -50,38 +48,25 @@ namespace Microsoft
             {
             public:
                 /**
-                <summary>Creates a simulation of a fresh ciphertext encrypted with the specified encryption parameters.</summary>
+                <summary>Creates a simulation of a ciphertext encrypted with the specified encryption parameters and 
+                given invariant noise budget.</summary>
+
+                <remarks>
+                Creates a simulation of a ciphertext encrypted with the specified encryption parameters and
+                given invariant noise budget. The given noise budget must be at least zero, and at most the 
+                significant bit count of the coefficient modulus minus two.
+                </remarks>
                 <param name="parms">The encryption parameters</param>
+                <param name="noiseBudget">The invariant noise budget of the created ciphertext</param>
+                <param name="ciphertextSize">The size of the created ciphertext</param>
                 <exception cref="System::ArgumentNullException">if parms is null</exception>
                 <exception cref="System::ArgumentException">if encryption parameters are not valid</exception>
-                <seealso cref="EncryptionParameters">See EncryptionParameters for more details on valid encryption
-                parameters.</seealso>
-                */
-                Simulation(EncryptionParameters ^parms);
-
-                /**
-                <summary>Creates a simulation of a ciphertext encrypted with the specified encryption parameters and given inherent
-                noise.</summary>
-                <param name="parms">The encryption parameters</param>
-                <param name="noise">The inherent noise in the created ciphertext</param>
-                <param name="ciphertextSize">The inherent noise in the created ciphertext</param>
-                <exception cref="System::ArgumentNullException">if parms or noise is null</exception>
-                <exception cref="System::ArgumentException">if encryption parameters are not valid</exception>
-                <exception cref="System::ArgumentException">if noise is bigger than the given coefficient modulus</exception>
+                <exception cref="System::ArgumentException">if noiseBudget is not in the valid range</exception>
                 <exception cref="System::ArgumentException">if ciphertextSize is less than 2</exception>
                 <seealso cref="EncryptionParameters">See EncryptionParameters for more details on valid encryption
                 parameters.</seealso>
                 */
-                Simulation(EncryptionParameters ^parms, BigUInt ^noise, int ciphertextSize);
-
-                /**
-                <summary>Creates a copy of a C++ Simulation.</summary>
-                <remarks>
-                Creates a copy of a C++ Simulation. The created Simulation will have the same inherent noise as the original.
-                </remarks>
-                <param name="copy">The Simulation to copy from</param>
-                */
-                Simulation(const seal::Simulation &copy);
+                Simulation(EncryptionParameters ^parms, int noiseBudget, int ciphertextSize);
 
                 /**
                 <summary>Overwrites the Simulation with the value of the specified Simulation.</summary>
@@ -91,92 +76,38 @@ namespace Microsoft
                 void Set(Simulation ^assign);
 
                 /**
-                <summary>Returns the value of inherent noise (represented by BigUInt) that is being
-                simulated.</summary>
-                <remarks>
-                <para>
-                Returns the value of inherent noise (represented by <see cref="BigUInt"/>) that is being simulated. If the returned
-                value is larger than that of <see cref="MaxNoise"/>, the encryption parameters used are possibly not large enough to
-                support the performed homomorphic operations.
-                </para>
-                <para>
-                The average-case estimates used by the simulator are typically conservative, so the size of noise tends to be
-                overestimated.
-                </para>
-                </remarks>
-                <seealso cref="NoiseBits()">See NoiseBits() to instead return the bit length of the value of inherent noise that is
-                being simulated.</seealso>
-                */
-                property BigUInt ^Noise
-                {
-                    BigUInt ^get();
-                }
+                <summary>Returns the invariant noise budget that is being simulated.</summary>
 
-                /**
-                <summary>Returns a reference to the maximal value of inherent noise (represented by BigUInt) that a ciphertext
-                encrypted using the given encryption parameters can contain and still decrypt correctly.</summary>
                 <remarks>
-                Returns a reference to the maximal value of inherent noise (represented by <see cref="BigUInt"/>) that a ciphertext encrypted using
-                the given encryption parameters can contain and still decrypt correctly. If <see cref="Noise()"/> returns a value larger than this,
-                the encryption parameters used are possibly not large enough to support the performed homomorphic operations.
+                Returns the invariant noise budget that is being simulated. If the returned value is less than or 
+                equal to 0, the encryption parameters used are possibly not large enough to support the performed 
+                homomorphic operations.
                 </remarks>
                 */
-                property BigUInt ^MaxNoise
-                {
-                    BigUInt ^get();
-                }
-
-                /**
-                <summary>Returns the bit length of the maximal value of inherent noise that a ciphertext
-                encrypted using the given encryption parameters can contain and still decrypt correctly.</summary>
-                <remarks>
-                Returns the bit length of the maximal value of inherent noise that a ciphertext encrypted using the 
-                given encryption parameters can contain and still decrypt correctly. If <see cref="NoiseBits()"/> 
-                returns a value larger than this, the encryption parameters used are possibly not large enough to 
-                support the performed homomorphic operations.
-                </remarks>
-                */
-                property int MaxNoiseBits
+                property int InvariantNoiseBudget
                 {
                     int get();
                 }
 
                 /**
-                <summary>Returns the bit length of the value of inherent noise that is being simulated.</summary>
-                <remarks>
-                <para>
-                Returns the bit length of the value of inherent noise that is being simulated.
-                </para>
-                <para>
-                The average-case estimates used by the simulator are typically conservative, so the amount of noise tends to be
-                overestimated.
-                </para>
-                </remarks>
+                <summary>Returns true or false depending on whether the encryption parameters were large enough to support 
+                the performed homomorphic operations.</summary>
                 */
-                property int NoiseBits
-                {
-                    int get();
-                }
+                bool Decrypts();
 
                 /**
-                <summary>Returns the difference between the bit lengths of the return values of maxNoise() and of noise().</summary>
+                <summary>Returns true or false depending on whether the encryption parameters were large enough to support 
+                the performed homomorphic operations.</summary>
+
                 <remarks>
-                <para>
-                Returns the difference between the bit lengths of the return values of <see cref="MaxNoise()"/> and of <see cref="Noise()"/>. This gives the user a
-                convenient tool for estimating how many, if any, arithmetic operations can still be performed on the encrypted data
-                before it becomes impossible to decrypt. If the return value is negative, the encryption parameters used are not large
-                enough to support the performed arithmetic operations.
-                </para>
-                <para>
-                The average-case estimates used by the simulator are typically conservative, so the amount of noise tends to be
-                overestimated.
-                </para>
+                Returns true or false depending on whether the encryption parameters were large enough to support the performed
+                homomorphic operations. The budgetGap parameter parameter can be used to ensure that a certain
+                amount of noise budget remains unused.
                 </remarks>
+                <param name="budgetGap">The amount of noise budget (bits) that should remain unused</param>
+                <exception cref="System::ArgumentException">if budgetGap is negative</exception>
                 */
-                property int NoiseBitsLeft
-                {
-                    int get();
-                }
+                bool Decrypts(int budgetGap);
 
                 /**
                 <summary>Returns the size of the ciphertext whose noise is modeled by the simulation.</summary>
@@ -188,57 +119,6 @@ namespace Microsoft
                 }
 
                 /**
-                <summary>Returns a reference to the coefficient modulus.</summary>
-                */
-                property BigUInt ^CoeffModulus
-                {
-                    BigUInt ^get();
-                }
-
-                /**
-                <summary>Returns a reference to the plaintext modulus.</summary>
-                */
-                property BigUInt ^PlainModulus
-                {
-                    BigUInt ^get();
-                }
-
-                /**
-                <summary>Returns true or false depending on whether the encryption parameters were large enough to support the
-                performed homomorphic operations.</summary>
-                <remarks>
-                <para>
-                Returns true or false depending on whether the encryption parameters were large enough to support the performed
-                homomorphic operations.
-                </para>
-                <para>
-                The average-case estimates used by the simulator are typically conservative, so the amount of noise tends to be
-                overestimated, and decryption might work even if Decrypts() returns false.
-                </para>
-                </remarks>
-                */
-                bool Decrypts();
-
-                /**
-                <summary>Returns true or false depending on whether the encryption parameters were large enough to support the
-                performed homomorphic operations.</summary>
-                <remarks>
-                <para>
-                Returns true or false depending on whether the encryption parameters were large enough to support the performed
-                homomorphic operations. The noiseGap parameter can be used to leave a certain number of bits between the
-                simulated noise and the noise ceiling to guarantee decryption to work despite probabilistic effects.
-                </para>
-                <para>
-                The average-case estimates used by the simulator are typically conservative, so the amount of noise tends to be
-                overestimated, and decryption might work even if Decrypts() returns false.
-                </para>
-                </remarks>
-                <param name="noiseGap">The number of bits left between the simulated noise and the noise ceiling</param>
-                <exception cref="System::ArgumentException">if noiseGap is negative</exception>
-                */
-                bool Decrypts(int noiseGap);
-
-                /**
                 <summary>Destroys the Simulation.</summary>
                 */
                 ~Simulation();
@@ -248,12 +128,20 @@ namespace Microsoft
                 */
                 !Simulation();
 
+            internal:
                 /**
                 <summary>Returns a reference to the underlying C++ Simulation.</summary>
                 */
                 seal::Simulation &GetSimulation();
 
-            internal:
+                /**
+                <summary>Creates a copy of a C++ Simulation.</summary>
+                <remarks>
+                Creates a copy of a C++ Simulation. The created Simulation will have the same inherent noise as the original.
+                </remarks>
+                <param name="copy">The Simulation to copy from</param>
+                */
+                Simulation(const seal::Simulation &copy);
 
             private:
                 seal::Simulation *simulation_;
@@ -261,35 +149,40 @@ namespace Microsoft
 
             /**
             <summary>Manipulates instances of Simulation with a public API similar to how Evaluator manipulates ciphertexts.</summary>
+            
             <remarks>
             <para>
-            Manipulates instances of <see cref="Simulation"/> with a public API similar to how Evaluator manipulates ciphertexts.
-            This makes existing code easy to run on Simulation objects instead of running it on actual encrypted data.
+            Manipulates instances of <see cref="Simulation"/> with a public API similar to how <see cref="Evaluator" /> 
+            manipulates ciphertexts. This makes existing code easy to run on Simulation objects instead of running it 
+            on actual encrypted data.
             </para>
             <para>
-            Simulation objects model the inherent noise in a ciphertext based on given encryption parameters. When performing
-            homomorphic operations on encrypted data, the quality of the ciphertexts will degrade, i.e. the inherent noise in them
-            will grow, until at a certain point decryption will fail to work. The Simulation object together with
-            SimulationEvaluator can help the user understand how the inherent noise grows in different homomorphic operations, and
-            to adjust the encryption parameters accordingly.
+            Simulation objects model the invariant noise budget in a ciphertext based on given encryption parameters.
+            When performing homomorphic operations on encrypted data, the quality of the ciphertexts will degrade,
+            i.e. the invariant noise budget will be consumed, until at a certain point the budget will reach 0, and
+            decryption will fail to work. The Simulation object together with SimulationEvaluator can help the user
+            understand how the noise budget is consumed in different homomorphic operations, and to adjust the
+            encryption parameters accordingly.
             </para>
             <para>
-            SimulationEvaluator allows the user to simulate the effect of homomorphic operations on the inherent noise in encrypted
-            data. These homomorphic operations include addition, multiplication, subtraction, negation, etc., and the result is
-            always a new Simulation object whose inherent noise is obtained using average-case analysis of the encryption scheme.
+            <see cref="SimulationEvaluator" /> allows the user to simulate the effect of homomorphic operations on 
+            the inherent noise in encrypted data. These homomorphic operations include addition, multiplication, 
+            subtraction, negation, etc., and the result is always a new Simulation object whose inherent noise is 
+            obtained using average-case analysis of the encryption scheme.
             </para>
             <para>
-            Technically speaking, the inherent noise of a ciphertext is a polynomial, but the condition for decryption working
-            depends on the size of the largest absolute value of its coefficients. It is really the size of this largest absolute
-            value that Simulation is simulating, and that we will call the "noise", the "inherent noise", or the "error", in this
-            documentation. The reader is referred to the description of the encryption scheme for more details.
+            The invariant noise polynomial of a ciphertext is a rational coefficient polynomial, such that
+            a ciphertext decrypts correctly as long as the coefficients of the invariant noise polynomial are
+            of absolute value less than 1/2. Thus, we call the infinity-norm of the invariant noise polynomial
+            the invariant noise, and for correct decryption require it to be less than 1/2. If v denotes the
+            invariant noise, we define the invariant noise budget as -log2(2v). Thus, the invariant noise budget
+            starts from some initial value, which depends on the encryption parameters, and decreases to 0 when
+            computations are performed. When the budget reaches 0, the ciphertext becomes too noisy to decrypt
+            correctly.
             </para>
             <para>
             The SimulationEvaluator class is not thread-safe and a separate SimulationEvaluator instance is needed for each
             potentially concurrent usage.
-            </para>
-            <para>
-            Accuracy of the average-case analysis depends on the encryption parameters.
             </para>
             </remarks>
             <seealso cref="Simulation">See Simulation for the object modeling the noise in ciphertexts.</seealso>
@@ -303,6 +196,19 @@ namespace Microsoft
                 SimulationEvaluator();
 
                 /**
+                <summary>Creates a new SimulationEvaluator.</summary>
+
+                <remarks>
+                Creates a new SimulationEvaluator. The user can give a <see cref="MemoryPoolHandle "/> object to use
+                a custom memory pool instead of the global memory pool (default).
+                </remarks>
+                <param name="pool">The memory pool handle</param>
+                <exception cref="System::ArgumentNullException">if pool is null</exception>
+                <seealso cref="MemoryPoolHandle">See MemoryPoolHandle for more details on memory pool handles.</seealso>
+                */
+                SimulationEvaluator(MemoryPoolHandle ^pool);
+
+                /**
                 <summary>Destroys the SimulationEvaluator.</summary>
                 */
                 ~SimulationEvaluator();
@@ -313,7 +219,46 @@ namespace Microsoft
                 !SimulationEvaluator();
 
                 /**
-                <summary>Simulates inherent noise growth in Evaluator::Relinearize() and returns the result.</summary>
+                <summary>Creates a Simulation object corresponding to a freshly encrypted ciphertext.</summary>
+                
+                <remarks>
+                Creates a Simulation object corresponding to a freshly encrypted ciphertext. The noise is estimated
+                based on the given encryption parameters, and size parameters of a virtual input plaintext polynomial, 
+                namely an upper bound plainMaxCoeffCount on the number of non-zero coefficients in the polynomial, 
+                and an upper bound plainMaxAbsValue (represented by <see cref="BigUInt" />) on the absolute value 
+                (modulo the plaintext modulus) of the polynomial coefficients.
+                </remarks>
+                <param name="parms">The encryption parameters</param>
+                <param name="plainMaxCoeffCount">An upper bound on the number of non-zero coefficients in the underlying plaintext</param>
+                <param name="plainMaxAbsValue">An upper bound on the absolute value of the coefficients in the underlying plaintext</param>
+                <exception cref="System::ArgumentNullException">if parms or plainMaxAbsValue is null</exception>
+                <exception cref="System::ArgumentException">if plainMaxCoeffCount is negative or bigger than the degree of the polynomial modulus</exception>
+                <exception cref="System::ArgumentException">if plainMaxAbsValue is bigger than the plaintext modulus divided by 2</exception>
+                */
+                Simulation ^GetFresh(EncryptionParameters ^parms, int plainMaxCoeffCount, BigUInt ^plainMaxAbsValue);
+
+                /**
+                <summary>Creates a Simulation object corresponding to a freshly encrypted ciphertext.</summary>
+
+                <remarks>
+                Creates a Simulation object corresponding to a freshly encrypted ciphertext. The noise is estimated
+                based on the given encryption parameters, and size parameters of a virtual input plaintext polynomial,
+                namely an upper bound plainMaxCoeffCount on the number of non-zero coefficients in the polynomial,
+                and an upper bound plainMaxAbsValue (represented by System::UInt64) on the absolute value (modulo the 
+                plaintext modulus) of the polynomial coefficients.
+                </remarks>
+                <param name="parms">The encryption parameters</param>
+                <param name="plainMaxCoeffCount">An upper bound on the number of non-zero coefficients in the underlying plaintext</param>
+                <param name="plainMaxAbsValue">An upper bound on the absolute value of the coefficients in the underlying plaintext</param>
+                <exception cref="System::ArgumentNullException">if parms is null</exception>
+                <exception cref="System::ArgumentException">if plainMaxCoeffCount is negative or bigger than the degree of the polynomial modulus</exception>
+                <exception cref="System::ArgumentException">if plainMaxAbsValue is bigger than the plaintext modulus divided by 2</exception>
+                */
+                Simulation ^GetFresh(EncryptionParameters ^parms, int plainMaxCoeffCount, System::UInt64 plainMaxAbsValue);
+
+                /**
+                <summary>Simulates noise budget consumption in Evaluator::Relinearize() and returns the result.</summary>
+                
                 <param name="simulation">The <see cref="Simulation"/> object to relinearize</param>
                 <exception cref="System::ArgumentNullException">if simulation is null</exception>
                 <exception cref="System::ArgumentException">if simulation has Size less than 2</exception>
@@ -322,7 +267,8 @@ namespace Microsoft
                 Simulation ^Relinearize(Simulation ^simulation);
 
                 /**
-                <summary>Simulates inherent noise growth in Evaluator::Relinearize() when a ciphertext is relinearized to a specified size and returns the result.</summary>
+                <summary>Simulates noise budget consumption in Evaluator::Relinearize() when a ciphertext is relinearized to a specified size and returns the result.</summary>
+                
                 <param name="simulation">The <see cref="Simulation"/> object to relinearize</param>
                 <param name="destinationSize"> The size of the ciphertext (represented by the output simulation) after relinearization, defaults to 2
                 <exception cref="System::ArgumentException">if destinationSize is less than 2 or greater than that of the ciphertext represented by simulation</exception>
@@ -333,7 +279,8 @@ namespace Microsoft
                 Simulation ^Relinearize(Simulation ^simulation, int destinationSize);
 
                 /**
-                <summary>Simulates inherent noise growth in Evaluator::Multiply() and returns the result.</summary>
+                <summary>Simulates noise budget consumption in Evaluator::Multiply() and returns the result.</summary>
+                
                 <param name="simulation1">The first <see cref="Simulation"/> object to multiply</param>
                 <param name="simulation2">The second <see cref="Simulation"/> object to multiply</param>
                 <exception cref="System::ArgumentNullException">if simulation1 or simulation2 is null</exception>
@@ -345,7 +292,7 @@ namespace Microsoft
                 Simulation ^Multiply(Simulation ^simulation1, Simulation ^simulation2);
 
                 /**
-                <summary>Simulates inherent noise growth in Evaluator::Square() and returns the result.</summary>
+                <summary>Simulates noise budget consumption in Evaluator::Square() and returns the result.</summary>
                 <param name="simulation">The Simulation object to square</param>
                 <exception cref="System::ArgumentException">if simulation has Size less than 2</exception>
                 <seealso cref="Evaluator::Square(BigPolyArray^)">See Evaluator::Square() for the corresponding operation on ciphertexts.</seealso>
@@ -353,7 +300,8 @@ namespace Microsoft
                 Simulation ^Square(Simulation ^simulation);
                 
                 /**
-                <summary>Simulates inherent noise growth in Evaluator::Add() and returns the result.</summary>
+                <summary>Simulates noise budget consumption in Evaluator::Add() and returns the result.</summary>
+                
                 <param name="simulation1">The first <see cref="Simulation"/> object to add</param>
                 <param name="simulation2">The second <see cref="Simulation"/> object to add</param>
                 <exception cref="System::ArgumentNullException">if simulation1 or simulation2 is null</exception>
@@ -365,7 +313,8 @@ namespace Microsoft
                 Simulation ^Add(Simulation ^simulation1, Simulation ^simulation2);
 
                 /**
-                <summary>Simulates inherent noise growth in Evaluator::AddMany() and returns the result.</summary>
+                <summary>Simulates noise budget consumption in Evaluator::AddMany() and returns the result.</summary>
+                
                 <param name="simulations">The simulations to add</param>
                 <exception cref="System::ArgumentNullException">if simulations or any of its elements is null</exception>
                 <exception cref="System::ArgumentException">if simulations is empty</exception>
@@ -377,7 +326,8 @@ namespace Microsoft
                 Simulation ^AddMany(System::Collections::Generic::List<Simulation^> ^simulations);
 
                 /**
-                <summary>Simulates inherent noise growth in Evaluator::Sub() and returns the result.</summary>
+                <summary>Simulates noise budget consumption in Evaluator::Sub() and returns the result.</summary>
+                
                 <param name="simulation1">The <see cref="Simulation"/> object to subtract from</param>
                 <param name="simulation2">The <see cref="Simulation"/> object to subtract</param>
                 <exception cref="System::ArgumentNullException">if simulation1 or simulation2 is null</exception>
@@ -389,9 +339,10 @@ namespace Microsoft
                 Simulation ^Sub(Simulation ^simulation1, Simulation ^simulation2);
 
                 /**
-                <summary>Simulates inherent noise growth in Evaluator::MultiplyPlain() given an upper bound for the maximum number of
+                <summary>Simulates noise budget consumption in Evaluator::MultiplyPlain() given an upper bound for the maximum number of
                 non-zero coefficients and an upper bound for their absolute value (represented by <see cref="BigUInt"/>) in the encoding of the
                 plaintext multiplier and returns the result.</summary>
+
                 <param name="simulation">The <see cref="Simulation"/> object to multiply</param>
                 <param name="plainMaxCoeffCount">An upper bound on the number of non-zero coefficients in the plain polynomial to multiply</param>
                 <param name="plainMaxAbsValue">An upper bound (represented by <see cref="BigUInt"/>) on the absolute value of coefficients in the
@@ -405,12 +356,13 @@ namespace Microsoft
                 Simulation ^MultiplyPlain(Simulation ^simulation, int plainMaxCoeffCount, BigUInt ^plainMaxAbsValue);
 
                 /**
-                <summary>Simulates inherent noise growth in Evaluator::MultiplyPlain() given an upper bound for the maximum number of
-                non-zero coefficients and an upper bound for their absolute value (represented by <see cref="System::UInt64"/>) in the encoding of the
+                <summary>Simulates noise budget consumption in Evaluator::MultiplyPlain() given an upper bound for the maximum number of
+                non-zero coefficients and an upper bound for their absolute value (represented by System::UInt64) in the encoding of the
                 plaintext multiplier and returns the result.</summary>
+
                 <param name="simulation">The <see cref="Simulation"/> object to multiply</param>
                 <param name="plainMaxCoeffCount">An upper bound on the number of non-zero coefficients in the plain polynomial to multiply</param>
-                <param name="plainMaxAbsValue">An upper bound (represented by <see cref="System::UInt64"/>) on the absolute value of coefficients in the
+                <param name="plainMaxAbsValue">An upper bound (represented by System::UInt64) on the absolute value of coefficients in the
                 plain polynomial to multiply</param>
                 <exception cref="System::ArgumentNullException">if simulation is null</exception>
                 <exception cref="System::ArgumentException">if simulation has Size less than 2</exception>
@@ -421,25 +373,64 @@ namespace Microsoft
                 Simulation ^MultiplyPlain(Simulation ^simulation, int plainMaxCoeffCount, System::UInt64 plainMaxAbsValue);
 
                 /**
-                <summary>Simulates inherent noise growth in Evaluator::AddPlain() and returns the result.</summary>
+                <summary>Simulates noise budget consumption in Evaluator::AddPlain() and returns the result.</summary>
+                
                 <param name="simulation">The <see cref="Simulation"/> object to add to</param>
-                <exception cref="System::ArgumentNullException">if simulation is null</exception>
+                <param name="plainMaxCoeffCount">An upper bound on the number of non-zero coefficients in the plain polynomial to multiply</param>
+                <param name="plainMaxAbsValue">An upper bound (represented by <see cref="BigUInt"/>) on the absolute value of coefficients in the
+                plain polynomial to add</param>
+                <exception cref="System::ArgumentNullException">if simulation or plainMaxAbsValue is null</exception>
                 <exception cref="System::ArgumentException">if simulation has Size less than 2</exception>
+                <exception cref="System::ArgumentException">if plainMaxCoeffCount is out of range</exception>
                 <seealso cref="Evaluator::AddPlain(BigPolyArray^,BigPoly^)">See Evaluator::AddPlain() for the corresponding operation on ciphertexts.</seealso>
                 */
-                Simulation ^AddPlain(Simulation ^simulation);
+                Simulation ^AddPlain(Simulation ^simulation, int plainMaxCoeffCount, BigUInt ^plainMaxAbsValue);
 
                 /**
-                <summary>Simulates inherent noise growth in Evaluator::SubPlain() and returns the result.</summary>
-                <param name="simulation">The <see cref="Simulation"/> object to subtract from</param>
+                <summary>Simulates noise budget consumption in Evaluator::AddPlain() and returns the result.</summary>
+
+                <param name="simulation">The <see cref="Simulation"/> object to add to</param>
+                <param name="plainMaxCoeffCount">An upper bound on the number of non-zero coefficients in the plain polynomial to multiply</param>
+                <param name="plainMaxAbsValue">An upper bound (represented by System::UInt64) on the absolute value of coefficients 
+                in the plain polynomial to add</param>
                 <exception cref="System::ArgumentNullException">if simulation is null</exception>
                 <exception cref="System::ArgumentException">if simulation has Size less than 2</exception>
-                <seealso cref="Evaluator::SubPlain(BigPolyArray^,BigPoly^)">See Evaluator::SubPlain() for the corresponding operation on ciphertexts.</seealso>
+                <exception cref="System::ArgumentException">if plainMaxCoeffCount is out of range</exception>
+                <seealso cref="Evaluator::AddPlain(BigPolyArray^,BigPoly^)">See Evaluator::AddPlain() for the corresponding operation on ciphertexts.</seealso>
                 */
-                Simulation ^SubPlain(Simulation ^simulation);
+                Simulation ^AddPlain(Simulation ^simulation, int plainMaxCoeffCount, System::UInt64 plainMaxAbsValue);
 
                 /**
-                <summary>Simulates inherent noise growth in Evaluator::MultiplyMany() and returns the result.</summary>
+                <summary>Simulates noise budget consumption in Evaluator::SubPlain() and returns the result.</summary>
+                
+                <param name="simulation">The <see cref="Simulation"/> object to subtract from</param>
+                <param name="plainMaxCoeffCount">An upper bound on the number of non-zero coefficients in the plain polynomial to multiply</param>
+                <param name="plainMaxAbsValue">An upper bound (represented by <see cref="BigUInt"/>) on the absolute value of coefficients in the
+                plain polynomial to subtract</param>
+                <exception cref="System::ArgumentNullException">if simulation or plainMaxAbsValue is null</exception>
+                <exception cref="System::ArgumentException">if simulation has Size less than 2</exception>
+                <exception cref="System::ArgumentException">if plainMaxCoeffCount is out of range</exception>
+                <seealso cref="Evaluator::SubPlain(BigPolyArray^,BigPoly^)">See Evaluator::SubPlain() for the corresponding operation on ciphertexts.</seealso>
+                */
+                Simulation ^SubPlain(Simulation ^simulation, int plainMaxCoeffCount, BigUInt ^plainMaxAbsValue);
+
+                /**
+                <summary>Simulates noise budget consumption in Evaluator::SubPlain() and returns the result.</summary>
+
+                <param name="simulation">The <see cref="Simulation"/> object to subtract from</param>
+                <param name="plainMaxCoeffCount">An upper bound on the number of non-zero coefficients in the plain polynomial to multiply</param>
+                <param name="plainMaxAbsValue">An upper bound (represented by System::UInt64) on the absolute value of coefficients 
+                in the plain polynomial to subtract</param>
+                <exception cref="System::ArgumentNullException">if simulation is null</exception>
+                <exception cref="System::ArgumentException">if simulation has Size less than 2</exception>
+                <exception cref="System::ArgumentException">if plainMaxCoeffCount is out of range</exception>
+                <seealso cref="Evaluator::SubPlain(BigPolyArray^,BigPoly^)">See Evaluator::SubPlain() for the corresponding operation on ciphertexts.</seealso>
+                */
+                Simulation ^SubPlain(Simulation ^simulation, int plainMaxCoeffCount, System::UInt64 plainMaxAbsValue);
+
+                /**
+                <summary>Simulates noise budget consumption in Evaluator::MultiplyMany() and returns the result.</summary>
+                
                 <param name="simulations">The list of <see cref="Simulation"/> objects to multiply</param>
                 <exception cref="System::ArgumentNullException">if simulations list or any of its elements is null</exception>
                 <exception cref="System::ArgumentException">if simulations list is empty</exception>
@@ -450,7 +441,8 @@ namespace Microsoft
                 Simulation ^MultiplyMany(System::Collections::Generic::List<Simulation^> ^simulations);
 
                 /**
-                <summary>Simulates inherent noise growth in Evaluator::Exponentiate() and returns the result.</summary>
+                <summary>Simulates noise budget consumption in Evaluator::Exponentiate() and returns the result.</summary>
+                
                 <param name="simulation">The <see cref="Simulation"/> object to raise to a power</param>
                 <param name="exponent">The power to raise the <see cref="Simulation"/> object to</param>
                 <exception cref="System::ArgumentNullException">if simulation is null</exception>
@@ -461,7 +453,8 @@ namespace Microsoft
                 Simulation ^Exponentiate(Simulation ^simulation, System::UInt64 exponent);
 
                 /**
-                <summary>Simulates inherent noise growth in Evaluator::Negate() and returns the result.</summary>
+                <summary>Simulates noise budget consumption in Evaluator::Negate() and returns the result.</summary>
+                
                 <param name="simulation">The <see cref="Simulation"/> object to negate</param>
                 <exception cref="System::ArgumentNullException">if simulation is null</exception>
                 <exception cref="System::ArgumentException">if simulation has Size less than 2</exception>

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdexcept>
+#include "memorypoolhandle.h"
 #include "util/modulus.h"
 #include "util/mempool.h"
 
@@ -11,11 +12,17 @@ namespace seal
         class NTTTables
         {
         public:
-            NTTTables();
+            NTTTables(const MemoryPoolHandle &pool);
 
-            NTTTables(int coeff_count_power, const Modulus &modulus);
+            NTTTables(int coeff_count_power, const Modulus &modulus, const MemoryPoolHandle &pool);
 
-            ~NTTTables();
+            NTTTables(const NTTTables &copy);
+
+            NTTTables &operator =(const NTTTables &assign);
+            
+            NTTTables(NTTTables &&source) = default;
+
+            NTTTables &operator =(NTTTables &&assign) = default;
 
             inline bool is_generated() const
             {
@@ -158,15 +165,13 @@ namespace seal
             }
 
         private:
-            NTTTables(const NTTTables &copy) = delete;
-
-            NTTTables &operator =(const NTTTables &assign) = delete;
-
             // Computed bit-scrambled vector of first 1 << coeff_count_power powers of a primitive root.
-            void ntt_powers_of_primitive_root(std::uint64_t *root, MemoryPool &pool, std::uint64_t *destination);
+            void ntt_powers_of_primitive_root(std::uint64_t *root, std::uint64_t *destination);
 
             // Scales the elements of a vector returned by powers_of_primitive_root(...) by word_size/modulus and rounds down.
-            void ntt_scale_powers_of_primitive_root(std::uint64_t *input, MemoryPool &pool, std::uint64_t *destination);
+            void ntt_scale_powers_of_primitive_root(std::uint64_t *input, std::uint64_t *destination);
+
+            MemoryPoolHandle pool_;
 
             // Size coeff_uint64_count_ * coeff_count_
             Pointer root_powers_;
@@ -188,7 +193,9 @@ namespace seal
 
             int coeff_uint64_count_;
 
-            // Size coeff_uint64_count_
+            // Allocation for modulus, size coeff_uint64_count_
+            Pointer modulus_alloc_;
+
             Modulus modulus_;
 
             // Size uint64_count_

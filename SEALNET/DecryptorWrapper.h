@@ -2,6 +2,7 @@
 
 #include "decryptor.h"
 #include "BigPolyArrayWrapper.h"
+#include "EncryptionParamsWrapper.h"
 
 namespace Microsoft
 {
@@ -9,12 +10,6 @@ namespace Microsoft
     {
         namespace SEAL
         {
-            ref class EncryptionParameters;
-
-            ref class BigPoly;
-
-            ref class BigUInt;
-
             /**
             <summary>Decrypts BigPolyArray objects into BigPoly objects.</summary>
 
@@ -39,6 +34,32 @@ namespace Microsoft
                 parameters.</seealso>
                 */
                 Decryptor(EncryptionParameters ^parms, BigPoly ^secretKey);
+
+                /**
+                <summary>Creates a Decryptor instance initialized with the specified encryption parameters and secret key.</summary>
+
+                <remarks>
+                Creates a Decryptor instance initialized with the specified encryption parameters and secret key.
+                The user can give a <see cref="MemoryPoolHandle "/> object to use a custom memory pool instead 
+                of the global memory pool (default).
+                </remarks>
+                <param name="parms">The encryption parameters</param>
+                <param name="secretKey">The secret key</param>
+                <param name="pool">The memory pool handle</param>
+                <exception cref="System::ArgumentNullException">if parms, secretKey, or pool is null</exception>
+                <exception cref="System::ArgumentException">if encryption parameters or secret key are not valid</exception>
+                <seealso cref="EncryptionParameters">See EncryptionParameters for more details on valid encryption parameters.</seealso>
+                <seealso cref="MemoryPoolHandle">See MemoryPoolHandle for more details on memory pool handles.</seealso>
+                */
+                Decryptor(EncryptionParameters ^parms, BigPoly ^secretKey, MemoryPoolHandle ^pool);
+
+                /**
+                <summary>Creates a copy of a Decryptor.</summary>
+
+                <param name="copy">The Decryptor to copy from</param>
+                <exception cref="System::ArgumentNullException">if copy is null</exception>
+                */
+                Decryptor(Decryptor ^copy);
 
                 /**
                 <summary>Returns the secret key used by the Decryptor.</summary>
@@ -72,22 +93,43 @@ namespace Microsoft
                 BigPoly ^Decrypt(BigPolyArray ^encrypted);
 
                 /**
-                <summary>Computes and returns the number of bits of inherent noise in a ciphertext.</summary>
-
+                <summary>Computes the invariant noise budget (in bits) of a ciphertext.</summary>
+                
                 <remarks>
                 <para>
-                Computes and returns the number of bits of inherent noise in a ciphertext. The user can easily compare this with the
-                maximum possible value returned by the function EncryptionParameters::InherentNoiseBitsMax().
+                Computes the invariant noise budget (in bits) of a ciphertext. The invariant noise budget measures 
+                the amount of room there is for the noise to grow while ensuring correct decryptions.
                 </para>
                 <para>
-                Technically speaking, the inherent noise of a ciphertext is a polynomial, but the condition for decryption working
-                depends on the size of the largest absolute value of its coefficients. It is this largest absolute value that we will
-                call the "noise", the "inherent noise", or the "error", in this documentation. The reader is referred to the
-                description of the encryption scheme for more details.
+                The invariant noise polynomial of a ciphertext is a rational coefficient polynomial, such that
+                a ciphertext decrypts correctly as long as the coefficients of the invariant noise polynomial are
+                of absolute value less than 1/2. Thus, we call the infinity-norm of the invariant noise polynomial
+                the invariant noise, and for correct decryption require it to be less than 1/2. If v denotes the
+                invariant noise, we define the invariant noise budget as -log2(2v). Thus, the invariant noise budget
+                starts from some initial value, which depends on the encryption parameters, and decreases to 0 when
+                computations are performed. When the budget reaches 0, the ciphertext becomes too noisy to decrypt
+                correctly.
                 </para>
                 </remarks>
                 <param name="encrypted">The ciphertext</param>
-                <exception cref="System::ArgumentException">if the ciphertext is not a valid ciphertext for the encryption
+                <exception cref="System::ArgumentNullException">if encrypted is null</exception>
+                <exception cref="System::ArgumentException">if encrypted is not a valid ciphertext for the encryption
+                parameters</exception>
+                */
+                int InvariantNoiseBudget(BigPolyArray ^encrypted);
+
+                /**
+                <summary>Computes and returns the number of bits of inherent noise in a ciphertext.</summary>
+
+                <remarks>
+                Computes and returns the number of bits of inherent noise in a ciphertext. The user can easily compare this 
+                with the maximum possible value returned by the function EncryptionParameters::InherentNoiseBitsMax(). 
+                Instead of this function, consider using <see cref="InvariantNoiseBudget()"/>, which has several subtle 
+                advantages.
+                </remarks>
+                <param name="encrypted">The ciphertext</param>
+                <exception cref="System::ArgumentNullException">if encrypted is null</exception>
+                <exception cref="System::ArgumentException">if encrypted is not a valid ciphertext for the encryption
                 parameters</exception>
                 <seealso cref="InherentNoise">See InherentNoise for computing the exact size of inherent noise.</seealso>
                 */
@@ -97,22 +139,16 @@ namespace Microsoft
                 <summary>Computes the inherent noise in a ciphertext.</summary>
 
                 <remarks>
-                <para>
                 Computes the inherent noise in a ciphertext. The result is written in a BigUInt given as a parameter. The user can
                 easily compare this with the maximum possible value returned by the function EncryptionParameters::inherentNoiseMax().
                 It is often easier to analyze the size of the inherent noise by using the functions <see cref="InherentNoiseBits"/> 
-                and EncryptionParameters::InherentNoiseMax().
-                </para>
-                <para>
-                Technically speaking, the inherent noise of a ciphertext is a polynomial, but the condition for decryption working
-                depends on the size of the largest absolute value of its coefficients. It is this largest absolute value that we will
-                call the "noise", the "inherent noise", or the "error", in this documentation. The reader is referred to the
-                description of the encryption scheme for more details.
-                </para>
+                and EncryptionParameters::InherentNoiseMax(). Instead of this function, consider using 
+                <see cref="InvariantNoiseBudget()"/>, which has several subtle advantages.
                 </remarks>
                 <param name="encrypted">The ciphertext</param>
                 <param name="destination">The BigUInt to overwrite with the inherent noise</param>
-                <exception cref="System::ArgumentException">if the ciphertext is not a valid ciphertext for the encryption
+                <exception cref="System::ArgumentNullException">if encrypted or destination is null</exception>
+                <exception cref="System::ArgumentException">if encrypted is not a valid ciphertext for the encryption
                 parameters</exception>
                 <seealso cref="InherentNoiseBits">See InherentNoiseBits for returning the significant bit count of the 
                 inherent noise instead.</seealso>
@@ -129,12 +165,11 @@ namespace Microsoft
                 */
                 !Decryptor();
 
+            internal:
                 /**
                 <summary>Returns a reference to the underlying C++ Decryptor.</summary>
                 */
                 seal::Decryptor &GetDecryptor();
-
-            internal:
 
             private:
                 seal::Decryptor *decryptor_;

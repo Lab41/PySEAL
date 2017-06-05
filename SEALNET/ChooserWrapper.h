@@ -4,6 +4,12 @@
 #include "simulator.h"
 #include "encoder.h"
 #include "chooser.h"
+#include "BigUIntWrapper.h"
+#include "BigPolyArrayWrapper.h"
+#include "SimulatorWrapper.h"
+#include "EncryptionParamsWrapper.h"
+#include "EncoderWrapper.h"
+#include "MemoryPoolHandleWrapper.h"
 
 namespace Microsoft
 {
@@ -11,65 +17,66 @@ namespace Microsoft
     {
         namespace SEAL
         {
-            ref class BigUInt;
-
-            ref class Simulation;
-
-            ref class EncryptionParameters;
-
             ref class ChooserEvaluator;
 
             ref class ChooserEncoder;
 
             ref class ChooserEncryptor;
 
-            ref class IntegerEncoder;
-
             /**
             <summary>Models ciphertexts for the automatic parameter selection module.</summary>
+
             <remarks>
             <para>
-            Models ciphertexts for the automatic parameter selection module. Choosing appropriate and secure parameters for
-            homomorphic cryptosystems is difficult, and beyond what a non-expert user should have to worry about. The user
-            programs their computations as they normally would, but replace plaintexts with ChooserPoly objects. When the program
-            is executed, ChooserPoly objects store the computation as a directed acyclic graph, and can later be used to estimate
-            the inherent noise growth in the stored computation. The estimated inherent noise in the output ciphertext is given by
-            the <see cref="Simulate()"/> function. This class is a part of the automatic parameter selection module.
+            Models ciphertexts for the automatic parameter selection module. Choosing appropriate and secure
+            parameters for homomorphic cryptosystems is difficult, and beyond what a non-expert user should have
+            to worry about. The user programs their computations as they normally would, but replace plaintexts with
+            ChooserPoly objects. When the program is executed, ChooserPoly objects store the computation as a directed
+            acyclic graph, and can later be used to estimate the invariant noise budget consumption in the stored
+            computation. The estimated noise budget in the output ciphertext is given by the <see cref="Simulate()"/> 
+            function. This class is a part of the automatic parameter selection module.
             </para>
             <para>
-            Each instance of ChooserPoly stores an estimate of the number of non-zero coefficients, and an estimate for their
-            largest absolute value (represented by <see cref="BigUInt"/>) that a plaintext polynomial can be expected to contain after some
-            number of homomorphic operations have been performed on it. In addition, each ChooserPoly stores a directed acyclic
-            graph of computations that it has gone through (operation history).
+            Each instance of ChooserPoly stores an estimate of the number of non-zero coefficients, and an estimate
+            for their largest absolute value (represented by <see cref="BigUInt"/>) that a plaintext polynomial can 
+            be expected to contain after some number of homomorphic operations have been performed on it. In addition,
+            each ChooserPoly stores a directed acyclic graph of computations that it has gone through (operation history).
             </para>
             <para>
-            Instances of ChooserPoly can be manipulated using an instance of <see cref="ChooserEvaluator"/>, which has a public API similar to
-            Evaluator, making existing code easy to run on ChooserPoly objects instead of running it on actual encrypted data. In
-            other words, using <see cref="ChooserEvaluator"/>, ChooserPoly objects can be added, multiplied, subtracted, negated, etc., and the
-            result is always a new ChooserPoly object whose estimated inherent noise can be obtained using the <see cref="Simulate()"/>
-            function, which uses average-case analysis of the noise behavior in the encryption scheme.
+            Instances of ChooserPoly can be manipulated using an instance of <see cref="ChooserEvaluator"/>, which 
+            has a public API similar to Evaluator, making existing code easy to run on ChooserPoly objects instead 
+            of running it on actual encrypted data. In other words, using <see cref="ChooserEvaluator"/>, ChooserPoly 
+            objects can be added, multiplied, subtracted, negated, etc., and the result is always a new ChooserPoly 
+            object whose estimated noise budget can be obtained using the <see cref="Simulate()"/> function, 
+            which uses heuristic worst-case analysis of the noise behavior in the encryption scheme.
             </para>
             <para>
-            Technically speaking, the inherent noise of a ciphertext is a polynomial, but the condition for decryption working
-            depends on the size of the largest absolute value of its coefficients. It is really the size of this largest absolute
-            value that Simulation is simulating, and that we will call the "noise", the "inherent noise", or the "error", in this
-            documentation. The reader is referred to the description of the encryption scheme for more details.
+            The invariant noise polynomial of a ciphertext is a rational coefficient polynomial, such that
+            a ciphertext decrypts correctly as long as the coefficients of the invariant noise polynomial are
+            of absolute value less than 1/2. Thus, we call the infinity-norm of the invariant noise polynomial
+            the invariant noise, and for correct decryption require it to be less than 1/2. If v denotes the
+            invariant noise, we define the invariant noise budget as -log2(2v). Thus, the invariant noise budget
+            starts from some initial value, which depends on the encryption parameters, and decreases to 0 when
+            computations are performed. When the budget reaches 0, the ciphertext becomes too noisy to decrypt
+            correctly.
             </para>
             <para>
-            In general, reading a ChooserPoly is thread-safe while mutating is not. Specifically, concurrent access must be avoided
-            if the size bounds of the modeled plaintext data, or the operation history are expected to be changed.
+            In general, reading a ChooserPoly is thread-safe while mutating is not. Specifically, concurrent 
+            access must be avoided if the size bounds of the modeled plaintext data, or the operation history 
+            are expected to be changed.
             </para>
             </remarks>
             <seealso cref="ChooserEvaluator">See ChooserEvaluator for manipulating instances of ChooserPoly.</seealso>
             <seealso cref="ChooserEncoder">See ChooserEncoder for modeling the behavior of encoding with ChooserPoly objects.</seealso>
             <seealso cref="ChooserEncryptor">See ChooserEncryptor for modeling the behavior of encryption with ChooserPoly objects.</seealso>
-            <seealso cref="Simulation">See Simulation for the class that handles the inherent noise growth estimates.</seealso>
+            <seealso cref="Simulation">See Simulation for the class that handles the noise budget consumption estimates.</seealso>
             */
             public ref class ChooserPoly
             {
             public:
                 /**
                 <summary>Creates a ChooserPoly object.</summary>
+
                 <remarks>
                 Creates a ChooserPoly object. The ChooserPoly instance models a plaintext with no non-zero coefficients. More
                 precisely, the number of non-zero coefficients, and the upper bound on the absolute values of the coefficients of the
@@ -100,8 +107,8 @@ namespace Microsoft
 
                 <remarks>
                 Creates a ChooserPoly object. The ChooserPoly instance models plaintext data with a given bound on the number of
-                non-zero coefficients, and a given bound on the size of the absolute value of the coefficients (represented by
-                <see cref="System::UInt64"/>). This constructor sets the operation history to that of a freshly encrypted ciphertext.
+                non-zero coefficients, and a given bound on the size of the absolute value of the coefficients (represented by 
+                System::UInt64. This constructor sets the operation history to that of a freshly encrypted ciphertext.
                 </remarks>
                 <param name="maxCoeffCount">An upper bound on the number of non-zero coefficients in the modeled plaintext data</param>
                 <param name="maxAbsValue">An upper bound on the absolute value of the coefficients in the modeled plaintext
@@ -156,6 +163,7 @@ namespace Microsoft
                 /**
                 <summary>Gets/sets the upper bound on the absolute value of coefficients (represented by <see cref="BigUInt"/>) of the
                 plaintext modeled by the current instance of ChooserPoly.</summary>
+
                 <exception cref="System::ArgumentNullException">if value is null</exception>
                 */
                 property BigUInt ^MaxAbsValue
@@ -166,16 +174,21 @@ namespace Microsoft
                 }
 
                 /**
-                <summary>Determines whether given encryption parameters are large enough to support operations in the operation history
-                of the current ChooserPoly.</summary>
+                <summary>Determines whether given encryption parameters are large enough to support operations in 
+                the operation history of the current ChooserPoly.</summary>
+
                 <remarks>
                 <para>
-                Determines whether given encryption parameters are large enough to support operations in the operation history of the
-                current ChooserPoly. A ChooserPoly produced as a result of some number of arithmetic operations (with
-                <see cref="ChooserEvaluator"/>) contains information about bounds on the number of non-zero coefficients in a corresponding
-                plaintext polynomial and on the absolute values of the coefficients. For decryption to work correctly, these bounds
-                must be small enough to be supported by the encryption parameters. Additionally, the encryption parameters must be
-                large enough to support inherent noise growth in the performed operations.
+                Determines whether given encryption parameters are large enough to support operations in the operation 
+                history of the current ChooserPoly. A ChooserPoly produced as a result of some number of arithmetic
+                operations (with <see cref="ChooserEvaluator"/>) contains information about bounds on the number of 
+                non-zero coefficients in a corresponding plaintext polynomial and on the absolute values of the 
+                coefficients. For decryption to work correctly, these bounds must be small enough to be supported
+                by the encryption parameters. Additionally, the encryption parameters must be large enough to provide 
+                enough invariant noise budget for the performed operations.
+                </para>
+                <para>
+                The budgetGap parameter can be used to ensure that a certain amount of noise budget remains unused.
                 </para>
                 <para>
                 The return value is true or false depending on whether given encryption parameters are large enough to support the
@@ -183,54 +196,24 @@ namespace Microsoft
                 </para>
                 </remarks>
                 <param name="parms">The encryption parameters</param>
+                <param name="budgetGap">The amount of noise budget (bits) that should remain unused</param>
                 <exception cref="System::ArgumentNullException">if parms is null</exception>
                 <exception cref="System::InvalidOperationException">if the current operation history is null, i.e. the current ChooserPoly models a
                 plaintext polynomial</exception>
                 <exception cref="System::ArgumentException">if encryption parameters are not valid</exception>
+                <exception cref="System::ArgumentException">if budgetGap is negative</exception>
                 <seealso cref="EncryptionParameters">See EncryptionParameters for more details on valid encryption
                 parameters.</seealso>
-                <seealso cref="Simulation">See Simulation for more details on the inherent noise growth simulation.</seealso>
+                <seealso cref="Simulation">See Simulation for the class that handles the noise budget consumption estimates.</seealso>
                 */
-                bool TestParameters(EncryptionParameters ^parms);
+                bool TestParameters(EncryptionParameters ^parms, int budgetGap);
 
                 /**
-                <summary>Determines whether given encryption parameters are large enough to support operations in the operation history
-                of the current ChooserPoly.</summary>
-                <remarks>
-                <para>
-                Determines whether given encryption parameters are large enough to support operations in the operation history of the
-                current ChooserPoly. A ChooserPoly produced as a result of some number of arithmetic operations (with
-                <see cref="ChooserEvaluator"/>) contains information about bounds on the number of non-zero coefficients in a corresponding
-                plaintext polynomial and on the absolute values of the coefficients. For decryption to work correctly, these bounds
-                must be small enough to be supported by the encryption parameters. Additionally, the encryption parameters must be
-                large enough to support inherent noise growth in the performed operations.
-                </para>
-                <para>
-                The noiseGap parameter can be used to leave a certain number of bits between the
-                simulated noise and the noise ceiling to guarantee decryption to work despite probabilistic effects.
-                </para>
-                <para>
-                The return value is true or false depending on whether given encryption parameters are large enough to support the
-                operations in the operation history of the current ChooserPoly.
-                </para>
-                </remarks>
-                <param name="parms">The encryption parameters</param>
-                <param name="noiseGap">The number of bits left between the simulated noise and the noise ceiling</param>
-                <exception cref="System::ArgumentNullException">if parms is null</exception>
-                <exception cref="System::InvalidOperationException">if the current operation history is null, i.e. the current ChooserPoly models a
-                plaintext polynomial</exception>
-                <exception cref="System::ArgumentException">if encryption parameters are not valid</exception>
-                <exception cref="System::ArgumentException">if noiseGap is negative</exception>
-                <seealso cref="EncryptionParameters">See EncryptionParameters for more details on valid encryption
-                parameters.</seealso>
-                <seealso cref="Simulation">See Simulation for more details on the inherent noise growth simulation.</seealso>
-                */
-                bool TestParameters(EncryptionParameters ^parms, int noiseGap);
+                <summary>Simulates noise budget consumption in the operation history of the current instance of 
+                ChooserPoly.</summary>
 
-                /**
-                <summary>Simulates inherent noise growth in the operation history of the current instance of ChooserPoly.</summary>
                 <remarks>
-                Simulates inherent noise growth in the operation history of the current instance of ChooserPoly.
+                Simulates noise budget consumption in the operation history of the current instance of ChooserPoly.
                 The return value is a Simulation object.
                 </remarks>
                 <param name="parms">The encryption parameters</param>
@@ -240,20 +223,18 @@ namespace Microsoft
                 <exception cref="System::ArgumentException">if encryption parameters are not valid</exception>
                 <seealso cref="EncryptionParameters">See EncryptionParameters for more details on valid encryption
                 parameters.</seealso>
-                <seealso cref="Simulation">See Simulation for more details on the inherent noise growth simulation.</seealso>
+                <seealso cref="Simulation">See Simulation for the class that handles the noise budget consumption estimates.</seealso>
                 */
                 Simulation ^Simulate(EncryptionParameters ^parms);
 
                 /**
                 <summary>Sets the bounds on the degree and the absolute value of the coefficients of the modeled plaintext polynomial
                 to zero, and sets the operation history to null.</summary>
+
                 <remarks>
                 <para>
                 Sets the bounds on the degree and the absolute value of the coefficients of the modeled plaintext polynomial to zero,
                 and sets the operation history to null.
-                </para>
-                <para>
-                This function is not thread-safe.
                 </para>
                 <para>
                 Note that a null operation history is not the same as that of a freshly encrypted ciphertext.
@@ -271,9 +252,6 @@ namespace Microsoft
                 Sets the operation history to that of a freshly encrypted ciphertext. This function leaves the bounds on the degree and
                 the absolute value of the coefficients of the modeled plaintext polynomial unchanged.
                 </para>
-                <para>
-                This function is not thread-safe.
-                </para>
                 </remarks>
                 <seealso cref="MaxCoeffCount">See MaxCoeffCount to set the bound on the degree of the modeled plaintext polynomial.</seealso>
                 <seealso cref="MaxAbsValue()">See MaxAbsValue to set the bound on the absolute value of coefficients of the modeled
@@ -281,12 +259,12 @@ namespace Microsoft
                 */
                 void SetFresh();
 
+            internal:
                 /**
                 <summary>Returns a reference to the underlying C++ ChooserPoly.</summary>
                 */
                 seal::ChooserPoly &GetChooserPoly();
 
-            internal:
                 /**
                 <summary>Creates a deep copy of a C++ ChooserPoly.</summary>
                 <remarks>
@@ -305,26 +283,33 @@ namespace Microsoft
             <summary>Models arithmetic operations on ChooserPoly objects rather than performing them on real data.</summary>
             <remarks>
             <para>
-            Models arithmetic operations on <see cref="ChooserPoly"/> objects rather than performing them on real data. The class
-            ChooserEvaluator has a public API similar to that of Evaluator, making it easy for the user to run existing code on
-            <see cref="ChooserPoly"/> objects rather than on actual data. All of these operations take as input a varying number of <see cref="ChooserPoly"/>
-            objects and return a new one with an appropriately extended operation history. This class is a part of the automatic
-            parameter selection module.
+            Models arithmetic operations on <see cref="ChooserPoly"/> objects rather than performing them on real 
+            data. The class ChooserEvaluator has a public API similar to that of Evaluator, making it easy for 
+            the user to run existing code on <see cref="ChooserPoly"/> objects rather than on actual data. All of 
+            these operations take as input a varying number of <see cref="ChooserPoly"/> objects and return a new 
+            one with an appropriately extended operation history. This class is a part of the automatic parameter 
+            selection module.
             </para>
             <para>
-            Technically speaking, the inherent noise of a ciphertext is a polynomial, but the condition for decryption working
-            depends on the size of the largest absolute value of its coefficients. It is really the size of this largest absolute
-            value that <see cref="Simulation"/> is simulating, and that we will call the "noise", the "inherent noise", or the "error", in this
-            documentation. The reader is referred to the description of the encryption scheme for more details.
+            The invariant noise polynomial of a ciphertext is a rational coefficient polynomial, such that
+            a ciphertext decrypts correctly as long as the coefficients of the invariant noise polynomial are
+            of absolute value less than 1/2. Thus, we call the infinity-norm of the invariant noise polynomial
+            the invariant noise, and for correct decryption require it to be less than 1/2. If v denotes the
+            invariant noise, we define the invariant noise budget as -log2(2v). Thus, the invariant noise budget
+            starts from some initial value, which depends on the encryption parameters, and decreases to 0 when
+            computations are performed. When the budget reaches 0, the ciphertext becomes too noisy to decrypt
+            correctly.
             </para>
             </remarks>
-            <seealso cref="ChooserPoly">See ChooserPoly for the object modeling encrypted/plaintext data for automatic parameter
-            selection.</seealso>
-            <seealso cref="ChooserEncoder">See ChooserEncoder for modeling the behavior of encoding with ChooserPoly
-            objects.</seealso>
-            <seealso cref="ChooserEncryptor">See ChooserEncryptor for modeling the behavior of encryption with ChooserPoly
-            objects.</seealso>
-            <seealso cref="Simulation">See Simulation for the class that handles the inherent noise growth estimates.</seealso>
+            <seealso cref="ChooserPoly">See ChooserPoly for the object modeling encrypted/plaintext data 
+            for automatic parameter selection.</seealso>
+            <seealso cref="ChooserEncoder">See ChooserEncoder for modeling the behavior of encoding with 
+            ChooserPoly objects.</seealso>
+            <seealso cref="ChooserEncryptor">See ChooserEncryptor for modeling the behavior of encryption
+            with ChooserPoly objects.</seealso>
+            <seealso cref="Simulation">See Simulation for the class that handles the noise budget consumption 
+            estimates.</seealso>
+
             */
             public ref class ChooserEvaluator
             {
@@ -333,6 +318,18 @@ namespace Microsoft
                 <summary>Creates a ChooserEvaluator.</summary>
                 */
                 ChooserEvaluator();
+
+                /**
+                <summary>Creates a ChooserEvaluator.</summary>
+
+                <remarks>
+                Creates a ChooserEvaluator. The user can give a <see cref="MemoryPoolHandle "/> object 
+                to use a custom memory pool instead of the global memory pool (default).
+                </remarks>
+                <param name="pool">The memory pool handle</param>
+                <exception cref="System::ArgumentNullException">if pool is null</exception>
+                */
+                ChooserEvaluator(MemoryPoolHandle ^pool);
 
                 /**
                 <summary>Destroys the ChooserEvaluator.</summary>
@@ -346,10 +343,12 @@ namespace Microsoft
 
                 /**
                 <summary>Performs an operation modeling Evaluator::MultiplyMany() on ChooserPoly objects.</summary>
+                
                 <remarks>
-                Performs an operation modeling Evaluator::MultiplyMany() on <see cref="ChooserPoly"/> objects. This operation creates a new
-                <see cref="ChooserPoly"/> with updated bounds on the degree of the corresponding plaintext polynomial and on the absolute values of
-                the coefficients based on the inputs, and sets the operation history accordingly.
+                Performs an operation modeling Evaluator::MultiplyMany() on <see cref="ChooserPoly"/> objects. This 
+                operation creates a new <see cref="ChooserPoly"/> with updated bounds on the degree of the corresponding 
+                plaintext polynomial and on the absolute values of the coefficients based on the inputs, and sets the 
+                operation history accordingly.
                 </remarks>
                 <param name="operands">The list of ChooserPoly objects to multiply</param>
                 <exception cref="System::ArgumentNullException">if operands list or any of its elements is null</exception>
@@ -363,10 +362,11 @@ namespace Microsoft
 
                 /**
                 <summary>Performs an operation modeling Evaluator::Add() on ChooserPoly objects.</summary>
+                
                 <remarks>
-                Performs an operation modeling Evaluator::Add() on <see cref="ChooserPoly"/> objects. This operation creates a new ChooserPoly with
-                updated bounds on the degree of the corresponding plaintext polynomial and on the absolute values of the coefficients
-                based on the inputs, and sets the operation history accordingly.
+                Performs an operation modeling Evaluator::Add() on <see cref="ChooserPoly"/> objects. This operation 
+                creates a new ChooserPoly with updated bounds on the degree of the corresponding plaintext polynomial 
+                and on the absolute values of the coefficients based on the inputs, and sets the operation history accordingly.
                 </remarks>
                 <param name="operand1">The first ChooserPoly object to add</param>
                 <param name="operand2">The second ChooserPoly object to add</param>
@@ -379,10 +379,11 @@ namespace Microsoft
 
                 /**
                 <summary>Performs an operation modeling Evaluator::AddMany() on ChooserPoly objects.</summary>
+                
                 <remarks>
-                Performs an operation modeling Evaluator::AddMany() on <see cref="ChooserPoly"/> objects. This operation creates a new ChooserPoly with
-                updated bounds on the degree of the corresponding plaintext polynomial and on the absolute values of the coefficients
-                based on the inputs, and sets the operation history accordingly.
+                Performs an operation modeling Evaluator::AddMany() on <see cref="ChooserPoly"/> objects. This operation 
+                creates a new ChooserPoly with updated bounds on the degree of the corresponding plaintext polynomial 
+                and on the absolute values of the coefficients based on the inputs, and sets the operation history accordingly.
                 </remarks>
                 <param name="operands">The ChooserPoly object to add</param>
                 <exception cref="System::ArgumentNullException">if operands or any of its elements is null</exception>
@@ -394,10 +395,11 @@ namespace Microsoft
 
                 /**
                 <summary>Performs an operation modeling Evaluator::Sub() on ChooserPoly objects.</summary>
+                
                 <remarks>
-                Performs an operation modeling Evaluator::Sub() on <see cref="ChooserPoly"/> objects. This operation creates a new ChooserPoly with
-                updated bounds on the degree of the corresponding plaintext polynomial and on the absolute values of the coefficients
-                based on the inputs, and sets the operation history accordingly.
+                Performs an operation modeling Evaluator::Sub() on <see cref="ChooserPoly"/> objects. This operation 
+                creates a new ChooserPoly with updated bounds on the degree of the corresponding plaintext polynomial 
+                and on the absolute values of the coefficients based on the inputs, and sets the operation history accordingly.
                 </remarks>
                 <param name="operand1">The ChooserPoly object to subtract from</param>
                 <param name="operand2">The ChooserPoly object to subtract</param>
@@ -410,10 +412,12 @@ namespace Microsoft
 
                 /**
                 <summary>Performs an operation modeling Evaluator::Multiply() on ChooserPoly objects.</summary>
+                
                 <remarks>
-                Performs an operation modeling Evaluator::Multiply() on <see cref="ChooserPoly"/> objects. This operation creates a new ChooserPoly
-                with updated bounds on the degree of the corresponding plaintext polynomial and on the absolute values of the
-                coefficients based on the inputs, and sets the operation history accordingly.
+                Performs an operation modeling Evaluator::Multiply() on <see cref="ChooserPoly"/> objects. This 
+                operation creates a new ChooserPoly with updated bounds on the degree of the corresponding plaintext 
+                polynomial and on the absolute values of the coefficients based on the inputs, and sets the operation 
+                history accordingly.
                 </remarks>
                 <param name="operand1">The first ChooserPoly object to multiply</param>
                 <param name="operand2">The second ChooserPoly object to multiply</param>
@@ -426,6 +430,7 @@ namespace Microsoft
 
                 /**
                 <summary>Performs an operation modeling Evaluator::Square() on ChooserPoly objects.</summary>
+                
                 <remarks>
                 Performs an operation modeling Evaluator::Square() on <see cref="ChooserPoly"/> objects. This
                 operation creates a new ChooserPoly with updated bounds on the degree of the corresponding plaintext 
@@ -442,10 +447,12 @@ namespace Microsoft
 
                 /**
                 <summary>Performs an operation modeling Evaluator::Relinearize() on ChooserPoly objects.</summary>
+                
                 <remarks>
-                Performs an operation modeling Evaluator::Relinearize() on <see cref="ChooserPoly"/> objects. This operation creates a new
-                ChooserPoly with the same bounds on the degree of the corresponding plaintext polynomial and on the absolute values of
-                the coefficients as the input, but sets the operation history to include the relinearization operation.
+                Performs an operation modeling Evaluator::Relinearize() on <see cref="ChooserPoly"/> objects. This 
+                operation creates a new ChooserPoly with the same bounds on the degree of the corresponding plaintext 
+                polynomial and on the absolute values of the coefficients as the input, but sets the operation history
+                to include the relinearization operation.
                 </remarks>
                 <param name="operand">The ChooserPoly object to relinearize</param>
                 <exception cref="System::ArgumentNullException">if operand is null</exception>
@@ -458,11 +465,13 @@ namespace Microsoft
 
                 /**
                 <summary>Performs an operation modeling Evaluator::Relinearize() on ChooserPoly objects.</summary>
+                
                 <remarks>
                 <para>
-                Performs an operation modeling Evaluator::Relinearize() on <see cref="ChooserPoly"/> objects. This operation creates a new
-                ChooserPoly with the same bounds on the degree of the corresponding plaintext polynomial and on the absolute values of
-                the coefficients as the input, but sets the operation history to include the relinearization operation.
+                Performs an operation modeling Evaluator::Relinearize() on <see cref="ChooserPoly"/> objects. This 
+                operation creates a new ChooserPoly with the same bounds on the degree of the corresponding plaintext
+                polynomial and on the absolute values of the coefficients as the input, but sets the operation history 
+                to include the relinearization operation.
                 </para>
                 <para>
                 The parameter destinationSize is not verified for correctness in this function. Instead,
@@ -482,10 +491,12 @@ namespace Microsoft
 
                 /**
                 <summary>Performs an operation modeling Evaluator::MultiplyPlain() on ChooserPoly objects.</summary>
+                
                 <remarks>
-                Performs an operation modeling Evaluator::MultiplyPlain() on <see cref="ChooserPoly"/> objects. This operation creates a new
-                ChooserPoly with updated bounds on the degree of the corresponding plaintext polynomial and on the absolute values of
-                the coefficients based on the inputs, and sets the operation history accordingly.
+                Performs an operation modeling Evaluator::MultiplyPlain() on <see cref="ChooserPoly"/> objects. This 
+                operation creates a new ChooserPoly with updated bounds on the degree of the corresponding plaintext 
+                polynomial and on the absolute values of the coefficients based on the inputs, and sets the operation 
+                history accordingly.
                 </remarks>
                 <param name="operand">The ChooserPoly object to multiply</param>
                 <param name="plainMaxCoeffCount">Bound on the number of non-zero coefficients in the plaintext polynomial to multiply</param>
@@ -501,10 +512,12 @@ namespace Microsoft
 
                 /**
                 <summary>Performs an operation modeling Evaluator::MultiplyPlain() on ChooserPoly objects.</summary>
+                
                 <remarks>
-                Performs an operation modeling Evaluator::MultiplyPlain() on <see cref="ChooserPoly"/> objects. This operation creates a new
-                ChooserPoly with updated bounds on the degree of the corresponding plaintext polynomial and on the absolute values of
-                the coefficients based on the inputs, and sets the operation history accordingly.
+                Performs an operation modeling Evaluator::MultiplyPlain() on <see cref="ChooserPoly"/> objects. This 
+                operation creates a new ChooserPoly with updated bounds on the degree of the corresponding plaintext 
+                polynomial and on the absolute values of the coefficients based on the inputs, and sets the operation 
+                history accordingly.
                 </remarks>
                 <param name="operand">The ChooserPoly object to multiply</param>
                 <param name="plainMaxCoeffCount">Bound on the number of non-zero coefficients in the plaintext polynomial to multiply</param>
@@ -520,11 +533,13 @@ namespace Microsoft
 
                 /**
                 <summary>Performs an operation modeling Evaluator::MultiplyPlain() on ChooserPoly objects.</summary>
+                
                 <remarks>
                 <para>
-                Performs an operation modeling Evaluator::MultiplyPlain() on <see cref="ChooserPoly"/> objects. This operation creates a new
-                ChooserPoly with updated bounds on the degree of the corresponding plaintext polynomial and on the absolute values of
-                the coefficients based on the inputs, and sets the operation history accordingly.
+                Performs an operation modeling Evaluator::MultiplyPlain() on <see cref="ChooserPoly"/> objects. This 
+                operation creates a new ChooserPoly with updated bounds on the degree of the corresponding plaintext 
+                polynomial and on the absolute values of the coefficients based on the inputs, and sets the operation 
+                history accordingly.
                 </para>
                 <para>
                 This variant of the function takes the plaintext multiplier as input in the form of another ChooserPoly.
@@ -547,10 +562,11 @@ namespace Microsoft
 
                 /**
                 <summary>Performs an operation modeling Evaluator::AddPlain() on ChooserPoly objects.</summary>
+                
                 <remarks>
-                Performs an operation modeling Evaluator::AddPlain() on <see cref="ChooserPoly"/> objects. This operation creates a new ChooserPoly
-                with updated bounds on the degree of the corresponding plaintext polynomial and on the absolute values of the
-                coefficients based on the inputs, and sets the operation history accordingly.
+                Performs an operation modeling Evaluator::AddPlain() on <see cref="ChooserPoly"/> objects. This operation 
+                creates a new ChooserPoly with updated bounds on the degree of the corresponding plaintext polynomial 
+                and on the absolute values of the coefficients based on the inputs, and sets the operation history accordingly.
                 </remarks>
                 <param name="operand">The ChooserPoly object to add</param>
                 <param name="plainMaxCoeffCount">Bound on the number of non-zero coefficients in the plaintext polynomial to add</param>
@@ -565,10 +581,11 @@ namespace Microsoft
 
                 /**
                 <summary>Performs an operation modeling Evaluator::AddPlain() on ChooserPoly objects.</summary>
+                
                 <remarks>
-                Performs an operation modeling Evaluator::AddPlain() on <see cref="ChooserPoly"/> objects. This operation creates a new ChooserPoly
-                with updated bounds on the degree of the corresponding plaintext polynomial and on the absolute values of the
-                coefficients based on the inputs, and sets the operation history accordingly.
+                Performs an operation modeling Evaluator::AddPlain() on <see cref="ChooserPoly"/> objects. This operation 
+                creates a new ChooserPoly with updated bounds on the degree of the corresponding plaintext polynomial 
+                and on the absolute values of the coefficients based on the inputs, and sets the operation history accordingly.
                 </remarks>
                 <param name="operand">The ChooserPoly object to add</param>
                 <param name="plainMaxCoeffCount">Bound on the number of non-zero coefficients in the plaintext polynomial to add</param>
@@ -583,11 +600,12 @@ namespace Microsoft
 
                 /**
                 <summary>Performs an operation modeling Evaluator::AddPlain() on ChooserPoly objects.</summary>
+                
                 <remarks>
                 <para>
-                Performs an operation modeling Evaluator::AddPlain() on <see cref="ChooserPoly"/> objects. This operation creates a new ChooserPoly
-                with updated bounds on the degree of the corresponding plaintext polynomial and on the absolute values of the
-                coefficients based on the inputs, and sets the operation history accordingly.
+                Performs an operation modeling Evaluator::AddPlain() on <see cref="ChooserPoly"/> objects. This operation
+                creates a new ChooserPoly with updated bounds on the degree of the corresponding plaintext polynomial 
+                and on the absolute values of the coefficients based on the inputs, and sets the operation history accordingly.
                 </para>
                 <para>
                 This variant of the function takes the plaintext to add as input in the form of another ChooserPoly. If the plaintext
@@ -610,10 +628,11 @@ namespace Microsoft
 
                 /**
                 <summary>Performs an operation modeling Evaluator::SubPlain() on ChooserPoly objects.</summary>
+                
                 <remarks>
-                Performs an operation modeling Evaluator::SubPlain() on <see cref="ChooserPoly"/> objects. This operation creates a new ChooserPoly
-                with updated bounds on the degree of the corresponding plaintext polynomial and on the absolute values of the
-                coefficients based on the inputs, and sets the operation history accordingly.
+                Performs an operation modeling Evaluator::SubPlain() on <see cref="ChooserPoly"/> objects. This operation 
+                creates a new ChooserPoly with updated bounds on the degree of the corresponding plaintext polynomial 
+                and on the absolute values of the coefficients based on the inputs, and sets the operation history accordingly.
                 </remarks>
                 <param name="operand">The ChooserPoly object to subtract from</param>
                 <param name="plainMaxCoeffCount">Bound on the number of non-zero coefficients in the plaintext polynomial to subtract</param>
@@ -628,10 +647,11 @@ namespace Microsoft
 
                 /**
                 <summary>Performs an operation modeling Evaluator::SubPlain() on ChooserPoly objects.</summary>
+                
                 <remarks>
-                Performs an operation modeling Evaluator::SubPlain() on <see cref="ChooserPoly"/> objects. This operation creates a new ChooserPoly
-                with updated bounds on the degree of the corresponding plaintext polynomial and on the absolute values of the
-                coefficients based on the inputs, and sets the operation history accordingly.
+                Performs an operation modeling Evaluator::SubPlain() on <see cref="ChooserPoly"/> objects. This operation 
+                creates a new ChooserPoly with updated bounds on the degree of the corresponding plaintext polynomial 
+                and on the absolute values of the coefficients based on the inputs, and sets the operation history accordingly.
                 </remarks>
                 <param name="operand">The ChooserPoly object to subtract from</param>
                 <param name="plainMaxCoeffCount">Bound on the number of non-zero coefficients in the plaintext polynomial to subtract</param>
@@ -646,17 +666,18 @@ namespace Microsoft
 
                 /**
                 <summary>Performs an operation modeling Evaluator::SubPlain() on ChooserPoly objects.</summary>
+                
                 <remarks>
                 <para>
-                Performs an operation modeling Evaluator::SubPlain() on <see cref="ChooserPoly"/> objects. This operation creates a new ChooserPoly
-                with updated bounds on the degree of the corresponding plaintext polynomial and on the absolute values of the
-                coefficients based on the inputs, and sets the operation history accordingly.
+                Performs an operation modeling Evaluator::SubPlain() on <see cref="ChooserPoly"/> objects. This operation 
+                creates a new ChooserPoly with updated bounds on the degree of the corresponding plaintext polynomial
+                and on the absolute values of the coefficients based on the inputs, and sets the operation history accordingly.
                 </para>
                 <para>
-                This variant of the function takes the plaintext to subtract as input in the form of another ChooserPoly. If the plaintext
-                to be subtracted is already known at the time of performing the automatic parameter selection, one can use ChooserEncoder to
-                construct the appropriate ChooserPoly for plainChooserPoly. This function completely ignores the operation history
-                possibly carried by plainChooserPoly.
+                This variant of the function takes the plaintext to subtract as input in the form of another ChooserPoly.
+                If the plaintext to be subtracted is already known at the time of performing the automatic parameter 
+                selection, one can use ChooserEncoder to construct the appropriate ChooserPoly for plainChooserPoly. 
+                This function completely ignores the operation history possibly carried by plainChooserPoly.
                 </para>
                 </remarks>
                 <param name="operand">The ChooserPoly object to subtract from</param>
@@ -673,10 +694,12 @@ namespace Microsoft
 
                 /**
                 <summary>Performs an operation modeling Evaluator::Exponentiate() on ChooserPoly objects.</summary>
+                
                 <remarks>
-                Performs an operation modeling Evaluator::Exponentiate() on <see cref="ChooserPoly"/> objects. This operation creates a new
-                ChooserPoly with updated bounds on the degree of the corresponding plaintext polynomial and on the absolute values of
-                the coefficients based on the inputs, and sets the operation history accordingly.
+                Performs an operation modeling Evaluator::Exponentiate() on <see cref="ChooserPoly"/> objects. This 
+                operation creates a new ChooserPoly with updated bounds on the degree of the corresponding plaintext
+                polynomial and on the absolute values of the coefficients based on the inputs, and sets the operation 
+                history accordingly.
                 </remarks>
                 <param name="operand">The ChooserPoly object to raise to a power</param>
                 <param name="exponent">The power to raise the ChooserPoly object to</param>
@@ -690,10 +713,12 @@ namespace Microsoft
 
                 /**
                 <summary>Performs an operation modeling Evaluator::Negate() on ChooserPoly objects.</summary>
+                
                 <remarks>
-                Performs an operation modeling Evaluator::Negate() on <see cref="ChooserPoly"/> objects. This operation creates a new ChooserPoly
-                with updated bounds on the degree of the corresponding plaintext polynomial and on the absolute values of the
-                coefficients based on the inputs, and sets the operation history accordingly.
+                Performs an operation modeling Evaluator::Negate() on <see cref="ChooserPoly"/> objects. This operation 
+                creates a new ChooserPoly with updated bounds on the degree of the corresponding plaintext polynomial 
+                and on the absolute values of the coefficients based on the inputs, and sets the operation history 
+                accordingly.
                 </remarks>
                 <param name="operand">The ChooserPoly object to negate</param>
                 <exception cref="System::ArgumentNullException">if operand is null</exception>
@@ -705,112 +730,56 @@ namespace Microsoft
 
                 /**
                 <summary>Provides the user with optimized encryption parameters that are large enough to support the operations
-                performed on the given ChooserPoly.</summary>
+                performed on all of the given <see cref="ChooserPoly"/> objects.</summary>
+                
                 <remarks>
                 <para>
-                Provides the user with optimized encryption parameters that are large enough to support the operations performed on the
-                given <see cref="ChooserPoly"/>. Some choices are made in the process that an expert user might want to change: (1) We use a constant
-                small standard deviation for the noise distribution; (2) We choose the size of the polynomial modulus and the
-                coefficient modulus from a hard-coded list of choices we consider secure (see http://eprint.iacr.org/2014/062.pdf, Table 2).
+                Provides the user with optimized encryption parameters that are large enough to support the operations
+                performed on all of the given <see cref="ChooserPoly"/> objects. The function returns true or false 
+                depending on whether a working parameter set was found or not.
                 </para>
                 <para>
-                The function returns true or false depending on whether a working parameter set was found or not.
-                </para>
-                </remarks>
-                <param name="operand">The ChooserPoly for which the parameters are optimized</param>
-                <param name="destination">The encryption parameters to overwrite with the selected parameter set</param>
-                <exception cref="System::ArgumentNullException">if operand or destination is null</exception>
-                <exception cref="System::InvalidOperationException">if operation history of the given ChooserPoly is null</exception>
-                <seealso cref="EncryptionParameters">See EncryptionParameters for a description of the encryption parameters.</seealso>
-                <seealso cref="DefaultNoiseStandardDeviation()">See DefaultNoiseStandardDeviation() for the default noise standard deviation.</seealso>
-                <seealso cref="DefaultNoiseMaxDeviation()">See DefaultNoiseMaxDeviation() for the default maximal noise deviation.</seealso>
-                <seealso cref="DefaultParameterOptions()">See DefaultParameterOptions() for the default set of parameter options.</seealso>
-                */
-                bool SelectParameters(ChooserPoly ^operand, EncryptionParameters ^destination);
-
-                /**
-                <summary>Provides the user with optimized encryption parameters that are large enough to support the operations
-                performed on all of the given ChooserPolys.</summary>
-                <remarks>
-                <para>
-                Provides the user with optimized encryption parameters that are large enough to support the operations performed on all
-                of the given <see cref="ChooserPoly"/> objects. Some choices are made in the process that an expert user might want to change: (1) We use a
-                constant small standard deviation for the noise distribution; (2) We choose the size of the polynomial modulus and the
-                coefficient modulus from a hard-coded list of choices we consider secure (see http://eprint.iacr.org/2014/062.pdf, Table 2).
-                </para>
-                <para>
-                The function returns true or false depending on whether a working parameter set was found or not.
+                The budgetGap parameter can be used to ensure that a certain amount of noise budget remains unused.
                 </para>
                 </remarks>
                 <param name="operands">The ChooserPolys for which the parameters are optimized</param>
+                <param name="budgetGap">The amount of noise budget (bits) that should remain unused</param>
                 <param name="destination">The encryption parameters to overwrite with the selected parameter set</param>
                 <exception cref="System::ArgumentNullException">if operands list or any of its elements is null</exception>
                 <exception cref="System::ArgumentNullException">if destination is null</exception>
                 <exception cref="System::InvalidOperationException">if operation history of any of the given ChooserPolys is null</exception>
                 <exception cref="System::ArgumentException">if operands is empty</exception>
+                <exception cref="System::ArgumentException">if budgetGap is negative</exception>
                 <seealso cref="EncryptionParameters">See EncryptionParameters for a description of the encryption parameters.</seealso>
                 <seealso cref="DefaultNoiseStandardDeviation()">See DefaultNoiseStandardDeviation() for the default noise standard deviation.</seealso>
                 <seealso cref="DefaultNoiseMaxDeviation()">See DefaultNoiseMaxDeviation() for the default maximal noise deviation.</seealso>
                 <seealso cref="DefaultParameterOptions()">See DefaultParameterOptions() for the default set of parameter options.</seealso>
                 */
-                bool SelectParameters(System::Collections::Generic::List<ChooserPoly^> ^operands, EncryptionParameters ^destination);
+                bool SelectParameters(System::Collections::Generic::List<ChooserPoly^> ^operands, int budgetGap, EncryptionParameters ^destination);
 
                 /**
-                <summary>Provides the user with optimized encryption parameters that are large enough to support the operations
-                performed on the given ChooserPoly.</summary>
+                <summary>Provides the user with optimized encryption parameters that are large enough to support the
+                operations performed on all of the given <see cref="ChooserPoly"/> objects.</summary>
+                
                 <remarks>
                 <para>
-                Provides the user with optimized encryption parameters that are large enough to support the operations performed on the
-                given <see cref="ChooserPoly"/>. Both the standard deviation of the noise distribution and the list from which we choose the size of
-                the polynomial modulus and the coefficient modulus are provided by the user as input parameters.
+                Provides the user with optimized encryption parameters that are large enough to support the
+                operations performed on all of the given <see cref="ChooserPoly"/> objects. The standard deviation 
+                of the noise distribution, the maximal deviation, and the list from which we choose the size of the
+                polynomial modulus and the coefficient modulus are provided by the user as input parameters. 
+                The function returns true or false depending on whether a working parameter set was found or not.
+                </para>
+                <para>
+                The budgetGap parameter can be used to ensure that a certain amount of noise budget remains unused.
                 </para>
                 <para>
                 The parameter options are given as a dictionary, where the sizes of the polynomial moduli are the
-                keys, and the corresponding values are the coefficient moduli (represented by <see cref="BigUInt"/>). The sizes of the polynomial
-                moduli must be at least 512 and powers of 2.
-                </para>
-                <para>
-                The function returns true or false depending on whether a working parameter set was found or not.
-                </para>
-                </remarks>
-                <param name="operand">The ChooserPoly for which the parameters are optimized</param>
-                <param name="noiseStandardDeviation">The noise standard deviation</param>
-                <param name="noiseMaxDeviation">The maximal noise deviation</param>
-                <param name="parameterOptions">The parameter options to be used</param>
-                <param name="destination">The encryption parameters to overwrite with the selected parameter set</param>
-                <exception cref="System::ArgumentNullException">if operand or destination is null</exception>
-                <exception cref="System::ArgumentNullException">if parameterOptions or any of its values is null</exception>
-                <exception cref="System::InvalidOperationException">if operation history is null</exception>
-                <exception cref="System::ArgumentException">if noiseStandardDeviation is negative</exception>
-                <exception cref="System::ArgumentException">if noiseMaxDeviation is negative</exception>
-                <exception cref="System::ArgumentException">if parameterOptions is empty</exception>
-                <exception cref="System::ArgumentException">if parameterOptions has keys that are less than 512 or not powers of 2</exception>
-                <seealso cref="EncryptionParameters">See EncryptionParameters for a description of the encryption parameters.</seealso>
-                <seealso cref="DefaultNoiseStandardDeviation()">See DefaultNoiseStandardDeviation() for the default noise standard deviation.</seealso>
-                <seealso cref="DefaultNoiseMaxDeviation()">See DefaultNoiseMaxDeviation() for the default maximal noise deviation.</seealso>
-                <seealso cref="DefaultParameterOptions()">See DefaultParameterOptions() for the default set of parameter options.</seealso>
-                */
-                bool SelectParameters(ChooserPoly ^operand, double noiseStandardDeviation, double noiseMaxDeviation, System::Collections::Generic::Dictionary<int, BigUInt^> ^parameterOptions, EncryptionParameters ^destination);
-
-                /**
-                <summary>Provides the user with optimized encryption parameters that are large enough to support the operations
-                performed on all of the given ChooserPolys.</summary>
-                <remarks>
-                <para>
-                Provides the user with optimized encryption parameters that are large enough to support the operations performed on all
-                of the given <see cref="ChooserPoly"/> objects. Both the standard deviation of the noise distribution and the list from which we choose the
-                size of the polynomial modulus and the coefficient modulus are provided by the user as input parameters.
-                </para>
-                <para>
-                The parameter options are given as a dictionary, where the sizes of the polynomial moduli are the
-                keys, and the corresponding values are the coefficient moduli (represented by <see cref="BigUInt"/>). The sizes of the polynomial
-                moduli must be at least 512 and powers of 2.
-                </para>
-                <para>
-                The function returns true or false depending on whether a working parameter set was found or not.
+                keys, and the corresponding values are the coefficient moduli (represented by <see cref="BigUInt"/>).
+                The sizes of the polynomial moduli must be at least 512 and powers of 2.
                 </para>
                 </remarks>
                 <param name="operands">The ChooserPolys for which the parameters are optimized</param>
+                <param name="budgetGap">The amount of noise budget (bits) that should remain unused</param>
                 <param name="noiseStandardDeviation">The noise standard deviation</param>
                 <param name="noiseMaxDeviation">The maximal noise deviation</param>
                 <param name="parameterOptions">The parameter options to be used</param>
@@ -820,6 +789,7 @@ namespace Microsoft
                 <exception cref="System::ArgumentNullException">if parameterOptions or any of its values is null</exception>
                 <exception cref="System::InvalidOperationException">if operation history is null</exception>
                 <exception cref="System::ArgumentException">if operands is empty</exception>
+                <exception cref="System::ArgumentException">if budgetGap is negative</exception>
                 <exception cref="System::ArgumentException">if noiseStandardDeviation is negative</exception>
                 <exception cref="System::ArgumentException">if noiseMaxDeviation is negative</exception>
                 <exception cref="System::ArgumentException">if parameterOptions is empty</exception>
@@ -829,10 +799,11 @@ namespace Microsoft
                 <seealso cref="DefaultNoiseMaxDeviation()">See DefaultNoiseMaxDeviation() for the default maximal noise deviation.</seealso>
                 <seealso cref="DefaultParameterOptions()">See DefaultParameterOptions() for the default set of parameter options.</seealso>
                 */
-                bool SelectParameters(System::Collections::Generic::List<ChooserPoly^> ^operands, double noiseStandardDeviation, double noiseMaxDeviation, System::Collections::Generic::Dictionary<int, BigUInt^> ^parameterOptions, EncryptionParameters ^destination);
+                bool SelectParameters(System::Collections::Generic::List<ChooserPoly^> ^operands, int budgetGap, double noiseStandardDeviation, double noiseMaxDeviation, System::Collections::Generic::Dictionary<int, BigUInt^> ^parameterOptions, EncryptionParameters ^destination);
 
                 /**
                 <summary>Returns the default set of (degree(polynomial modulus),coeffModulus)-pairs.</summary>
+                
                 <remarks>
                 Returns the default set of (degree(polynomial modulus),coeffModulus)-pairs. The function returns a dictionary 
                 of entries where the degree of the polynomial modulus acts as the key, and the corresponding modulus is the value.
@@ -846,6 +817,7 @@ namespace Microsoft
 
                 /**
                 <summary>Returns the default value for the standard deviation of the noise (error) distribution.</summary>
+                
                 <remarks>
                 Returns the default value for the standard deviation of the noise (error) distribution.
                 An expert user might want to give a modified value as an argument to SelectParameters().
@@ -858,6 +830,7 @@ namespace Microsoft
 
                 /**
                 <summary>Returns the default value for the maximal deviation of the noise (error) distribution.</summary>
+                
                 <remarks>
                 Returns the default value for the maximal deviation of the noise (error) distribution.
                 An expert user might want to give a modified value as an argument to SelectParameters().
@@ -868,6 +841,7 @@ namespace Microsoft
                     double get();
                 }
 
+            internal:
                 /**
                 <summary>Returns a reference to the underlying C++ ChooserEvaluator.</summary>
                 */
@@ -894,7 +868,7 @@ namespace Microsoft
             <seealso cref="ChooserEncryptor">See ChooserEncryptor for modeling the behavior of encryption with ChooserPoly
             objects.</seealso>
             <seealso cref="IntegerEncoder">See IntegerEncoder for the corresponding encoder for real data.</seealso>
-            <seealso cref="Simulation">See Simulation for the class that handles the inherent noise growth estimates.</seealso>
+            <seealso cref="Simulation">See Simulation for the class that handles the noise budget consumption estimates.</seealso>
             */
             public ref class ChooserEncoder
             {
@@ -1036,6 +1010,7 @@ namespace Microsoft
                     System::UInt64 get();
                 }
 
+            internal:
                 /**
                 <summary>Returns a reference to the underlying C++ ChooserEncoder.</summary>
                 */
@@ -1130,6 +1105,7 @@ namespace Microsoft
                 */
                 ChooserPoly ^Decrypt(ChooserPoly ^encrypted);
 
+            internal:
                 /**
                 <summary>Returns a reference to the underlying C++ ChooserEncryptor.</summary>
                 */

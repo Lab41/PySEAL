@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include "memorypoolhandle.h"
 #include "util/mempool.h"
 #include "util/modulus.h"
 
@@ -11,13 +12,13 @@ namespace seal
         class UIntCRTBuilder
         {
         public:
-            UIntCRTBuilder();
+            UIntCRTBuilder(const MemoryPoolHandle &pool = MemoryPoolHandle::acquire_global());
 
-            UIntCRTBuilder(std::vector<const std::uint64_t*> mods, std::vector<int> mod_uint64_counts);
+            UIntCRTBuilder(std::vector<const std::uint64_t*> mods, std::vector<int> mod_uint64_counts, const MemoryPoolHandle &pool = MemoryPoolHandle::acquire_global());
 
-            ~UIntCRTBuilder()
-            {
-            }
+            UIntCRTBuilder(const UIntCRTBuilder &copy);
+
+            UIntCRTBuilder(UIntCRTBuilder &&source) = default;
 
             void compose(std::vector<const std::uint64_t*> inputs, std::uint64_t *destination) const;
 
@@ -68,6 +69,12 @@ namespace seal
             }
 
         private:
+            UIntCRTBuilder &operator =(const UIntCRTBuilder &assign) = delete;
+
+            UIntCRTBuilder &operator =(UIntCRTBuilder &&assign) = delete;
+
+            MemoryPoolHandle pool_;
+
             bool generated_;
 
             std::vector<int> mod_uint64_counts_;
@@ -79,7 +86,7 @@ namespace seal
             int mod_count_;
 
             // Moduli m_1, m_2, ..., m_k where k = mod_count_
-            std::uint64_t *mod_array_alloc_;
+            Pointer mod_array_alloc_;
 
             std::vector<Modulus> mod_array_;
 

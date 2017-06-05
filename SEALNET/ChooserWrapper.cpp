@@ -204,7 +204,7 @@ namespace Microsoft
                 throw gcnew Exception("Unexpected exception");
             }
 
-            bool ChooserPoly::TestParameters(EncryptionParameters ^parms)
+            bool ChooserPoly::TestParameters(EncryptionParameters ^parms, int budgetGap)
             {
                 if (chooserPoly_ == nullptr)
                 {
@@ -216,34 +216,7 @@ namespace Microsoft
                 }
                 try
                 {
-                    auto result = chooserPoly_->test_parameters(parms->GetParameters());
-                    GC::KeepAlive(parms);
-                    return result;
-                }
-                catch (const exception &e)
-                {
-                    HandleException(&e);
-                }
-                catch (...)
-                {
-                    HandleException(nullptr);
-                }
-                throw gcnew Exception("Unexpected exception");
-            }
-
-            bool ChooserPoly::TestParameters(EncryptionParameters ^parms, int noiseGap)
-            {
-                if (chooserPoly_ == nullptr)
-                {
-                    throw gcnew ObjectDisposedException("ChooserPoly is disposed");
-                }
-                if (parms == nullptr)
-                {
-                    throw gcnew ArgumentNullException("parms cannot be null");
-                }
-                try
-                {
-                    auto result = chooserPoly_->test_parameters(parms->GetParameters(), noiseGap);
+                    auto result = chooserPoly_->test_parameters(parms->GetParameters(), budgetGap);
                     GC::KeepAlive(parms);
                     return result;
                 }
@@ -284,87 +257,8 @@ namespace Microsoft
                 }
                 throw gcnew Exception("Unexpected exception");
             }
-            
-            bool ChooserEvaluator::SelectParameters(ChooserPoly ^operand, double noiseStandardDeviation, double noiseMaxDeviation, Dictionary<int, BigUInt^> ^parameterOptions, EncryptionParameters ^destination)
-            {
-                if (chooserEvaluator_ == nullptr)
-                {
-                    throw gcnew ObjectDisposedException("ChooserEvaluator is disposed");
-                }
-                if (operand == nullptr)
-                {
-                    throw gcnew ArgumentNullException("operand cannot be null");
-                }
-                if (parameterOptions == nullptr)
-                {
-                    throw gcnew ArgumentNullException("parameterOptions cannot be null");
-                }
-                if (destination == nullptr)
-                {
-                    throw gcnew ArgumentNullException("destination cannot be null");
-                }
-                try
-                {
-                    map<int, seal::BigUInt> parameter_options_map;
-                    for each (KeyValuePair<int, BigUInt^> ^paramPair in parameterOptions)
-                    {
-                        if (paramPair->Value == nullptr)
-                        {
-                            throw gcnew ArgumentNullException("parameterOptions cannot contain null values");
-                        }
-                        parameter_options_map[paramPair->Key] = paramPair->Value->GetUInt();
-                        GC::KeepAlive(paramPair);
-                    }
 
-                    auto result = chooserEvaluator_->select_parameters(operand->GetChooserPoly(), noiseStandardDeviation, noiseMaxDeviation, parameter_options_map, destination->GetParameters());
-                    GC::KeepAlive(operand);
-                    GC::KeepAlive(destination);
-                    return result;
-                }
-                catch (const exception &e)
-                {
-                    HandleException(&e);
-                }
-                catch (...)
-                {
-                    HandleException(nullptr);
-                }
-                throw gcnew Exception("Unexpected exception");
-            }
-
-            bool ChooserEvaluator::SelectParameters(ChooserPoly ^operand, EncryptionParameters ^destination)
-            {
-                if (chooserEvaluator_ == nullptr)
-                {
-                    throw gcnew ObjectDisposedException("ChooserEvaluator is disposed");
-                }
-                if (operand == nullptr)
-                {
-                    throw gcnew ArgumentNullException("operand cannot be null");
-                }
-                if (destination == nullptr)
-                {
-                    throw gcnew ArgumentNullException("destination cannot be null");
-                }
-                try
-                {
-                    auto result = chooserEvaluator_->select_parameters(operand->GetChooserPoly(),destination->GetParameters());
-                    GC::KeepAlive(operand);
-                    GC::KeepAlive(destination);
-                    return result;
-                }
-                catch (const exception &e)
-                {
-                    HandleException(&e);
-                }
-                catch (...)
-                {
-                    HandleException(nullptr);
-                }
-                throw gcnew Exception("Unexpected exception");
-            }
-
-            bool ChooserEvaluator::SelectParameters(List<ChooserPoly^> ^operands, double noiseStandardDeviation, double noiseMaxDeviation, Dictionary<int, BigUInt^> ^parameterOptions, EncryptionParameters ^destination)
+            bool ChooserEvaluator::SelectParameters(List<ChooserPoly^> ^operands, int budgetGap, double noiseStandardDeviation, double noiseMaxDeviation, Dictionary<int, BigUInt^> ^parameterOptions, EncryptionParameters ^destination)
             {
                 if (chooserEvaluator_ == nullptr)
                 {
@@ -406,7 +300,7 @@ namespace Microsoft
                         GC::KeepAlive(paramPair);
                     }
 
-                    auto result = chooserEvaluator_->select_parameters(operands_vector, noiseStandardDeviation, noiseMaxDeviation, parameter_options_map, destination->GetParameters());
+                    auto result = chooserEvaluator_->select_parameters(operands_vector, budgetGap, noiseStandardDeviation, noiseMaxDeviation, parameter_options_map, destination->GetParameters());
                     GC::KeepAlive(destination);
                     return result;
                 }
@@ -421,7 +315,7 @@ namespace Microsoft
                 throw gcnew Exception("Unexpected exception");
             }
 
-            bool ChooserEvaluator::SelectParameters(List<ChooserPoly^> ^operands, EncryptionParameters ^destination)
+            bool ChooserEvaluator::SelectParameters(List<ChooserPoly^> ^operands, int budgetGap, EncryptionParameters ^destination)
             {
                 if (chooserEvaluator_ == nullptr)
                 {
@@ -448,7 +342,7 @@ namespace Microsoft
                         GC::KeepAlive(operand);
                     }
 
-                    auto result = chooserEvaluator_->select_parameters(operands_vector, destination->GetParameters());
+                    auto result = chooserEvaluator_->select_parameters(operands_vector, budgetGap, destination->GetParameters());
                     GC::KeepAlive(destination);
                     return result;
                 }
@@ -528,6 +422,16 @@ namespace Microsoft
             ChooserEvaluator::ChooserEvaluator() : chooserEvaluator_(nullptr)
             {
                 chooserEvaluator_ = new seal::ChooserEvaluator;
+            }
+
+            ChooserEvaluator::ChooserEvaluator(MemoryPoolHandle ^pool) : chooserEvaluator_(nullptr)
+            {
+                if (pool == nullptr)
+                {
+                    throw gcnew ArgumentNullException("pool cannot be null");
+                }
+                chooserEvaluator_ = new seal::ChooserEvaluator(pool->GetHandle());
+                GC::KeepAlive(pool);
             }
 
             ChooserEvaluator::~ChooserEvaluator()

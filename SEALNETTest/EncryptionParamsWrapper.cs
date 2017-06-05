@@ -11,25 +11,23 @@ namespace SEALNETTest
         public void EncryptionParamsWriteReadNET()
         {
             // Create encryption parameters.
-            var parms = new EncryptionParameters
-            {
-                DecompositionBitCount = 4,
-                NoiseStandardDeviation = 3.19,
-                NoiseMaxDeviation = 35.06,
-            };
-            var coeffModulus = parms.CoeffModulus;
-            coeffModulus.Resize(48);
+            var parms = new EncryptionParameters(MemoryPoolHandle.AcquireNew());
+            parms.SetDecompositionBitCount(4);
+            parms.SetNoiseStandardDeviation(3.19);
+            parms.SetNoiseMaxDeviation(35.06);
+
+            var coeffModulus = new BigUInt(48);
             coeffModulus.Set("7FFFFC801");
-            var auxCoeffModulus = parms.AuxCoeffModulus;
-            auxCoeffModulus.Resize(64);
-            auxCoeffModulus.Set("FFFFFFFFC001");
-            var plainModulus = parms.PlainModulus;
-            plainModulus.Resize(7);
+            parms.SetCoeffModulus(coeffModulus);
+
+            var plainModulus = new BigUInt(7);
             plainModulus.Set(1 << 6);
-            var polyModulus = parms.PolyModulus;
-            polyModulus.Resize(65, 1);
+            parms.SetPlainModulus(plainModulus);
+
+            var polyModulus = new BigPoly(65, 1);
             polyModulus[0].Set(1);
             polyModulus[64].Set(1);
+            parms.SetPolyModulus(polyModulus);
 
             Assert.AreEqual(4, parms.DecompositionBitCount);
             Assert.AreEqual(3.19, parms.NoiseStandardDeviation);
@@ -49,27 +47,25 @@ namespace SEALNETTest
             var stream = new MemoryStream();
 
             // Create encryption parameters.
-            var parms = new EncryptionParameters
-            {
-                DecompositionBitCount = 4,
-                NoiseStandardDeviation = 3.19,
-                NoiseMaxDeviation = 35.06
-            };
-            var coeffModulus = parms.CoeffModulus;
-            coeffModulus.Resize(48);
-            coeffModulus.Set("7FFFFC801");
-            var auxCoeffModulus = parms.AuxCoeffModulus;
-            auxCoeffModulus.Resize(64);
-            auxCoeffModulus.Set("FFFFFFFFC001");
-            var plainModulus = parms.PlainModulus;
-            plainModulus.Resize(7);
+            var parms = new EncryptionParameters(MemoryPoolHandle.AcquireNew());
+            parms.SetDecompositionBitCount(4);
+            parms.SetNoiseStandardDeviation(3.19);
+            parms.SetNoiseMaxDeviation(35.06);
+
+            var coeffModulus = new BigUInt(48);
+            coeffModulus.Set("FFFFFFFFC001");
+            parms.SetCoeffModulus(coeffModulus);
+
+            var plainModulus = new BigUInt(7);
             plainModulus.Set(1 << 6);
-            var polyModulus = parms.PolyModulus;
-            polyModulus.Resize(65, 1);
+            parms.SetPlainModulus(plainModulus);
+
+            var polyModulus = new BigPoly(65, 1);
             polyModulus[0].Set(1);
             polyModulus[64].Set(1);
+            parms.SetPolyModulus(polyModulus);
 
-            var parms2 = new EncryptionParameters();
+            var parms2 = new EncryptionParameters(MemoryPoolHandle.AcquireNew());
             stream.Seek(0, SeekOrigin.Begin);
             parms.Save(stream);
             stream.Seek(0, SeekOrigin.Begin);
@@ -91,25 +87,25 @@ namespace SEALNETTest
         public void GetQualifiersNET()
         {
             {
-                var parms = new EncryptionParameters
-                {
-                    DecompositionBitCount = 4,
-                    NoiseStandardDeviation = 3.19,
-                    NoiseMaxDeviation = 35.06,
-                };
-                var coeffModulus = parms.CoeffModulus;
-                coeffModulus.Resize(48);
-                coeffModulus.Set("7FFFFC801");
-                var auxCoeffModulus = parms.AuxCoeffModulus;
-                auxCoeffModulus.Resize(64);
-                auxCoeffModulus.Set("FFFFFFFFC001");
-                var plainModulus = parms.PlainModulus;
-                plainModulus.Resize(7);
+                var parms = new EncryptionParameters(MemoryPoolHandle.AcquireNew());
+                parms.SetDecompositionBitCount(4);
+                parms.SetNoiseStandardDeviation(3.19);
+                parms.SetNoiseMaxDeviation(35.06);
+
+                var coeffModulus = new BigUInt(48);
+                coeffModulus.Set("FFFFFFFFC001");
+                parms.SetCoeffModulus(coeffModulus);
+
+                var plainModulus = new BigUInt(7);
                 plainModulus.Set(1 << 6);
-                var polyModulus = parms.PolyModulus;
-                polyModulus.Resize(65, 1);
+                parms.SetPlainModulus(plainModulus);
+
+                var polyModulus = new BigPoly(65, 1);
                 polyModulus[0].Set(1);
                 polyModulus[64].Set(1);
+                parms.SetPolyModulus(polyModulus);
+
+                parms.Validate();
 
                 var qualifiers = parms.Qualifiers;
                 Assert.IsTrue(qualifiers.ParametersSet);
@@ -124,58 +120,25 @@ namespace SEALNETTest
             }
 
             {
-                var parms = new EncryptionParameters
-                {
-                    DecompositionBitCount = 4,
-                    NoiseStandardDeviation = 3.19,
-                    NoiseMaxDeviation = 35.06,
-                };
-                var coeffModulus = parms.CoeffModulus;
-                coeffModulus.Resize(48);
-                coeffModulus.Set("7FFFFC801");
-                var auxCoeffModulus = parms.AuxCoeffModulus;
-                auxCoeffModulus.Resize(64);
-                auxCoeffModulus.Set("FFFFFF");
-                var plainModulus = parms.PlainModulus;
-                plainModulus.Resize(7);
+                var parms = new EncryptionParameters(MemoryPoolHandle.AcquireNew());
+                parms.SetDecompositionBitCount(4);
+                parms.SetNoiseStandardDeviation(3.19);
+                parms.SetNoiseMaxDeviation(35.06);
+
+                var coeffModulus = new BigUInt(48);
+                coeffModulus.Set("FFFFFFFFC001");
+                parms.SetCoeffModulus(coeffModulus);
+
+                var plainModulus = new BigUInt(7);
                 plainModulus.Set(1 << 6);
-                var polyModulus = parms.PolyModulus;
-                polyModulus.Resize(65, 1);
-                polyModulus[0].Set(1);
-                polyModulus[64].Set(1);
+                parms.SetPlainModulus(plainModulus);
 
-                var qualifiers = parms.Qualifiers;
-                Assert.IsTrue(qualifiers.ParametersSet);
-                Assert.IsTrue(qualifiers.EnableRelinearization);
-                Assert.IsTrue(qualifiers.EnableNussbaumer);
-                Assert.IsTrue(qualifiers.EnableNTT);
-
-                // Commented out due to dependence on the SEAL library #define DISABLE_NTT_IN_MULTIPLY
-                //Assert.IsFalse(qualifiers.EnableNTTInMultiply);
-
-                Assert.IsFalse(qualifiers.EnableBatching);
-            }
-
-            {
-                var parms = new EncryptionParameters
-                {
-                    DecompositionBitCount = 4,
-                    NoiseStandardDeviation = 3.19,
-                    NoiseMaxDeviation = 35.06,
-                };
-                var coeffModulus = parms.CoeffModulus;
-                coeffModulus.Resize(48);
-                coeffModulus.Set("7FFFFC801");
-                var auxCoeffModulus = parms.AuxCoeffModulus;
-                auxCoeffModulus.Resize(64);
-                auxCoeffModulus.Set("FFFFFFFFC001");
-                var plainModulus = parms.PlainModulus;
-                plainModulus.Resize(7);
-                plainModulus.Set(1 << 6);
-                var polyModulus = parms.PolyModulus;
-                polyModulus.Resize(64, 1);
+                var polyModulus = new BigPoly(64, 1);
                 polyModulus[0].Set(1);
                 polyModulus[63].Set(1);
+                parms.SetPolyModulus(polyModulus);
+
+                parms.Validate();
 
                 var qualifiers = parms.Qualifiers;
                 Assert.IsFalse(qualifiers.ParametersSet);
@@ -190,25 +153,25 @@ namespace SEALNETTest
             }
 
             {
-                var parms = new EncryptionParameters
-                {
-                    DecompositionBitCount = 4,
-                    NoiseStandardDeviation = 3.19,
-                    NoiseMaxDeviation = 35.06,
-                };
-                var coeffModulus = parms.CoeffModulus;
-                coeffModulus.Resize(48);
+                var parms = new EncryptionParameters(MemoryPoolHandle.AcquireNew());
+                parms.SetDecompositionBitCount(4);
+                parms.SetNoiseStandardDeviation(3.19);
+                parms.SetNoiseMaxDeviation(35.06);
+
+                var coeffModulus = new BigUInt(48);
                 coeffModulus.Set("0");
-                var auxCoeffModulus = parms.AuxCoeffModulus;
-                auxCoeffModulus.Resize(64);
-                auxCoeffModulus.Set("FFFFFFFFC001");
-                var plainModulus = parms.PlainModulus;
-                plainModulus.Resize(7);
+                parms.SetCoeffModulus(coeffModulus);
+
+                var plainModulus = new BigUInt(7);
                 plainModulus.Set(1 << 6);
-                var polyModulus = parms.PolyModulus;
-                polyModulus.Resize(65, 1);
+                parms.SetPlainModulus(plainModulus);
+
+                var polyModulus = new BigPoly(65, 1);
                 polyModulus[0].Set(1);
                 polyModulus[64].Set(1);
+                parms.SetPolyModulus(polyModulus);
+
+                parms.Validate();
 
                 var qualifiers = parms.Qualifiers;
                 Assert.IsFalse(qualifiers.ParametersSet);
@@ -223,25 +186,25 @@ namespace SEALNETTest
             }
 
             {
-                var parms = new EncryptionParameters
-                {
-                    DecompositionBitCount = 0,
-                    NoiseStandardDeviation = 3.19,
-                    NoiseMaxDeviation = 35.06,
-                };
-                var coeffModulus = parms.CoeffModulus;
-                coeffModulus.Resize(48);
-                coeffModulus.Set("7FFFFC801");
-                var auxCoeffModulus = parms.AuxCoeffModulus;
-                auxCoeffModulus.Resize(64);
-                auxCoeffModulus.Set("FFFFFFFFC001");
-                var plainModulus = parms.PlainModulus;
-                plainModulus.Resize(7);
+                var parms = new EncryptionParameters(MemoryPoolHandle.AcquireNew());
+                parms.SetDecompositionBitCount(0);
+                parms.SetNoiseStandardDeviation(3.19);
+                parms.SetNoiseMaxDeviation(35.06);
+
+                var coeffModulus = new BigUInt(48);
+                coeffModulus.Set("FFFFFFFFC001");
+                parms.SetCoeffModulus(coeffModulus);
+
+                var plainModulus = new BigUInt(7);
                 plainModulus.Set(1 << 6);
-                var polyModulus = parms.PolyModulus;
-                polyModulus.Resize(65, 1);
+                parms.SetPlainModulus(plainModulus);
+
+                var polyModulus = new BigPoly(65, 1);
                 polyModulus[0].Set(1);
                 polyModulus[64].Set(1);
+                parms.SetPolyModulus(polyModulus);
+
+                parms.Validate();
 
                 var qualifiers = parms.Qualifiers;
                 Assert.IsTrue(qualifiers.ParametersSet);
@@ -256,25 +219,25 @@ namespace SEALNETTest
             }
 
             {
-                var parms = new EncryptionParameters
-                {
-                    DecompositionBitCount = 4,
-                    NoiseStandardDeviation = -3.19,
-                    NoiseMaxDeviation = 35.06,
-                };
-                var coeffModulus = parms.CoeffModulus;
-                coeffModulus.Resize(48);
+                var parms = new EncryptionParameters(MemoryPoolHandle.AcquireNew());
+                parms.SetDecompositionBitCount(4);
+                parms.SetNoiseStandardDeviation(-3.19);
+                parms.SetNoiseMaxDeviation(35.06);
+
+                var coeffModulus = new BigUInt(48);
                 coeffModulus.Set("7FFFFC801");
-                var auxCoeffModulus = parms.AuxCoeffModulus;
-                auxCoeffModulus.Resize(64);
-                auxCoeffModulus.Set("FFFFFFFFC001");
-                var plainModulus = parms.PlainModulus;
-                plainModulus.Resize(7);
+                parms.SetCoeffModulus(coeffModulus);
+
+                var plainModulus = new BigUInt(7);
                 plainModulus.Set(1 << 6);
-                var polyModulus = parms.PolyModulus;
-                polyModulus.Resize(65, 1);
+                parms.SetPlainModulus(plainModulus);
+
+                var polyModulus = new BigPoly(65, 1);
                 polyModulus[0].Set(1);
                 polyModulus[64].Set(1);
+                parms.SetPolyModulus(polyModulus);
+
+                parms.Validate();
 
                 var qualifiers = parms.Qualifiers;
                 Assert.IsFalse(qualifiers.ParametersSet);
@@ -289,25 +252,25 @@ namespace SEALNETTest
             }
 
             {
-                var parms = new EncryptionParameters
-                {
-                    DecompositionBitCount = 0,
-                    NoiseStandardDeviation = 3.19,
-                    NoiseMaxDeviation = 35.06,
-                };
-                var coeffModulus = parms.CoeffModulus;
-                coeffModulus.Resize(48);
+                var parms = new EncryptionParameters(MemoryPoolHandle.AcquireNew());
+                parms.SetDecompositionBitCount(0);
+                parms.SetNoiseStandardDeviation(3.19);
+                parms.SetNoiseMaxDeviation(35.06);
+
+                var coeffModulus = new BigUInt(48);
                 coeffModulus.Set("7FFFFC801");
-                var auxCoeffModulus = parms.AuxCoeffModulus;
-                auxCoeffModulus.Resize(64);
-                auxCoeffModulus.Set("0");
-                var plainModulus = parms.PlainModulus;
-                plainModulus.Resize(7);
+                parms.SetCoeffModulus(coeffModulus);
+
+                var plainModulus = new BigUInt(7);
                 plainModulus.Set(1 << 6);
-                var polyModulus = parms.PolyModulus;
-                polyModulus.Resize(65, 1);
+                parms.SetPlainModulus(plainModulus);
+
+                var polyModulus = new BigPoly(65, 1);
                 polyModulus[0].Set(1);
                 polyModulus[64].Set(1);
+                parms.SetPolyModulus(polyModulus);
+
+                parms.Validate();
 
                 var qualifiers = parms.Qualifiers;
                 Assert.IsTrue(qualifiers.ParametersSet);
@@ -322,25 +285,25 @@ namespace SEALNETTest
             }
 
             {
-                var parms = new EncryptionParameters
-                {
-                    DecompositionBitCount = 0,
-                    NoiseStandardDeviation = 3.19,
-                    NoiseMaxDeviation = 35.06,
-                };
-                var coeffModulus = parms.CoeffModulus;
-                coeffModulus.Resize(48);
+                var parms = new EncryptionParameters(MemoryPoolHandle.AcquireNew());
+                parms.SetDecompositionBitCount(0);
+                parms.SetNoiseStandardDeviation(3.19);
+                parms.SetNoiseMaxDeviation(35.06);
+
+                var coeffModulus = new BigUInt(48);
                 coeffModulus.Set("7FFFFFFFF");
-                var auxCoeffModulus = parms.AuxCoeffModulus;
-                auxCoeffModulus.Resize(64);
-                auxCoeffModulus.Set("0");
-                var plainModulus = parms.PlainModulus;
-                plainModulus.Resize(7);
+                parms.SetCoeffModulus(coeffModulus);
+
+                var plainModulus = new BigUInt(7);
                 plainModulus.Set(1 << 6);
-                var polyModulus = parms.PolyModulus;
-                polyModulus.Resize(65, 1);
+                parms.SetPlainModulus(plainModulus);
+
+                var polyModulus = new BigPoly(65, 1);
                 polyModulus[0].Set(1);
                 polyModulus[64].Set(1);
+                parms.SetPolyModulus(polyModulus);
+
+                parms.Validate();
 
                 var qualifiers = parms.Qualifiers;
                 Assert.IsTrue(qualifiers.ParametersSet);
@@ -355,25 +318,25 @@ namespace SEALNETTest
             }
 
             {
-                var parms = new EncryptionParameters
-                {
-                    DecompositionBitCount = 0,
-                    NoiseStandardDeviation = 3.19,
-                    NoiseMaxDeviation = 35.06,
-                };
-                var coeffModulus = parms.CoeffModulus;
-                coeffModulus.Resize(48);
+                var parms = new EncryptionParameters(MemoryPoolHandle.AcquireNew());
+                parms.SetDecompositionBitCount(0);
+                parms.SetNoiseStandardDeviation(3.19);
+                parms.SetNoiseMaxDeviation(35.06);
+
+                var coeffModulus = new BigUInt(48);
                 coeffModulus.Set("7FFFFFFFF");
-                var auxCoeffModulus = parms.AuxCoeffModulus;
-                auxCoeffModulus.Resize(64);
-                auxCoeffModulus.Set("0");
-                var plainModulus = parms.PlainModulus;
-                plainModulus.Resize(7);
+                parms.SetCoeffModulus(coeffModulus);
+
+                var plainModulus = new BigUInt(7);
                 plainModulus.Set(12289);
-                var polyModulus = parms.PolyModulus;
-                polyModulus.Resize(65, 1);
+                parms.SetPlainModulus(plainModulus);
+
+                var polyModulus = new BigPoly(65, 1);
                 polyModulus[0].Set(1);
                 polyModulus[64].Set(1);
+                parms.SetPolyModulus(polyModulus);
+
+                parms.Validate();
 
                 var qualifiers = parms.Qualifiers;
                 Assert.IsTrue(qualifiers.ParametersSet);

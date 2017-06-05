@@ -133,11 +133,11 @@ namespace seal
             }
         }
 
-        NTTTables::NTTTables() : generated_(false)
+        NTTTables::NTTTables(const MemoryPoolHandle &pool) : pool_(pool), generated_(false)
         {
         }
 
-        NTTTables::NTTTables(int coeff_count_power, const Modulus &modulus)
+        NTTTables::NTTTables(int coeff_count_power, const Modulus &modulus, const MemoryPoolHandle &pool) : pool_(pool)
         {
             generate(coeff_count_power, modulus);
         }
@@ -145,11 +145,8 @@ namespace seal
         void NTTTables::reset()
         {
             generated_ = false;
-            if (modulus_.get() != nullptr)
-            {
-                delete[] modulus_.get();
-            }
             modulus_ = Modulus();
+            modulus_alloc_.release();
             root_.release();
             root_powers_.release();
             scaled_root_powers_.release();
@@ -180,45 +177,42 @@ namespace seal
             coeff_count_ = 1 << coeff_count_power_;
             coeff_uint64_count_ = modulus.uint64_count();
 
-            MemoryPool &pool = *MemoryPool::default_pool();
-
             // Allocate memory for modulus, the tables, and for the inverse of degree modulo modulus
-            uint64_t *modulus_value = new uint64_t[coeff_uint64_count_];
-            root_ = allocate_uint(coeff_uint64_count_, pool);
-            root_powers_ = allocate_uint(coeff_count_ * coeff_uint64_count_, pool);
-            inv_root_powers_ = allocate_uint(coeff_count_ * coeff_uint64_count_, pool);
-            scaled_root_powers_ = allocate_uint(coeff_count_ * coeff_uint64_count_, pool);
-            scaled_inv_root_powers_ = allocate_uint(coeff_count_ * coeff_uint64_count_, pool);
-            inv_root_powers_div_two_ = allocate_uint(coeff_count_ * coeff_uint64_count_, pool);
-            scaled_inv_root_powers_div_two_ = allocate_uint(coeff_count_ * coeff_uint64_count_, pool);
-
-            inv_degree_modulo_ = allocate_uint(coeff_uint64_count_, pool);
+            modulus_alloc_ = allocate_uint(coeff_uint64_count_, pool_);
+            root_ = allocate_uint(coeff_uint64_count_, pool_);
+            root_powers_ = allocate_uint(coeff_count_ * coeff_uint64_count_, pool_);
+            inv_root_powers_ = allocate_uint(coeff_count_ * coeff_uint64_count_, pool_);
+            scaled_root_powers_ = allocate_uint(coeff_count_ * coeff_uint64_count_, pool_);
+            scaled_inv_root_powers_ = allocate_uint(coeff_count_ * coeff_uint64_count_, pool_);
+            inv_root_powers_div_two_ = allocate_uint(coeff_count_ * coeff_uint64_count_, pool_);
+            scaled_inv_root_powers_div_two_ = allocate_uint(coeff_count_ * coeff_uint64_count_, pool_);
+            inv_degree_modulo_ = allocate_uint(coeff_uint64_count_, pool_);
 
             // Copy the value in modulus and create the local copy modulus_
-            set_uint_uint(modulus.get(), coeff_uint64_count_, modulus_value);
-            modulus_ = Modulus(modulus_value, coeff_uint64_count_, pool);
+            set_uint_uint(modulus.get(), coeff_uint64_count_, modulus_alloc_.get());
+            modulus_ = Modulus(modulus_alloc_.get(), coeff_uint64_count_, pool_);
 
-            Pointer inverse_root(allocate_uint(coeff_uint64_count_, pool));
+            Pointer inverse_root(allocate_uint(coeff_uint64_count_, pool_));
 
             // We defer parameter checking to try_minimal_primitive_root(...)
-            if (!try_minimal_primitive_root(2 * coeff_count_, modulus_, pool, root_.get()))
+            if (!try_minimal_primitive_root(2 * coeff_count_, modulus_, pool_, root_.get()))
             {
                 reset();
                 return false;
             }
-            if (!try_invert_uint_mod(root_.get(), modulus_.get(), coeff_uint64_count_, inverse_root.get(), pool))
+            if (!try_invert_uint_mod(root_.get(), modulus_.get(), coeff_uint64_count_, inverse_root.get(), pool_))
             {
                 reset();
                 return false;
             }
 
             // Populate the tables storing (scaled version of) powers of root mod q in bit-scrambled order.  
-            ntt_powers_of_primitive_root(root_.get(), pool, root_powers_.get());
-            ntt_scale_powers_of_primitive_root(root_powers_.get(), pool, scaled_root_powers_.get());
+            ntt_powers_of_primitive_root(root_.get(), root_powers_.get());
+            ntt_scale_powers_of_primitive_root(root_powers_.get(), scaled_root_powers_.get());
 
             // Populate the tables storing (scaled version of) powers of (root)^{-1} mod q in bit-scrambled order.  
-            ntt_powers_of_primitive_root(inverse_root.get(), pool, inv_root_powers_.get());
-            ntt_scale_powers_of_primitive_root(inv_root_powers_.get(), pool, scaled_inv_root_powers_.get());
+            ntt_powers_of_primitive_root(inverse_root.get(), inv_root_powers_.get());
+            ntt_scale_powers_of_primitive_root(inv_root_powers_.get(), scaled_inv_root_powers_.get());
 
             // Populate the tables storing (scaled version of ) 2 times powers of roots^-1 mod q  in bit-scrambled order. 
             uint64_t *inv_root_powers_ptr = inv_root_powers_.get(); 
@@ -230,12 +224,12 @@ namespace seal
                 inv_root_powers_ptr += coeff_uint64_count_;
                 inv_root_powers_div_two_ptr += coeff_uint64_count_; 
             }
-            ntt_scale_powers_of_primitive_root(inv_root_powers_div_two_.get(), pool, scaled_inv_root_powers_div_two_.get());
+            ntt_scale_powers_of_primitive_root(inv_root_powers_div_two_.get(), scaled_inv_root_powers_div_two_.get());
 
             // Last compute n^(-1) modulo q. 
-            Pointer degree_uint(allocate_zero_uint(coeff_uint64_count_, pool));
+            Pointer degree_uint(allocate_zero_uint(coeff_uint64_count_, pool_));
             *degree_uint.get() = coeff_count_;
-            generated_ = try_invert_uint_mod(degree_uint.get(), modulus_.get(), coeff_uint64_count_, inv_degree_modulo_.get(), pool);
+            generated_ = try_invert_uint_mod(degree_uint.get(), modulus_.get(), coeff_uint64_count_, inv_degree_modulo_.get(), pool_);
             
             if (!generated_)
             {
@@ -245,12 +239,93 @@ namespace seal
             return true;
         }
 
-        NTTTables::~NTTTables()
+        NTTTables::NTTTables(const NTTTables &copy) : pool_(copy.pool_), generated_(copy.generated_), coeff_count_power_(copy.coeff_count_power_),
+            coeff_count_(copy.coeff_count_), coeff_uint64_count_(copy.coeff_uint64_count_)
         {
-            reset();
+            if (generated_)
+            {
+                // Copy modulus
+                modulus_alloc_ = allocate_uint(coeff_uint64_count_, pool_);
+                set_uint_uint(copy.modulus_alloc_.get(), coeff_uint64_count_, modulus_alloc_.get());
+                modulus_ = Modulus(modulus_alloc_.get(), coeff_uint64_count_, pool_);
+
+                // Allocate space and copy tables
+                root_ = allocate_uint(coeff_uint64_count_, pool_);
+                set_uint_uint(copy.root_.get(), coeff_uint64_count_, root_.get());
+
+                root_powers_ = allocate_uint(coeff_count_ * coeff_uint64_count_, pool_);
+                set_uint_uint(copy.root_powers_.get(), coeff_count_ * coeff_uint64_count_, root_powers_.get());
+
+                inv_root_powers_ = allocate_uint(coeff_count_ * coeff_uint64_count_, pool_);
+                set_uint_uint(copy.inv_root_powers_.get(), coeff_count_ * coeff_uint64_count_, inv_root_powers_.get());
+
+                scaled_root_powers_ = allocate_uint(coeff_count_ * coeff_uint64_count_, pool_);
+                set_uint_uint(copy.scaled_root_powers_.get(), coeff_count_ * coeff_uint64_count_, scaled_root_powers_.get());
+
+                scaled_inv_root_powers_ = allocate_uint(coeff_count_ * coeff_uint64_count_, pool_);
+                set_uint_uint(copy.scaled_inv_root_powers_.get(), coeff_count_ * coeff_uint64_count_, scaled_inv_root_powers_.get());
+
+                inv_root_powers_div_two_ = allocate_uint(coeff_count_ * coeff_uint64_count_, pool_);
+                set_uint_uint(copy.inv_root_powers_div_two_.get(), coeff_count_ * coeff_uint64_count_, inv_root_powers_div_two_.get());
+
+                scaled_inv_root_powers_div_two_ = allocate_uint(coeff_count_ * coeff_uint64_count_, pool_);
+                set_uint_uint(copy.scaled_inv_root_powers_div_two_.get(), coeff_count_ * coeff_uint64_count_, scaled_inv_root_powers_div_two_.get());
+
+                inv_degree_modulo_ = allocate_uint(coeff_uint64_count_, pool_);
+                set_uint_uint(copy.inv_degree_modulo_.get(), coeff_uint64_count_, inv_degree_modulo_.get());
+            }
         }
 
-        void NTTTables::ntt_powers_of_primitive_root(uint64_t *root, MemoryPool &pool, uint64_t *destination)
+        NTTTables &NTTTables::operator =(const NTTTables &assign)
+        {
+            // Check for self-assignment
+            if (this == &assign)
+            {
+                return *this;
+            }
+
+            generated_ = assign.generated_;
+            coeff_count_power_ = assign.coeff_count_power_;
+            coeff_count_ = assign.coeff_count_;
+            coeff_uint64_count_ = assign.coeff_uint64_count_;
+
+            if (generated_)
+            {
+                // Copy modulus
+                modulus_alloc_ = allocate_uint(coeff_uint64_count_, pool_);
+                set_uint_uint(assign.modulus_alloc_.get(), coeff_uint64_count_, modulus_alloc_.get());
+                modulus_ = Modulus(modulus_alloc_.get(), coeff_uint64_count_, pool_);
+
+                // Allocate space and copy tables
+                root_ = allocate_uint(coeff_uint64_count_, pool_);
+                set_uint_uint(assign.root_.get(), coeff_uint64_count_, root_.get());
+
+                root_powers_ = allocate_uint(coeff_count_ * coeff_uint64_count_, pool_);
+                set_uint_uint(assign.root_powers_.get(), coeff_count_ * coeff_uint64_count_, root_powers_.get());
+
+                inv_root_powers_ = allocate_uint(coeff_count_ * coeff_uint64_count_, pool_);
+                set_uint_uint(assign.inv_root_powers_.get(), coeff_count_ * coeff_uint64_count_, inv_root_powers_.get());
+
+                scaled_root_powers_ = allocate_uint(coeff_count_ * coeff_uint64_count_, pool_);
+                set_uint_uint(assign.scaled_root_powers_.get(), coeff_count_ * coeff_uint64_count_, scaled_root_powers_.get());
+
+                scaled_inv_root_powers_ = allocate_uint(coeff_count_ * coeff_uint64_count_, pool_);
+                set_uint_uint(assign.scaled_inv_root_powers_.get(), coeff_count_ * coeff_uint64_count_, scaled_inv_root_powers_.get());
+
+                inv_root_powers_div_two_ = allocate_uint(coeff_count_ * coeff_uint64_count_, pool_);
+                set_uint_uint(assign.inv_root_powers_div_two_.get(), coeff_count_ * coeff_uint64_count_, inv_root_powers_div_two_.get());
+
+                scaled_inv_root_powers_div_two_ = allocate_uint(coeff_count_ * coeff_uint64_count_, pool_);
+                set_uint_uint(assign.scaled_inv_root_powers_div_two_.get(), coeff_count_ * coeff_uint64_count_, scaled_inv_root_powers_div_two_.get());
+
+                inv_degree_modulo_ = allocate_uint(coeff_uint64_count_, pool_);
+                set_uint_uint(assign.inv_degree_modulo_.get(), coeff_uint64_count_, inv_degree_modulo_.get());
+            }
+
+            return *this;
+        }
+
+        void NTTTables::ntt_powers_of_primitive_root(uint64_t *root, uint64_t *destination)
         {
             uint64_t *destination_start = destination;
             uint64_t *next_destination;
@@ -258,28 +333,28 @@ namespace seal
             for (int i = 1; i < coeff_count_; ++i)
             {
                 next_destination = destination_start + coeff_uint64_count_ * (reverse_bits(static_cast<uint32_t>(i)) >> (32 - coeff_count_power_));
-                multiply_uint_uint_mod(destination, root, modulus_, next_destination, pool);
+                multiply_uint_uint_mod(destination, root, modulus_, next_destination, pool_);
                 destination = next_destination;
             }
         }
 
         // compute floor ( input * beta /q ), where beta is a 64k power of 2 and  0 < q < beta. 
-        void NTTTables::ntt_scale_powers_of_primitive_root(uint64_t *input, MemoryPool &pool, uint64_t *destination)
+        void NTTTables::ntt_scale_powers_of_primitive_root(uint64_t *input, uint64_t *destination)
         {
             int wide_uint64_count = 2 * coeff_uint64_count_;
 
-            Pointer wide_coeff(allocate_uint(wide_uint64_count, pool));
-            Pointer wide_modulus(allocate_uint(wide_uint64_count, pool));
+            Pointer wide_coeff(allocate_uint(wide_uint64_count, pool_));
+            Pointer wide_modulus(allocate_uint(wide_uint64_count, pool_));
             set_uint_uint(modulus_.get(), coeff_uint64_count_, wide_uint64_count, wide_modulus.get());
 
-            Pointer wide_quotient(allocate_uint(wide_uint64_count, pool));
-            Pointer wide_remainder(allocate_uint(wide_uint64_count, pool));
+            Pointer wide_quotient(allocate_uint(wide_uint64_count, pool_));
+            Pointer wide_remainder(allocate_uint(wide_uint64_count, pool_));
 
             for (int i = 0; i < coeff_count_; ++i)
             {
                 set_uint_uint(input, coeff_uint64_count_, wide_uint64_count, wide_coeff.get());
                 left_shift_uint(wide_coeff.get(), coeff_uint64_count_ * bits_per_uint64, wide_uint64_count, wide_coeff.get());
-                divide_uint_uint(wide_coeff.get(), wide_modulus.get(), wide_uint64_count, wide_quotient.get(), wide_remainder.get(), pool);
+                divide_uint_uint(wide_coeff.get(), wide_modulus.get(), wide_uint64_count, wide_quotient.get(), wide_remainder.get(), pool_);
                 set_uint_uint(wide_quotient.get(), wide_uint64_count, coeff_uint64_count_, destination);
                 input += coeff_uint64_count_;
                 destination += coeff_uint64_count_;

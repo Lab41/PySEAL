@@ -45,7 +45,7 @@ namespace SEALTest
 
             TEST_METHOD(NTTMultiplyPolyPoly)
             {
-                MemoryPool &pool = *MemoryPool::default_pool();
+                MemoryPoolHandle pool = MemoryPoolHandle::acquire_new();
                 {
                     BigPoly poly1(4, 64);
                     BigPoly poly2(4, 64);
@@ -66,7 +66,7 @@ namespace SEALTest
                     Modulus mod(modulus.pointer(), 1);
 
                     int coeff_count_power = 2;
-                    NTTTables tables;
+                    NTTTables tables(pool);
                     tables.generate(coeff_count_power, mod);
                     ntt_multiply_poly_poly(poly1.pointer(), poly2.pointer(), tables, result.get(), pool);
                     Assert::AreEqual(result.get()[0], static_cast<uint64_t>(2));
@@ -96,7 +96,7 @@ namespace SEALTest
 
                     BigPoly polymod("1x^1024 + 1"); 
                     PolyModulus polym(polymod.pointer(), coeff_count, 1); 
-                    NTTTables tables(coeff_count_power, mod); 
+                    NTTTables tables(coeff_count_power, mod, pool); 
 
                     nonfft_multiply_poly_poly_polymod_coeffmod(poly1.get(), poly2.get(), polym, mod, correct.get(), pool);
                     ntt_multiply_poly_poly(poly1.get(), poly2.get(), tables, result.get(), pool);
@@ -142,8 +142,8 @@ namespace SEALTest
 
             TEST_METHOD(NTTDotProductBigPolyArrayNTTBigPolyArray)
             {
-                MemoryPool &pool = *MemoryPool::default_pool();
-                NTTTables tables;
+                MemoryPoolHandle pool = MemoryPoolHandle::acquire_new();
+                NTTTables tables(pool);
                 int coeff_uint64_count = divide_round_up(7, bits_per_uint64);
 
                 BigPoly poly_modulus("1x^4 + 1");

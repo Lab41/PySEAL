@@ -22,8 +22,8 @@ namespace SEALTest
         public:
             TEST_METHOD(NTTTablesBasicsTest)
             {
-                NTTTables tables;
-                MemoryPool &pool = *MemoryPool::default_pool();
+                MemoryPoolHandle pool = MemoryPoolHandle::acquire_new();
+                NTTTables tables(pool);
                 Pointer modulus_anchor(allocate_uint(1, pool));
                 modulus_anchor[0] = 37;
                 int coeff_count_power = 1;
@@ -38,8 +38,8 @@ namespace SEALTest
 
             TEST_METHOD(NTTTablesPrimitiveRootsTest)
             {   
-                NTTTables tables;
-                MemoryPool &pool = *MemoryPool::default_pool();
+                MemoryPoolHandle pool = MemoryPoolHandle::acquire_new();
+                NTTTables tables(pool);
                 {
                     Pointer modulus_anchor(allocate_uint(1, pool));
                     modulus_anchor[0] = 37;
@@ -93,9 +93,8 @@ namespace SEALTest
 
             TEST_METHOD(NegacyclicNTTTest)
             {
-                NTTTables tables;
-                MemoryPool &pool = *MemoryPool::default_pool();
-
+                MemoryPoolHandle pool = MemoryPoolHandle::acquire_new();
+                NTTTables tables(pool);
                 {
                     Pointer modulus_anchor(allocate_uint(1, pool));
                     modulus_anchor[0] = 37;
@@ -157,9 +156,8 @@ namespace SEALTest
 
             TEST_METHOD(InverseNegacyclicNTTTest)
             {
-                NTTTables tables;
-                MemoryPool &pool = *MemoryPool::default_pool();
-
+                MemoryPoolHandle pool = MemoryPoolHandle::acquire_new();
+                NTTTables tables(pool);
                 {
                     Pointer modulus_anchor(allocate_uint(1, pool));
                     modulus_anchor[0] = 37;

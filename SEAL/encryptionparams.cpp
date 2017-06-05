@@ -4,6 +4,7 @@
 #include "util/uintarith.h"
 #include "util/modulus.h"
 #include "util/polymodulus.h"
+#include <stdexcept>
 
 using namespace std;
 using namespace seal::util;
@@ -28,11 +29,154 @@ namespace seal
         }
     }
 
-    EncryptionParameters::EncryptionParameters() :
+    EncryptionParameters::EncryptionParameters(const MemoryPoolHandle &pool) :
+        pool_(pool), decomposition_bit_count_(0), 
         noise_standard_deviation_(ChooserEvaluator::default_noise_standard_deviation()), 
         noise_max_deviation_(ChooserEvaluator::default_noise_max_deviation()),
-        decomposition_bit_count_(0), random_generator_(nullptr)
+        random_generator_(nullptr), validated_(false), ntt_tables_(pool_), aux_ntt_tables_(pool_), plain_ntt_tables_(pool_)
     {
+    }
+
+    void EncryptionParameters::set_poly_modulus(const BigPoly &poly_modulus)
+    {
+        invalidate();
+        poly_modulus_.duplicate_from(poly_modulus);
+    }
+
+    void EncryptionParameters::set_coeff_modulus(const BigUInt &coeff_modulus)
+    {
+        invalidate();
+        coeff_modulus_.duplicate_from(coeff_modulus);
+    }
+#ifndef DISABLE_NTT_IN_MULTIPLY
+    void EncryptionParameters::set_aux_coeff_modulus(const BigUInt &aux_coeff_modulus)
+    {
+        invalidate();
+        aux_coeff_modulus_.duplicate_from(aux_coeff_modulus);
+    }
+#endif
+    void EncryptionParameters::set_plain_modulus(const BigUInt &plain_modulus)
+    {
+        invalidate();
+        plain_modulus_.duplicate_from(plain_modulus);
+    }
+
+    void EncryptionParameters::set_decomposition_bit_count(int decomposition_bit_count)
+    {
+        invalidate();
+        decomposition_bit_count_ = decomposition_bit_count;
+    }
+
+    void EncryptionParameters::set_noise_standard_deviation(double noise_standard_deviation)
+    {
+        invalidate();
+        noise_standard_deviation_ = noise_standard_deviation;
+    }
+
+    void EncryptionParameters::set_noise_max_deviation(double noise_max_deviation)
+    {
+        invalidate();
+        noise_max_deviation_ = noise_max_deviation;
+    }
+
+    void EncryptionParameters::set_random_generator(UniformRandomGeneratorFactory *random_generator)
+    {
+        invalidate();
+        random_generator_ = random_generator;
+    }
+
+    EncryptionParameterQualifiers EncryptionParameters::validate()
+    {
+        if (validated_)
+        {
+            return qualifiers_;
+        }
+
+        qualifiers_ = EncryptionParameterQualifiers();
+
+        // Verify required parameters
+        if (!poly_modulus_.is_zero() && !coeff_modulus_.is_zero() && !plain_modulus_.is_zero()
+            && decomposition_bit_count_ >= 0 && noise_standard_deviation_ >= 0 && noise_max_deviation_ >= 0
+            && plain_modulus_ < coeff_modulus_ && are_poly_coefficients_less_than(poly_modulus_, coeff_modulus_))
+        {
+            // The encryption parameters are appropriately set
+            qualifiers_.parameters_set = true;
+        }
+        else
+        {
+            // Parameters have been validated but are not valid
+            validated_ = true;
+            qualifiers_.parameters_set = false;
+            return qualifiers_;
+        }
+
+        // Next check more qualities of the moduli
+        Modulus coeff_mod(coeff_modulus_.pointer(), coeff_modulus_.uint64_count());
+        Modulus plain_mod(plain_modulus_.pointer(), plain_modulus_.uint64_count());
+        PolyModulus poly_mod(poly_modulus_.pointer(), poly_modulus_.coeff_count(), poly_modulus_.coeff_uint64_count());
+
+        // We will additionally require that poly_modulus is of the form x^N+1, where N is a power of two
+        if (poly_mod.is_fft_modulus())
+        {
+            qualifiers_.enable_nussbaumer = true;
+        }
+        else
+        {
+            // Parameters have been validated but are not valid
+            validated_ = true;
+            qualifiers_.parameters_set = false;
+            return qualifiers_;
+        }
+
+        int coeff_count_power = poly_mod.coeff_count_power_of_two();
+
+        // Can relinearization be done? Note that also evaluation keys will have to be generated
+        if (decomposition_bit_count_ > 0)
+        {
+            qualifiers_.enable_relinearization = true;
+        }
+
+        // Can we use NTT with coeff_modulus?
+        if (ntt_tables_.generate(coeff_count_power, coeff_mod))
+        {
+            qualifiers_.enable_ntt = true;
+        }
+#ifndef DISABLE_NTT_IN_MULTIPLY
+        // Can we use NTT in homomorphic multiplication?
+        int coeff_bit_count = coeff_modulus_.significant_bit_count();
+        int aux_coeff_bit_count = aux_coeff_modulus_.significant_bit_count();
+        int aux_coeff_uint64_count = divide_round_up(aux_coeff_bit_count, bits_per_uint64);
+        bool aux_coeff_large_enough = aux_coeff_bit_count > coeff_count_power + coeff_bit_count + 1;
+        if (aux_coeff_large_enough && !aux_coeff_modulus_.is_zero())
+        {
+            Modulus aux_mod(aux_coeff_modulus_.pointer(), aux_coeff_modulus_.uint64_count());
+            if (aux_ntt_tables_.generate(coeff_count_power, aux_mod))
+            {
+                qualifiers_.enable_ntt_in_multiply = true;
+            }
+        }
+#endif
+        // Can we use batching? (NTT with plain_modulus)
+        if (plain_ntt_tables_.generate(coeff_count_power, plain_mod))
+        {
+            qualifiers_.enable_batching = true;
+        }
+        
+        // Parameters have been validated and are valid
+        validated_ = true;
+        return qualifiers_;
+    }
+
+    void EncryptionParameters::invalidate()
+    {
+        if (validated_)
+        {
+            validated_ = false;
+            qualifiers_ = EncryptionParameterQualifiers();
+            ntt_tables_.reset();
+            aux_ntt_tables_.reset();
+            plain_ntt_tables_.reset();
+        }
     }
 
     void EncryptionParameters::save(ostream &stream) const
@@ -49,6 +193,9 @@ namespace seal
 
     void EncryptionParameters::load(istream &stream)
     {
+        // Invalidate current parameters
+        invalidate();
+
         poly_modulus_.load(stream);
         coeff_modulus_.load(stream);
         aux_coeff_modulus_.load(stream);
@@ -60,57 +207,26 @@ namespace seal
         decomposition_bit_count_ = decomp_bit_count32;
     }
 
-    void EncryptionParameters::inherent_noise_max(BigUInt &destination) const
+    void EncryptionParameters::inherent_noise_max(BigUInt &destination)
     {
-        EncryptionParameterQualifiers qualifiers;
+        if (!qualifiers_.parameters_set)
+        {
+            throw logic_error("encryption parameters are not valid");
+        }
 
-        // Test that all of the parameters are of appropriate form
         int coeff_bit_count = coeff_modulus_.significant_bit_count();
         int coeff_uint64_count = divide_round_up(coeff_bit_count, bits_per_uint64);
-
-        // Verify required parameters
-        if (!poly_modulus_.is_zero() && !coeff_modulus_.is_zero() && !plain_modulus_.is_zero()
-            && decomposition_bit_count_ >= 0 && noise_standard_deviation_ >= 0 && noise_max_deviation_ >= 0
-            && plain_modulus_ < coeff_modulus_ && are_poly_coefficients_less_than(poly_modulus_, coeff_modulus_))
-        {
-            // The parameters are appropriately set
-            qualifiers.parameters_set = true;
-        }
-        else
-        {
-            qualifiers.parameters_set = false;
-        }
-
-        // Next check more qualities of the moduli
-        Modulus coeff_mod(coeff_modulus_.pointer(), coeff_modulus_.uint64_count());
-        PolyModulus poly_mod(poly_modulus_.pointer(), poly_modulus_.coeff_count(), poly_modulus_.coeff_uint64_count());
-
-        // We will additionally require that poly_modulus is of the form x^N+1, where N is a power of two
-        if (poly_mod.is_fft_modulus())
-        {
-            qualifiers.enable_nussbaumer = true;
-        }
-        else
-        {
-            qualifiers.parameters_set = false;
-        }
-
-        if (!qualifiers.parameters_set)
-        {
-            throw logic_error("EncryptionParameters are not valid");
-        }
 
         // Resize destination
         destination.resize(coeff_bit_count);
 
         // Resize plaintext modulus.
-        MemoryPool &pool = *MemoryPool::default_pool();
-        ConstPointer plain_modulus_ptr = duplicate_uint_if_needed(plain_modulus_, coeff_uint64_count, false, pool);
+        ConstPointer plain_modulus_ptr = duplicate_uint_if_needed(plain_modulus_, coeff_uint64_count, false, pool_);
 
         // Compute floor of coeff_modulus/plain_modulus.
-        Pointer coeff_div_plain_modulus(allocate_uint(coeff_uint64_count, pool));
-        Pointer remainder(allocate_uint(coeff_uint64_count, pool));
-        divide_uint_uint(coeff_modulus_.pointer(), plain_modulus_ptr.get(), coeff_uint64_count, coeff_div_plain_modulus.get(), remainder.get(), pool);
+        Pointer coeff_div_plain_modulus(allocate_uint(coeff_uint64_count, pool_));
+        Pointer remainder(allocate_uint(coeff_uint64_count, pool_));
+        divide_uint_uint(coeff_modulus_.pointer(), plain_modulus_ptr.get(), coeff_uint64_count, coeff_div_plain_modulus.get(), remainder.get(), pool_);
         
         // For extreme parameter choices it can be that we in fact coeff_div_plain_modulus < remainder, 
         // in which case the noise bound should be 0.
@@ -123,80 +239,5 @@ namespace seal
             sub_uint_uint(coeff_div_plain_modulus.get(), remainder.get(), coeff_uint64_count, destination.pointer());
             right_shift_uint(destination.pointer(), 1, coeff_uint64_count, destination.pointer());
         }
-    }
-
-    EncryptionParameterQualifiers EncryptionParameters::get_qualifiers() const
-    {
-        EncryptionParameterQualifiers qualifiers;
-
-        // Verify required parameters
-        if (!poly_modulus_.is_zero() && !coeff_modulus_.is_zero() && !plain_modulus_.is_zero()
-            && decomposition_bit_count_ >= 0 && noise_standard_deviation_ >= 0 && noise_max_deviation_ >= 0
-            && plain_modulus_ < coeff_modulus_ && are_poly_coefficients_less_than(poly_modulus_, coeff_modulus_))
-        {
-            // The parameters are appropriately set
-            qualifiers.parameters_set = true;
-        }
-        else
-        {
-            qualifiers.parameters_set = false;
-            return qualifiers;
-        }
-
-        // Next check more qualities of the moduli
-        Modulus coeff_mod(coeff_modulus_.pointer(), coeff_modulus_.uint64_count());
-        Modulus plain_mod(plain_modulus_.pointer(), plain_modulus_.uint64_count());
-        PolyModulus poly_mod(poly_modulus_.pointer(), poly_modulus_.coeff_count(), poly_modulus_.coeff_uint64_count());
-
-        // We will additionally require that poly_modulus is of the form x^N+1, where N is a power of two
-        if (poly_mod.is_fft_modulus())
-        {
-            qualifiers.enable_nussbaumer = true;
-        }
-        else
-        {
-            qualifiers.parameters_set = false;
-            return qualifiers;
-        }
-
-        int coeff_count_power = poly_mod.coeff_count_power_of_two();
-
-        // Can relinearization be done? Note that also evaluation keys will have to be generated
-        if (decomposition_bit_count_ > 0)
-        {
-            qualifiers.enable_relinearization = true;
-        }
-
-        NTTTables ntt_tables;
-
-        // Can we use NTT with coeff_modulus?
-        if (ntt_tables.generate(coeff_count_power, coeff_mod))
-        {
-            qualifiers.enable_ntt = true;
-        }
-
-        // Can we use batching? (NTT with plain_modulus)
-        if (ntt_tables.generate(coeff_count_power, plain_mod))
-        {
-            qualifiers.enable_batching = true;
-        }
-
-#ifndef DISABLE_NTT_IN_MULTIPLY
-        // Can we use NTT in homomorphic multiplication?
-        int coeff_bit_count = coeff_modulus_.significant_bit_count();
-        int aux_coeff_bit_count = aux_coeff_modulus_.significant_bit_count();
-        int aux_coeff_uint64_count = divide_round_up(aux_coeff_bit_count, bits_per_uint64);
-        bool aux_coeff_large_enough = aux_coeff_bit_count > coeff_count_power + coeff_bit_count + 1;
-        if (aux_coeff_large_enough && !aux_coeff_modulus_.is_zero())
-        {
-            Modulus aux_mod(aux_coeff_modulus_.pointer(), aux_coeff_modulus_.uint64_count());
-            if (ntt_tables.generate(coeff_count_power, aux_mod))
-            {
-                qualifiers.enable_ntt_in_multiply = true;
-            }
-        }
-#endif
-
-        return qualifiers;
     }
 }

@@ -12,3 +12,6 @@
 #include "chooser.h"
 #include "utilities.h"
 #include "polycrt.h"
+#include "memorypoolhandle.h"
+#include "plaintext.h"
+#include "ciphertext.h"

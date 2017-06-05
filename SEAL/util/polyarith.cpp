@@ -10,6 +10,28 @@ namespace seal
 {
     namespace util
     {
+
+        void rightshift_poly_coeffs(uint64_t *poly, int coeff_count, int coeff_uint64_count, int shift_amount, MemoryPool &pool)
+        {
+            Pointer temp(allocate_uint(coeff_uint64_count, pool));
+            for (int j = 0; j < coeff_count; j++)
+            {
+                right_shift_uint(poly, shift_amount, coeff_uint64_count, temp.get());
+                set_uint_uint(temp.get(), coeff_uint64_count, poly);
+                poly += coeff_uint64_count;
+            }
+        }
+
+        void modulo_poly_coeffs_uint64(uint64_t *poly, int coeff_count, uint64_t mod, MemoryPool &pool)
+        {
+            for (int i = 0; i < coeff_count; ++i)
+            {
+                *poly %= mod;
+                poly += 1;
+            }
+        }
+
+
         void modulo_poly_coeffs(uint64_t *poly, int coeff_count, const Modulus &modulus, MemoryPool &pool)
         {
 #ifdef _DEBUG

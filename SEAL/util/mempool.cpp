@@ -7,8 +7,6 @@ namespace seal
 {
     namespace util
     {
-        MemoryPool *MemoryPool::default_pool_ = new MemoryPool();
-
         MemoryPoolItem *MemoryPoolHead::get()
         {
             bool expected = false;

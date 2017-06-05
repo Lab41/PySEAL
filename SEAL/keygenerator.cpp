@@ -48,7 +48,6 @@ namespace seal
         int coeff_bit_count = poly_modulus_.coeff_bit_count();
         int coeff_uint64_count = divide_round_up(coeff_bit_count, bits_per_uint64);
 
-        MemoryPool &pool = *MemoryPool::default_pool();
         unique_ptr<UniformRandomGenerator> random(random_generator_->create());
 
         // generate secret key
@@ -66,25 +65,25 @@ namespace seal
         if (qualifiers_.enable_ntt)
         {
             // transform the secret s into NTT representation. 
-            ntt_negacyclic_harvey(secret_key, ntt_tables_, pool);
+            ntt_negacyclic_harvey(secret_key, ntt_tables_, pool_);
 
             // transform the uniform random polynomial a into NTT representation. 
-            ntt_negacyclic_harvey(public_key_1, ntt_tables_, pool);
+            ntt_negacyclic_harvey(public_key_1, ntt_tables_, pool_);
 
-            Pointer noise(allocate_poly(coeff_count, coeff_uint64_count, pool));
+            Pointer noise(allocate_poly(coeff_count, coeff_uint64_count, pool_));
             set_poly_coeffs_normal(noise.get(), random.get());
 
             // transform the noise e into NTT representation.
-            ntt_negacyclic_harvey(noise.get(), ntt_tables_, pool);
+            ntt_negacyclic_harvey(noise.get(), ntt_tables_, pool_);
 
-            dyadic_product_coeffmod(secret_key, public_key_1, coeff_count, mod_, public_key_[0].pointer(), pool); 
+            dyadic_product_coeffmod(secret_key, public_key_1, coeff_count, mod_, public_key_[0].pointer(), pool_); 
             add_poly_poly_coeffmod(noise.get(), public_key_[0].pointer(), coeff_count, coeff_modulus_.pointer(), coeff_uint64_count, public_key_[0].pointer());
         }
 
         else if(! qualifiers_.enable_ntt && qualifiers_.enable_nussbaumer)
         {
-            nussbaumer_multiply_poly_poly_coeffmod(public_key_1, secret_key, polymod_.coeff_count_power_of_two(), mod_, public_key_.pointer(0), pool);
-            Pointer noise(allocate_poly(coeff_count, coeff_uint64_count, pool));
+            nussbaumer_multiply_poly_poly_coeffmod(public_key_1, secret_key, polymod_.coeff_count_power_of_two(), mod_, public_key_.pointer(0), pool_);
+            Pointer noise(allocate_poly(coeff_count, coeff_uint64_count, pool_));
             set_poly_coeffs_normal(noise.get(), random.get());
             add_poly_poly_coeffmod(noise.get(), public_key_[0].pointer(), coeff_count, coeff_modulus_.pointer(), coeff_uint64_count, public_key_[0].pointer());
         }
@@ -153,14 +152,13 @@ namespace seal
             evaluation_keys_.keys().emplace_back(BigPolyArray(evaluation_factors_count, coeff_count, coeff_bit_count), BigPolyArray(evaluation_factors_count, coeff_count, coeff_bit_count));
         }
 
-        MemoryPool &pool = *MemoryPool::default_pool();
         unique_ptr<UniformRandomGenerator> random(random_generator_->create());
 
         // Create evaluation keys.
-        Pointer noise(allocate_poly(coeff_count, coeff_uint64_count, pool));
-        Pointer power(allocate_uint(coeff_uint64_count, pool));
-        Pointer secret_key_power(allocate_poly(coeff_count, coeff_uint64_count, pool));
-        Pointer temp(allocate_poly(coeff_count, coeff_uint64_count, pool));
+        Pointer noise(allocate_poly(coeff_count, coeff_uint64_count, pool_));
+        Pointer power(allocate_uint(coeff_uint64_count, pool_));
+        Pointer secret_key_power(allocate_poly(coeff_count, coeff_uint64_count, pool_));
+        Pointer temp(allocate_poly(coeff_count, coeff_uint64_count, pool_));
         
         int poly_ptr_increment = coeff_count * coeff_uint64_count;
 
@@ -182,14 +180,14 @@ namespace seal
                     uint64_t *eval_keys_first = evaluation_keys_[k].first[i].pointer();
 
                     set_poly_coeffs_uniform(eval_keys_second, random.get());
-                    ntt_negacyclic_harvey(eval_keys_second, ntt_tables_, pool);
+                    ntt_negacyclic_harvey(eval_keys_second, ntt_tables_, pool_);
 
                     // calculate a_i*s and store in evaluation_keys_[k].first[i]
-                    dyadic_product_coeffmod(eval_keys_second, secret_key_.pointer(), coeff_count, mod_, eval_keys_first, pool);
+                    dyadic_product_coeffmod(eval_keys_second, secret_key_.pointer(), coeff_count, mod_, eval_keys_first, pool_);
 
                     //generate NTT(e_i) 
                     set_poly_coeffs_normal(noise.get(), random.get());
-                    ntt_negacyclic_harvey(noise.get(), ntt_tables_, pool);
+                    ntt_negacyclic_harvey(noise.get(), ntt_tables_, pool_);
 
                     //add e_i into evaluation_keys_[k].first[i]
                     add_poly_poly_coeffmod(noise.get(), eval_keys_first, coeff_count, coeff_modulus_.pointer(), coeff_uint64_count, eval_keys_first);
@@ -198,7 +196,7 @@ namespace seal
                     negate_poly_coeffmod(eval_keys_first, coeff_count, coeff_modulus_.pointer(), coeff_uint64_count, eval_keys_first);
 
                     //multiply w^i * s^(k+2)
-                    multiply_poly_scalar_coeffmod(secret_key_power.get(), coeff_count, evaluation_factors_[i].pointer(), mod_, temp.get(), pool);
+                    multiply_poly_scalar_coeffmod(secret_key_power.get(), coeff_count, evaluation_factors_[i].pointer(), mod_, temp.get(), pool_);
 
                     //add w^i . s^(k+2) into evaluation_keys_[k].first[i]
                     add_poly_poly_coeffmod(eval_keys_first, temp.get(), coeff_count, coeff_modulus_.pointer(), coeff_uint64_count, eval_keys_first);
@@ -219,7 +217,7 @@ namespace seal
                     set_poly_coeffs_uniform(eval_keys_second, random.get());
 
                     // calculate a_i*s and store in evaluation_keys_[k].first[i]
-                    nussbaumer_multiply_poly_poly_coeffmod(eval_keys_second, secret_key_.pointer(), polymod_.coeff_count_power_of_two(), mod_, evaluation_keys_[k].first[i].pointer(), pool);
+                    nussbaumer_multiply_poly_poly_coeffmod(eval_keys_second, secret_key_.pointer(), polymod_.coeff_count_power_of_two(), mod_, evaluation_keys_[k].first[i].pointer(), pool_);
 
                     //generate e_i 
                     set_poly_coeffs_normal(noise.get(), random.get());
@@ -231,7 +229,7 @@ namespace seal
                     negate_poly_coeffmod(evaluation_keys_[k].first[i].pointer(), coeff_count, coeff_modulus_.pointer(), coeff_uint64_count, evaluation_keys_[k].first[i].pointer());
 
                     //multiply w^i by s^(k+2)
-                    multiply_poly_scalar_coeffmod(secret_key_power.get(), coeff_count, evaluation_factors_[i].pointer(), mod_, temp.get(), pool);
+                    multiply_poly_scalar_coeffmod(secret_key_power.get(), coeff_count, evaluation_factors_[i].pointer(), mod_, temp.get(), pool_);
 
                     //add w^i . s^(k+2) into evaluation_keys_[k].first[i]
                     add_poly_poly_coeffmod(evaluation_keys_[k].first[i].pointer(), temp.get(), coeff_count, coeff_modulus_.pointer(), coeff_uint64_count, evaluation_keys_[k].first[i].pointer());
@@ -329,16 +327,15 @@ namespace seal
         }
 
         // when poly is fully populated, reduce all coefficient modulo coeff_modulus
-        MemoryPool &pool = *MemoryPool::default_pool();
-        modulo_poly_coeffs(poly, coeff_count, mod_, pool);
+        modulo_poly_coeffs(poly, coeff_count, mod_, pool_);
     }
 
-    KeyGenerator::KeyGenerator(const EncryptionParameters &parms) :
-        poly_modulus_(parms.poly_modulus()), coeff_modulus_(parms.coeff_modulus()), plain_modulus_(parms.plain_modulus()),
+    KeyGenerator::KeyGenerator(const EncryptionParameters &parms, const MemoryPoolHandle &pool) :
+        pool_(pool), poly_modulus_(parms.poly_modulus()), coeff_modulus_(parms.coeff_modulus()), plain_modulus_(parms.plain_modulus()),
         noise_standard_deviation_(parms.noise_standard_deviation()), noise_max_deviation_(parms.noise_max_deviation()),
         decomposition_bit_count_(parms.decomposition_bit_count()), 
         random_generator_(parms.random_generator() != nullptr ? parms.random_generator() : UniformRandomGeneratorFactory::default_factory()),
-        qualifiers_(parms.get_qualifiers())
+        ntt_tables_(pool_), qualifiers_(parms.get_qualifiers())
     {
         // Verify parameters
         if (!qualifiers_.parameters_set)
@@ -384,11 +381,9 @@ namespace seal
         // Initialize evaluation keys to empty
         evaluation_keys_.clear();
 
-        MemoryPool &pool = *MemoryPool::default_pool();
-
         // Initialize moduli.
         polymod_ = PolyModulus(poly_modulus_.pointer(), coeff_count, coeff_uint64_count);
-        mod_ = Modulus(coeff_modulus_.pointer(), coeff_uint64_count, pool);
+        mod_ = Modulus(coeff_modulus_.pointer(), coeff_uint64_count, pool_);
 
         // Generate NTT tables if needed
         if (qualifiers_.enable_ntt)
@@ -403,12 +398,12 @@ namespace seal
         generated_ = false;
     }
 
-    KeyGenerator::KeyGenerator(const EncryptionParameters &parms, const BigPoly &secret_key, const BigPolyArray &public_key, EvaluationKeys &evaluation_keys) :
-        poly_modulus_(parms.poly_modulus()), coeff_modulus_(parms.coeff_modulus()), plain_modulus_(parms.plain_modulus()),
+    KeyGenerator::KeyGenerator(const EncryptionParameters &parms, const BigPoly &secret_key, const BigPolyArray &public_key, EvaluationKeys &evaluation_keys, const MemoryPoolHandle &pool) :
+        pool_(pool), poly_modulus_(parms.poly_modulus()), coeff_modulus_(parms.coeff_modulus()), plain_modulus_(parms.plain_modulus()),
         noise_standard_deviation_(parms.noise_standard_deviation()), noise_max_deviation_(parms.noise_max_deviation()),
         decomposition_bit_count_(parms.decomposition_bit_count()),
         random_generator_(parms.random_generator() != nullptr ? parms.random_generator() : UniformRandomGeneratorFactory::default_factory()),
-        qualifiers_(parms.get_qualifiers())
+        ntt_tables_(pool_), qualifiers_(parms.get_qualifiers())
     {
         // Verify parameters
         if (!qualifiers_.parameters_set)
@@ -481,11 +476,9 @@ namespace seal
         secret_key_ = secret_key;
         evaluation_keys_ = evaluation_keys;
 
-        MemoryPool &pool = *MemoryPool::default_pool();
-
         // Initialize moduli.
         polymod_ = PolyModulus(poly_modulus_.pointer(), coeff_count, coeff_uint64_count);
-        mod_ = Modulus(coeff_modulus_.pointer(), coeff_uint64_count, pool);
+        mod_ = Modulus(coeff_modulus_.pointer(), coeff_uint64_count, pool_);
 
         // Generate NTT tables if needed
         if (qualifiers_.enable_ntt)
@@ -506,10 +499,8 @@ namespace seal
         int coeff_bit_count = coeff_modulus_.bit_count();
         int coeff_uint64_count = divide_round_up(coeff_bit_count, bits_per_uint64);
 
-        MemoryPool &pool = *MemoryPool::default_pool();
-
         // Initialize evaluation_factors_
-        Pointer current_evaluation_factor(allocate_uint(coeff_uint64_count, pool));
+        Pointer current_evaluation_factor(allocate_uint(coeff_uint64_count, pool_));
         set_uint(1, coeff_uint64_count, current_evaluation_factor.get());
         while (!is_zero_uint(current_evaluation_factor.get(), coeff_uint64_count) && is_less_than_uint_uint(current_evaluation_factor.get(), coeff_modulus_.pointer(), coeff_uint64_count))
         {
@@ -568,8 +559,6 @@ namespace seal
         // Compute powers of secret key until max_power
         secret_key_array_.resize(new_count, coeff_count, coeff_bit_count);
 
-        MemoryPool &pool = *MemoryPool::default_pool();
-
         int poly_ptr_increment = coeff_count * coeff_uint64_count;
         uint64_t *prev_poly_ptr = secret_key_array_.pointer(old_count - 1);
         uint64_t *next_poly_ptr = prev_poly_ptr + poly_ptr_increment;
@@ -580,7 +569,7 @@ namespace seal
             // we simply need to compute a dyadic product of the last one with the first one [which is equal to NTT(secret_key_)].
             for (int i = old_count; i < new_count; ++i)
             {
-                dyadic_product_coeffmod(prev_poly_ptr, secret_key_array_.pointer(0), coeff_count, mod_, next_poly_ptr, pool);
+                dyadic_product_coeffmod(prev_poly_ptr, secret_key_array_.pointer(0), coeff_count, mod_, next_poly_ptr, pool_);
                 prev_poly_ptr = next_poly_ptr;
                 next_poly_ptr += poly_ptr_increment;
             }
@@ -590,7 +579,7 @@ namespace seal
             // Non-NTT path involves computing powers of the secret key.
             for (int i = old_count; i < new_count; ++i)
             {
-                nussbaumer_multiply_poly_poly_coeffmod(prev_poly_ptr, secret_key_.pointer(), polymod_.coeff_count_power_of_two(), mod_, next_poly_ptr, pool);
+                nussbaumer_multiply_poly_poly_coeffmod(prev_poly_ptr, secret_key_.pointer(), polymod_.coeff_count_power_of_two(), mod_, next_poly_ptr, pool_);
                 prev_poly_ptr = next_poly_ptr;
                 next_poly_ptr += poly_ptr_increment;
             }

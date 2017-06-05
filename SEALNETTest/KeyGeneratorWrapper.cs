@@ -14,24 +14,27 @@ namespace SEALNETTest
         [TestMethod]
         public void FVKeyGenerationNET()
         {
-            var parms = new EncryptionParameters
-            {
-                DecompositionBitCount = 4,
-                NoiseStandardDeviation = 3.19,
-                NoiseMaxDeviation = 35.06
-            };
-            var coeffModulus = parms.CoeffModulus;
-            coeffModulus.Resize(48);
+            var parms = new EncryptionParameters(MemoryPoolHandle.AcquireNew());
+            parms.SetDecompositionBitCount(4);
+            parms.SetNoiseStandardDeviation(3.19);
+            parms.SetNoiseMaxDeviation(35.06);
+
+            var coeffModulus = new BigUInt(48);
             coeffModulus.Set("FFFFFFFFC001");
-            var plainModulus = parms.PlainModulus;
-            plainModulus.Resize(7);
+            parms.SetCoeffModulus(coeffModulus);
+
+            var plainModulus = new BigUInt(7);
             plainModulus.Set(1 << 6);
-            var polyModulus = parms.PolyModulus;
-            polyModulus.Resize(65, 1);
+            parms.SetPlainModulus(plainModulus);
+
+            var polyModulus = new BigPoly(65, 1);
             polyModulus[0].Set(1);
             polyModulus[64].Set(1);
+            parms.SetPolyModulus(polyModulus);
 
-            var keygen = new KeyGenerator(parms);
+            parms.Validate();
+
+            var keygen = new KeyGenerator(parms, MemoryPoolHandle.AcquireNew());
             keygen.Generate(1);
 
             Assert.IsFalse(keygen.PublicKey[0].IsZero);
@@ -81,24 +84,27 @@ namespace SEALNETTest
         [TestMethod]
         public void FVKeyGenerationNoEVKNET()
         {
-            var parms = new EncryptionParameters
-            {
-                DecompositionBitCount = 0,
-                NoiseStandardDeviation = 3.19,
-                NoiseMaxDeviation = 35.06
-            };
-            var coeffModulus = parms.CoeffModulus;
-            coeffModulus.Resize(48);
+            var parms = new EncryptionParameters(MemoryPoolHandle.AcquireNew());
+            parms.SetDecompositionBitCount(0);
+            parms.SetNoiseStandardDeviation(3.19);
+            parms.SetNoiseMaxDeviation(35.06);
+
+            var coeffModulus = new BigUInt(48);
             coeffModulus.Set("FFFFFFFFC001");
-            var plainModulus = parms.PlainModulus;
-            plainModulus.Resize(7);
+            parms.SetCoeffModulus(coeffModulus);
+
+            var plainModulus = new BigUInt(7);
             plainModulus.Set(1 << 6);
-            var polyModulus = parms.PolyModulus;
-            polyModulus.Resize(65, 1);
+            parms.SetPlainModulus(plainModulus);
+
+            var polyModulus = new BigPoly(65, 1);
             polyModulus[0].Set(1);
             polyModulus[64].Set(1);
+            parms.SetPolyModulus(polyModulus);
 
-            var keygen = new KeyGenerator(parms);
+            parms.Validate();
+
+            var keygen = new KeyGenerator(parms, MemoryPoolHandle.AcquireNew());
             keygen.Generate(0);
 
             Assert.IsFalse(keygen.PublicKey[0].IsZero);

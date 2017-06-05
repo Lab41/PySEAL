@@ -23,6 +23,42 @@ namespace Microsoft
                 GC::KeepAlive(plainModulus);
             }
 
+            BinaryEncoder::BinaryEncoder(BigUInt ^plainModulus, MemoryPoolHandle ^pool) : binaryEncoder_(nullptr)
+            {
+                if (plainModulus == nullptr)
+                {
+                    throw gcnew ArgumentNullException("plainModulus cannot be null");
+                }
+                if (pool == nullptr)
+                {
+                    throw gcnew ArgumentNullException("pool cannot be null");
+                }
+                binaryEncoder_ = new seal::BinaryEncoder(plainModulus->GetUInt(), pool->GetHandle());
+                GC::KeepAlive(plainModulus);
+                GC::KeepAlive(pool);
+            }
+
+            BinaryEncoder::BinaryEncoder(BinaryEncoder ^copy) : binaryEncoder_(nullptr)
+            {
+                if (copy == nullptr)
+                {
+                    throw gcnew ArgumentNullException("copy cannot be null");
+                }
+                try
+                {
+                    binaryEncoder_ = new seal::BinaryEncoder(copy->GetEncoder());
+                    GC::KeepAlive(copy);
+                }
+                catch (const exception &e)
+                {
+                    HandleException(&e);
+                }
+                catch (...)
+                {
+                    HandleException(nullptr);
+                }
+            }
+
             BinaryEncoder::~BinaryEncoder()
             {
                 this->!BinaryEncoder();
@@ -480,6 +516,21 @@ namespace Microsoft
                 GC::KeepAlive(plainModulus);
             }
 
+            BalancedEncoder::BalancedEncoder(BigUInt ^plainModulus, UInt64 base, MemoryPoolHandle ^pool) : balancedEncoder_(nullptr)
+            {
+                if (plainModulus == nullptr)
+                {
+                    throw gcnew ArgumentNullException("plainModulus cannot be null");
+                }
+                if (pool == nullptr)
+                {
+                    throw gcnew ArgumentNullException("pool cannot be null");
+                }
+                balancedEncoder_ = new seal::BalancedEncoder(plainModulus->GetUInt(), base, pool->GetHandle());
+                GC::KeepAlive(plainModulus);
+                GC::KeepAlive(pool);
+            }
+
             BalancedEncoder::BalancedEncoder(BigUInt ^plainModulus) : balancedEncoder_(nullptr)
             {
                 if (plainModulus == nullptr)
@@ -488,6 +539,42 @@ namespace Microsoft
                 }
                 balancedEncoder_ = new seal::BalancedEncoder(plainModulus->GetUInt());
                 GC::KeepAlive(plainModulus);
+            }
+
+            BalancedEncoder::BalancedEncoder(BigUInt ^plainModulus, MemoryPoolHandle ^pool) : balancedEncoder_(nullptr)
+            {
+                if (plainModulus == nullptr)
+                {
+                    throw gcnew ArgumentNullException("plainModulus cannot be null");
+                }
+                if (pool == nullptr)
+                {
+                    throw gcnew ArgumentNullException("pool cannot be null");
+                }
+                balancedEncoder_ = new seal::BalancedEncoder(plainModulus->GetUInt(), 3, pool->GetHandle());
+                GC::KeepAlive(plainModulus);
+                GC::KeepAlive(pool);
+            }
+
+            BalancedEncoder::BalancedEncoder(BalancedEncoder ^copy) : balancedEncoder_(nullptr)
+            {
+                if (copy == nullptr)
+                {
+                    throw gcnew ArgumentNullException("copy cannot be null");
+                }
+                try
+                {
+                    balancedEncoder_ = new seal::BalancedEncoder(copy->GetEncoder());
+                    GC::KeepAlive(copy);
+                }
+                catch (const exception &e)
+                {
+                    HandleException(&e);
+                }
+                catch (...)
+                {
+                    HandleException(nullptr);
+                }
             }
 
             BalancedEncoder::~BalancedEncoder()
@@ -963,6 +1050,58 @@ namespace Microsoft
                 }
             }
 
+            BinaryFractionalEncoder::BinaryFractionalEncoder(BigUInt ^plainModulus, BigPoly ^polyModulus, int integerCoeffCount, int fractionCoeffCount, MemoryPoolHandle ^pool) : fractionalEncoder_(nullptr)
+            {
+                if (plainModulus == nullptr)
+                {
+                    throw gcnew ArgumentNullException("plainModulus cannot be null");
+                }
+                if (polyModulus == nullptr)
+                {
+                    throw gcnew ArgumentNullException("polyModulus cannot be null");
+                }
+                if (pool == nullptr)
+                {
+                    throw gcnew ArgumentNullException("pool cannot be null");
+                }
+                try
+                {
+                    fractionalEncoder_ = new seal::BinaryFractionalEncoder(plainModulus->GetUInt(), polyModulus->GetPolynomial(), integerCoeffCount, fractionCoeffCount, pool->GetHandle());
+                    GC::KeepAlive(plainModulus);
+                    GC::KeepAlive(polyModulus);
+                    GC::KeepAlive(pool);
+                }
+                catch (const exception &e)
+                {
+                    HandleException(&e);
+                }
+                catch (...)
+                {
+                    HandleException(nullptr);
+                }
+            }
+
+            BinaryFractionalEncoder::BinaryFractionalEncoder(BinaryFractionalEncoder ^copy) : fractionalEncoder_(nullptr)
+            {
+                if (copy == nullptr)
+                {
+                    throw gcnew ArgumentNullException("copy cannot be null");
+                }
+                try
+                {
+                    fractionalEncoder_ = new seal::BinaryFractionalEncoder(copy->GetEncoder());
+                    GC::KeepAlive(copy);
+                }
+                catch (const exception &e)
+                {
+                    HandleException(&e);
+                }
+                catch (...)
+                {
+                    HandleException(nullptr);
+                }
+            }
+
             BinaryFractionalEncoder::~BinaryFractionalEncoder()
             {
                 this->!BinaryFractionalEncoder();
@@ -1105,6 +1244,58 @@ namespace Microsoft
                 }
             }
 
+            BalancedFractionalEncoder::BalancedFractionalEncoder(BigUInt ^plainModulus, BigPoly ^polyModulus, int integerCoeffCount, int fractionCoeffCount, UInt64 base, MemoryPoolHandle ^pool) : fractionalEncoder_(nullptr)
+            {
+                if (plainModulus == nullptr)
+                {
+                    throw gcnew ArgumentNullException("plainModulus cannot be null");
+                }
+                if (polyModulus == nullptr)
+                {
+                    throw gcnew ArgumentNullException("polyModulus cannot be null");
+                }
+                if (pool == nullptr)
+                {
+                    throw gcnew ArgumentNullException("pool cannot be null");
+                }
+                try
+                {
+                    fractionalEncoder_ = new seal::BalancedFractionalEncoder(plainModulus->GetUInt(), polyModulus->GetPolynomial(), integerCoeffCount, fractionCoeffCount, base, pool->GetHandle());
+                    GC::KeepAlive(plainModulus);
+                    GC::KeepAlive(polyModulus);
+                    GC::KeepAlive(pool);
+                }
+                catch (const exception &e)
+                {
+                    HandleException(&e);
+                }
+                catch (...)
+                {
+                    HandleException(nullptr);
+                }
+            }
+
+            BalancedFractionalEncoder::BalancedFractionalEncoder(BalancedFractionalEncoder ^copy) : fractionalEncoder_(nullptr)
+            {
+                if (copy == nullptr)
+                {
+                    throw gcnew ArgumentNullException("copy cannot be null");
+                }
+                try
+                {
+                    fractionalEncoder_ = new seal::BalancedFractionalEncoder(copy->GetEncoder());
+                    GC::KeepAlive(copy);
+                }
+                catch (const exception &e)
+                {
+                    HandleException(&e);
+                }
+                catch (...)
+                {
+                    HandleException(nullptr);
+                }
+            }
+
             BalancedFractionalEncoder::BalancedFractionalEncoder(BigUInt ^plainModulus, BigPoly ^polyModulus, int integerCoeffCount, int fractionCoeffCount) : fractionalEncoder_(nullptr)
             {
                 if (plainModulus == nullptr)
@@ -1120,6 +1311,37 @@ namespace Microsoft
                     fractionalEncoder_ = new seal::BalancedFractionalEncoder(plainModulus->GetUInt(), polyModulus->GetPolynomial(), integerCoeffCount, fractionCoeffCount);
                     GC::KeepAlive(plainModulus);
                     GC::KeepAlive(polyModulus);
+                }
+                catch (const exception &e)
+                {
+                    HandleException(&e);
+                }
+                catch (...)
+                {
+                    HandleException(nullptr);
+                }
+            }
+
+            BalancedFractionalEncoder::BalancedFractionalEncoder(BigUInt ^plainModulus, BigPoly ^polyModulus, int integerCoeffCount, int fractionCoeffCount, MemoryPoolHandle ^pool) : fractionalEncoder_(nullptr)
+            {
+                if (plainModulus == nullptr)
+                {
+                    throw gcnew ArgumentNullException("plainModulus cannot be null");
+                }
+                if (polyModulus == nullptr)
+                {
+                    throw gcnew ArgumentNullException("polyModulus cannot be null");
+                }
+                if (pool == nullptr)
+                {
+                    throw gcnew ArgumentNullException("pool cannot be null");
+                }
+                try
+                {
+                    fractionalEncoder_ = new seal::BalancedFractionalEncoder(plainModulus->GetUInt(), polyModulus->GetPolynomial(), integerCoeffCount, fractionCoeffCount, 3, pool->GetHandle());
+                    GC::KeepAlive(plainModulus);
+                    GC::KeepAlive(polyModulus);
+                    GC::KeepAlive(pool);
                 }
                 catch (const exception &e)
                 {
@@ -1257,6 +1479,21 @@ namespace Microsoft
                 GC::KeepAlive(plainModulus);
             }
 
+            IntegerEncoder::IntegerEncoder(BigUInt ^plainModulus, UInt64 base, MemoryPoolHandle ^pool) : integerEncoder_(nullptr)
+            {
+                if (plainModulus == nullptr)
+                {
+                    throw gcnew ArgumentNullException("plainModulus cannot be null");
+                }
+                if (pool == nullptr)
+                {
+                    throw gcnew ArgumentNullException("pool cannot be null");
+                }
+                integerEncoder_ = new seal::IntegerEncoder(plainModulus->GetUInt(), base, pool->GetHandle());
+                GC::KeepAlive(plainModulus);
+                GC::KeepAlive(pool);
+            }
+
             IntegerEncoder::IntegerEncoder(BigUInt ^plainModulus) : integerEncoder_(nullptr)
             {
                 if (plainModulus == nullptr)
@@ -1265,6 +1502,42 @@ namespace Microsoft
                 }
                 integerEncoder_ = new seal::IntegerEncoder(plainModulus->GetUInt());
                 GC::KeepAlive(plainModulus);
+            }
+
+            IntegerEncoder::IntegerEncoder(BigUInt ^plainModulus, MemoryPoolHandle ^pool) : integerEncoder_(nullptr)
+            {
+                if (plainModulus == nullptr)
+                {
+                    throw gcnew ArgumentNullException("plainModulus cannot be null");
+                }
+                if (pool == nullptr)
+                {
+                    throw gcnew ArgumentNullException("pool cannot be null");
+                }
+                integerEncoder_ = new seal::IntegerEncoder(plainModulus->GetUInt(), 2, pool->GetHandle());
+                GC::KeepAlive(plainModulus);
+                GC::KeepAlive(pool);
+            }
+
+            IntegerEncoder::IntegerEncoder(IntegerEncoder ^copy) : integerEncoder_(nullptr)
+            {
+                if (copy == nullptr)
+                {
+                    throw gcnew ArgumentNullException("copy cannot be null");
+                }
+                try
+                {
+                    integerEncoder_ = new seal::IntegerEncoder(copy->GetEncoder());
+                    GC::KeepAlive(copy);
+                }
+                catch (const exception &e)
+                {
+                    HandleException(&e);
+                }
+                catch (...)
+                {
+                    HandleException(nullptr);
+                }
             }
 
             IntegerEncoder::~IntegerEncoder()
@@ -1740,6 +2013,37 @@ namespace Microsoft
                 }
             }
 
+            FractionalEncoder::FractionalEncoder(BigUInt ^plainModulus, BigPoly ^polyModulus, int integerCoeffCount, int fractionCoeffCount, UInt64 base, MemoryPoolHandle ^pool) : fractionalEncoder_(nullptr)
+            {
+                if (plainModulus == nullptr)
+                {
+                    throw gcnew ArgumentNullException("plainModulus cannot be null");
+                }
+                if (polyModulus == nullptr)
+                {
+                    throw gcnew ArgumentNullException("polyModulus cannot be null");
+                }
+                if (pool == nullptr)
+                {
+                    throw gcnew ArgumentNullException("pool cannot be null");
+                }
+                try
+                {
+                    fractionalEncoder_ = new seal::FractionalEncoder(plainModulus->GetUInt(), polyModulus->GetPolynomial(), integerCoeffCount, fractionCoeffCount, base, pool->GetHandle());
+                    GC::KeepAlive(plainModulus);
+                    GC::KeepAlive(polyModulus);
+                    GC::KeepAlive(pool);
+                }
+                catch (const exception &e)
+                {
+                    HandleException(&e);
+                }
+                catch (...)
+                {
+                    HandleException(nullptr);
+                }
+            }
+
             FractionalEncoder::FractionalEncoder(BigUInt ^plainModulus, BigPoly ^polyModulus, int integerCoeffCount, int fractionCoeffCount) : fractionalEncoder_(nullptr)
             {
                 if (plainModulus == nullptr)
@@ -1755,6 +2059,58 @@ namespace Microsoft
                     fractionalEncoder_ = new seal::FractionalEncoder(plainModulus->GetUInt(), polyModulus->GetPolynomial(), integerCoeffCount, fractionCoeffCount);
                     GC::KeepAlive(plainModulus);
                     GC::KeepAlive(polyModulus);
+                }
+                catch (const exception &e)
+                {
+                    HandleException(&e);
+                }
+                catch (...)
+                {
+                    HandleException(nullptr);
+                }
+            }
+
+            FractionalEncoder::FractionalEncoder(BigUInt ^plainModulus, BigPoly ^polyModulus, int integerCoeffCount, int fractionCoeffCount, MemoryPoolHandle ^pool) : fractionalEncoder_(nullptr)
+            {
+                if (plainModulus == nullptr)
+                {
+                    throw gcnew ArgumentNullException("plainModulus cannot be null");
+                }
+                if (polyModulus == nullptr)
+                {
+                    throw gcnew ArgumentNullException("polyModulus cannot be null");
+                }
+                if (pool == nullptr)
+                {
+                    throw gcnew ArgumentNullException("pool cannot be null");
+                }
+                try
+                {
+                    fractionalEncoder_ = new seal::FractionalEncoder(plainModulus->GetUInt(), polyModulus->GetPolynomial(), integerCoeffCount, fractionCoeffCount, 2, pool->GetHandle());
+                    GC::KeepAlive(plainModulus);
+                    GC::KeepAlive(polyModulus);
+                    GC::KeepAlive(pool);
+                }
+                catch (const exception &e)
+                {
+                    HandleException(&e);
+                }
+                catch (...)
+                {
+                    HandleException(nullptr);
+                }
+            }
+
+            FractionalEncoder::FractionalEncoder(FractionalEncoder ^copy) : fractionalEncoder_(nullptr)
+            {
+                if (copy == nullptr)
+                {
+                    throw gcnew ArgumentNullException("copy cannot be null");
+                }
+                try
+                {
+                    fractionalEncoder_ = new seal::FractionalEncoder(copy->GetEncoder());
+                    GC::KeepAlive(copy);
                 }
                 catch (const exception &e)
                 {

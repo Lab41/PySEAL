@@ -642,14 +642,8 @@ namespace seal
         *this = value;
     }
 
-    BigPoly &BigPoly::operator =(BigPoly &&assign) noexcept
+    BigPoly &BigPoly::operator =(BigPoly &&assign)
     {
-        // Do nothing if same thing.
-        if (&assign == this)
-        {
-            return *this;
-        }
-
         // Deallocate any memory allocated.
         reset();
 
@@ -670,8 +664,15 @@ namespace seal
         return *this;
     }
 
-    BigPoly::BigPoly(BigPoly &&source) noexcept : value_(nullptr), coeffs_(nullptr), coeff_count_(0), coeff_bit_count_(0), is_alias_(false)
+    BigPoly::BigPoly(BigPoly &&source) noexcept : value_(source.value_), coeffs_(source.coeffs_), 
+        coeff_count_(source.coeff_count_), coeff_bit_count_(source.coeff_bit_count_),
+         is_alias_(source.is_alias_)
     {
-        operator =(move(source));
+        // Pointers in source have been taken over so set them to nullptr
+        source.value_ = nullptr;
+        source.coeffs_ = nullptr;
+        source.is_alias_ = false;
+        source.coeff_count_ = 0;
+        source.coeff_bit_count_ = 0;
     }
 }

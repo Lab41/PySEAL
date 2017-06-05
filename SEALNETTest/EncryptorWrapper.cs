@@ -9,29 +9,32 @@ namespace SEALNETTest
         [TestMethod]
         public void FVEncryptAddsNoiseNET()
         {
-            var parms = new EncryptionParameters
-            {
-                DecompositionBitCount = 4,
-                NoiseStandardDeviation = 3.19,
-                NoiseMaxDeviation = 35.06
-            };
-            var coeffModulus = parms.CoeffModulus;
-            coeffModulus.Resize(48);
+            var parms = new EncryptionParameters(MemoryPoolHandle.AcquireNew());
+            parms.SetDecompositionBitCount(4);
+            parms.SetNoiseStandardDeviation(3.19);
+            parms.SetNoiseMaxDeviation(35.06);
+
+            var coeffModulus = new BigUInt(48);
             coeffModulus.Set("FFFFFFFFC001");
-            var plainModulus = parms.PlainModulus;
-            plainModulus.Resize(7);
+            parms.SetCoeffModulus(coeffModulus);
+
+            var plainModulus = new BigUInt(7);
             plainModulus.Set(1 << 6);
-            var polyModulus = parms.PolyModulus;
-            polyModulus.Resize(65, 1);
+            parms.SetPlainModulus(plainModulus);
+
+            var polyModulus = new BigPoly(65, 1);
             polyModulus[0].Set(1);
             polyModulus[64].Set(1);
+            parms.SetPolyModulus(polyModulus);
 
-            var Encoder = new BinaryEncoder(parms.PlainModulus);
+            parms.Validate();
 
-            var keygen = new KeyGenerator(parms);
+            var Encoder = new BinaryEncoder(parms.PlainModulus, MemoryPoolHandle.AcquireNew());
+
+            var keygen = new KeyGenerator(parms, MemoryPoolHandle.AcquireNew());
             keygen.Generate();
 
-            var encryptor = new Encryptor(parms, keygen.PublicKey);
+            var encryptor = new Encryptor(parms, keygen.PublicKey, MemoryPoolHandle.AcquireNew());
 
             // however, this line is fine
             Assert.AreEqual(encryptor.PublicKey[0], keygen.PublicKey[0]);
@@ -45,7 +48,7 @@ namespace SEALNETTest
             Assert.AreNotEqual(encrypted1[1], encrypted2[1]);
 
 
-            var decryptor = new Decryptor(parms, keygen.SecretKey);
+            var decryptor = new Decryptor(parms, keygen.SecretKey, MemoryPoolHandle.AcquireNew());
             Assert.AreEqual(0x12345678U, Encoder.DecodeUInt32(decryptor.Decrypt(encrypted1)));
             Assert.AreEqual(0x12345678U, Encoder.DecodeUInt32(decryptor.Decrypt(encrypted2)));
         }
@@ -53,34 +56,37 @@ namespace SEALNETTest
         [TestMethod]
         public void FVEncryptDecryptNET()
         {
-            var parms = new EncryptionParameters
-            {
-                DecompositionBitCount = 4,
-                NoiseStandardDeviation = 3.19,
-                NoiseMaxDeviation = 35.06
-            };
-            var coeffModulus = parms.CoeffModulus;
-            coeffModulus.Resize(48);
+            var parms = new EncryptionParameters(MemoryPoolHandle.AcquireNew());
+            parms.SetDecompositionBitCount(4);
+            parms.SetNoiseStandardDeviation(3.19);
+            parms.SetNoiseMaxDeviation(35.06);
+
+            var coeffModulus = new BigUInt(48);
             coeffModulus.Set("FFFFFFFFC001");
-            var plainModulus = parms.PlainModulus;
-            plainModulus.Resize(7);
+            parms.SetCoeffModulus(coeffModulus);
+
+            var plainModulus = new BigUInt(7);
             plainModulus.Set(1 << 6);
-            var polyModulus = parms.PolyModulus;
-            polyModulus.Resize(65, 1);
+            parms.SetPlainModulus(plainModulus);
+
+            var polyModulus = new BigPoly(65, 1);
             polyModulus[0].Set(1);
             polyModulus[64].Set(1);
+            parms.SetPolyModulus(polyModulus);
 
-            var Encoder = new BinaryEncoder(parms.PlainModulus);
+            parms.Validate();
 
-            var keygen = new KeyGenerator(parms);
+            var Encoder = new BinaryEncoder(parms.PlainModulus, MemoryPoolHandle.AcquireNew());
+
+            var keygen = new KeyGenerator(parms, MemoryPoolHandle.AcquireNew());
             keygen.Generate();
 
-            var encryptor = new Encryptor(parms, keygen.PublicKey);
+            var encryptor = new Encryptor(parms, keygen.PublicKey, MemoryPoolHandle.AcquireNew());
 
             Assert.AreEqual(encryptor.PublicKey[0], keygen.PublicKey[0]);
             Assert.AreEqual(encryptor.PublicKey[1], keygen.PublicKey[1]);
 
-            var decryptor = new Decryptor(parms, keygen.SecretKey);
+            var decryptor = new Decryptor(parms, keygen.SecretKey, MemoryPoolHandle.AcquireNew());
             Assert.AreEqual(decryptor.SecretKey, keygen.SecretKey);
 
             var encrypted = encryptor.Encrypt(Encoder.Encode(0x12345678));

@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <vector>
 #include <stdexcept>
+#include <memory>
 #include "util/common.h"
 #include "util/locks.h"
 
@@ -207,7 +208,7 @@ namespace seal
                 other.alias_ = false;
             }
 
-            void swap_with(Pointer &other)
+            void swap_with(Pointer &other) noexcept
             {
                 std::swap(pointer_, other.pointer_);
                 std::swap(head_, other.head_);
@@ -357,7 +358,7 @@ namespace seal
                 other.alias_ = false;
             }
 
-            void swap_with(ConstPointer &other)
+            void swap_with(ConstPointer &other) noexcept
             {
                 std::swap(pointer_, other.pointer_);
                 std::swap(head_, other.head_);
@@ -401,7 +402,9 @@ namespace seal
         class MemoryPool
         {
         public:
-            MemoryPool() {}
+            MemoryPool() 
+            {
+            }
 
             Pointer get_for_byte_count(int byte_count)
             {
@@ -432,8 +435,10 @@ namespace seal
                 free_all();
             }
 
-            static MemoryPool *default_pool()
+            static std::shared_ptr<MemoryPool> default_pool()
             {
+                static std::shared_ptr<MemoryPool> default_pool_(std::make_shared<MemoryPool>());
+
                 return default_pool_;
             }
 
@@ -443,8 +448,6 @@ namespace seal
             MemoryPool &operator =(const MemoryPool &assign) = delete;
 
             mutable ReaderWriterLocker pools_locker_;
-
-            static MemoryPool *default_pool_;
 
             std::vector<MemoryPoolHead*> pools_;
         };

@@ -16,9 +16,13 @@ namespace seal
 
             Modulus(const std::uint64_t *modulus, int uint64_count, MemoryPool &pool);
 
-            Modulus(Modulus &&move);
+            Modulus &operator =(const Modulus &assign);
+
+            Modulus(const Modulus &copy);
 
             Modulus &operator =(Modulus &&assign);
+
+            Modulus(Modulus &&source) noexcept;
 
             bool is_power_of_two_minus_one() const
             {
@@ -61,10 +65,6 @@ namespace seal
             }
 
         private:
-            Modulus(const Modulus &copy) = delete;
-
-            Modulus &operator =(const Modulus &assign) = delete;
-
             const std::uint64_t *modulus_;
 
             int uint64_count_;

@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
       <Configuration>Debug</Configuration>
@@ -24,6 +24,7 @@
     <ClInclude Include="bigpolyarray.h" />
     <ClInclude Include="biguint.h" />
     <ClInclude Include="chooser.h" />
+    <ClInclude Include="ciphertext.h" />
     <ClInclude Include="decryptor.h" />
     <ClInclude Include="encoder.h" />
     <ClInclude Include="encryptionparams.h" />
@@ -31,6 +32,8 @@
     <ClInclude Include="evaluationkeys.h" />
     <ClInclude Include="evaluator.h" />
     <ClInclude Include="keygenerator.h" />
+    <ClInclude Include="memorypoolhandle.h" />
+    <ClInclude Include="plaintext.h" />
     <ClInclude Include="polycrt.h" />
     <ClInclude Include="randomgen.h" />
     <ClInclude Include="seal.h" />
@@ -64,6 +67,7 @@
     <ClCompile Include="bigpolyarray.cpp" />
     <ClCompile Include="biguint.cpp" />
     <ClCompile Include="chooser.cpp" />
+    <ClCompile Include="ciphertext.cpp" />
     <ClCompile Include="decryptor.cpp" />
     <ClCompile Include="encoder.cpp" />
     <ClCompile Include="encryptionparams.cpp" />
@@ -71,6 +75,7 @@
     <ClCompile Include="evaluationkeys.cpp" />
     <ClCompile Include="evaluator.cpp" />
     <ClCompile Include="keygenerator.cpp" />
+    <ClCompile Include="plaintext.cpp" />
     <ClCompile Include="polycrt.cpp" />
     <ClCompile Include="randomgen.cpp" />
     <ClCompile Include="simulator.cpp" />
@@ -104,32 +109,32 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{7EA96C25-FC0D-485A-BB71-32B6DA55652A}</ProjectGuid>
     <RootNamespace>SEAL</RootNamespace>
-    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.15063.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>

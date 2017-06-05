@@ -8,22 +8,29 @@ namespace seal
 {
     namespace util
     {
-        FreshComputation::FreshComputation()
+        FreshComputation::FreshComputation(int plain_max_coeff_count, const BigUInt &plain_max_abs_value) :
+            plain_max_coeff_count_(plain_max_coeff_count), plain_max_abs_value_(plain_max_abs_value)
         {
+#ifdef _DEBUG
+            if (plain_max_coeff_count <= 0)
+            {
+                throw invalid_argument("plain_max_coeff_count");
+            }
+#endif
         }
 
         FreshComputation::~FreshComputation()
         {
         }
 
-        Simulation FreshComputation::simulate(const EncryptionParameters &parms)
+        Simulation FreshComputation::simulate(EncryptionParameters &parms)
         {
-            return Simulation(parms);
+            return simulation_evaluator_.get_fresh(parms, plain_max_coeff_count_, plain_max_abs_value_);
         }
 
         FreshComputation *FreshComputation::clone()
         {
-            return new FreshComputation();
+            return new FreshComputation(plain_max_coeff_count_, plain_max_abs_value_);
         }
 
         AddComputation::AddComputation(Computation &input1, Computation &input2)
@@ -38,7 +45,7 @@ namespace seal
             delete input2_;
         }
 
-        Simulation AddComputation::simulate(const EncryptionParameters &parms)
+        Simulation AddComputation::simulate(EncryptionParameters &parms)
         {
             return simulation_evaluator_.add(input1_->simulate(parms), input2_->simulate(parms));
         }
@@ -76,7 +83,7 @@ namespace seal
             }
         }
 
-        Simulation AddManyComputation::simulate(const EncryptionParameters &parms)
+        Simulation AddManyComputation::simulate(EncryptionParameters &parms)
         {
             vector<Simulation> inputs;
             for (size_t i = 0; i < inputs_.size(); ++i)
@@ -103,7 +110,7 @@ namespace seal
             delete input2_;
         }
 
-        Simulation SubComputation::simulate(const EncryptionParameters &parms)
+        Simulation SubComputation::simulate(EncryptionParameters &parms)
         {
             return simulation_evaluator_.sub(input1_->simulate(parms), input2_->simulate(parms));
         }
@@ -125,7 +132,7 @@ namespace seal
             delete input2_;
         }
 
-        Simulation MultiplyComputation::simulate(const EncryptionParameters &parms)
+        Simulation MultiplyComputation::simulate(EncryptionParameters &parms)
         {
             return simulation_evaluator_.multiply(input1_->simulate(parms), input2_->simulate(parms));
         }
@@ -146,7 +153,7 @@ namespace seal
             delete input_;
         }
 
-        Simulation RelinearizeComputation::simulate(const EncryptionParameters &parms)
+        Simulation RelinearizeComputation::simulate(EncryptionParameters &parms)
         {
             return simulation_evaluator_.relinearize(input_->simulate(parms), destination_size_);
         }
@@ -168,28 +175,12 @@ namespace seal
             input_ = input.clone();
         }
 
-        MultiplyPlainComputation::MultiplyPlainComputation(Computation &input, int plain_max_coeff_count, uint64_t plain_max_abs_value) :
-            plain_max_coeff_count_(plain_max_coeff_count)
-        {
-#ifdef _DEBUG
-            if (plain_max_coeff_count <= 0)
-            {
-                throw invalid_argument("plain_max_coeff_count");
-            }
-#endif
-            BigUInt plain_max_abs_value_uint;
-            plain_max_abs_value_uint = plain_max_abs_value;
-            plain_max_abs_value_ = plain_max_abs_value_uint;
-
-            input_ = input.clone();
-        }
-
         MultiplyPlainComputation::~MultiplyPlainComputation()
         {
             delete input_;
         }
 
-        Simulation MultiplyPlainComputation::simulate(const EncryptionParameters &parms)
+        Simulation MultiplyPlainComputation::simulate(EncryptionParameters &parms)
         {
             return simulation_evaluator_.multiply_plain(input_->simulate(parms), plain_max_coeff_count_, plain_max_abs_value_);
         }
@@ -199,8 +190,15 @@ namespace seal
             return new MultiplyPlainComputation(*input_, plain_max_coeff_count_, plain_max_abs_value_);
         }
 
-        AddPlainComputation::AddPlainComputation(Computation &input)
+        AddPlainComputation::AddPlainComputation(Computation &input, int plain_max_coeff_count, const BigUInt &plain_max_abs_value) :
+            plain_max_coeff_count_(plain_max_coeff_count), plain_max_abs_value_(plain_max_abs_value)
         {
+#ifdef _DEBUG
+            if (plain_max_coeff_count <= 0)
+            {
+                throw invalid_argument("plain_max_coeff_count");
+            }
+#endif
             input_ = input.clone();
         }
 
@@ -209,18 +207,25 @@ namespace seal
             delete input_;
         }
 
-        Simulation AddPlainComputation::simulate(const EncryptionParameters &parms)
+        Simulation AddPlainComputation::simulate(EncryptionParameters &parms)
         {
-            return simulation_evaluator_.add_plain(input_->simulate(parms));
+            return simulation_evaluator_.add_plain(input_->simulate(parms), plain_max_coeff_count_, plain_max_abs_value_);
         }
 
         AddPlainComputation *AddPlainComputation::clone()
         {
-            return new AddPlainComputation(*input_);
+            return new AddPlainComputation(*input_, plain_max_coeff_count_, plain_max_abs_value_);
         }
 
-        SubPlainComputation::SubPlainComputation(Computation &input)
+        SubPlainComputation::SubPlainComputation(Computation &input, int plain_max_coeff_count, const BigUInt &plain_max_abs_value) :
+            plain_max_coeff_count_(plain_max_coeff_count), plain_max_abs_value_(plain_max_abs_value)
         {
+#ifdef _DEBUG
+            if (plain_max_coeff_count <= 0)
+            {
+                throw invalid_argument("plain_max_coeff_count");
+            }
+#endif
             input_ = input.clone();
         }
 
@@ -229,14 +234,14 @@ namespace seal
             delete input_;
         }
 
-        Simulation SubPlainComputation::simulate(const EncryptionParameters &parms)
+        Simulation SubPlainComputation::simulate(EncryptionParameters &parms)
         {
-            return simulation_evaluator_.sub_plain(input_->simulate(parms));
+            return simulation_evaluator_.sub_plain(input_->simulate(parms), plain_max_coeff_count_, plain_max_abs_value_);
         }
 
         SubPlainComputation *SubPlainComputation::clone()
         {
-            return new SubPlainComputation(*input_);
+            return new SubPlainComputation(*input_, plain_max_coeff_count_, plain_max_abs_value_);
         }
 
         NegateComputation::NegateComputation(Computation &input)
@@ -249,7 +254,7 @@ namespace seal
             delete input_;
         }
 
-        Simulation NegateComputation::simulate(const EncryptionParameters &parms)
+        Simulation NegateComputation::simulate(EncryptionParameters &parms)
         {
             return simulation_evaluator_.negate(input_->simulate(parms));
         }
@@ -269,7 +274,7 @@ namespace seal
             delete input_;
         }
 
-        Simulation ExponentiateComputation::simulate(const EncryptionParameters &parms)
+        Simulation ExponentiateComputation::simulate(EncryptionParameters &parms)
         {
             return simulation_evaluator_.exponentiate(input_->simulate(parms), exponent_);
         }
@@ -307,7 +312,7 @@ namespace seal
             }
         }
 
-        Simulation MultiplyManyComputation::simulate(const EncryptionParameters &parms)
+        Simulation MultiplyManyComputation::simulate(EncryptionParameters &parms)
         {
             vector<Simulation> inputs;
             for (size_t i = 0; i < inputs_.size(); ++i)
