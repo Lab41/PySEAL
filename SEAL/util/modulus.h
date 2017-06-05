@@ -67,8 +67,6 @@ namespace seal
 
             const std::uint64_t *modulus_;
 
-            Pointer inverse_modulus_;
-
             int uint64_count_;
 
             int significant_bit_count_;
@@ -76,6 +74,8 @@ namespace seal
             int power_of_two_minus_one_;
 
             int inverse_significant_bit_count_;
+
+            Pointer inverse_modulus_;
         };
     }
 }

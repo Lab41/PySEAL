@@ -19,7 +19,7 @@ if test "$with_intrin" != no
 then
 	AC_CHECK_HEADERS([x86intrin.h], [ac_has_intrin=yes], [])
 	if test "$ac_has_intrin" == yes
-	then
+	then	
 		AC_DEFINE([ENABLE_INTRIN])
 
 		AC_MSG_CHECKING([for __builtin_clzll])

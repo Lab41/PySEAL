@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <map>
 #include <cstdint>
+#include <cmath>
 #include "chooser.h"
 #include "utilities.h"
 #include "util/uintarith.h"

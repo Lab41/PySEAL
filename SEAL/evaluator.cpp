@@ -1221,7 +1221,6 @@ namespace seal
         int coeff_bit_count = poly_modulus_.coeff_bit_count();
         int coeff_uint64_count = divide_round_up(coeff_bit_count, bits_per_uint64);
         int encrypted_count = encrypted.size();
-        int array_poly_uint64_count = coeff_count * coeff_uint64_count;
 
         // Verify parameters.
         if (encrypted.coeff_count() != coeff_count || encrypted.coeff_bit_count() != coeff_bit_count || encrypted_count < 2)
@@ -1233,7 +1232,7 @@ namespace seal
             throw invalid_argument("plain cannot be zero");
         }
 #ifdef _DEBUG
-        for (int i = 0; i < encrypted_count; ++i)
+        for (int i = 0; i < encrypted_count; i++)
         {
             if (encrypted[i].significant_coeff_count() == coeff_count || !are_poly_coefficients_less_than(encrypted[i], coeff_modulus_))
             {
@@ -1246,51 +1245,70 @@ namespace seal
         }
 #endif
         MemoryPool &pool = *MemoryPool::default_pool();
-        Pointer encrypted_copy(allocate_poly(encrypted_count * coeff_count, coeff_uint64_count, pool));
-        set_uint_uint(encrypted.pointer(0), encrypted_count * array_poly_uint64_count, encrypted_copy.get());
 
         destination.resize(encrypted_count, coeff_count, coeff_bit_count);
 
-        // Reposition coefficients.
-        Pointer moved2ptr(allocate_poly(coeff_count, coeff_uint64_count, pool));
+        // Multiplying just by a constant?
         int plain_coeff_count = min(plain.significant_coeff_count(), coeff_count);
         int plain_coeff_uint64_count = plain.coeff_uint64_count();
         const uint64_t *plain_coeff = plain.pointer();
-        uint64_t *moved2_coeff = moved2ptr.get();
-        for (int i = 0; i < plain_coeff_count; ++i)
+        if (plain_coeff_count == 1)
         {
-            set_uint_uint(plain_coeff, plain_coeff_uint64_count, coeff_uint64_count, moved2_coeff);
-            bool is_upper_half = is_greater_than_or_equal_uint_uint(moved2_coeff, plain_upper_half_threshold_.pointer(), coeff_uint64_count);
+            Pointer moved2ptr(allocate_uint(coeff_uint64_count, pool));
+            uint64_t *moved2_coeff = moved2ptr.get();
+            bool is_upper_half = is_greater_than_or_equal_uint_uint(plain_coeff, plain_coeff_uint64_count, plain_upper_half_threshold_.pointer(), coeff_uint64_count);
             if (is_upper_half)
             {
-                add_uint_uint(moved2_coeff, plain_upper_half_increment_.pointer(), coeff_uint64_count, moved2_coeff);
+                add_uint_uint(plain_coeff, plain_coeff_uint64_count, plain_upper_half_increment_.pointer(), coeff_uint64_count, 0, coeff_uint64_count, moved2_coeff);
+            }
+            else
+            {
+                set_uint_uint(plain_coeff, plain_coeff_uint64_count, coeff_uint64_count, moved2_coeff);
+            }
+            for (int i = 0; i < encrypted_count; i++)
+            {
+                multiply_poly_scalar_coeffmod(encrypted.pointer(i), coeff_count, moved2_coeff, mod_, destination.pointer(i), pool);
+            }
+
+            return;
+        }
+
+        // Reposition coefficients.
+        Pointer moved2ptr(allocate_poly(coeff_count, coeff_uint64_count, pool));
+        uint64_t *moved2_coeff = moved2ptr.get();
+        for (int i = 0; i < plain_coeff_count; i++)
+        {
+            bool is_upper_half = is_greater_than_or_equal_uint_uint(plain_coeff, plain_upper_half_threshold_.pointer(), coeff_uint64_count);
+            if (is_upper_half)
+            {
+                add_uint_uint(plain_coeff, plain_coeff_uint64_count, plain_upper_half_increment_.pointer(), coeff_uint64_count, 0, coeff_uint64_count, moved2_coeff);
+            }
+            else
+            {
+                set_uint_uint(plain_coeff, plain_coeff_uint64_count, coeff_uint64_count, moved2_coeff);
             }
             moved2_coeff += coeff_uint64_count;
             plain_coeff += plain_coeff_uint64_count;
         }
-        for (int i = plain_coeff_count; i < coeff_count; ++i)
-        {
-            set_zero_uint(coeff_uint64_count, moved2_coeff);
-            moved2_coeff += coeff_uint64_count;
-        }
+        set_zero_poly(coeff_count - plain_coeff_count, coeff_uint64_count, moved2_coeff);
 
         // Need to multiply each component in encrypted with moved2ptr (plain poly)
         if (qualifiers_.enable_ntt)
         {
             // Transform plain poly only once
+            Pointer copy_operand1(allocate_poly(ntt_tables_.coeff_count(), ntt_tables_.coeff_uint64_count(), pool));
             ntt_negacyclic_harvey(moved2ptr.get(), ntt_tables_, pool);
-            uint64_t *encrypted_copy_poly_ptr = encrypted_copy.get();
-            for (int i = 0; i < encrypted_count; ++i)
+            for (int i = 0; i < encrypted_count; i++)
             {
-                ntt_multiply_poly_nttpoly(encrypted_copy_poly_ptr + i * array_poly_uint64_count, moved2ptr.get(), ntt_tables_, destination.pointer(i), pool);
+                ntt_multiply_poly_nttpoly(encrypted.pointer(i), moved2ptr.get(), ntt_tables_, destination.pointer(i), pool);
             }
         }
         else if (!qualifiers_.enable_ntt && qualifiers_.enable_nussbaumer)
         {
             // Improve this path
-            for (int i = 0; i < encrypted_count; ++i)
+            for (int i = 0; i < encrypted_count; i++)
             {
-                nussbaumer_multiply_poly_poly_coeffmod(encrypted_copy.get() + i * array_poly_uint64_count, moved2ptr.get(), polymod_.coeff_count_power_of_two(), mod_, destination.pointer(i), pool);
+                nussbaumer_multiply_poly_poly_coeffmod(encrypted.pointer(i), moved2ptr.get(), polymod_.coeff_count_power_of_two(), mod_, destination.pointer(i), pool);
             }
         }
         else
@@ -1318,7 +1336,7 @@ namespace seal
         {
             // If plain and destination are same poly, then need another storage for multiply output.
             Pointer temp(allocate_uint(coeff_uint64_count, pool));
-            for (int i = 0; i < plain_coeff_count; ++i)
+            for (int i = 0; i < plain_coeff_count; i++)
             {
                 multiply_uint_uint(plain, plain_coeff_uint64_count, coeff_div_plain_modulus_.pointer(), coeff_uint64_count, coeff_uint64_count, temp.get());
                 bool is_upper_half = is_greater_than_or_equal_uint_uint(temp.get(), upper_half_threshold_.pointer(), coeff_uint64_count);
@@ -1336,7 +1354,7 @@ namespace seal
         }
         else
         {
-            for (int i = 0; i < plain_coeff_count; ++i)
+            for (int i = 0; i < plain_coeff_count; i++)
             {
                 //Multiply plain by coeff_div_plain_modulus and put the result in destination
                 multiply_uint_uint(plain, plain_coeff_uint64_count, coeff_div_plain_modulus_.pointer(), coeff_uint64_count, coeff_uint64_count, destination);

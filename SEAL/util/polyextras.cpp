@@ -120,9 +120,9 @@ namespace seal
         {
             int coeff_modulus_uint64_count = coeff_modulus.uint64_count();
             int poly_modulus_coeff_count = poly_modulus.coeff_count();
-            int poly_modulus_coeff_uint64_count = poly_modulus.coeff_uint64_count();
 
 #ifdef _DEBUG
+            int poly_modulus_coeff_uint64_count = poly_modulus.coeff_uint64_count();
             if (poly_to_eval == nullptr)
             {
                 throw invalid_argument("poly_to_eval");
@@ -304,9 +304,9 @@ namespace seal
         {
             int coeff_modulus_uint64_count = coeff_modulus.uint64_count();
             int poly_modulus_coeff_count = poly_modulus.coeff_count();
-            int poly_modulus_coeff_uint64_count = poly_modulus.coeff_uint64_count();
 
 #ifdef _DEBUG
+            int poly_modulus_coeff_uint64_count = poly_modulus.coeff_uint64_count();
             if (poly == nullptr)
             {
                 throw invalid_argument("poly");

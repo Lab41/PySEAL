@@ -71,6 +71,10 @@ namespace seal
         Pointer temp(allocate_uint(coeff_uint64_count, pool));
         divide_uint_uint(coeff_modulus_.pointer(), plain_modulus_.pointer(), coeff_uint64_count, coeff_div_plain_modulus_.pointer(), temp.get(), pool);
 
+        // Calculate upper_half_increment.
+        upper_half_increment_.resize(coeff_bit_count);
+        set_uint_uint(temp.get(), coeff_uint64_count, upper_half_increment_.pointer());
+
         // Calculate coeff_modulus / plain_modulus / 2.
         coeff_div_plain_modulus_div_two_.resize(coeff_bit_count);
         right_shift_uint(coeff_div_plain_modulus_.pointer(), 1, coeff_uint64_count, coeff_div_plain_modulus_div_two_.pointer());
@@ -78,11 +82,6 @@ namespace seal
         // Calculate coeff_modulus / 2.
         upper_half_threshold_.resize(coeff_bit_count);
         half_round_up_uint(coeff_modulus_.pointer(), coeff_uint64_count, upper_half_threshold_.pointer());
-
-        // Calculate upper_half_increment.
-        upper_half_increment_.resize(coeff_bit_count);
-        multiply_truncate_uint_uint(plain_modulus_.pointer(), coeff_div_plain_modulus_.pointer(), coeff_uint64_count, upper_half_increment_.pointer());
-        sub_uint_uint(coeff_modulus_.pointer(), upper_half_increment_.pointer(), coeff_uint64_count, upper_half_increment_.pointer());
 
         // Initialize moduli.
         polymod_ = PolyModulus(poly_modulus_.pointer(), coeff_count, coeff_uint64_count);
@@ -160,16 +159,18 @@ namespace seal
             throw logic_error("invalid encryption parameters");
         }
 
-        // add c_0 mod into destination
+        // add c_0 into destination
         add_poly_poly_coeffmod(destination.pointer(), encrypted[0].pointer(), coeff_count, coeff_modulus_.pointer(), coeff_uint64_count, destination.pointer());
 
         // For each coefficient, reposition and divide by coeff_div_plain_modulus.
         uint64_t *dest_coeff = destination.pointer();
         Pointer quotient(allocate_uint(coeff_uint64_count, pool));
         Pointer big_alloc(allocate_uint(2 * coeff_uint64_count, pool));
-        for (int i = 0; i < coeff_count; ++i)
+        for (int i = 0; i < coeff_count; i++)
         {
             // Round to closest level by adding coeff_div_plain_modulus_div_two (mod coeff_modulus).
+            // This is necessary, as a small negative noise coefficient and message zero can take the coefficient to close to coeff_modulus.
+            // Adding coeff_div_plain_modulus_div_two at this fixes the problem.
             add_uint_uint_mod(dest_coeff, coeff_div_plain_modulus_div_two_.pointer(), coeff_modulus_.pointer(), coeff_uint64_count, dest_coeff);
 
             // Reposition if it is in upper-half of coeff_modulus.
@@ -222,7 +223,7 @@ namespace seal
         {
             // Since all of the key powers in secret_key_array_ are already NTT transformed, to get the next one 
             // we simply need to compute a dyadic product of the last one with the first one [which is equal to NTT(secret_key_)].
-            for (int i = old_count; i < new_count; ++i)
+            for (int i = old_count; i < new_count; i++)
             {
                 dyadic_product_coeffmod(prev_poly_ptr, secret_key_array_.pointer(0), coeff_count, mod_, next_poly_ptr, pool);
                 prev_poly_ptr = next_poly_ptr;
@@ -232,7 +233,7 @@ namespace seal
         else if(!qualifiers_.enable_ntt && qualifiers_.enable_nussbaumer)
         {
             // Non-NTT path involves computing powers of the secret key.
-            for (int i = old_count; i < new_count; ++i)
+            for (int i = old_count; i < new_count; i++)
             {
                 nussbaumer_multiply_poly_poly_coeffmod(prev_poly_ptr, secret_key_.pointer(), polymod_.coeff_count_power_of_two(), mod_, next_poly_ptr, pool);
                 prev_poly_ptr = next_poly_ptr;
@@ -282,7 +283,7 @@ namespace seal
         compute_secret_key_array(encrypted.size() - 1);
 
         Pointer noise_poly(allocate_poly(coeff_count, coeff_uint64_count, pool));
-        Pointer plain_poly(allocate_zero_poly(coeff_count, coeff_uint64_count, pool));
+        Pointer plain_poly(allocate_poly(coeff_count, coeff_uint64_count, pool));
 
         /*
         Firstly find c_0 + c_1 *s + ... + c_{count-1} * s^{count-1} mod q
@@ -308,7 +309,7 @@ namespace seal
             throw logic_error("invalid encryption parameters");
         }
 
-        // add c_0 mod into noise_poly
+        // add c_0 into noise_poly
         add_poly_poly_coeffmod(noise_poly.get(), encrypted[0].pointer(), coeff_count, coeff_modulus_.pointer(), coeff_uint64_count, noise_poly.get());
 
         // Copy noise_poly to plain_poly
@@ -319,7 +320,7 @@ namespace seal
         uint64_t *plain_coeff = plain_poly.get();
         Pointer quotient(allocate_uint(coeff_uint64_count, pool));
         Pointer big_alloc(allocate_uint(2 * coeff_uint64_count, pool));
-        for (int i = 0; i < coeff_count; ++i)
+        for (int i = 0; i < coeff_count; i++)
         {
             // Round to closest level by adding coeff_div_plain_modulus_div_two (mod coeff_modulus).
             add_uint_uint_mod(plain_coeff, coeff_div_plain_modulus_div_two_.pointer(), coeff_modulus_.pointer(), coeff_uint64_count, plain_coeff);
@@ -333,12 +334,16 @@ namespace seal
 
             // Find closest level.
             divide_uint_uint_inplace(plain_coeff, coeff_div_plain_modulus_.pointer(), coeff_uint64_count, quotient.get(), pool, big_alloc.get());
-            set_uint_uint(quotient.get(), coeff_uint64_count, plain_coeff);
+
+            // Now perform preencrypt correction.
+            multiply_truncate_uint_uint(quotient.get(), coeff_div_plain_modulus_.pointer(), coeff_uint64_count, plain_coeff);
+            if (is_upper_half)
+            {
+                add_uint_uint(plain_coeff, upper_half_increment_.pointer(), coeff_uint64_count, plain_coeff);
+            }
+
             plain_coeff += coeff_uint64_count;
         }
-
-        // Now plain_poly contains the decryption. Re-multiply with the scalar coeff_div_plain_modulus (Delta).
-        multiply_poly_scalar_coeffmod(plain_poly.get(), coeff_count, coeff_div_plain_modulus_.pointer(), mod_, plain_poly.get(), pool);
 
         // Next subtract from current noise_poly the plain_poly. Inherent noise (poly) is this difference mod coeff_modulus.
         sub_poly_poly_coeffmod(noise_poly.get(), plain_poly.get(), coeff_count, mod_.get(), coeff_uint64_count, noise_poly.get());

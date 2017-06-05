@@ -19,6 +19,9 @@
     <Filter Include="Header Files\util">
       <UniqueIdentifier>{8740bd83-253c-49f3-8f9a-3b9c526f67c2}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Linux">
+      <UniqueIdentifier>{8585bc5e-eaa9-481a-a6ee-c38be1319a32}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="utilities.h">
@@ -244,8 +247,17 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="config.h.in" />
-    <None Include="configure.ac" />
-    <None Include="Makefile.in" />
+    <None Include="config.h.in">
+      <Filter>Linux</Filter>
+    </None>
+    <None Include="configure">
+      <Filter>Linux</Filter>
+    </None>
+    <None Include="configure.ac">
+      <Filter>Linux</Filter>
+    </None>
+    <None Include="Makefile.in">
+      <Filter>Linux</Filter>
+    </None>
   </ItemGroup>
 </Project>

@@ -5,13 +5,15 @@ OBJ_DIR=obj
 SRCS=$(wildcard *.cpp) $(wildcard $(UTIL_DIR)/*.cpp)
 OBJS=$(SRCS:%.cpp=$(OBJ_DIR)/%.o)
 DEPS=$(OBJS:.o=.d)
-SEALLIB=$(BIN_DIR)/libseal.a
+INSTALL_DIR=SEAL
+SEALLIB=libseal.a
 CXX=@CXX@
 CXXFLAGS=@CXXFLAGS@ @DEFS@ -std=c++11
+PREFIX=@prefix@
 
-.PHONY : all clean
+.PHONY : all clean install uninstall
 
-all : $(SEALLIB)
+all : $(BIN_DIR)/$(SEALLIB)
 
 $(OBJ_DIR)/%.d : %.cpp
 	@-mkdir -p $(dir $@)
@@ -26,12 +28,23 @@ $(OBJ_DIR)/%.o : %.cpp
 	@-mkdir -p $(dir $@)
 	$(CXX) -c $(CXXFLAGS) -I. -I$(UTIL_DIR) -o $@ $<
 
-$(SEALLIB) : $(OBJS)
+$(BIN_DIR)/$(SEALLIB) : $(OBJS)
 	@-mkdir -p $(dir $@)
-	ar rcs $(SEALLIB) $(OBJS)
+	ar rcs $(BIN_DIR)/$(SEALLIB) $(OBJS)
 
 clean :
-	@-rm -f $(OBJS) $(DEPS) $(SEALLIB)
-	@-rmdir --ignore-fail-on-non-empty $(OBJ_DIR)/$(UTIL_DIR) $(OBJ_DIR) $(BIN_DIR)
+	@-rm -f $(BIN_DIR)/$(SEALLIB)
+	@-rm -rf $(OBJ_DIR)
+
+install : $(BIN_DIR)/$(SEALLIB)
+	@-mkdir -p $(PREFIX)/lib/$(INSTALL_DIR)
+	@-mkdir -p $(PREFIX)/include/$(INSTALL_DIR)/util
+	cp -f $(BIN_DIR)/$(SEALLIB) $(PREFIX)/lib/$(INSTALL_DIR)/$(SEALLIB)
+	cp -f *.h $(PREFIX)/include/$(INSTALL_DIR)
+	cp -f $(UTIL_DIR)/*.h $(PREFIX)/include/$(INSTALL_DIR)/$(UTIL_DIR)
+
+uninstall :
+	rm -rf $(PREFIX)/lib/$(INSTALL_DIR)
+	rm -rf $(PREFIX)/include/$(INSTALL_DIR)
 
 -include $(DEPS)

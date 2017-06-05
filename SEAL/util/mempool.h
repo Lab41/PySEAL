@@ -66,7 +66,7 @@ namespace seal
         class MemoryPoolHead
         {
         public:
-            MemoryPoolHead(int uint64_count) : uint64_count_(uint64_count), first_item_(nullptr), item_count_(0), locked_(false)
+            MemoryPoolHead(int uint64_count) : locked_(false), uint64_count_(uint64_count), item_count_(0), first_item_(nullptr)
             {
 #ifdef _DEBUG
                 if (uint64_count < 0)
@@ -102,13 +102,13 @@ namespace seal
 
             MemoryPoolHead &operator =(const MemoryPoolHead &assign) = delete;
 
-            volatile int uint64_count_;
+            mutable std::atomic<bool> locked_;
 
-            MemoryPoolItem* volatile first_item_;
+            volatile int uint64_count_;
 
             volatile int item_count_;
 
-            mutable std::atomic<bool> locked_;
+            MemoryPoolItem* volatile first_item_;
         };
 
         class ConstPointer;
@@ -118,11 +118,11 @@ namespace seal
         public:
             friend class ConstPointer;
 
-            Pointer() : head_(nullptr), item_(nullptr), pointer_(nullptr), alias_(false)
+            Pointer() : pointer_(nullptr), head_(nullptr), item_(nullptr), alias_(false)
             {
             }
 
-            Pointer(MemoryPoolHead *head) : head_(nullptr), item_(nullptr), pointer_(nullptr), alias_(false)
+            Pointer(MemoryPoolHead *head) : pointer_(nullptr), head_(nullptr), item_(nullptr), alias_(false)
             {
 #ifdef _DEBUG
                 if (head == nullptr)
@@ -135,11 +135,11 @@ namespace seal
                 pointer_ = item_->pointer();
             }
 
-            Pointer(Pointer &&move) noexcept : head_(move.head_), item_(move.item_), pointer_(move.pointer_), alias_(move.alias_)
+            Pointer(Pointer &&move) noexcept : pointer_(move.pointer_), head_(move.head_), item_(move.item_), alias_(move.alias_)
             {
-                move.item_ = nullptr;
-                move.head_ = nullptr;
                 move.pointer_ = nullptr;
+                move.head_ = nullptr;
+                move.item_ = nullptr;
                 move.alias_ = false;
             }
 
@@ -184,9 +184,9 @@ namespace seal
                 {
                     delete[] pointer_;
                 }
-                item_ = nullptr;
-                head_ = nullptr;
                 pointer_ = nullptr;
+                head_ = nullptr;
+                item_ = nullptr;
                 alias_ = false;
             }
 
@@ -197,21 +197,21 @@ namespace seal
                     return;
                 }
                 release();
+                pointer_ = other.pointer_;
                 head_ = other.head_;
                 item_ = other.item_;
-                pointer_ = other.pointer_;
                 alias_ = other.alias_;
-                other.item_ = nullptr;
-                other.head_ = nullptr;
                 other.pointer_ = nullptr;
+                other.head_ = nullptr;
+                other.item_ = nullptr;
                 other.alias_ = false;
             }
 
             void swap_with(Pointer &other)
             {
+                std::swap(pointer_, other.pointer_);
                 std::swap(head_, other.head_);
                 std::swap(item_, other.item_);
-                std::swap(pointer_, other.pointer_);
                 std::swap(alias_, other.alias_);
             }
 
@@ -231,7 +231,7 @@ namespace seal
             }
 
         private:
-            Pointer(std::uint64_t *pointer, bool alias) : head_(nullptr), item_(nullptr), pointer_(pointer), alias_(alias)
+            Pointer(std::uint64_t *pointer, bool alias) : pointer_(pointer), head_(nullptr), item_(nullptr), alias_(alias)
             {
             }
 
@@ -239,11 +239,11 @@ namespace seal
 
             Pointer &operator =(const Pointer &assign) = delete;
 
+            std::uint64_t *pointer_;
+
             MemoryPoolHead *head_;
 
             MemoryPoolItem *item_;
-
-            std::uint64_t *pointer_;
 
             bool alias_;
         };
@@ -251,11 +251,11 @@ namespace seal
         class ConstPointer
         {
         public:
-            ConstPointer() : head_(nullptr), item_(nullptr), pointer_(nullptr), alias_(false)
+            ConstPointer() : pointer_(nullptr), head_(nullptr), item_(nullptr), alias_(false)
             {
             }
 
-            ConstPointer(MemoryPoolHead *head) : head_(nullptr), item_(nullptr), pointer_(nullptr), alias_(false)
+            ConstPointer(MemoryPoolHead *head) : pointer_(nullptr), head_(nullptr), item_(nullptr), alias_(false)
             {
 #ifdef _DEBUG
                 if (head == nullptr)
@@ -263,24 +263,24 @@ namespace seal
                     throw std::invalid_argument("head");
                 }
 #endif
+                pointer_ = item_->pointer();
                 head_ = head;
                 item_ = head->get();
-                pointer_ = item_->pointer();
             }
 
-            ConstPointer(ConstPointer &&move) noexcept : head_(move.head_), item_(move.item_), pointer_(move.pointer_), alias_(move.alias_)
+            ConstPointer(ConstPointer &&move) noexcept : pointer_(move.pointer_), head_(move.head_), item_(move.item_), alias_(move.alias_)
             {
-                move.item_ = nullptr;
-                move.head_ = nullptr;
                 move.pointer_ = nullptr;
+                move.head_ = nullptr;
+                move.item_ = nullptr;
                 move.alias_ = false;
             }
 
-            ConstPointer(Pointer &&move) noexcept : head_(move.head_), item_(move.item_), pointer_(move.pointer_), alias_(move.alias_)
+            ConstPointer(Pointer &&move) noexcept : pointer_(move.pointer_), head_(move.head_), item_(move.item_), alias_(move.alias_)
             {
-                move.item_ = nullptr;
-                move.head_ = nullptr;
                 move.pointer_ = nullptr;
+                move.head_ = nullptr;
+                move.item_ = nullptr;
                 move.alias_ = false;
             }
 
@@ -321,9 +321,9 @@ namespace seal
                 {
                     delete[] pointer_;
                 }
-                item_ = nullptr;
-                head_ = nullptr;
                 pointer_ = nullptr;
+                head_ = nullptr;
+                item_ = nullptr;
                 alias_ = false;
             }
 
@@ -334,34 +334,34 @@ namespace seal
                     return;
                 }
                 release();
+                pointer_ = other.pointer_;
                 head_ = other.head_;
                 item_ = other.item_;
-                pointer_ = other.pointer_;
                 alias_ = other.alias_;
-                other.item_ = nullptr;
-                other.head_ = nullptr;
                 other.pointer_ = nullptr;
+                other.head_ = nullptr;
+                other.item_ = nullptr;
                 other.alias_ = false;
             }
 
             void acquire(Pointer &other)
             {
                 release();
+                pointer_ = other.pointer_;
                 head_ = other.head_;
                 item_ = other.item_;
-                pointer_ = other.pointer_;
                 alias_ = other.alias_;
-                other.item_ = nullptr;
-                other.head_ = nullptr;
                 other.pointer_ = nullptr;
+                other.head_ = nullptr;
+                other.item_ = nullptr;
                 other.alias_ = false;
             }
 
             void swap_with(ConstPointer &other)
             {
+                std::swap(pointer_, other.pointer_);
                 std::swap(head_, other.head_);
                 std::swap(item_, other.item_);
-                std::swap(pointer_, other.pointer_);
                 std::swap(alias_, other.alias_);
             }
 
@@ -381,7 +381,7 @@ namespace seal
             }
 
         private:
-            ConstPointer(std::uint64_t *pointer, bool alias) : head_(nullptr), item_(nullptr), pointer_(pointer), alias_(alias)
+            ConstPointer(std::uint64_t *pointer, bool alias) : pointer_(pointer), head_(nullptr), item_(nullptr), alias_(alias)
             {
             }
 
@@ -389,11 +389,11 @@ namespace seal
 
             ConstPointer &operator =(const ConstPointer &assign) = delete;
 
+            std::uint64_t *pointer_;
+
             MemoryPoolHead *head_;
 
             MemoryPoolItem *item_;
-
-            std::uint64_t *pointer_;
 
             bool alias_;
         };
@@ -442,11 +442,11 @@ namespace seal
 
             MemoryPool &operator =(const MemoryPool &assign) = delete;
 
-            std::vector<MemoryPoolHead*> pools_;
-
             mutable ReaderWriterLocker pools_locker_;
 
             static MemoryPool *default_pool_;
+
+            std::vector<MemoryPoolHead*> pools_;
         };
 
         Pointer duplicate_if_needed(std::uint64_t *original, int uint64_count, bool condition, MemoryPool &pool);

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <random>
+#include <cmath>
 
 namespace seal
 {
@@ -29,7 +30,7 @@ namespace seal
                 while (true)
                 {
                     result_type value = normal_(engine);
-                    result_type deviation = abs(value - mean);
+                    result_type deviation = std::abs(value - mean);
                     if (deviation <= max_deviation_)
                     {
                         return value;

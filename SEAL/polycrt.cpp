@@ -122,6 +122,12 @@ namespace seal
             {
                 throw invalid_argument("input value has incorrect size");
             }
+#ifdef _DEBUG
+            if (is_greater_than_or_equal_uint_uint(values[i].pointer(), slot_modulus_.get(), coeff_uint64_count))
+            {
+                throw invalid_argument("input value is larger than slot_modulus");
+            }
+#endif
             set_uint_uint(values[i].pointer(), coeff_uint64_count, destination[i].pointer());
         }
 

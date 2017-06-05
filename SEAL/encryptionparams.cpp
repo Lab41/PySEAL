@@ -111,8 +111,18 @@ namespace seal
         Pointer coeff_div_plain_modulus(allocate_uint(coeff_uint64_count, pool));
         Pointer remainder(allocate_uint(coeff_uint64_count, pool));
         divide_uint_uint(coeff_modulus_.pointer(), plain_modulus_ptr.get(), coeff_uint64_count, coeff_div_plain_modulus.get(), remainder.get(), pool);
-        sub_uint_uint(coeff_div_plain_modulus.get(), remainder.get(), coeff_uint64_count, destination.pointer());
-        right_shift_uint(destination.pointer(), 1, coeff_uint64_count, destination.pointer());
+        
+        // For extreme parameter choices it can be that we in fact coeff_div_plain_modulus < remainder, 
+        // in which case the noise bound should be 0.
+        if (is_less_than_uint_uint(coeff_div_plain_modulus.get(), remainder.get(), coeff_uint64_count))
+        {
+            set_zero_uint(coeff_uint64_count, destination.pointer());
+        }
+        else
+        {
+            sub_uint_uint(coeff_div_plain_modulus.get(), remainder.get(), coeff_uint64_count, destination.pointer());
+            right_shift_uint(destination.pointer(), 1, coeff_uint64_count, destination.pointer());
+        }
     }
 
     EncryptionParameterQualifiers EncryptionParameters::get_qualifiers() const
@@ -173,9 +183,10 @@ namespace seal
 
 #ifndef DISABLE_NTT_IN_MULTIPLY
         // Can we use NTT in homomorphic multiplication?
+        int coeff_bit_count = coeff_modulus_.significant_bit_count();
         int aux_coeff_bit_count = aux_coeff_modulus_.significant_bit_count();
         int aux_coeff_uint64_count = divide_round_up(aux_coeff_bit_count, bits_per_uint64);
-        bool aux_coeff_large_enough = (aux_coeff_bit_count > get_significant_bit_count(static_cast<uint64_t>(coeff_count)) + coeff_bit_count + 1);
+        bool aux_coeff_large_enough = aux_coeff_bit_count > coeff_count_power + coeff_bit_count + 1;
         if (aux_coeff_large_enough && !aux_coeff_modulus_.is_zero())
         {
             Modulus aux_mod(aux_coeff_modulus_.pointer(), aux_coeff_modulus_.uint64_count());
