@@ -42,7 +42,7 @@ int main()
     // Wait for ENTER before closing screen.
     cout << "Press ENTER to exit" << endl;
     char ignore;
-    cin.get(ignore);
+    //cin.get(ignore);
 
     return 0;
 }
@@ -75,11 +75,11 @@ void example_basics()
     /----------------------------------------------------------------------\
     | poly_modulus | default coeff_modulus                      | security |
     | -------------|--------------------------------------------|----------|
-    | 1x^2048 + 1  | 2^60 - 2^14 + 1 (60 bits)                  | 115 bit  |
-    | 1x^4096 + 1  | 2^116 - 2^18 + 1 (116 bits)                | 119 bit  |
-    | 1x^8192 + 1  | 2^226 - 2^26 + 1 (226 bits)                | 123 bit  |
+    | 1x^2048 + 1  | 2^60 - 2^14 + 1 (60 bits)                  | 119 bit  |
+    | 1x^4096 + 1  | 2^116 - 2^18 + 1 (116 bits)                | 122 bit  |
+    | 1x^8192 + 1  | 2^226 - 2^26 + 1 (226 bits)                | 124 bit  |
     | 1x^16384 + 1 | 2^435 - 2^33 + 1 (435 bits)                | 130 bit  |
-    | 1x^32768 + 1 | 2^889 - 2^54 - 2^53 - 2^52 + 1 (889 bits)  | 128 bit  |
+    | 1x^32768 + 1 | 2^889 - 2^54 - 2^53 - 2^52 + 1 (889 bits)  | 127 bit  |
     \----------------------------------------------------------------------/
 
     These can be conveniently accessed using ChooserEvaluator::default_parameter_options(), 
