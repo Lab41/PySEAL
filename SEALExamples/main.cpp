@@ -42,7 +42,7 @@ int main()
     // Wait for ENTER before closing screen.
     cout << "Press ENTER to exit" << endl;
     char ignore;
-    //cin.get(ignore);
+    cin.get(ignore);
 
     return 0;
 }
