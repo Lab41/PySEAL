@@ -1,5 +1,5 @@
 # Introduction
-SEAL is an easy-to-use homomorphic encryption library, developed by researchers in the Cryptography 
+Simple Encrypted Arithmetic Library - SEAL is an easy-to-use homomorphic encryption library, developed by researchers in the Cryptography 
 Research group at Microsoft Research. SEAL is written in C++11, and contains .NET wrappers for the 
 public API. It has no external dependencies.
 
