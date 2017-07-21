@@ -22,4 +22,4 @@ and bug reports.
 
 # Contact Us
 If you have any questions, suggestions, comments, or bug reports, please contact us by emailing 
-[kim.laine@microsoft.com](mailto:kim.laine@microsoft.com).
+[sealcrypto@microsoft.com](mailto:sealcrypto@microsoft.com).
