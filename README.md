@@ -1,7 +1,8 @@
 # Introduction
 Simple Encrypted Arithmetic Library - SEAL is an easy-to-use homomorphic encryption library, developed by researchers in the Cryptography 
 Research group at Microsoft Research. SEAL is written in C++11, and contains .NET wrappers for the 
-public API. It has no external dependencies.
+public API. It has no external dependencies. SEAL uses the Microsoft Research License Agreement, 
+and is free for research use (see LICENSE.txt).
 
 # Documentation
 The code-base contains examples written both in C++ and in C#. These examples are heavily commented, 
