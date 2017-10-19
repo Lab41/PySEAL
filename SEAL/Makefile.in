@@ -7,8 +7,9 @@ OBJS=$(SRCS:%.cpp=$(OBJ_DIR)/%.o)
 DEPS=$(OBJS:.o=.d)
 INSTALL_DIR=SEAL
 SEALLIB=libseal.a
+SEALSO=libseal.so
 CXX=@CXX@
-CXXFLAGS=@CXXFLAGS@ @DEFS@ -march=native -std=c++11
+CXXFLAGS=@CXXFLAGS@ @DEFS@ -march=native -std=c++11 -fPIC
 PREFIX=@prefix@
 
 .PHONY : all clean install uninstall
@@ -31,6 +32,7 @@ $(OBJ_DIR)/%.o : %.cpp
 $(BIN_DIR)/$(SEALLIB) : $(OBJS)
 	@-mkdir -p $(dir $@)
 	ar rcs $(BIN_DIR)/$(SEALLIB) $(OBJS)
+	$(CXX) -shared -o $(BIN_DIR)/$(SEALSO) $(OBJS)
 
 clean :
 	@-rm -f $(BIN_DIR)/$(SEALLIB)
