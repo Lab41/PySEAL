@@ -8,7 +8,7 @@ cpp_args = ['-std=c++11']
 ext_modules = [
     Extension(
         'seal',
-        ['SEALWrapper.cpp'],
+        ['wrapper.cpp'],
         include_dirs=['/usr/include/python3.5', 'pybind11/include', '/SEAL/SEAL'],
         language='c++',
         extra_compile_args = cpp_args,
