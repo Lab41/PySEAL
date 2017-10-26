@@ -3,6 +3,8 @@
 #include "biguint.h"
 #include "chooser.h"
 #include "encryptionparams.h"
+#include "encoder.h"
+#include "memorypoolhandle.h"
 
 namespace py = pybind11;
 
@@ -26,6 +28,8 @@ PYBIND11_MODULE(seal, m) {
   py::class_<EncryptionParameters>(m, "EncryptionParameters")
     .def(py::init<>())
     .def(py::init<const MemoryPoolHandle &>())
+    .def("plain_modulus", &EncryptionParameters::plain_modulus,
+          "Returns the plaintext modulus")
     .def("set_coeff_modulus",
         (void (EncryptionParameters::*)(const BigUInt &)) &EncryptionParameters::set_coeff_modulus,
         "Set coefficient modulus parameter")
@@ -51,4 +55,12 @@ PYBIND11_MODULE(seal, m) {
         "Validates parameters");
 
   py::class_<EncryptionParameterQualifiers>(m, "EncryptionParameterQuailifers");
+
+  py::class_<IntegerEncoder>(m, "IntegerEncoder")
+    .def(py::init<const BigUInt &, std::uint64_t, const MemoryPoolHandle &>());
+
+  py::class_<MemoryPoolHandle>(m, "MemoryPoolHandle")
+    .def(py::init<>())
+    .def_static("acquire_global", &MemoryPoolHandle::acquire_global,
+               "Returns a MemoryPoolHandle pointing to the global memory pool");
 }

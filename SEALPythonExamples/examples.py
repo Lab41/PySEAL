@@ -1,4 +1,7 @@
-from seal import EncryptionParameters, ChooserEvaluator
+from seal import ChooserEvaluator,      \
+                 EncryptionParameters,  \
+                 IntegerEncoder,        \
+                 MemoryPoolHandle
 
 def example_basics():
     """
@@ -80,6 +83,69 @@ def example_basics():
     # parameters, their validity for homomorphic encryption, and performs some
     # important pre-computation.
     parms.validate()
+
+    # Plaintext elements in the FV scheme are polynomials (represented by the
+    # Plaintext class) with coefficients integers modulo plain_modulus. To
+    # encrypt for example integers instead, one must use an "encoding scheme",
+    # i.e. a specific way of representing integers as such polynomials. SEAL
+    # comes with a few basic encoders:
+    #
+    # IntegerEncoder:
+    # Given an integer base b, encodes integers as plaintext polynomials in the
+    # following way. First, a base-b expansion of the integer is computed. This
+    # expansion uses a "balanced" set of representatives of integers modulo b as
+    # the coefficients. Namely, when b is off the coefficients are integers
+    # between -(b-1)/2 and (b-1)/2. When b is even, the integers are between
+    # -b/2 and (b-1)/2, except when b is two and the usual binary expansion is
+    # used (coefficients 0 and 1). Decoding amounts to evaluating the polynomial
+    # at x=b. For example, if b=2, the integer 26 = 2^4 + 2^3 + 2^1 is encoded
+    # as the polynomial 1x^4 + 1x^3 + 1x^1. When b=3, 26 = 3^3 - 3^0 is encoded
+    # as the polynomial 1x^3 - 1. In reality, coefficients of polynomials are
+    # always unsigned integers, and in this case are stored as their smallest
+    # non-negative representatives modulo plain_modulus. To create an integer
+    # encoder with a base b, use IntegerEncoder(plain_modulus, b).  If no b is
+    # given to the constructor, the default value of b=2 is used.
+    #
+    # FractionalEncoder:
+    # Encodes fixed-precision rational numbers as follows. First expand the
+    # number in a given base b, possibly truncating an infinite fractional part
+    # to finite precision, e.g. 26.75 = 2^4 + 2^3 + 2^1 + 2^(-1) + 2^(-2) when
+    # =2. For the sake of the example, suppose poly_modulus is 1x^1024 + 1. Next
+    # represent the integer part of the number in the same way as in
+    # IntegerEncoder (with b=2 here). Finally, represent the fractional part in
+    # the leading coefficients of the polynomial, but when doing so invert the
+    # signs of the coefficients. So in this example we would represent 26.75 as
+    # the polynomial -1x^1023 - 1x^1022 + 1x^4 + 1x^3 + 1x^1. The negative
+    # coefficients of the polynomial will again be represented as their
+    # negatives modulo plain_modulus.
+    #
+    # PolyCRTBuilder:
+    # If poly_modulus is 1x^N + 1, PolyCRTBuilder allows "batching" of N
+    # plaintext integers modulo plain_modulus into one plaintext polynomial,
+    # where homomorphic operations can be carried out very efficiently in a SIMD
+    # manner by operating on such a "composed" plaintext or ciphertext
+    # polynomials. For full details on this very powerful technique we
+    # recommend https://eprint.iacr.org/2012/565.pdf and
+    # https://eprint.iacr.org/2011/133.
+    #
+    # A crucial fact to understand is that when homomorphic operations are
+    # performed on ciphertexts, they will carry over to the underlying
+    # plaintexts, and as a result of additions and multiplications the
+    # coefficients in the plaintext polynomials will increase from what they
+    # originally were in freshly encoded polynomials. This becomes a problem
+    # when the coefficients reach the size of plain_modulus, in which case they
+    # will get automatically reduced modulo plain_modulus, and might render the
+    # underlying plaintext polynomial impossible to be correctly decoded back
+    # into an integer or rational number. Therefore, it is typically crucial to
+    # have a good sense of how large the coefficients will grow in the
+    # underlying plaintext polynomials when homomorphic computations are carried
+    #  out on the ciphertexts, and make sure that plain_modulus is chosen to be
+    # at least as large as this number.
+
+    # Here we choose to create an IntegerEncoder with base b=2.
+    encoder = IntegerEncoder(parms.plain_modulus(),
+                             2,
+                             MemoryPoolHandle.acquire_global())
 
 def main():
     # Example: Basics

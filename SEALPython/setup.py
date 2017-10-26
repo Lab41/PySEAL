@@ -1,7 +1,12 @@
 import os, sys
-
 from distutils.core import setup, Extension
 from distutils import sysconfig
+
+# Remove strict-prototypes compiler flag
+cfg_vars = sysconfig.get_config_vars()
+for key, value in cfg_vars.items():
+    if type(value) == str:
+        cfg_vars[key] = value.replace('-Wstrict-prototypes', '')
 
 cpp_args = ['-std=c++11']
 
