@@ -64,6 +64,23 @@ def example_basics():
     # coeff_modulus has a strong negative effect on the security level.
     parms.set_coeff_modulus(ChooserEvaluator.default_parameter_options()[2048]);
 
+    # Now we set the plaintext modulus. This can be any positive integer, even
+    # though here we take it to be a power of two. A larger plaintext modulus
+    # causes the noise to grow faster in homomorphic multiplication, and also
+    # lowers the maximum amount of noise in ciphertexts that the system can
+    # tolerate (see above). On the other hand, a larger plaintext modulus
+    # typically allows for better homomorphic integer arithmetic, although this
+    # depends strongly on which encoder is used to encode integers into
+    # plaintext polynomials.
+    parms.set_plain_modulus(1 << 8)
+
+
+    # Once all parameters are set, we need to call
+    # EncryptionParameters::validate(), which evaluates the properties of the
+    # parameters, their validity for homomorphic encryption, and performs some
+    # important pre-computation.
+    parms.validate()
+
 def main():
     # Example: Basics
     example_basics()

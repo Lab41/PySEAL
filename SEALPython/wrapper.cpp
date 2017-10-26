@@ -35,7 +35,20 @@ PYBIND11_MODULE(seal, m) {
     .def("set_coeff_modulus",
         (void (EncryptionParameters::*)(const std::string &)) &EncryptionParameters::set_coeff_modulus,
         "Set coefficient modulus parameter")
+    .def("set_plain_modulus",
+        (void (EncryptionParameters::*)(const BigUInt &)) &EncryptionParameters::set_plain_modulus,
+        "Set plaintext modulus parameter")
+    .def("set_plain_modulus",
+        (void (EncryptionParameters::*)(std::uint64_t)) &EncryptionParameters::set_plain_modulus,
+        "Set plaintext modulus parameter")
+    .def("set_plain_modulus",
+        (void (EncryptionParameters::*)(const std::string &)) &EncryptionParameters::set_plain_modulus,
+        "Set plaintext modulus parameter")
     .def("set_poly_modulus",
         (void (EncryptionParameters::*)(const std::string &)) &EncryptionParameters::set_poly_modulus,
-        "Set polynomial modulus parameter");
+        "Set polynomial modulus parameter")
+    .def("validate", &EncryptionParameters::validate,
+        "Validates parameters");
+
+  py::class_<EncryptionParameterQualifiers>(m, "EncryptionParameterQuailifers");
 }
