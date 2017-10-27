@@ -1,7 +1,13 @@
-from seal import ChooserEvaluator,      \
-                 EncryptionParameters,  \
-                 IntegerEncoder,        \
-                 MemoryPoolHandle
+from seal import ChooserEvaluator,     \
+                 Ciphertext,           \
+                 Decryptor,            \
+                 Encryptor,            \
+                 EncryptionParameters, \
+                 Evaluator,            \
+                 IntegerEncoder,       \
+                 KeyGenerator,         \
+                 MemoryPoolHandle,     \
+                 Plaintext
 
 def example_basics():
     """
@@ -143,9 +149,85 @@ def example_basics():
     # at least as large as this number.
 
     # Here we choose to create an IntegerEncoder with base b=2.
+    memorypool = MemoryPoolHandle.acquire_global()
     encoder = IntegerEncoder(parms.plain_modulus(),
                              2,
-                             MemoryPoolHandle.acquire_global())
+                             memorypool)
+
+    # Encode two integers as polynomials.
+    value1 = 5
+    value2 = -7
+    encoded1 = encoder.encode(value1)
+    encoded2 = encoder.encode(value2)
+    print("Encoded " + str(value1) + " as polynomial " + encoded1.to_string())
+    print("Encoded " + str(value2) + " as polynomial " + encoded2.to_string())
+
+    # Generate keys.
+    print("Generating keys ...")
+    generator = KeyGenerator(parms, memorypool);
+    generator.generate(0);
+    print("... key generation complete")
+    public_key = generator.public_key()
+    secret_key = generator.secret_key()
+
+    # Encrypt values.
+    print("Encrypting values...")
+    encryptor = Encryptor(parms, public_key, memorypool)
+    encrypted1 = encryptor.encrypt(encoded1)
+    encrypted2 = encryptor.encrypt(encoded2)
+
+    # Perform arithmetic on encrypted values.
+    print("Performing arithmetic on ecrypted numbers ...")
+    evaluator = Evaluator(parms, memorypool)
+    print("Performing homomorphic negation ...")
+    encryptednegated1 = evaluator.negate(encrypted1)
+    print("Performing homomorphic addition ...")
+    encryptedsum = evaluator.add(encrypted1, encrypted2)
+    print("Performing homomorphic subtraction ...")
+    encrypteddiff = evaluator.sub(encrypted1, encrypted2)
+    print("Performing homomorphic multiplication ...")
+    encryptedproduct = evaluator.multiply(encrypted1, encrypted2)
+
+    # Decrypt results.
+    print("Decrypting results ...")
+    decryptor = Decryptor(parms, secret_key, memorypool)
+    decrypted1 = decryptor.decrypt(encrypted1)
+    decrypted2 = decryptor.decrypt(encrypted2)
+    decryptednegated1 = decryptor.decrypt(encryptednegated1)
+    decryptedsum = decryptor.decrypt(encryptedsum)
+    decrypteddiff = decryptor.decrypt(encrypteddiff)
+    decryptedproduct = decryptor.decrypt(encryptedproduct)
+
+    # Decode results.
+    decoded1 = encoder.decode_int32(decrypted1)
+    decoded2 = encoder.decode_int32(decrypted2)
+    decodednegated1 = encoder.decode_int32(decryptednegated1)
+    decodedsum = encoder.decode_int32(decryptedsum)
+    decodeddiff = encoder.decode_int32(decrypteddiff)
+    decodedproduct = encoder.decode_int32(decryptedproduct)
+
+    # Display results.
+    print("Original = " + str(value1) + "; after encryption/decryption = "
+        + str(decoded1))
+    print("Original = " + str(value2) + "; after encryption/decryption = "
+        + str(decoded2))
+    print("Encrypted negate of " + str(value1) + " = " + str(decodednegated1))
+    print("Encrypted addition of " + str(value1) + " and " + str(value2) + " = "
+        + str(decodedsum))
+    print("Encrypted subtraction of " + str(value1) + " and " + str(value2)
+        + " = " + str(decodeddiff))
+    print("Encrypted multiplication of " + str(value1) + " and " + str(value2)
+        + " = " + str(decodedproduct))
+
+    # How much noise budget did we use in these operations?
+    print("Noise budget in encryption of " + str(value1) + ": "
+        + str(decryptor.invariant_noise_budget(encrypted1)) + " bits")
+    print("Noise budget in encryption of " + str(value2) + ": "
+        + str(decryptor.invariant_noise_budget(encrypted2)) + " bits")
+    print("Noise budget in sum: "
+        + str(decryptor.invariant_noise_budget(encryptedsum)) + " bits")
+    print("Noise budget in product: "
+        + str(decryptor.invariant_noise_budget(encryptedproduct)) + " bits")
 
 def main():
     # Example: Basics
