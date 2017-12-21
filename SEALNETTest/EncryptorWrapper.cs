@@ -1,5 +1,6 @@
-﻿using Microsoft.Research.SEAL;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Microsoft.Research.SEAL;
+using System.Collections.Generic;
 
 namespace SEALNETTest
 {
@@ -7,108 +8,173 @@ namespace SEALNETTest
     public class EncryptorWrapper
     {
         [TestMethod]
-        public void FVEncryptAddsNoiseNET()
-        {
-            var parms = new EncryptionParameters(MemoryPoolHandle.AcquireNew());
-            parms.SetDecompositionBitCount(4);
-            parms.SetNoiseStandardDeviation(3.19);
-            parms.SetNoiseMaxDeviation(35.06);
-
-            var coeffModulus = new BigUInt(48);
-            coeffModulus.Set("FFFFFFFFC001");
-            parms.SetCoeffModulus(coeffModulus);
-
-            var plainModulus = new BigUInt(7);
-            plainModulus.Set(1 << 6);
-            parms.SetPlainModulus(plainModulus);
-
-            var polyModulus = new BigPoly(65, 1);
-            polyModulus[0].Set(1);
-            polyModulus[64].Set(1);
-            parms.SetPolyModulus(polyModulus);
-
-            parms.Validate();
-
-            var Encoder = new BinaryEncoder(parms.PlainModulus, MemoryPoolHandle.AcquireNew());
-
-            var keygen = new KeyGenerator(parms, MemoryPoolHandle.AcquireNew());
-            keygen.Generate();
-
-            var encryptor = new Encryptor(parms, keygen.PublicKey, MemoryPoolHandle.AcquireNew());
-
-            // however, this line is fine
-            Assert.AreEqual(encryptor.PublicKey[0], keygen.PublicKey[0]);
-            Assert.AreEqual(encryptor.PublicKey[1], keygen.PublicKey[1]);
-
-            var encrypted1 = encryptor.Encrypt(Encoder.Encode(0x12345678));
-            var encrypted2 = encryptor.Encrypt(Encoder.Encode(0x12345678));
-
-            // this is what we want to check
-            Assert.AreNotEqual(encrypted1[0], encrypted2[0]);
-            Assert.AreNotEqual(encrypted1[1], encrypted2[1]);
-
-
-            var decryptor = new Decryptor(parms, keygen.SecretKey, MemoryPoolHandle.AcquireNew());
-            Assert.AreEqual(0x12345678U, Encoder.DecodeUInt32(decryptor.Decrypt(encrypted1)));
-            Assert.AreEqual(0x12345678U, Encoder.DecodeUInt32(decryptor.Decrypt(encrypted2)));
-        }
-
-        [TestMethod]
         public void FVEncryptDecryptNET()
         {
-            var parms = new EncryptionParameters(MemoryPoolHandle.AcquireNew());
-            parms.SetDecompositionBitCount(4);
-            parms.SetNoiseStandardDeviation(3.19);
-            parms.SetNoiseMaxDeviation(35.06);
+            var parms = new EncryptionParameters();
+            var plain_modulus = new SmallModulus(1 << 6);
+            parms.NoiseStandardDeviation = 3.19;
+            parms.PlainModulus = plain_modulus;
+            {
+                parms.PolyModulus = "1x^64 + 1";
+                parms.CoeffModulus = new List<SmallModulus> { DefaultParams.SmallMods60Bit(0) };
+                var context = new SEALContext(parms);
 
-            var coeffModulus = new BigUInt(48);
-            coeffModulus.Set("FFFFFFFFC001");
-            parms.SetCoeffModulus(coeffModulus);
+                var keygen = new KeyGenerator(context);
+                var encoder = new BalancedEncoder(plain_modulus);
 
-            var plainModulus = new BigUInt(7);
-            plainModulus.Set(1 << 6);
-            parms.SetPlainModulus(plainModulus);
+                var encryptor = new Encryptor(context, keygen.PublicKey);
+                var decryptor = new Decryptor(context, keygen.SecretKey);
 
-            var polyModulus = new BigPoly(65, 1);
-            polyModulus[0].Set(1);
-            polyModulus[64].Set(1);
-            parms.SetPolyModulus(polyModulus);
+                var encrypted = new Ciphertext();
+                var plain = new Plaintext();
+                encryptor.Encrypt(encoder.Encode(0x12345678), encrypted);
+                decryptor.Decrypt(encrypted, plain);
+                Assert.AreEqual(0x12345678UL, encoder.DecodeUInt64(plain));
+                Assert.AreEqual(encrypted.HashBlock, parms.HashBlock);
 
-            parms.Validate();
+                encryptor.Encrypt(encoder.Encode(0), encrypted);
+                decryptor.Decrypt(encrypted, plain);
+                Assert.AreEqual(0UL, encoder.DecodeUInt64(plain));
+                Assert.AreEqual(encrypted.HashBlock, parms.HashBlock);
 
-            var Encoder = new BinaryEncoder(parms.PlainModulus, MemoryPoolHandle.AcquireNew());
+                encryptor.Encrypt(encoder.Encode(1), encrypted);
+                decryptor.Decrypt(encrypted, plain);
+                Assert.AreEqual(1UL, encoder.DecodeUInt64(plain));
+                Assert.AreEqual(encrypted.HashBlock, parms.HashBlock);
 
-            var keygen = new KeyGenerator(parms, MemoryPoolHandle.AcquireNew());
-            keygen.Generate();
+                encryptor.Encrypt(encoder.Encode(2), encrypted);
+                decryptor.Decrypt(encrypted, plain);
+                Assert.AreEqual(2UL, encoder.DecodeUInt64(plain));
+                Assert.AreEqual(encrypted.HashBlock, parms.HashBlock);
 
-            var encryptor = new Encryptor(parms, keygen.PublicKey, MemoryPoolHandle.AcquireNew());
+                encryptor.Encrypt(encoder.Encode(0x7FFFFFFFFFFFFFFD), encrypted);
+                decryptor.Decrypt(encrypted, plain);
+                Assert.AreEqual(0x7FFFFFFFFFFFFFFDUL, encoder.DecodeUInt64(plain));
+                Assert.AreEqual(encrypted.HashBlock, parms.HashBlock);
 
-            Assert.AreEqual(encryptor.PublicKey[0], keygen.PublicKey[0]);
-            Assert.AreEqual(encryptor.PublicKey[1], keygen.PublicKey[1]);
+                encryptor.Encrypt(encoder.Encode(0x7FFFFFFFFFFFFFFE), encrypted);
+                decryptor.Decrypt(encrypted, plain);
+                Assert.AreEqual(0x7FFFFFFFFFFFFFFEUL, encoder.DecodeUInt64(plain));
+                Assert.AreEqual(encrypted.HashBlock, parms.HashBlock);
 
-            var decryptor = new Decryptor(parms, keygen.SecretKey, MemoryPoolHandle.AcquireNew());
-            Assert.AreEqual(decryptor.SecretKey, keygen.SecretKey);
+                encryptor.Encrypt(encoder.Encode(0x7FFFFFFFFFFFFFFF), encrypted);
+                decryptor.Decrypt(encrypted, plain);
+                Assert.AreEqual(0x7FFFFFFFFFFFFFFFUL, encoder.DecodeUInt64(plain));
+                Assert.AreEqual(encrypted.HashBlock, parms.HashBlock);
 
-            var encrypted = encryptor.Encrypt(Encoder.Encode(0x12345678));
-            Assert.AreEqual(0x12345678U, Encoder.DecodeUInt32(decryptor.Decrypt(encrypted)));
+                encryptor.Encrypt(encoder.Encode(314159265), encrypted);
+                decryptor.Decrypt(encrypted, plain);
+                Assert.AreEqual(314159265UL, encoder.DecodeUInt64(plain));
+                Assert.AreEqual(encrypted.HashBlock, parms.HashBlock);
+            }
+            {
+                parms.PolyModulus = "1x^128 + 1";
+                parms.CoeffModulus = new List<SmallModulus> { DefaultParams.SmallMods40Bit(0), DefaultParams.SmallMods40Bit(1) };
+                var context = new SEALContext(parms);
+                var keygen = new KeyGenerator(context);
 
-            encrypted = encryptor.Encrypt(Encoder.Encode(0));
-            Assert.AreEqual(0U, Encoder.DecodeUInt32(decryptor.Decrypt(encrypted)));
+                var encoder = new BalancedEncoder(plain_modulus);
 
-            encrypted = encryptor.Encrypt(Encoder.Encode(1));
-            Assert.AreEqual(1U, Encoder.DecodeUInt32(decryptor.Decrypt(encrypted)));
+                var encryptor = new Encryptor(context, keygen.PublicKey);
+                var decryptor = new Decryptor(context, keygen.SecretKey);
 
-            encrypted = encryptor.Encrypt(Encoder.Encode(2));
-            Assert.AreEqual(2U, Encoder.DecodeUInt32(decryptor.Decrypt(encrypted)));
+                var encrypted = new Ciphertext();
+                var plain = new Plaintext();
+                encryptor.Encrypt(encoder.Encode(0x12345678), encrypted);
+                decryptor.Decrypt(encrypted, plain);
+                Assert.AreEqual(0x12345678UL, encoder.DecodeUInt64(plain));
+                Assert.AreEqual(encrypted.HashBlock, parms.HashBlock);
 
-            encrypted = encryptor.Encrypt(Encoder.Encode(0x7FFFFFFFFFFFFFFDUL));
-            Assert.AreEqual(0x7FFFFFFFFFFFFFFDUL, Encoder.DecodeUInt64(decryptor.Decrypt(encrypted)));
+                encryptor.Encrypt(encoder.Encode(0), encrypted);
+                decryptor.Decrypt(encrypted, plain);
+                Assert.AreEqual(0UL, encoder.DecodeUInt64(plain));
+                Assert.AreEqual(encrypted.HashBlock, parms.HashBlock);
 
-            encrypted = encryptor.Encrypt(Encoder.Encode(0x7FFFFFFFFFFFFFFEUL));
-            Assert.AreEqual(0x7FFFFFFFFFFFFFFEUL, Encoder.DecodeUInt64(decryptor.Decrypt(encrypted)));
+                encryptor.Encrypt(encoder.Encode(1), encrypted);
+                decryptor.Decrypt(encrypted, plain);
+                Assert.AreEqual(1UL, encoder.DecodeUInt64(plain));
+                Assert.AreEqual(encrypted.HashBlock, parms.HashBlock);
 
-            encrypted = encryptor.Encrypt(Encoder.Encode(0x7FFFFFFFFFFFFFFFUL));
-            Assert.AreEqual(0x7FFFFFFFFFFFFFFFUL, Encoder.DecodeUInt64(decryptor.Decrypt(encrypted)));
+                encryptor.Encrypt(encoder.Encode(2), encrypted);
+                decryptor.Decrypt(encrypted, plain);
+                Assert.AreEqual(2UL, encoder.DecodeUInt64(plain));
+                Assert.AreEqual(encrypted.HashBlock, parms.HashBlock);
+
+                encryptor.Encrypt(encoder.Encode(0x7FFFFFFFFFFFFFFD), encrypted);
+                decryptor.Decrypt(encrypted, plain);
+                Assert.AreEqual(0x7FFFFFFFFFFFFFFDUL, encoder.DecodeUInt64(plain));
+                Assert.AreEqual(encrypted.HashBlock, parms.HashBlock);
+
+                encryptor.Encrypt(encoder.Encode(0x7FFFFFFFFFFFFFFE), encrypted);
+                decryptor.Decrypt(encrypted, plain);
+                Assert.AreEqual(0x7FFFFFFFFFFFFFFEUL, encoder.DecodeUInt64(plain));
+                Assert.AreEqual(encrypted.HashBlock, parms.HashBlock);
+
+                encryptor.Encrypt(encoder.Encode(0x7FFFFFFFFFFFFFFF), encrypted);
+                decryptor.Decrypt(encrypted, plain);
+                Assert.AreEqual(0x7FFFFFFFFFFFFFFFUL, encoder.DecodeUInt64(plain));
+                Assert.AreEqual(encrypted.HashBlock, parms.HashBlock);
+
+                encryptor.Encrypt(encoder.Encode(314159265), encrypted);
+                decryptor.Decrypt(encrypted, plain);
+                Assert.AreEqual(314159265UL, encoder.DecodeUInt64(plain));
+                Assert.AreEqual(encrypted.HashBlock, parms.HashBlock);
+            }
+
+            {
+                parms.PolyModulus = "1x^256 + 1";
+                parms.CoeffModulus = new List<SmallModulus> {
+                    DefaultParams.SmallMods40Bit(0), DefaultParams.SmallMods40Bit(1), DefaultParams.SmallMods40Bit(2) };
+                var context = new SEALContext(parms);
+                var keygen = new KeyGenerator(context);
+
+                var encoder = new BalancedEncoder(plain_modulus);
+
+                var encryptor = new Encryptor(context, keygen.PublicKey);
+                var decryptor = new Decryptor(context, keygen.SecretKey);
+
+                var encrypted = new Ciphertext();
+                var plain = new Plaintext();
+                encryptor.Encrypt(encoder.Encode(0x12345678), encrypted);
+                decryptor.Decrypt(encrypted, plain);
+                Assert.AreEqual(0x12345678UL, encoder.DecodeUInt64(plain));
+                Assert.AreEqual(encrypted.HashBlock, parms.HashBlock);
+
+                encryptor.Encrypt(encoder.Encode(0), encrypted);
+                decryptor.Decrypt(encrypted, plain);
+                Assert.AreEqual(0UL, encoder.DecodeUInt64(plain));
+                Assert.AreEqual(encrypted.HashBlock, parms.HashBlock);
+
+                encryptor.Encrypt(encoder.Encode(1), encrypted);
+                decryptor.Decrypt(encrypted, plain);
+                Assert.AreEqual(1UL, encoder.DecodeUInt64(plain));
+                Assert.AreEqual(encrypted.HashBlock, parms.HashBlock);
+
+                encryptor.Encrypt(encoder.Encode(2), encrypted);
+                decryptor.Decrypt(encrypted, plain);
+                Assert.AreEqual(2UL, encoder.DecodeUInt64(plain));
+                Assert.AreEqual(encrypted.HashBlock, parms.HashBlock);
+
+                encryptor.Encrypt(encoder.Encode(0x7FFFFFFFFFFFFFFD), encrypted);
+                decryptor.Decrypt(encrypted, plain);
+                Assert.AreEqual(0x7FFFFFFFFFFFFFFDUL, encoder.DecodeUInt64(plain));
+                Assert.AreEqual(encrypted.HashBlock, parms.HashBlock);
+
+                encryptor.Encrypt(encoder.Encode(0x7FFFFFFFFFFFFFFE), encrypted);
+                decryptor.Decrypt(encrypted, plain);
+                Assert.AreEqual(0x7FFFFFFFFFFFFFFEUL, encoder.DecodeUInt64(plain));
+                Assert.AreEqual(encrypted.HashBlock, parms.HashBlock);
+
+                encryptor.Encrypt(encoder.Encode(0x7FFFFFFFFFFFFFFF), encrypted);
+                decryptor.Decrypt(encrypted, plain);
+                Assert.AreEqual(0x7FFFFFFFFFFFFFFFUL, encoder.DecodeUInt64(plain));
+                Assert.AreEqual(encrypted.HashBlock, parms.HashBlock);
+
+                encryptor.Encrypt(encoder.Encode(314159265), encrypted);
+                decryptor.Decrypt(encrypted, plain);
+                Assert.AreEqual(314159265UL, encoder.DecodeUInt64(plain));
+                Assert.AreEqual(encrypted.HashBlock, parms.HashBlock);
+            }
         }
     }
 }

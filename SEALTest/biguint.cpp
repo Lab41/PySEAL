@@ -1,5 +1,5 @@
 #include "CppUnitTest.h"
-#include "biguint.h"
+#include "seal/biguint.h"
 #include <cstdint>
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
@@ -63,7 +63,7 @@ namespace SEALTest
             Assert::AreEqual(1, uint.significant_bit_count());
             Assert::IsTrue("1" == uint.to_string());
             Assert::IsFalse(uint.is_zero());
-            Assert::AreEqual(static_cast<uint64_t>(1), *uint.pointer());
+            Assert::AreEqual(1ULL, *uint.pointer());
             Assert::AreEqual(static_cast<uint8_t>(1), uint[0]);
             Assert::AreEqual(static_cast<uint8_t>(0), uint[1]);
             Assert::AreEqual(static_cast<uint8_t>(0), uint[2]);
@@ -148,7 +148,7 @@ namespace SEALTest
             Assert::AreEqual(1, uint.significant_bit_count());
             Assert::IsTrue("1" == uint.to_string());
             Assert::IsFalse(uint.is_zero());
-            Assert::AreEqual(static_cast<uint64_t>(1), uint.pointer()[0]);
+            Assert::AreEqual(1ULL, uint.pointer()[0]);
             Assert::AreEqual(static_cast<uint64_t>(0), uint.pointer()[1]);
             Assert::AreEqual(static_cast<uint8_t>(1), uint[0]);
             Assert::AreEqual(static_cast<uint8_t>(0), uint[1]);
@@ -322,6 +322,59 @@ namespace SEALTest
             target.duplicate_from(original);
             Assert::AreEqual(target.bit_count(), original.bit_count());
             Assert::IsTrue(target == original);
+        }
+
+        TEST_METHOD(BigUIntCopyMoveAssign)
+        {
+            {
+                BigUInt p1("123");
+                BigUInt p2("456");
+                BigUInt p3;
+
+                p1.operator =(p2);
+                p3.operator =(p1);
+                Assert::IsTrue(p1 == p2);
+                Assert::IsTrue(p3 == p1);
+            }
+            {
+                BigUInt p1("123");
+                BigUInt p2("456");
+                BigUInt p3;
+                BigUInt p4(p2);
+
+                p1.operator =(move(p2));
+                p3.operator =(move(p1));
+                Assert::IsTrue(p3 == p4);
+                Assert::IsTrue(p1 == p2);
+                Assert::IsTrue(p3 == p1);
+            }
+            {
+                uint64_t p1_anchor = 123;
+                uint64_t p2_anchor = 456;
+                BigUInt p1(64, &p1_anchor);
+                BigUInt p2(64, &p2_anchor);
+                BigUInt p3;
+
+                p1.operator =(p2);
+                p3.operator =(p1);
+                Assert::IsTrue(p1 == p2);
+                Assert::IsTrue(p3 == p1);
+            }
+            {
+                uint64_t p1_anchor = 123;
+                uint64_t p2_anchor = 456;
+                BigUInt p1(64, &p1_anchor);
+                BigUInt p2(64, &p2_anchor);
+                BigUInt p3;
+                BigUInt p4(p2);
+
+                p1.operator =(move(p2));
+                p3.operator =(move(p1));
+                Assert::IsTrue(p3 == p4);
+                Assert::IsTrue(p2 == 456);
+                Assert::IsTrue(p1 == 456);
+                Assert::IsTrue(p3 == 456);
+            }
         }
     };
 }

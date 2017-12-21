@@ -1,5 +1,5 @@
 #include "CppUnitTest.h"
-#include "util/common.h"
+#include "seal/util/common.h"
 #include <cstdint>
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
@@ -43,52 +43,6 @@ namespace SEALTest
                 Assert::AreEqual(4, divide_round_up(13, 4));
             }
 
-            TEST_METHOD(GetPowerOfTwo)
-            {
-                Assert::AreEqual(-1, get_power_of_two(0));
-                Assert::AreEqual(0, get_power_of_two(1));
-                Assert::AreEqual(1, get_power_of_two(2));
-                Assert::AreEqual(-1, get_power_of_two(3));
-                Assert::AreEqual(2, get_power_of_two(4));
-                Assert::AreEqual(-1, get_power_of_two(5));
-                Assert::AreEqual(-1, get_power_of_two(6));
-                Assert::AreEqual(-1, get_power_of_two(7));
-                Assert::AreEqual(3, get_power_of_two(8));
-                Assert::AreEqual(-1, get_power_of_two(15));
-                Assert::AreEqual(4, get_power_of_two(16));
-                Assert::AreEqual(-1, get_power_of_two(17));
-                Assert::AreEqual(-1, get_power_of_two(255));
-                Assert::AreEqual(8, get_power_of_two(256));
-                Assert::AreEqual(-1, get_power_of_two(257));
-                Assert::AreEqual(10, get_power_of_two(1 << 10));
-                Assert::AreEqual(30, get_power_of_two(1 << 30));
-                Assert::AreEqual(32, get_power_of_two(static_cast<uint64_t>(1) << 32));
-                Assert::AreEqual(62, get_power_of_two(static_cast<uint64_t>(1) << 62));
-                Assert::AreEqual(63, get_power_of_two(static_cast<uint64_t>(1) << 63));
-            }
-
-            TEST_METHOD(GetPowerOfTwoMinusOne)
-            {
-                Assert::AreEqual(0, get_power_of_two_minus_one(0));
-                Assert::AreEqual(1, get_power_of_two_minus_one(1));
-                Assert::AreEqual(-1, get_power_of_two_minus_one(2));
-                Assert::AreEqual(2, get_power_of_two_minus_one(3));
-                Assert::AreEqual(-1, get_power_of_two_minus_one(4));
-                Assert::AreEqual(-1, get_power_of_two_minus_one(5));
-                Assert::AreEqual(-1, get_power_of_two_minus_one(6));
-                Assert::AreEqual(3, get_power_of_two_minus_one(7));
-                Assert::AreEqual(-1, get_power_of_two_minus_one(8));
-                Assert::AreEqual(-1, get_power_of_two_minus_one(14));
-                Assert::AreEqual(4, get_power_of_two_minus_one(15));
-                Assert::AreEqual(-1, get_power_of_two_minus_one(16));
-                Assert::AreEqual(8, get_power_of_two_minus_one(255));
-                Assert::AreEqual(10, get_power_of_two_minus_one((1 << 10) - 1));
-                Assert::AreEqual(30, get_power_of_two_minus_one((1 << 30) - 1));
-                Assert::AreEqual(32, get_power_of_two_minus_one((static_cast<uint64_t>(1) << 32) - 1));
-                Assert::AreEqual(63, get_power_of_two_minus_one((static_cast<uint64_t>(1) << 63) - 1));
-                Assert::AreEqual(64, get_power_of_two_minus_one(~static_cast<uint64_t>(0)));
-            }
-
             TEST_METHOD(GetUInt64Byte)
             {
                 uint64_t number[2];
@@ -112,7 +66,7 @@ namespace SEALTest
                 Assert::AreEqual(static_cast<uint8_t>(0x23), *get_uint64_byte(number, 15));
             }
 
-            TEST_METHOD(GetUInt32Byte)
+            TEST_METHOD(GetUInt64UInt32)
             {
                 uint64_t number[2];
                 number[0] = 0x3456789ABCDEF121;
@@ -121,6 +75,53 @@ namespace SEALTest
                 Assert::AreEqual(static_cast<uint32_t>(0x3456789A), *get_uint64_uint32(number, 1));
                 Assert::AreEqual(static_cast<uint32_t>(0xABCDEF12), *get_uint64_uint32(number, 2));
                 Assert::AreEqual(static_cast<uint32_t>(0x23456789), *get_uint64_uint32(number, 3));
+            }
+
+            TEST_METHOD(ReverseBits)
+            {
+                Assert::AreEqual(static_cast<uint32_t>(0), reverse_bits(static_cast<uint32_t>(0)));
+                Assert::AreEqual(static_cast<uint32_t>(0x80000000), reverse_bits(static_cast<uint32_t>(1)));
+                Assert::AreEqual(static_cast<uint32_t>(0x40000000), reverse_bits(static_cast<uint32_t>(2)));
+                Assert::AreEqual(static_cast<uint32_t>(0xC0000000), reverse_bits(static_cast<uint32_t>(3)));
+                Assert::AreEqual(static_cast<uint32_t>(0x00010000), reverse_bits(static_cast<uint32_t>(0x00008000)));
+                Assert::AreEqual(static_cast<uint32_t>(0xFFFF0000), reverse_bits(static_cast<uint32_t>(0x0000FFFF)));
+                Assert::AreEqual(static_cast<uint32_t>(0x0000FFFF), reverse_bits(static_cast<uint32_t>(0xFFFF0000)));
+                Assert::AreEqual(static_cast<uint32_t>(0x00008000), reverse_bits(static_cast<uint32_t>(0x00010000)));
+                Assert::AreEqual(static_cast<uint32_t>(3), reverse_bits(static_cast<uint32_t>(0xC0000000)));
+                Assert::AreEqual(static_cast<uint32_t>(2), reverse_bits(static_cast<uint32_t>(0x40000000)));
+                Assert::AreEqual(static_cast<uint32_t>(1), reverse_bits(static_cast<uint32_t>(0x80000000)));
+                Assert::AreEqual(static_cast<uint32_t>(0xFFFFFFFF), reverse_bits(static_cast<uint32_t>(0xFFFFFFFF)));
+
+                // Reversing a 0-bit item should return 0
+                Assert::AreEqual(static_cast<uint32_t>(0), reverse_bits(static_cast<uint32_t>(0xFFFFFFFF), 0));
+               
+                // Reversing a 32-bit item returns is same as normal reverse
+                Assert::AreEqual(static_cast<uint32_t>(0), reverse_bits(static_cast<uint32_t>(0), 32));
+                Assert::AreEqual(static_cast<uint32_t>(0x80000000), reverse_bits(static_cast<uint32_t>(1), 32));
+                Assert::AreEqual(static_cast<uint32_t>(0x40000000), reverse_bits(static_cast<uint32_t>(2), 32));
+                Assert::AreEqual(static_cast<uint32_t>(0xC0000000), reverse_bits(static_cast<uint32_t>(3), 32));
+                Assert::AreEqual(static_cast<uint32_t>(0x00010000), reverse_bits(static_cast<uint32_t>(0x00008000), 32));
+                Assert::AreEqual(static_cast<uint32_t>(0xFFFF0000), reverse_bits(static_cast<uint32_t>(0x0000FFFF), 32));
+                Assert::AreEqual(static_cast<uint32_t>(0x0000FFFF), reverse_bits(static_cast<uint32_t>(0xFFFF0000), 32));
+                Assert::AreEqual(static_cast<uint32_t>(0x00008000), reverse_bits(static_cast<uint32_t>(0x00010000), 32));
+                Assert::AreEqual(static_cast<uint32_t>(3), reverse_bits(static_cast<uint32_t>(0xC0000000), 32));
+                Assert::AreEqual(static_cast<uint32_t>(2), reverse_bits(static_cast<uint32_t>(0x40000000), 32));
+                Assert::AreEqual(static_cast<uint32_t>(1), reverse_bits(static_cast<uint32_t>(0x80000000), 32));
+                Assert::AreEqual(static_cast<uint32_t>(0xFFFFFFFF), reverse_bits(static_cast<uint32_t>(0xFFFFFFFF), 32));
+
+                // 16-bit reversal
+                Assert::AreEqual(static_cast<uint32_t>(0), reverse_bits(static_cast<uint32_t>(0), 16));
+                Assert::AreEqual(static_cast<uint32_t>(0x00008000), reverse_bits(static_cast<uint32_t>(1), 16));
+                Assert::AreEqual(static_cast<uint32_t>(0x00004000), reverse_bits(static_cast<uint32_t>(2), 16));
+                Assert::AreEqual(static_cast<uint32_t>(0x0000C000), reverse_bits(static_cast<uint32_t>(3), 16));
+                Assert::AreEqual(static_cast<uint32_t>(0x00000001), reverse_bits(static_cast<uint32_t>(0x00008000), 16));
+                Assert::AreEqual(static_cast<uint32_t>(0x0000FFFF), reverse_bits(static_cast<uint32_t>(0x0000FFFF), 16));
+                Assert::AreEqual(static_cast<uint32_t>(0x00000000), reverse_bits(static_cast<uint32_t>(0xFFFF0000), 16));
+                Assert::AreEqual(static_cast<uint32_t>(0x00000000), reverse_bits(static_cast<uint32_t>(0x00010000), 16));
+                Assert::AreEqual(static_cast<uint32_t>(3), reverse_bits(static_cast<uint32_t>(0x0000C000), 16));
+                Assert::AreEqual(static_cast<uint32_t>(2), reverse_bits(static_cast<uint32_t>(0x00004000), 16));
+                Assert::AreEqual(static_cast<uint32_t>(1), reverse_bits(static_cast<uint32_t>(0x00008000), 16));
+                Assert::AreEqual(static_cast<uint32_t>(0x0000FFFF), reverse_bits(static_cast<uint32_t>(0xFFFFFFFF), 16));
             }
 
             TEST_METHOD(GetSignificantBitCount)
@@ -140,20 +141,25 @@ namespace SEALTest
                 Assert::AreEqual(64, get_significant_bit_count(0xFFFFFFFFFFFFFFFF));
             }
 
-            TEST_METHOD(ReverseBits)
+            TEST_METHOD(GetMSBIndexGeneric)
             {
-                Assert::AreEqual(static_cast<uint32_t>(0), reverse_bits(static_cast<uint32_t>(0)));
-                Assert::AreEqual(static_cast<uint32_t>(0x80000000), reverse_bits(static_cast<uint32_t>(1)));
-                Assert::AreEqual(static_cast<uint32_t>(0x40000000), reverse_bits(static_cast<uint32_t>(2)));
-                Assert::AreEqual(static_cast<uint32_t>(0xC0000000), reverse_bits(static_cast<uint32_t>(3)));
-                Assert::AreEqual(static_cast<uint32_t>(0x00010000), reverse_bits(static_cast<uint32_t>(0x00008000)));
-                Assert::AreEqual(static_cast<uint32_t>(0xFFFF0000), reverse_bits(static_cast<uint32_t>(0x0000FFFF)));
-                Assert::AreEqual(static_cast<uint32_t>(0x0000FFFF), reverse_bits(static_cast<uint32_t>(0xFFFF0000)));
-                Assert::AreEqual(static_cast<uint32_t>(0x00008000), reverse_bits(static_cast<uint32_t>(0x00010000)));
-                Assert::AreEqual(static_cast<uint32_t>(3), reverse_bits(static_cast<uint32_t>(0xC0000000)));
-                Assert::AreEqual(static_cast<uint32_t>(2), reverse_bits(static_cast<uint32_t>(0x40000000)));
-                Assert::AreEqual(static_cast<uint32_t>(1), reverse_bits(static_cast<uint32_t>(0x80000000)));
-                Assert::AreEqual(static_cast<uint32_t>(0xFFFFFFFF), reverse_bits(static_cast<uint32_t>(0xFFFFFFFF)));
+                unsigned long result;
+                get_msb_index_generic(&result, 1);
+                Assert::AreEqual(static_cast<unsigned long>(0), result);
+                get_msb_index_generic(&result, 2);
+                Assert::AreEqual(static_cast<unsigned long>(1), result);
+                get_msb_index_generic(&result, 3);
+                Assert::AreEqual(static_cast<unsigned long>(1), result);
+                get_msb_index_generic(&result, 4);
+                Assert::AreEqual(static_cast<unsigned long>(2), result);
+                get_msb_index_generic(&result, 16);
+                Assert::AreEqual(static_cast<unsigned long>(4), result);
+                get_msb_index_generic(&result, 0xFFFFFFFF);
+                Assert::AreEqual(static_cast<unsigned long>(31), result);
+                get_msb_index_generic(&result, 0x100000000);
+                Assert::AreEqual(static_cast<unsigned long>(32), result);
+                get_msb_index_generic(&result, 0xFFFFFFFFFFFFFFFF);
+                Assert::AreEqual(static_cast<unsigned long>(63), result);
             }
         };
     }

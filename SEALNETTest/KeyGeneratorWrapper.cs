@@ -1,10 +1,6 @@
-﻿using Microsoft.Research.SEAL;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System.IO;
-using System;
+using Microsoft.Research.SEAL;
 using System.Collections.Generic;
-using std;
-
 
 namespace SEALNETTest
 {
@@ -14,102 +10,58 @@ namespace SEALNETTest
         [TestMethod]
         public void FVKeyGenerationNET()
         {
-            var parms = new EncryptionParameters(MemoryPoolHandle.AcquireNew());
-            parms.SetDecompositionBitCount(4);
-            parms.SetNoiseStandardDeviation(3.19);
-            parms.SetNoiseMaxDeviation(35.06);
-
-            var coeffModulus = new BigUInt(48);
-            coeffModulus.Set("FFFFFFFFC001");
-            parms.SetCoeffModulus(coeffModulus);
-
-            var plainModulus = new BigUInt(7);
-            plainModulus.Set(1 << 6);
-            parms.SetPlainModulus(plainModulus);
-
-            var polyModulus = new BigPoly(65, 1);
-            polyModulus[0].Set(1);
-            polyModulus[64].Set(1);
-            parms.SetPolyModulus(polyModulus);
-
-            parms.Validate();
-
-            var keygen = new KeyGenerator(parms, MemoryPoolHandle.AcquireNew());
-            keygen.Generate(1);
-
-            Assert.IsFalse(keygen.PublicKey[0].IsZero);
-            Assert.IsFalse(keygen.PublicKey[1].IsZero);
-            Assert.IsFalse(keygen.SecretKey.IsZero);
-            Assert.AreEqual(1, keygen.EvaluationKeys.Size);
-            Assert.AreEqual(12, keygen.EvaluationKeys.Keys[0].Item1.Size);
-            Assert.AreEqual(12, keygen.EvaluationKeys.Keys[0].Item2.Size);
-            for (int i = 0; i < 12; ++i)
+            var parms = new EncryptionParameters();
             {
-                Assert.IsFalse(keygen.EvaluationKeys[0].Item1[i].IsZero);
-                Assert.IsFalse(keygen.EvaluationKeys[0].Item2[i].IsZero);
+                parms.NoiseStandardDeviation = 3.19;
+                parms.PolyModulus = "1x^64 + 1";
+                parms.CoeffModulus = new List<SmallModulus> { DefaultParams.SmallMods60Bit(0) };
+                parms.PlainModulus = 1 << 6;
+
+                var context = new SEALContext(parms);
+                var keygen = new KeyGenerator(context);
+
+                Assert.IsTrue(keygen.PublicKey.HashBlock.Equals(parms.HashBlock));
+                Assert.IsTrue(keygen.SecretKey.HashBlock.Equals(parms.HashBlock));
+
+                var evk = new EvaluationKeys();
+                keygen.GenerateEvaluationKeys(60, evk);
+                Assert.AreEqual(evk.HashBlock, parms.HashBlock);
+                Assert.AreEqual(2, evk.Key(2)[0].Size);
+
+                keygen.GenerateEvaluationKeys(30, 1, evk);
+                Assert.AreEqual(evk.HashBlock, parms.HashBlock);
+                Assert.AreEqual(4, evk.Key(2)[0].Size);
+
+                keygen.GenerateEvaluationKeys(2, 2, evk);
+                Assert.AreEqual(evk.HashBlock, parms.HashBlock);
+                Assert.AreEqual(60, evk.Key(2)[0].Size);
             }
-
-            var publicKey = keygen.PublicKey;
-            var secretKey = keygen.SecretKey;
-            var evaluationKeys = keygen.EvaluationKeys;
-
-            keygen.Generate(1);
-            Assert.IsFalse(publicKey[0].Equals(keygen.PublicKey[0]));
-            Assert.IsFalse(publicKey[1].Equals(keygen.PublicKey[1]));
-            Assert.IsFalse(secretKey.Equals(keygen.SecretKey));
-            for (int i = 0; i < 12; ++i)
             {
-                Assert.IsFalse(keygen.EvaluationKeys[0].Item1[i].Equals(evaluationKeys[0].Item1[i]));
-                Assert.IsFalse(keygen.EvaluationKeys[0].Item2[i].Equals(evaluationKeys[0].Item2[i]));
+                parms.NoiseStandardDeviation = 3.19;
+                parms.PolyModulus = "1x^256 + 1";
+                parms.CoeffModulus = new List<SmallModulus> {
+                    DefaultParams.SmallMods60Bit(0), DefaultParams.SmallMods30Bit(0), DefaultParams.SmallMods30Bit(1) };
+                parms.PlainModulus = 1 << 6;
+
+                var context = new SEALContext(parms);
+                var keygen = new KeyGenerator(context);
+
+                Assert.AreEqual(keygen.PublicKey.HashBlock, parms.HashBlock);
+                Assert.AreEqual(keygen.SecretKey.HashBlock, parms.HashBlock);
+
+                var evk = new EvaluationKeys();
+                keygen.GenerateEvaluationKeys(60, 2, evk);
+                Assert.AreEqual(evk.HashBlock, parms.HashBlock);
+                Assert.AreEqual(2, evk.Key(2)[0].Size);
+
+                keygen.GenerateEvaluationKeys(30, 2, evk);
+                Assert.AreEqual(evk.HashBlock, parms.HashBlock);
+                Assert.AreEqual(4, evk.Key(2)[0].Size);
+
+                keygen.GenerateEvaluationKeys(4, 1, evk);
+                Assert.AreEqual(evk.HashBlock, parms.HashBlock);
+                Assert.AreEqual(30, evk.Key(2)[0].Size);
             }
-
-            keygen.GenerateEvaluationKeys(3);
-            Assert.AreEqual(3, keygen.EvaluationKeys.Size);
-            for (int i = 0; i < 12; ++i)
-            {
-                Assert.AreEqual(12, keygen.EvaluationKeys.Keys[0].Item1.Size);
-                Assert.AreEqual(12, keygen.EvaluationKeys.Keys[0].Item2.Size);
-                Assert.AreEqual(12, keygen.EvaluationKeys.Keys[1].Item1.Size);
-                Assert.AreEqual(12, keygen.EvaluationKeys.Keys[1].Item2.Size);
-                Assert.AreEqual(12, keygen.EvaluationKeys.Keys[2].Item1.Size);
-                Assert.AreEqual(12, keygen.EvaluationKeys.Keys[2].Item2.Size);
-                Assert.IsFalse(keygen.EvaluationKeys[0].Item1[i].IsZero);
-                Assert.IsFalse(keygen.EvaluationKeys[0].Item2[i].IsZero);
-                Assert.IsFalse(keygen.EvaluationKeys[1].Item1[i].IsZero);
-                Assert.IsFalse(keygen.EvaluationKeys[1].Item1[i].IsZero);
-                Assert.IsFalse(keygen.EvaluationKeys[2].Item2[i].IsZero);
-                Assert.IsFalse(keygen.EvaluationKeys[2].Item2[i].IsZero);
-            }
-        }
-        [TestMethod]
-        public void FVKeyGenerationNoEVKNET()
-        {
-            var parms = new EncryptionParameters(MemoryPoolHandle.AcquireNew());
-            parms.SetDecompositionBitCount(0);
-            parms.SetNoiseStandardDeviation(3.19);
-            parms.SetNoiseMaxDeviation(35.06);
-
-            var coeffModulus = new BigUInt(48);
-            coeffModulus.Set("FFFFFFFFC001");
-            parms.SetCoeffModulus(coeffModulus);
-
-            var plainModulus = new BigUInt(7);
-            plainModulus.Set(1 << 6);
-            parms.SetPlainModulus(plainModulus);
-
-            var polyModulus = new BigPoly(65, 1);
-            polyModulus[0].Set(1);
-            polyModulus[64].Set(1);
-            parms.SetPolyModulus(polyModulus);
-
-            parms.Validate();
-
-            var keygen = new KeyGenerator(parms, MemoryPoolHandle.AcquireNew());
-            keygen.Generate(0);
-
-            Assert.IsFalse(keygen.PublicKey[0].IsZero);
-            Assert.IsFalse(keygen.PublicKey[1].IsZero);
-            Assert.IsFalse(keygen.SecretKey.IsZero);
         }
     }
 }

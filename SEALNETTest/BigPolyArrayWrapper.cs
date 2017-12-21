@@ -1,4 +1,4 @@
-﻿using System.IO;
+using System.IO;
 using Microsoft.Research.SEAL;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -15,25 +15,29 @@ namespace SEALNETTest
             Assert.AreEqual(arr.Size, 0);
             Assert.AreEqual(arr.CoeffCount, 0);
             Assert.AreEqual(arr.CoeffBitCount, 0);
-            Assert.AreEqual(arr.CoeffUInt64Count(), 0);
+            Assert.AreEqual(arr.CoeffUInt64Count, 0);
+            Assert.IsTrue(arr.IsZero);
 
             arr.Reset();
             Assert.AreEqual(arr.Size, 0);
             Assert.AreEqual(arr.CoeffCount, 0);
             Assert.AreEqual(arr.CoeffBitCount, 0);
-            Assert.AreEqual(arr.CoeffUInt64Count(), 0);
+            Assert.AreEqual(arr.CoeffUInt64Count, 0);
+            Assert.IsTrue(arr.IsZero);
 
             arr.Resize(2, 5, 10);
             Assert.AreEqual(arr.Size, 2);
             Assert.AreEqual(arr.CoeffCount, 5);
             Assert.AreEqual(arr.CoeffBitCount, 10);
-            Assert.AreEqual(arr.CoeffUInt64Count(), 1);
+            Assert.AreEqual(arr.CoeffUInt64Count, 1);
+            Assert.IsTrue(arr.IsZero);
 
             arr.Resize(3, 13, 70);
             Assert.AreEqual(arr.Size, 3);
             Assert.AreEqual(arr.CoeffCount, 13);
             Assert.AreEqual(arr.CoeffBitCount, 70);
-            Assert.AreEqual(arr.CoeffUInt64Count(), 2);
+            Assert.AreEqual(arr.CoeffUInt64Count, 2);
+            Assert.IsTrue(arr.IsZero);
 
             arr[0][0].Set(1);
             arr[0][1].Set(2);
@@ -49,17 +53,22 @@ namespace SEALNETTest
             Assert.IsTrue("5x^4 + 4x^3 + 3x^2 + 2x^1 + 1" == arr[0].ToString());
             Assert.IsTrue("8x^2 + 7x^1 + 6" == arr[1].ToString());
             Assert.IsTrue("Ax^1 + 9" == arr[2].ToString());
+            Assert.IsFalse(arr.IsZero);
 
             var arr2 = new BigPolyArray();
             Assert.AreEqual(arr2.Size, 0);
             Assert.AreEqual(arr2.CoeffCount, 0);
             Assert.AreEqual(arr2.CoeffBitCount, 0);
-            Assert.AreEqual(arr2.CoeffUInt64Count(), 0);
+            Assert.AreEqual(arr2.CoeffUInt64Count, 0);
+            Assert.IsTrue(arr2.IsZero);
 
             arr2.Set(arr);
-            Assert.AreEqual(arr.Size, 3);
-            Assert.AreEqual(arr.CoeffCount, 13);
-            Assert.AreEqual(arr.CoeffBitCount, 70);
+            Assert.AreEqual(arr2.Size, 3);
+            Assert.AreEqual(arr2.CoeffCount, 13);
+            Assert.AreEqual(arr2.CoeffBitCount, 70);
+            Assert.AreEqual(arr2.CoeffUInt64Count, 2);
+            Assert.IsFalse(arr2.IsZero);
+            Assert.IsTrue(arr.Equals(arr2));
 
             Assert.IsTrue("5x^4 + 4x^3 + 3x^2 + 2x^1 + 1" == arr2[0].ToString());
             Assert.IsTrue("8x^2 + 7x^1 + 6" == arr2[1].ToString());
@@ -73,6 +82,9 @@ namespace SEALNETTest
             Assert.AreEqual(arr.Size, 2);
             Assert.AreEqual(arr.CoeffCount, 3);
             Assert.AreEqual(arr.CoeffBitCount, 10);
+            Assert.AreEqual(arr.CoeffUInt64Count, 1);
+            Assert.IsFalse(arr.IsZero);
+            Assert.IsFalse(arr.Equals(arr2));
 
             Assert.IsTrue("3x^2 + 2x^1 + 1" == arr[0].ToString());
             Assert.IsTrue("8x^2 + 7x^1 + 6" == arr[1].ToString());
@@ -81,6 +93,8 @@ namespace SEALNETTest
             Assert.AreEqual(arr.Size, 1);
             Assert.AreEqual(arr.CoeffCount, 1);
             Assert.AreEqual(arr.CoeffBitCount, 10);
+            Assert.AreEqual(arr.CoeffUInt64Count, 1);
+            Assert.IsFalse(arr.IsZero);
 
             Assert.IsTrue("1" == arr[0].ToString());
 
@@ -88,6 +102,8 @@ namespace SEALNETTest
             Assert.AreEqual(arr.Size, 0);
             Assert.AreEqual(arr.CoeffCount, 0);
             Assert.AreEqual(arr.CoeffBitCount, 0);
+            Assert.AreEqual(arr.CoeffUInt64Count, 0);
+            Assert.IsTrue(arr.IsZero);
         }
 
         [TestMethod]
@@ -114,6 +130,7 @@ namespace SEALNETTest
             Assert.AreEqual(arr2.Size, 3);
             Assert.AreEqual(arr2.CoeffCount, 5);
             Assert.AreEqual(arr2.CoeffBitCount, 10);
+            Assert.AreEqual(arr2.CoeffUInt64Count, 1);
 
             Assert.IsTrue(arr[0].Equals(arr2[0]));
             Assert.IsTrue(arr[1].Equals(arr2[1]));

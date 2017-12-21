@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Filter Include="Source Files">
@@ -15,123 +15,153 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="AssemblyInfo.cpp">
+    <ClCompile Include="sealnet\AssemblyInfo.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="BigPolyArithWrapper.cpp">
+    <ClCompile Include="sealnet\BigPolyWrapper.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="BigPolyWrapper.cpp">
+    <ClCompile Include="sealnet\BigUIntWrapper.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="BigUIntWrapper.cpp">
+    <ClCompile Include="sealnet\ChooserWrapper.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ChooserWrapper.cpp">
+    <ClCompile Include="sealnet\Common.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Common.cpp">
+    <ClCompile Include="sealnet\DecryptorWrapper.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="DecryptorWrapper.cpp">
+    <ClCompile Include="sealnet\EncoderWrapper.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="EncoderWrapper.cpp">
+    <ClCompile Include="sealnet\EncryptionParamsWrapper.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="EncryptionParamsWrapper.cpp">
+    <ClCompile Include="sealnet\EncryptorWrapper.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="EncryptorWrapper.cpp">
+    <ClCompile Include="sealnet\EvaluatorWrapper.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="EvaluatorWrapper.cpp">
+    <ClCompile Include="sealnet\KeyGeneratorWrapper.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="KeyGeneratorWrapper.cpp">
+    <ClCompile Include="sealnet\SimulatorWrapper.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SimulatorWrapper.cpp">
+    <ClCompile Include="sealnet\UtilitiesWrapper.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="UtilitiesWrapper.cpp">
+    <ClCompile Include="sealnet\PolyCRTWrapper.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="PolyCRTWrapper.cpp">
+    <ClCompile Include="sealnet\BigPolyArrayWrapper.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="BigPolyArrayWrapper.cpp">
+    <ClCompile Include="sealnet\EvaluationKeysWrapper.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="EvaluationKeysWrapper.cpp">
+    <ClCompile Include="sealnet\MemoryPoolHandleWrapper.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="MemoryPoolHandleWrapper.cpp">
+    <ClCompile Include="sealnet\PlaintextWrapper.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="PlaintextWrapper.cpp">
+    <ClCompile Include="sealnet\CiphertextWrapper.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="CiphertextWrapper.cpp">
+    <ClCompile Include="sealnet\ContextWrapper.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="sealnet\PublicKeyWrapper.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="sealnet\SecretKeyWrapper.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="sealnet\SmallModulusWrapper.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="sealnet\GaloisKeysWrapper.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="sealnet\DefaultParamsWrapper.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="BigPolyArithWrapper.h">
+    <ClInclude Include="sealnet\BigPolyWrapper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="BigPolyWrapper.h">
+    <ClInclude Include="sealnet\BigUIntWrapper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="BigUIntWrapper.h">
+    <ClInclude Include="sealnet\ChooserWrapper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ChooserWrapper.h">
+    <ClInclude Include="sealnet\Common.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Common.h">
+    <ClInclude Include="sealnet\DecryptorWrapper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="DecryptorWrapper.h">
+    <ClInclude Include="sealnet\EncoderWrapper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="EncoderWrapper.h">
+    <ClInclude Include="sealnet\EncryptionParamsWrapper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="EncryptionParamsWrapper.h">
+    <ClInclude Include="sealnet\EncryptorWrapper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="EncryptorWrapper.h">
+    <ClInclude Include="sealnet\EvaluatorWrapper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="EvaluatorWrapper.h">
+    <ClInclude Include="sealnet\KeyGeneratorWrapper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="KeyGeneratorWrapper.h">
+    <ClInclude Include="sealnet\SimulatorWrapper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="SimulatorWrapper.h">
+    <ClInclude Include="sealnet\UtilitiesWrapper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="UtilitiesWrapper.h">
+    <ClInclude Include="sealnet\PolyCRTWrapper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="PolyCRTWrapper.h">
+    <ClInclude Include="sealnet\BigPolyArrayWrapper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="BigPolyArrayWrapper.h">
+    <ClInclude Include="sealnet\EvaluationKeysWrapper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="EvaluationKeysWrapper.h">
+    <ClInclude Include="sealnet\MemoryPoolHandleWrapper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="MemoryPoolHandleWrapper.h">
+    <ClInclude Include="sealnet\PlaintextWrapper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="PlaintextWrapper.h">
+    <ClInclude Include="sealnet\CiphertextWrapper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="CiphertextWrapper.h">
+    <ClInclude Include="sealnet\ContextWrapper.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="sealnet\PublicKeyWrapper.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="sealnet\SecretKeyWrapper.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="sealnet\SmallModulusWrapper.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="sealnet\GaloisKeysWrapper.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="sealnet\DefaultParamsWrapper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

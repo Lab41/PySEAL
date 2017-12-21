@@ -1,6 +1,6 @@
 #include "CppUnitTest.h"
-#include "util/polycore.h"
-#include "util/uintarith.h"
+#include "seal/util/polycore.h"
+#include "seal/util/uintarith.h"
 #include <cstdint>
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
@@ -16,7 +16,7 @@ namespace SEALTest
         public:
             TEST_METHOD(AllocatePoly)
             {
-                MemoryPool &pool = *MemoryPool::default_pool();
+                MemoryPool &pool = *global_variables::global_memory_pool;
                 Pointer ptr(allocate_poly(0, 0, pool));
                 Assert::IsTrue(nullptr == ptr.get());
 
@@ -37,7 +37,7 @@ namespace SEALTest
             {
                 set_zero_poly(0, 0, nullptr);
 
-                MemoryPool &pool = *MemoryPool::default_pool();
+                MemoryPool &pool = *global_variables::global_memory_pool;
                 Pointer ptr(allocate_poly(1, 1, pool));
                 ptr[0] = 0x1234567812345678;
                 set_zero_poly(1, 1, ptr.get());
@@ -57,7 +57,7 @@ namespace SEALTest
 
             TEST_METHOD(AllocateZeroPoly)
             {
-                MemoryPool &pool = *MemoryPool::default_pool();
+                MemoryPool &pool = *global_variables::global_memory_pool;
                 Pointer ptr(allocate_zero_poly(0, 0, pool));
                 Assert::IsTrue(nullptr == ptr.get());
 
@@ -75,19 +75,19 @@ namespace SEALTest
 
             TEST_METHOD(GetPolyCoeff)
             {
-                MemoryPool &pool = *MemoryPool::default_pool();
+                MemoryPool &pool = *global_variables::global_memory_pool;
                 Pointer ptr(allocate_zero_poly(2, 3, pool));
                 *get_poly_coeff(ptr.get(), 0, 3) = 1;
                 *get_poly_coeff(ptr.get(), 1, 3) = 2;
-                Assert::AreEqual(static_cast<uint64_t>(1), ptr[0]);
+                Assert::AreEqual(1ULL, ptr[0]);
                 Assert::AreEqual(static_cast<uint64_t>(2), ptr[3]);
-                Assert::AreEqual(static_cast<uint64_t>(1), *get_poly_coeff(ptr.get(), 0, 3));
+                Assert::AreEqual(1ULL, *get_poly_coeff(ptr.get(), 0, 3));
                 Assert::AreEqual(static_cast<uint64_t>(2), *get_poly_coeff(ptr.get(), 1, 3));
             }
 
             TEST_METHOD(SetPolyPoly)
             {
-                MemoryPool &pool = *MemoryPool::default_pool();
+                MemoryPool &pool = *global_variables::global_memory_pool;
                 Pointer ptr1(allocate_poly(2, 3, pool));
                 Pointer ptr2(allocate_zero_poly(2, 3, pool));
                 for (int i = 0; i < 6; ++i)
@@ -109,10 +109,10 @@ namespace SEALTest
                 ptr2 = allocate_poly(3, 4, pool);
                 for (int i = 0; i < 12; ++i)
                 {
-                    ptr2[i] = static_cast<uint64_t>(1);
+                    ptr2[i] = 1ULL;
                 }
                 set_poly_poly(ptr1.get(), 2, 3, 3, 4, ptr2.get());
-                Assert::AreEqual(static_cast<uint64_t>(1), ptr2[0]);
+                Assert::AreEqual(1ULL, ptr2[0]);
                 Assert::AreEqual(static_cast<uint64_t>(2), ptr2[1]);
                 Assert::AreEqual(static_cast<uint64_t>(3), ptr2[2]);
                 Assert::AreEqual(static_cast<uint64_t>(0), ptr2[3]);
@@ -129,7 +129,7 @@ namespace SEALTest
                 ptr2[0] = 1;
                 ptr2[1] = 1;
                 set_poly_poly(ptr1.get(), 2, 3, 1, 2, ptr2.get());
-                Assert::AreEqual(static_cast<uint64_t>(1), ptr2[0]);
+                Assert::AreEqual(1ULL, ptr2[0]);
                 Assert::AreEqual(static_cast<uint64_t>(2), ptr2[1]);
             }
 
@@ -137,7 +137,7 @@ namespace SEALTest
             {
                 Assert::IsTrue(is_zero_poly(nullptr, 0, 0));
 
-                MemoryPool &pool = *MemoryPool::default_pool();
+                MemoryPool &pool = *global_variables::global_memory_pool;
                 Pointer ptr(allocate_poly(2, 3, pool));
                 for (int i = 0; i < 6; ++i)
                 {
@@ -156,7 +156,7 @@ namespace SEALTest
             {
                 Assert::IsTrue(is_equal_poly_poly(nullptr, nullptr, 0, 0));
 
-                MemoryPool &pool = *MemoryPool::default_pool();
+                MemoryPool &pool = *global_variables::global_memory_pool;
                 Pointer ptr1(allocate_poly(2, 3, pool));
                 Pointer ptr2(allocate_poly(2, 3, pool));
                 for (int i = 0; i < 6; ++i)
@@ -172,11 +172,49 @@ namespace SEALTest
                 }
             }
 
+            TEST_METHOD(SetBigPolyArrayBigPolyArray)
+            {
+                MemoryPool &pool = *global_variables::global_memory_pool;
+                Pointer ptr1(allocate_zero_poly(2, 3, pool));
+                Pointer ptr2(allocate_zero_poly(2, 3, pool));
+                for (int i = 0; i < 6; ++i)
+                {
+                    ptr1[i] = static_cast<uint64_t>(i + 1);
+                }
+
+                set_bigpolyarray_bigpolyarray(ptr1.get(), 2, 3, 1, 2, 3, 1, ptr2.get());
+                Assert::AreEqual(1ULL, ptr2[0]);
+                Assert::AreEqual(2ULL, ptr2[1]);
+                Assert::AreEqual(3ULL, ptr2[2]);
+                Assert::AreEqual(4ULL, ptr2[3]);
+                Assert::AreEqual(5ULL, ptr2[4]);
+                Assert::AreEqual(6ULL, ptr2[5]);
+
+                ptr2[3] = ptr2[4] = ptr2[5] = 0;
+                set_bigpolyarray_bigpolyarray(ptr1.get(), 2, 3, 1, 1, 3, 1, ptr2.get());
+                Assert::AreEqual(1ULL, ptr2[0]);
+                Assert::AreEqual(2ULL, ptr2[1]);
+                Assert::AreEqual(3ULL, ptr2[2]);
+                Assert::AreEqual(0ULL, ptr2[3]);
+                Assert::AreEqual(0ULL, ptr2[4]);
+                Assert::AreEqual(0ULL, ptr2[5]);
+
+                ptr2[0] = ptr2[1] = ptr2[2] = 0;
+                ptr2[3] = ptr2[4] = ptr2[5] = 0;
+                set_bigpolyarray_bigpolyarray(ptr1.get(), 1, 2, 3, 1, 2, 3, ptr2.get());
+                Assert::AreEqual(1ULL, ptr2[0]);
+                Assert::AreEqual(2ULL, ptr2[1]);
+                Assert::AreEqual(3ULL, ptr2[2]);
+                Assert::AreEqual(4ULL, ptr2[3]);
+                Assert::AreEqual(5ULL, ptr2[4]);
+                Assert::AreEqual(6ULL, ptr2[5]);
+            }
+
             TEST_METHOD(IsOneZeroOnePoly)
             {
                 Assert::IsFalse(is_one_zero_one_poly(nullptr, 0, 0));
 
-                MemoryPool &pool = *MemoryPool::default_pool();
+                MemoryPool &pool = *global_variables::global_memory_pool;
                 Pointer poly(allocate_zero_poly(4, 2, pool));
                 Assert::IsFalse(is_one_zero_one_poly(poly.get(), 0, 2));
                 Assert::IsFalse(is_one_zero_one_poly(poly.get(), 1, 2));
@@ -221,7 +259,7 @@ namespace SEALTest
             {
                 Assert::AreEqual(0, get_significant_coeff_count_poly(nullptr, 0, 0));
 
-                MemoryPool &pool = *MemoryPool::default_pool();
+                MemoryPool &pool = *global_variables::global_memory_pool;
                 Pointer ptr(allocate_zero_poly(3, 2, pool));
                 Assert::AreEqual(0, get_significant_coeff_count_poly(ptr.get(), 3, 2));
                 ptr[0] = 1;
@@ -239,7 +277,7 @@ namespace SEALTest
             {
                 Assert::AreEqual(0, get_significant_coeff_count_poly(nullptr, 0, 0));
 
-                MemoryPool &pool = *MemoryPool::default_pool();
+                MemoryPool &pool = *global_variables::global_memory_pool;
                 Pointer poly(allocate_poly(3, 2, pool));
                 for (int i = 0; i < 6; i++)
                 {
@@ -252,7 +290,7 @@ namespace SEALTest
                 Assert::IsTrue(ptr.get() == poly.get());
                 ptr = duplicate_poly_if_needed(poly.get(), 3, 2, 2, 3, false, pool);
                 Assert::IsTrue(ptr.get() != poly.get());
-                Assert::AreEqual(static_cast<uint64_t>(1), ptr[0]);
+                Assert::AreEqual(1ULL, ptr[0]);
                 Assert::AreEqual(static_cast<uint64_t>(2), ptr[1]);
                 Assert::AreEqual(static_cast<uint64_t>(0), ptr[2]);
                 Assert::AreEqual(static_cast<uint64_t>(3), ptr[3]);
@@ -267,9 +305,31 @@ namespace SEALTest
                 }
             }
 
+            TEST_METHOD(DuplicateBigPolyArrayIfNeeded)
+            {
+                MemoryPool &pool = *global_variables::global_memory_pool;
+                Pointer poly(allocate_poly(3, 2, pool));
+                for (int i = 0; i < 6; i++)
+                {
+                    poly[i] = i + 1;
+                }
+
+                ConstPointer ptr = duplicate_bigpolyarray_if_needed(poly.get(), 3, 2, 1, 3, 2, 1, false, pool);
+                Assert::IsTrue(ptr.get() == poly.get());
+
+                ptr = duplicate_bigpolyarray_if_needed(poly.get(), 3, 2, 1, 2, 2, 1, false, pool);
+                Assert::IsTrue(ptr.get() == poly.get());
+
+                ptr = duplicate_bigpolyarray_if_needed(poly.get(), 3, 2, 1, 3, 1, 1, false, pool);
+                Assert::IsTrue(ptr.get() != poly.get());
+                Assert::AreEqual(1ULL, ptr[0]);
+                Assert::AreEqual(3ULL, ptr[1]);
+                Assert::AreEqual(5ULL, ptr[2]);
+            }
+
             TEST_METHOD(ArePolyCoeffsLessThan)
             {
-                MemoryPool &pool = *MemoryPool::default_pool();
+                MemoryPool &pool = *global_variables::global_memory_pool;
                 Pointer poly(allocate_zero_poly(3, 2, pool));
                 poly[0] = 3;
                 poly[2] = 5;

@@ -1,6 +1,6 @@
 #include "CppUnitTest.h"
-#include "randomgen.h"
-#include "keygenerator.h"
+#include "seal/randomgen.h"
+#include "seal/keygenerator.h"
 #include <random>
 #include <cstdint>
 #include <memory>
@@ -124,29 +124,24 @@ namespace SEALTest
             CustomRandomEngineFactory factory;
             
             EncryptionParameters parms;
-            BigUInt coeff_modulus;
-            BigUInt plain_modulus;
+            uint64_t coeff_modulus;
+            SmallModulus plain_modulus;
             BigPoly poly_modulus;
-            parms.set_decomposition_bit_count(4);
             parms.set_noise_standard_deviation(3.19);
-            parms.set_noise_max_deviation(35.06);
-            coeff_modulus.resize(48);
-            coeff_modulus = "FFFFFFFFC001";
-            plain_modulus.resize(7);
+            coeff_modulus = 0xFFFFFFFFC001;
             plain_modulus = 1 << 6;
             poly_modulus.resize(65, 1);
             poly_modulus[0] = 1;
             poly_modulus[64] = 1;
             parms.set_poly_modulus(const_cast<const BigPoly &>(poly_modulus));
-            parms.set_plain_modulus(const_cast<const BigUInt &>(plain_modulus));
-            parms.set_coeff_modulus(const_cast<const BigUInt &>(coeff_modulus));
+            parms.set_plain_modulus(plain_modulus);
+            parms.set_coeff_modulus({ coeff_modulus });
             parms.set_random_generator(&factory);
-            parms.validate();
+            SEALContext context(parms);
 
             Assert::AreEqual(0, CustomRandomEngine::count());
 
-            KeyGenerator keygen(parms);
-            keygen.generate();
+            KeyGenerator keygen(context);
 
             Assert::AreNotEqual(0, CustomRandomEngine::count());
         }

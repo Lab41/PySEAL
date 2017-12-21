@@ -1,7 +1,7 @@
 #include "CppUnitTest.h"
-#include "util/modulus.h"
+#include "seal/util/modulus.h"
+#include "seal/biguint.h"
 #include <cstdint>
-#include "biguint.h"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 using namespace seal;
@@ -17,7 +17,7 @@ namespace SEALTest
         public:
             TEST_METHOD(ModulusTest)
             {
-                MemoryPool &pool = *MemoryPool::default_pool();
+                MemoryPool &pool = *global_variables::global_memory_pool;
                 Modulus mod;
                 Assert::IsFalse(mod.is_power_of_two_minus_one());
                 Assert::IsFalse(mod.has_inverse());
@@ -33,7 +33,7 @@ namespace SEALTest
                 Assert::IsTrue(mod.has_inverse());
                 Assert::IsTrue(value.pointer() == mod.get());
                 Assert::AreEqual(static_cast<uint64_t>(0), mod.get_inverse()[1]);
-                Assert::AreEqual(static_cast<uint64_t>(1), mod.get_inverse()[0]);
+                Assert::AreEqual(1ULL, mod.get_inverse()[0]);
                 Assert::AreEqual(2, mod.uint64_count());
                 Assert::AreEqual(127, mod.significant_bit_count());
                 Assert::AreEqual(127, mod.power_of_two_minus_one());

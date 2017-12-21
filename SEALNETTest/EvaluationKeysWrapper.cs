@@ -1,9 +1,7 @@
-﻿using Microsoft.Research.SEAL;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.IO;
-using System;
+using Microsoft.Research.SEAL;
 using System.Collections.Generic;
-using std;
 
 namespace SEALNETTest
 {
@@ -11,39 +9,195 @@ namespace SEALNETTest
     public class EvaluationKeysWrapper
     {
         [TestMethod]
-        public void EvaluationKeysNETSaveLoad()
+        public void EvaluationKeysSaveLoadNET()
         {
             var stream = new MemoryStream();
+            {
+                var parms = new EncryptionParameters();
+                parms.NoiseStandardDeviation = 3.19;
+                parms.PolyModulus = "1x^64 + 1";
+                parms.PlainModulus = 1 << 6;
+                parms.CoeffModulus = new List<SmallModulus> { DefaultParams.SmallMods60Bit(0) };
+                var context = new SEALContext(parms);
+                var keygen = new KeyGenerator(context);
 
-            var arr1 = new BigPolyArray(3, 5, 10);
-            arr1[0][0].Set(1);
-            arr1[0][1].Set(2);
-            arr1[0][2].Set(3);
-            arr1[1][0].Set(4);
-            arr1[1][1].Set(5);
-            arr1[2][0].Set(6);
+                var keys = new EvaluationKeys();
+                Assert.AreEqual(keys.DecompositionBitCount, 0);
+                var test_keys = new EvaluationKeys();
+                keys.Save(stream);
+                stream.Seek(0, SeekOrigin.Begin);
+                test_keys.Load(stream);
+                Assert.AreEqual(keys.Size, test_keys.Size);
+                Assert.IsTrue(keys.HashBlock.Equals(test_keys.HashBlock));
+                Assert.AreEqual(keys.DecompositionBitCount, test_keys.DecompositionBitCount);
+                Assert.AreEqual(0, keys.Size);
 
-            var arr2 = new BigPolyArray(3, 5, 10);
-            arr2[0][0].Set(7);
-            arr2[0][1].Set(8);
-            arr2[0][2].Set(9);
-            arr2[1][0].Set(10);
-            arr2[1][1].Set(11);
-            arr2[2][0].Set(12);
+                keygen.GenerateEvaluationKeys(1, 1, keys);
+                Assert.AreEqual(keys.DecompositionBitCount, 1);
+                stream.Seek(0, SeekOrigin.Begin);
+                keys.Save(stream);
+                stream.Seek(0, SeekOrigin.Begin);
+                test_keys.Load(stream);
+                Assert.AreEqual(keys.Size, test_keys.Size);
+                Assert.IsTrue(keys.HashBlock.Equals(test_keys.HashBlock));
+                Assert.AreEqual(keys.DecompositionBitCount, test_keys.DecompositionBitCount);
+                for (int j = 0; j < test_keys.Size; j++)
+                {
+                    for (int i = 0; i < test_keys.Key(j + 2).Count; i++)
+                    {
+                        Assert.AreEqual(keys.Key(j + 2)[i].Size, test_keys.Key(j + 2)[i].Size);
+                        Assert.AreEqual(keys.Key(j + 2)[i].UInt64Count, test_keys.Key(j + 2)[i].UInt64Count);
+                    }
+                }
 
-            var pair1 = new Tuple<BigPolyArray, BigPolyArray>(arr1, arr2);
-            var list1 = new List<System.Tuple<Microsoft.Research.SEAL.BigPolyArray, Microsoft.Research.SEAL.BigPolyArray>>();
-            list1.Add(pair1);
-            var keys1 = new EvaluationKeys(list1);
+                keygen.GenerateEvaluationKeys(2, 1, keys);
+                Assert.AreEqual(keys.DecompositionBitCount, 2);
+                stream.Seek(0, SeekOrigin.Begin);
+                keys.Save(stream);
+                stream.Seek(0, SeekOrigin.Begin);
+                test_keys.Load(stream);
+                Assert.AreEqual(keys.Size, test_keys.Size);
+                Assert.IsTrue(keys.HashBlock.Equals(test_keys.HashBlock));
+                Assert.AreEqual(keys.DecompositionBitCount, test_keys.DecompositionBitCount);
+                for (int j = 0; j < test_keys.Size; j++)
+                {
+                    for (int i = 0; i < test_keys.Key(j + 2).Count; i++)
+                    {
+                        Assert.AreEqual(keys.Key(j + 2)[i].Size, test_keys.Key(j + 2)[i].Size);
+                        Assert.AreEqual(keys.Key(j + 2)[i].UInt64Count, test_keys.Key(j + 2)[i].UInt64Count);
+                    }
+                }
 
-            stream.Seek(0, SeekOrigin.Begin);
-            keys1.Save(stream);
+                keygen.GenerateEvaluationKeys(59, 2, keys);
+                Assert.AreEqual(keys.DecompositionBitCount, 59);
+                stream.Seek(0, SeekOrigin.Begin);
+                keys.Save(stream);
+                stream.Seek(0, SeekOrigin.Begin);
+                test_keys.Load(stream);
+                Assert.AreEqual(keys.Size, test_keys.Size);
+                Assert.IsTrue(keys.HashBlock.Equals(test_keys.HashBlock));
+                Assert.AreEqual(keys.DecompositionBitCount, test_keys.DecompositionBitCount);
+                for (int j = 0; j < test_keys.Size; j++)
+                {
+                    for (int i = 0; i < test_keys.Key(j + 2).Count; i++)
+                    {
+                        Assert.AreEqual(keys.Key(j + 2)[i].Size, test_keys.Key(j + 2)[i].Size);
+                        Assert.AreEqual(keys.Key(j + 2)[i].UInt64Count, test_keys.Key(j + 2)[i].UInt64Count);
+                    }
+                }
 
-            var keys2 = new EvaluationKeys();
-            stream.Seek(0, SeekOrigin.Begin);
-            keys2.Load(stream);
+                keygen.GenerateEvaluationKeys(60, 5, keys);
+                Assert.AreEqual(keys.DecompositionBitCount, 60);
+                stream.Seek(0, SeekOrigin.Begin);
+                keys.Save(stream);
+                stream.Seek(0, SeekOrigin.Begin);
+                test_keys.Load(stream);
+                Assert.AreEqual(keys.Size, test_keys.Size);
+                Assert.IsTrue(keys.HashBlock.Equals(test_keys.HashBlock));
+                Assert.AreEqual(keys.DecompositionBitCount, test_keys.DecompositionBitCount);
+                for (int j = 0; j < test_keys.Size; j++)
+                {
+                    for (int i = 0; i < test_keys.Key(j + 2).Count; i++)
+                    {
+                        Assert.AreEqual(keys.Key(j + 2)[i].Size, test_keys.Key(j + 2)[i].Size);
+                        Assert.AreEqual(keys.Key(j + 2)[i].UInt64Count, test_keys.Key(j + 2)[i].UInt64Count);
+                    }
+                }
+            }
+            {
+                var parms = new EncryptionParameters();
+                parms.NoiseStandardDeviation = 3.19;
+                parms.PolyModulus = "1x^256 + 1";
+                parms.PlainModulus = 1 << 6;
+                parms.CoeffModulus = new List<SmallModulus> {
+                    DefaultParams.SmallMods60Bit(0), DefaultParams.SmallMods50Bit(0) };
+                var context = new SEALContext(parms);
+                var keygen = new KeyGenerator(context);
 
-            Assert.AreEqual(keys1[0].Item1[0].ToString(), keys2[0].Item1[0].ToString());
+                var keys = new EvaluationKeys();
+                Assert.AreEqual(keys.DecompositionBitCount, 0);
+                var test_keys = new EvaluationKeys();
+                stream.Seek(0, SeekOrigin.Begin);
+                keys.Save(stream);
+                stream.Seek(0, SeekOrigin.Begin);
+                test_keys.Load(stream);
+                Assert.AreEqual(keys.Size, test_keys.Size);
+                Assert.IsTrue(keys.HashBlock.Equals(test_keys.HashBlock));
+                Assert.AreEqual(keys.DecompositionBitCount, test_keys.DecompositionBitCount);
+                Assert.AreEqual(0, keys.Size);
+
+                keygen.GenerateEvaluationKeys(8, 1, keys);
+                Assert.AreEqual(keys.DecompositionBitCount, 8);
+                stream.Seek(0, SeekOrigin.Begin);
+                keys.Save(stream);
+                stream.Seek(0, SeekOrigin.Begin);
+                test_keys.Load(stream);
+                Assert.AreEqual(keys.Size, test_keys.Size);
+                Assert.IsTrue(keys.HashBlock.Equals(test_keys.HashBlock));
+                Assert.AreEqual(keys.DecompositionBitCount, test_keys.DecompositionBitCount);
+                for (int j = 0; j < test_keys.Size; j++)
+                {
+                    for (int i = 0; i < test_keys.Key(j + 2).Count; i++)
+                    {
+                        Assert.AreEqual(keys.Key(j + 2)[i].Size, test_keys.Key(j + 2)[i].Size);
+                        Assert.AreEqual(keys.Key(j + 2)[i].UInt64Count, test_keys.Key(j + 2)[i].UInt64Count);
+                    }
+                }
+
+                keygen.GenerateEvaluationKeys(8, 2, keys);
+                Assert.AreEqual(keys.DecompositionBitCount, 8);
+                stream.Seek(0, SeekOrigin.Begin);
+                keys.Save(stream);
+                stream.Seek(0, SeekOrigin.Begin);
+                test_keys.Load(stream);
+                Assert.AreEqual(keys.Size, test_keys.Size);
+                Assert.IsTrue(keys.HashBlock.Equals(test_keys.HashBlock));
+                Assert.AreEqual(keys.DecompositionBitCount, test_keys.DecompositionBitCount);
+                for (int j = 0; j < test_keys.Size; j++)
+                {
+                    for (int i = 0; i < test_keys.Key(j + 2).Count; i++)
+                    {
+                        Assert.AreEqual(keys.Key(j + 2)[i].Size, test_keys.Key(j + 2)[i].Size);
+                        Assert.AreEqual(keys.Key(j + 2)[i].UInt64Count, test_keys.Key(j + 2)[i].UInt64Count);
+                    }
+                }
+
+                keygen.GenerateEvaluationKeys(59, 2, keys);
+                Assert.AreEqual(keys.DecompositionBitCount, 59);
+                stream.Seek(0, SeekOrigin.Begin);
+                keys.Save(stream);
+                stream.Seek(0, SeekOrigin.Begin);
+                test_keys.Load(stream);
+                Assert.AreEqual(keys.Size, test_keys.Size);
+                Assert.IsTrue(keys.HashBlock.Equals(test_keys.HashBlock));
+                Assert.AreEqual(keys.DecompositionBitCount, test_keys.DecompositionBitCount);
+                for (int j = 0; j < test_keys.Size; j++)
+                {
+                    for (int i = 0; i < test_keys.Key(j + 2).Count; i++)
+                    {
+                        Assert.AreEqual(keys.Key(j + 2)[i].Size, test_keys.Key(j + 2)[i].Size);
+                        Assert.AreEqual(keys.Key(j + 2)[i].UInt64Count, test_keys.Key(j + 2)[i].UInt64Count);
+                    }
+                }
+
+                keygen.GenerateEvaluationKeys(60, 5, keys);
+                Assert.AreEqual(keys.DecompositionBitCount, 60);
+                stream.Seek(0, SeekOrigin.Begin);
+                keys.Save(stream);
+                stream.Seek(0, SeekOrigin.Begin);
+                test_keys.Load(stream);
+                Assert.AreEqual(keys.Size, test_keys.Size);
+                Assert.IsTrue(keys.HashBlock.Equals(test_keys.HashBlock));
+                Assert.AreEqual(keys.DecompositionBitCount, test_keys.DecompositionBitCount);
+                for (int j = 0; j < test_keys.Size; j++)
+                {
+                    for (int i = 0; i < test_keys.Key(j + 2).Count; i++)
+                    {
+                        Assert.AreEqual(keys.Key(j + 2)[i].Size, test_keys.Key(j + 2)[i].Size);
+                        Assert.AreEqual(keys.Key(j + 2)[i].UInt64Count, test_keys.Key(j + 2)[i].UInt64Count);
+                    }
+                }
+            }
         }
     }
 }

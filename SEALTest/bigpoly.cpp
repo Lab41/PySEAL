@@ -1,5 +1,5 @@
 #include "CppUnitTest.h"
-#include "bigpoly.h"
+#include "seal/bigpoly.h"
 #include <cstdint>
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
@@ -114,7 +114,7 @@ namespace SEALTest
             Assert::IsFalse(poly != poly2);
             Assert::IsFalse(poly2 != poly);
             Assert::IsTrue("3x^2 + 2x^1 + 1" == poly.to_string());
-            Assert::AreEqual(static_cast<uint64_t>(1), poly.pointer()[0]);
+            Assert::AreEqual(1ULL, poly.pointer()[0]);
             Assert::AreEqual(static_cast<uint64_t>(0), poly.pointer()[1]);
             Assert::AreEqual(static_cast<uint64_t>(2), poly.pointer()[2]);
             Assert::AreEqual(static_cast<uint64_t>(0), poly.pointer()[3]);
@@ -273,6 +273,59 @@ namespace SEALTest
             Assert::AreEqual(target.coeff_count(), original.coeff_count());
             Assert::AreEqual(target.coeff_bit_count(), original.coeff_bit_count());
             Assert::IsTrue(target == original);
+        }
+
+        TEST_METHOD(BigPolyCopyMoveAssign)
+        {
+            {
+                BigPoly p1("123x^2 + 456x^1 + 789");
+                BigPoly p2("321x^7 + 654x^5 + 987x^3");
+                BigPoly p3;
+
+                p1.operator =(p2);
+                p3.operator =(p1);
+                Assert::IsTrue(p1 == p2);
+                Assert::IsTrue(p3 == p1);
+            }
+            {
+                BigPoly p1("123x^2 + 456x^1 + 789");
+                BigPoly p2("321x^7 + 654x^5 + 987x^3");
+                BigPoly p3;
+                BigPoly p4(p2);
+
+                p1.operator =(move(p2));
+                p3.operator =(move(p1));
+                Assert::IsTrue(p3 == p4);
+                Assert::IsTrue(p1 == p2);
+                Assert::IsTrue(p3 == p1);
+            }
+            {
+                uint64_t p1_anchor[3]{ 123, 456, 789 };
+                uint64_t p2_anchor[3]{ 321, 654, 987 };
+                BigPoly p1(3, 64, p1_anchor);
+                BigPoly p2(3, 64, p2_anchor);
+                BigPoly p3;
+
+                p1.operator =(p2);
+                p3.operator =(p1);
+                Assert::IsTrue(p1 == p2);
+                Assert::IsTrue(p3 == p1);
+            }
+            {
+                uint64_t p1_anchor[3]{ 123, 456, 789 };
+                uint64_t p2_anchor[3]{ 321, 654, 987 };
+                BigPoly p1(3, 64, p1_anchor);
+                BigPoly p2(3, 64, p2_anchor);
+                BigPoly p3;
+                BigPoly p4(p2);
+
+                p1.operator =(move(p2));
+                p3.operator =(move(p1));
+                Assert::IsTrue(p3 == p4);
+                Assert::IsTrue(p2[0] == 321 && p2[1] == 654 && p2[2] == 987);
+                Assert::IsTrue(p1[0] == 321 && p1[1] == 654 && p1[2] == 987);
+                Assert::IsTrue(p3[0] == 321 && p3[1] == 654 && p3[2] == 987);
+            }
         }
     };
 }

@@ -1,6 +1,6 @@
 #include "CppUnitTest.h"
-#include "memorypoolhandle.h"
-#include "evaluator.h"
+#include "seal/memorypoolhandle.h"
+#include "seal/util/uintcore.h"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 using namespace seal;
@@ -9,45 +9,55 @@ using namespace std;
 
 namespace SEALTest
 {
-    TEST_CLASS(MPHTests)
+    TEST_CLASS(MemoryPoolHandleTest)
     {
     public:
-        TEST_METHOD(MemoryPoolHandleTest)
+        TEST_METHOD(MemoryPoolHandleConstructAssign)
         {
             MemoryPoolHandle pool;
-            Assert::IsTrue(&static_cast<MemoryPool&>(pool) == MemoryPool::default_pool().get());
-            pool = MemoryPoolHandle::acquire_global();
-            Assert::IsTrue(&static_cast<MemoryPool&>(pool) == MemoryPool::default_pool().get());
-            pool = MemoryPoolHandle::acquire_new();
-            Assert::IsFalse(&pool.operator seal::util::MemoryPool &() == MemoryPool::default_pool().get());
-            
-            EncryptionParameters parms;
-            BigUInt coeff_modulus;
-            BigUInt plain_modulus;
-            BigPoly poly_modulus;
-            parms.set_decomposition_bit_count(4);
-            parms.set_noise_standard_deviation(3.19);
-            parms.set_noise_max_deviation(35.06);
-            coeff_modulus.resize(48);
-            coeff_modulus = "7FFFFC801";
-            plain_modulus.resize(7);
-            plain_modulus = 1 << 6;
-            poly_modulus.resize(65, 1);
-            poly_modulus[0] = 1;
-            poly_modulus[64] = 1;
-            parms.set_poly_modulus(poly_modulus);
-            parms.set_plain_modulus(plain_modulus);
-            parms.set_coeff_modulus(coeff_modulus);
-            parms.validate();
-            Evaluator evaluator(parms, pool);
-            MemoryPoolHandle pool2(pool);
-            Evaluator evaluator2(parms, pool2);
-            Evaluator evaluator3(parms, MemoryPoolHandle::acquire_new());
-            MemoryPoolHandle pool4;
-            pool4 = pool2;
-            Evaluator evaluator4(parms, pool4);
-            Assert::IsTrue(&static_cast<MemoryPool&>(pool4) == &static_cast<MemoryPool&>(pool2));
-            Assert::IsTrue(&static_cast<MemoryPool&>(pool4) == &static_cast<MemoryPool&>(pool));
+            Assert::IsFalse(pool);
+            pool = MemoryPoolHandle::Global();
+            Assert::IsTrue(&static_cast<MemoryPool&>(pool) == global_variables::global_memory_pool);
+            pool = MemoryPoolHandle::New(true);
+            Assert::IsFalse(&pool.operator seal::util::MemoryPool &() == global_variables::global_memory_pool);
+            MemoryPoolHandle pool2 = MemoryPoolHandle::New(true);
+            Assert::IsFalse(pool == pool2);
+
+            pool = pool2;
+            Assert::IsTrue(pool == pool2);
+            pool = MemoryPoolHandle::Global();
+            Assert::IsFalse(pool == pool2);
+            pool2 = MemoryPoolHandle::Global();
+            Assert::IsTrue(pool == pool2);
+        }
+
+        TEST_METHOD(MemoryPoolHandleAllocate)
+        {
+            MemoryPoolHandle pool = MemoryPoolHandle::New();
+            Assert::AreEqual(0ULL, pool.alloc_byte_count());
+            Assert::AreEqual(0ULL, pool.alloc_uint64_count());
+            {
+                Pointer ptr(allocate_uint(5, pool));
+                Assert::AreEqual(40ULL, pool.alloc_byte_count());
+                Assert::AreEqual(5ULL, pool.alloc_uint64_count());
+            }
+
+            pool = MemoryPoolHandle::New();
+            Assert::AreEqual(0ULL, pool.alloc_byte_count());
+            Assert::AreEqual(0ULL, pool.alloc_uint64_count());
+            {
+                Pointer ptr(allocate_uint(5, pool));
+                Assert::AreEqual(40ULL, pool.alloc_byte_count());
+                Assert::AreEqual(5ULL, pool.alloc_uint64_count());
+
+                ptr = allocate_uint(8, pool);
+                Assert::AreEqual(104ULL, pool.alloc_byte_count());
+                Assert::AreEqual(13ULL, pool.alloc_uint64_count());
+
+                Pointer ptr2(allocate_uint(2, pool));
+                Assert::AreEqual(120ULL, pool.alloc_byte_count());
+                Assert::AreEqual(15ULL, pool.alloc_uint64_count());
+            }
         }
     };
 }

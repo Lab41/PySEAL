@@ -1,7 +1,7 @@
 #include "CppUnitTest.h"
-#include "randomgen.h"
-#include "util/randomtostd.h"
-#include "util/clipnormal.h"
+#include "seal/randomgen.h"
+#include "seal/util/randomtostd.h"
+#include "seal/util/clipnormal.h"
 #include <memory>
 #include <cmath>
 

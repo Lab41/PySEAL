@@ -1,5 +1,5 @@
 #include "CppUnitTest.h"
-#include "util/locks.h"
+#include "seal/util/locks.h"
 #include <thread>
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;

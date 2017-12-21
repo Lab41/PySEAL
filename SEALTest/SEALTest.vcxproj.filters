@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Filter Include="Source Files">
@@ -15,6 +15,7 @@
     </Filter>
     <Filter Include="Source Files\util">
       <UniqueIdentifier>{6c39d93e-a64a-44b3-95ca-ba22fd03ea17}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -66,9 +67,6 @@
     <ClCompile Include="util\polycore.cpp">
       <Filter>Source Files\util</Filter>
     </ClCompile>
-    <ClCompile Include="util\polyfftmult.cpp">
-      <Filter>Source Files\util</Filter>
-    </ClCompile>
     <ClCompile Include="util\polyfftmultmod.cpp">
       <Filter>Source Files\util</Filter>
     </ClCompile>
@@ -82,9 +80,6 @@
       <Filter>Source Files\util</Filter>
     </ClCompile>
     <ClCompile Include="util\uintarith.cpp">
-      <Filter>Source Files\util</Filter>
-    </ClCompile>
-    <ClCompile Include="util\uintarithmod.cpp">
       <Filter>Source Files\util</Filter>
     </ClCompile>
     <ClCompile Include="util\uintcore.cpp">
@@ -103,6 +98,54 @@
       <Filter>Source Files\util</Filter>
     </ClCompile>
     <ClCompile Include="memorypoolhandle.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="context.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="secretkey.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="publickey.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ciphertext.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="util\nussbaumer.cpp">
+      <Filter>Source Files\util</Filter>
+    </ClCompile>
+    <ClCompile Include="util\hash.cpp">
+      <Filter>Source Files\util</Filter>
+    </ClCompile>
+    <ClCompile Include="util\numth.cpp">
+      <Filter>Source Files\util</Filter>
+    </ClCompile>
+    <ClCompile Include="util\polyarithsmallmod.cpp">
+      <Filter>Source Files\util</Filter>
+    </ClCompile>
+    <ClCompile Include="util\polyfftmultsmallmod.cpp">
+      <Filter>Source Files\util</Filter>
+    </ClCompile>
+    <ClCompile Include="util\uintarithmod.cpp">
+      <Filter>Source Files\util</Filter>
+    </ClCompile>
+    <ClCompile Include="util\uintarithsmallmod.cpp">
+      <Filter>Source Files\util</Filter>
+    </ClCompile>
+    <ClCompile Include="util\smallntt.cpp">
+      <Filter>Source Files\util</Filter>
+    </ClCompile>
+    <ClCompile Include="plaintext.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="smallmodulus.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="galoiskeys.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="polycrt.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

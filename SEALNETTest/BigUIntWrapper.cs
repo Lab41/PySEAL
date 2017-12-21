@@ -1,6 +1,6 @@
-﻿using System.IO;
-using Microsoft.Research.SEAL;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System.IO;
+using Microsoft.Research.SEAL;
 
 namespace SEALNETTest
 {
