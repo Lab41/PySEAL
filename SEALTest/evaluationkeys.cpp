@@ -1,160 +1,196 @@
 #include "CppUnitTest.h"
-#include "evaluationkeys.h"
+#include "seal/evaluationkeys.h"
+#include "seal/context.h"
+#include "seal/keygenerator.h"
+#include "seal/util/uintcore.h"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 using namespace seal;
+using namespace seal::util;
 using namespace std;
 
 namespace SEALTest
 {
-    TEST_CLASS(FVEvk)
+    TEST_CLASS(EvaluationKeysTest)
     {
-
     public:
-        TEST_METHOD(SaveLoadEvaluationKeys)
+        TEST_METHOD(EvaluationKeysSaveLoad)
         {
-            /**
-            Note: this test extracts size using size() function of vector and checks individual keys using the format keys()[i].first[j]. 
-            See below TEST_METHOD for testing the operator[] and size() functions of EvaluationKeys.
-            */
-
             stringstream stream;
+            {
+                EncryptionParameters parms;
+                parms.set_noise_standard_deviation(3.19);
+                parms.set_poly_modulus("1x^64 + 1");
+                parms.set_plain_modulus(1 << 6);
+                parms.set_coeff_modulus({ small_mods_60bit(0) });
+                SEALContext context(parms);
+                KeyGenerator keygen(context);
 
-            BigPolyArray arr1(3, 5, 10);
-            arr1[0][0] = 1;
-            arr1[0][1] = 2;
-            arr1[0][2] = 3;
-            arr1[1][0] = 4;
-            arr1[1][1] = 5;
-            arr1[2][0] = 6;
+                EvaluationKeys keys;
+                EvaluationKeys test_keys;
+                Assert::AreEqual(keys.decomposition_bit_count(), 0);
+                keys.save(stream);
+                test_keys.load(stream);
+                Assert::AreEqual(keys.size(), test_keys.size());
+                Assert::IsTrue(keys.hash_block() == test_keys.hash_block());
+                Assert::AreEqual(keys.decomposition_bit_count(), test_keys.decomposition_bit_count());
+                Assert::AreEqual(0, keys.size());
 
-            BigPolyArray arr2(3, 5, 10);
-            arr2[0][0] = 7;
-            arr2[0][1] = 8;
-            arr2[0][2] = 9;
-            arr2[1][0] = 0;
-            arr2[1][1] = 1;
-            arr2[2][0] = 2;
+                keygen.generate_evaluation_keys(1, 1, keys);
+                Assert::AreEqual(keys.decomposition_bit_count(), 1);
+                keys.save(stream);
+                test_keys.load(stream);
+                Assert::AreEqual(keys.size(), test_keys.size());
+                Assert::IsTrue(keys.hash_block() == test_keys.hash_block());
+                Assert::AreEqual(keys.decomposition_bit_count(), test_keys.decomposition_bit_count());
+                for (int j = 0; j < test_keys.size(); j++)
+                {
+                    for (int i = 0; i < test_keys.key(j + 2).size(); i++)
+                    {
+                        Assert::AreEqual(keys.key(j + 2)[i].size(), test_keys.key(j + 2)[i].size());
+                        Assert::AreEqual(keys.key(j + 2)[i].uint64_count(), test_keys.key(j + 2)[i].uint64_count());
+                        Assert::IsTrue(is_equal_uint_uint(keys.key(j + 2)[i].pointer(), test_keys.key(j + 2)[i].pointer(), keys.key(j + 2)[i].uint64_count()));
+                    }
+                }
 
-            BigPolyArray arr3(3, 5, 10);
-            arr3[0][0] = 3;
-            arr3[0][1] = 4;
-            arr3[0][2] = 5;
-            arr3[1][0] = 6;
-            arr3[1][1] = 7;
-            arr3[2][0] = 8;
+                keygen.generate_evaluation_keys(2, 1, keys);
+                Assert::AreEqual(keys.decomposition_bit_count(), 2);
+                keys.save(stream);
+                test_keys.load(stream);
+                Assert::AreEqual(keys.size(), test_keys.size());
+                Assert::IsTrue(keys.hash_block() == test_keys.hash_block());
+                Assert::AreEqual(keys.decomposition_bit_count(), test_keys.decomposition_bit_count());
+                for (int j = 0; j < test_keys.size(); j++)
+                {
+                    for (int i = 0; i < test_keys.key(j + 2).size(); i++)
+                    {
+                        Assert::AreEqual(keys.key(j + 2)[i].size(), test_keys.key(j + 2)[i].size());
+                        Assert::AreEqual(keys.key(j + 2)[i].uint64_count(), test_keys.key(j + 2)[i].uint64_count());
+                        Assert::IsTrue(is_equal_uint_uint(keys.key(j + 2)[i].pointer(), test_keys.key(j + 2)[i].pointer(), keys.key(j + 2)[i].uint64_count()));
+                    }
+                }
 
-            BigPolyArray arr4(3, 5, 10);
-            arr4[0][0] = 9;
-            arr4[0][1] = 0;
-            arr4[0][2] = 1;
-            arr4[1][0] = 2;
-            arr4[1][1] = 3;
-            arr4[2][0] = 4;
+                keygen.generate_evaluation_keys(59, 2, keys);
+                Assert::AreEqual(keys.decomposition_bit_count(), 59);
+                keys.save(stream);
+                test_keys.load(stream);
+                Assert::AreEqual(keys.size(), test_keys.size());
+                Assert::IsTrue(keys.hash_block() == test_keys.hash_block());
+                Assert::AreEqual(keys.decomposition_bit_count(), test_keys.decomposition_bit_count());
+                for (int j = 0; j < test_keys.size(); j++)
+                {
+                    for (int i = 0; i < test_keys.key(j + 2).size(); i++)
+                    {
+                        Assert::AreEqual(keys.key(j + 2)[i].size(), test_keys.key(j + 2)[i].size());
+                        Assert::AreEqual(keys.key(j + 2)[i].uint64_count(), test_keys.key(j + 2)[i].uint64_count());
+                        Assert::IsTrue(is_equal_uint_uint(keys.key(j + 2)[i].pointer(), test_keys.key(j + 2)[i].pointer(), keys.key(j + 2)[i].uint64_count()));
+                    }
+                }
 
-            std::pair<BigPolyArray, BigPolyArray> test_keys_1 = std::pair<BigPolyArray, BigPolyArray>(arr1, arr2);
-            std::pair<BigPolyArray, BigPolyArray> test_keys_2 = std::pair<BigPolyArray, BigPolyArray>(arr3, arr4);
+                keygen.generate_evaluation_keys(60, 5, keys);
+                Assert::AreEqual(keys.decomposition_bit_count(), 60);
+                keys.save(stream);
+                test_keys.load(stream);
+                Assert::AreEqual(keys.size(), test_keys.size());
+                Assert::IsTrue(keys.hash_block() == test_keys.hash_block());
+                Assert::AreEqual(keys.decomposition_bit_count(), test_keys.decomposition_bit_count());
+                for (int j = 0; j < test_keys.size(); j++)
+                {
+                    for (int i = 0; i < test_keys.key(j + 2).size(); i++)
+                    {
+                        Assert::AreEqual(keys.key(j + 2)[i].size(), test_keys.key(j + 2)[i].size());
+                        Assert::AreEqual(keys.key(j + 2)[i].uint64_count(), test_keys.key(j + 2)[i].uint64_count());
+                        Assert::IsTrue(is_equal_uint_uint(keys.key(j + 2)[i].pointer(), test_keys.key(j + 2)[i].pointer(), keys.key(j + 2)[i].uint64_count()));
+                    }
+                }
+            }
+            {
+                EncryptionParameters parms;
+                parms.set_noise_standard_deviation(3.19);
+                parms.set_poly_modulus("1x^256 + 1");
+                parms.set_plain_modulus(1 << 6);
+                parms.set_coeff_modulus({ small_mods_60bit(0), small_mods_50bit(0) });
+                SEALContext context(parms);
+                KeyGenerator keygen(context);
 
-           std::vector<std::pair<BigPolyArray, BigPolyArray> > test_keys_vector;
-           test_keys_vector.emplace_back(test_keys_1);
-           test_keys_vector.emplace_back(test_keys_2);
-          
-           EvaluationKeys test_evk(test_keys_vector);
-           size_t expectedsize = 2;
-           Assert::AreEqual(expectedsize, test_evk.keys().size());
+                EvaluationKeys keys;
+                EvaluationKeys test_keys;
+                Assert::AreEqual(keys.decomposition_bit_count(), 0);
+                keys.save(stream);
+                test_keys.load(stream);
+                Assert::AreEqual(keys.size(), test_keys.size());
+                Assert::IsTrue(keys.hash_block() == test_keys.hash_block());
+                Assert::AreEqual(keys.decomposition_bit_count(), test_keys.decomposition_bit_count());
+                Assert::AreEqual(0, keys.size());
 
-           EvaluationKeys test_evk2;
-           Assert::AreNotEqual(test_evk2.keys().size(), test_evk.keys().size());
+                keygen.generate_evaluation_keys(8, 1, keys);
+                Assert::AreEqual(keys.decomposition_bit_count(), 8);
+                keys.save(stream);
+                test_keys.load(stream);
+                Assert::AreEqual(keys.size(), test_keys.size());
+                Assert::IsTrue(keys.hash_block() == test_keys.hash_block());
+                Assert::AreEqual(keys.decomposition_bit_count(), test_keys.decomposition_bit_count());
+                for (int j = 0; j < test_keys.size(); j++)
+                {
+                    for (int i = 0; i < test_keys.key(j + 2).size(); i++)
+                    {
+                        Assert::AreEqual(keys.key(j + 2)[i].size(), test_keys.key(j + 2)[i].size());
+                        Assert::AreEqual(keys.key(j + 2)[i].uint64_count(), test_keys.key(j + 2)[i].uint64_count());
+                        Assert::IsTrue(is_equal_uint_uint(keys.key(j + 2)[i].pointer(), test_keys.key(j + 2)[i].pointer(), keys.key(j + 2)[i].uint64_count()));
+                    }
+                }
 
-           test_evk.save(stream);
-           test_evk2.load(stream);
+                keygen.generate_evaluation_keys(8, 2, keys);
+                Assert::AreEqual(keys.decomposition_bit_count(), 8);
+                keys.save(stream);
+                test_keys.load(stream);
+                Assert::AreEqual(keys.size(), test_keys.size());
+                Assert::IsTrue(keys.hash_block() == test_keys.hash_block());
+                Assert::AreEqual(keys.decomposition_bit_count(), test_keys.decomposition_bit_count());
+                for (int j = 0; j < test_keys.size(); j++)
+                {
+                    for (int i = 0; i < test_keys.key(j + 2).size(); i++)
+                    {
+                        Assert::AreEqual(keys.key(j + 2)[i].size(), test_keys.key(j + 2)[i].size());
+                        Assert::AreEqual(keys.key(j + 2)[i].uint64_count(), test_keys.key(j + 2)[i].uint64_count());
+                        Assert::IsTrue(is_equal_uint_uint(keys.key(j + 2)[i].pointer(), test_keys.key(j + 2)[i].pointer(), keys.key(j + 2)[i].uint64_count()));
+                    }
+                }
 
-           Assert::AreEqual(test_evk2.keys().size(), test_evk.keys().size());
+                keygen.generate_evaluation_keys(59, 2, keys);
+                Assert::AreEqual(keys.decomposition_bit_count(), 59);
+                keys.save(stream);
+                test_keys.load(stream);
+                Assert::AreEqual(keys.size(), test_keys.size());
+                Assert::IsTrue(keys.hash_block() == test_keys.hash_block());
+                Assert::AreEqual(keys.decomposition_bit_count(), test_keys.decomposition_bit_count());
+                for (int j = 0; j < test_keys.size(); j++)
+                {
+                    for (int i = 0; i < test_keys.key(j + 2).size(); i++)
+                    {
+                        Assert::AreEqual(keys.key(j + 2)[i].size(), test_keys.key(j + 2)[i].size());
+                        Assert::AreEqual(keys.key(j + 2)[i].uint64_count(), test_keys.key(j + 2)[i].uint64_count());
+                        Assert::IsTrue(is_equal_uint_uint(keys.key(j + 2)[i].pointer(), test_keys.key(j + 2)[i].pointer(), keys.key(j + 2)[i].uint64_count()));
+                    }
+                }
 
-           Assert::IsTrue(test_evk2.keys()[0].first.size() == test_evk.keys()[0].first.size());
-           Assert::IsTrue(test_evk2.keys()[0].second.size() == test_evk.keys()[0].second.size());
-           Assert::IsTrue(test_evk2.keys()[1].first.size() == test_evk.keys()[1].first.size());
-           Assert::IsTrue(test_evk2.keys()[1].second.size() == test_evk.keys()[1].second.size());
-
-           Assert::IsTrue(test_evk2.keys()[0].first.coeff_count() == test_evk.keys()[0].first.coeff_count());
-           Assert::IsTrue(test_evk2.keys()[0].second.coeff_count() == test_evk.keys()[0].second.coeff_count());
-           Assert::IsTrue(test_evk2.keys()[1].first.coeff_count() == test_evk.keys()[1].first.coeff_count());
-           Assert::IsTrue(test_evk2.keys()[1].second.coeff_count() == test_evk.keys()[1].second.coeff_count());
-
-           Assert::IsTrue(test_evk2.keys()[0].first.coeff_bit_count() == test_evk.keys()[0].first.coeff_bit_count());
-           Assert::IsTrue(test_evk2.keys()[0].second.coeff_bit_count() == test_evk.keys()[0].second.coeff_bit_count());
-           Assert::IsTrue(test_evk2.keys()[1].first.coeff_bit_count() == test_evk.keys()[1].first.coeff_bit_count());
-           Assert::IsTrue(test_evk2.keys()[1].second.coeff_bit_count() == test_evk.keys()[1].second.coeff_bit_count());
-
-           Assert::IsTrue(test_evk2.keys()[0].first[0] == test_evk.keys()[0].first[0]);
-           Assert::IsTrue(test_evk2.keys()[0].first[1] == test_evk.keys()[0].first[1]);
-           Assert::IsTrue(test_evk2.keys()[0].first[2] == test_evk.keys()[0].first[2]);
-           Assert::IsTrue(test_evk2.keys()[0].second[0] == test_evk.keys()[0].second[0]);
-           Assert::IsTrue(test_evk2.keys()[0].second[1] == test_evk.keys()[0].second[1]);
-           Assert::IsTrue(test_evk2.keys()[0].second[2] == test_evk.keys()[0].second[2]);
-
-           Assert::IsTrue(test_evk2.keys()[1].first[0] == test_evk.keys()[1].first[0]);
-           Assert::IsTrue(test_evk2.keys()[1].first[1] == test_evk.keys()[1].first[1]);
-           Assert::IsTrue(test_evk2.keys()[1].first[2] == test_evk.keys()[1].first[2]);
-           Assert::IsTrue(test_evk2.keys()[1].second[0] == test_evk.keys()[1].second[0]);
-           Assert::IsTrue(test_evk2.keys()[1].second[1] == test_evk.keys()[1].second[1]);
-           Assert::IsTrue(test_evk2.keys()[1].second[2] == test_evk.keys()[1].second[2]);
-
-        }
-
-        TEST_METHOD(EvalKeysAccessAndSize)
-        {
-            BigPolyArray arr1(3, 5, 10);
-            arr1[0] = "3";
-            arr1[1] = "1x^1";
-            arr1[2] = "4x^2";
-
-            BigPolyArray arr2(3, 5, 10);
-            arr2[0] = "1";
-            arr2[1] = "5";
-            arr2[2] = "9";
-
-            BigPolyArray arr3(3, 5, 10);
-            arr3[0] = "2";
-            arr3[1] = "6";
-            arr3[2] = "5";
-
-            BigPolyArray arr4(3, 5, 10);
-            arr4[0] = "3";
-            arr4[1] = "5";
-            arr4[2] = "8x^2 + 9x^1 + 7";
-
-            std::pair<BigPolyArray, BigPolyArray> test_keys_1 = std::pair<BigPolyArray, BigPolyArray>(arr1, arr2);
-            std::pair<BigPolyArray, BigPolyArray> test_keys_2 = std::pair<BigPolyArray, BigPolyArray>(arr3, arr4);
-
-            std::vector<std::pair<BigPolyArray, BigPolyArray> > test_keys_vector;
-            test_keys_vector.emplace_back(test_keys_1);
-            test_keys_vector.emplace_back(test_keys_2);
-
-            EvaluationKeys test_evk(test_keys_vector);
-
-            // test size()
-            size_t expectedsize = 2;
-            Assert::AreEqual(expectedsize, test_evk.size());
-
-            // test operator[]
-            Assert::IsTrue(test_evk[0].first[0].to_string() == "3");
-            Assert::IsTrue(test_evk[0].first[1].to_string() == "1x^1");
-            Assert::IsTrue(test_evk[0].first[2].to_string() == "4x^2");
-            Assert::IsTrue(test_evk[0].second[0].to_string() == "1");
-            Assert::IsTrue(test_evk[0].second[1].to_string() == "5");
-            Assert::IsTrue(test_evk[0].second[2].to_string() == "9");
-            Assert::IsTrue(test_evk[1].first[0].to_string() == "2");
-            Assert::IsTrue(test_evk[1].first[1].to_string() == "6");
-            Assert::IsTrue(test_evk[1].first[2].to_string() == "5");
-            Assert::IsTrue(test_evk[1].second[0].to_string() == "3");
-            Assert::IsTrue(test_evk[1].second[1].to_string() == "5");
-            Assert::IsTrue(test_evk[1].second[2].to_string() == "8x^2 + 9x^1 + 7");
-
-            // test clear()
-            test_evk.clear();
-            size_t newexpectedsize = 0;
-            Assert::AreEqual(newexpectedsize, test_evk.size());
+                keygen.generate_evaluation_keys(60, 5, keys);
+                Assert::AreEqual(keys.decomposition_bit_count(), 60);
+                keys.save(stream);
+                test_keys.load(stream);
+                Assert::AreEqual(keys.size(), test_keys.size());
+                Assert::IsTrue(keys.hash_block() == test_keys.hash_block());
+                Assert::AreEqual(keys.decomposition_bit_count(), test_keys.decomposition_bit_count());
+                for (int j = 0; j < test_keys.size(); j++)
+                {
+                    for (int i = 0; i < test_keys.key(j + 2).size(); i++)
+                    {
+                        Assert::AreEqual(keys.key(j + 2)[i].size(), test_keys.key(j + 2)[i].size());
+                        Assert::AreEqual(keys.key(j + 2)[i].uint64_count(), test_keys.key(j + 2)[i].uint64_count());
+                        Assert::IsTrue(is_equal_uint_uint(keys.key(j + 2)[i].pointer(), test_keys.key(j + 2)[i].pointer(), keys.key(j + 2)[i].uint64_count()));
+                    }
+                }
+            }
         }
     };
 }

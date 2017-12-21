@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Filter Include="Source Files">
@@ -24,240 +24,285 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="utilities.h">
+    <ClInclude Include="seal\simulator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="bigpoly.h">
+    <ClInclude Include="seal\bigpoly.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="bigpolyarith.h">
+    <ClInclude Include="seal\bigpolyarray.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="biguint.h">
+    <ClInclude Include="seal\biguint.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="chooser.h">
+    <ClInclude Include="seal\chooser.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="decryptor.h">
+    <ClInclude Include="seal\ciphertext.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="encoder.h">
+    <ClInclude Include="seal\context.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="encryptionparams.h">
+    <ClInclude Include="seal\decryptor.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="encryptor.h">
+    <ClInclude Include="seal\encoder.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="evaluator.h">
+    <ClInclude Include="seal\encryptionparams.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="keygenerator.h">
+    <ClInclude Include="seal\encryptor.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="randomgen.h">
+    <ClInclude Include="seal\evaluationkeys.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="seal.h">
+    <ClInclude Include="seal\evaluator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="simulator.h">
+    <ClInclude Include="seal\keygenerator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="util\clipnormal.h">
-      <Filter>Header Files\util</Filter>
-    </ClInclude>
-    <ClInclude Include="util\common.h">
-      <Filter>Header Files\util</Filter>
-    </ClInclude>
-    <ClInclude Include="util\computation.h">
-      <Filter>Header Files\util</Filter>
-    </ClInclude>
-    <ClInclude Include="util\mempool.h">
-      <Filter>Header Files\util</Filter>
-    </ClInclude>
-    <ClInclude Include="util\modulus.h">
-      <Filter>Header Files\util</Filter>
-    </ClInclude>
-    <ClInclude Include="util\polyarith.h">
-      <Filter>Header Files\util</Filter>
-    </ClInclude>
-    <ClInclude Include="util\polyarithmod.h">
-      <Filter>Header Files\util</Filter>
-    </ClInclude>
-    <ClInclude Include="util\polycore.h">
-      <Filter>Header Files\util</Filter>
-    </ClInclude>
-    <ClInclude Include="util\polyextras.h">
-      <Filter>Header Files\util</Filter>
-    </ClInclude>
-    <ClInclude Include="util\polyfftmult.h">
-      <Filter>Header Files\util</Filter>
-    </ClInclude>
-    <ClInclude Include="util\polyfftmultmod.h">
-      <Filter>Header Files\util</Filter>
-    </ClInclude>
-    <ClInclude Include="util\polymodulus.h">
-      <Filter>Header Files\util</Filter>
-    </ClInclude>
-    <ClInclude Include="util\uintarith.h">
-      <Filter>Header Files\util</Filter>
-    </ClInclude>
-    <ClInclude Include="util\uintarithmod.h">
-      <Filter>Header Files\util</Filter>
-    </ClInclude>
-    <ClInclude Include="util\uintcore.h">
-      <Filter>Header Files\util</Filter>
-    </ClInclude>
-    <ClInclude Include="util\uintextras.h">
-      <Filter>Header Files\util</Filter>
-    </ClInclude>
-    <ClInclude Include="polycrt.h">
+    <ClInclude Include="seal\galoiskeys.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="bigpolyarray.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="util\locks.h">
+    <ClInclude Include="seal\util\baseconverter.h">
       <Filter>Header Files\util</Filter>
     </ClInclude>
-    <ClInclude Include="evaluationkeys.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="util\ntt.h">
+    <ClInclude Include="seal\util\numth.h">
       <Filter>Header Files\util</Filter>
     </ClInclude>
-    <ClInclude Include="util\crt.h">
+    <ClInclude Include="seal\util\polyfftmultsmallmod.h">
       <Filter>Header Files\util</Filter>
     </ClInclude>
-    <ClInclude Include="util\defines.h">
+    <ClInclude Include="seal\memorypoolhandle.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="seal\plaintext.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="seal\polycrt.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="seal\publickey.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="seal\randomgen.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="seal\seal.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="seal\secretkey.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="seal\simulator.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="seal\smallmodulus.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="seal\utilities.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="seal\util\hash.h">
       <Filter>Header Files\util</Filter>
     </ClInclude>
-    <ClInclude Include="memorypoolhandle.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="seal\util\clipnormal.h">
+      <Filter>Header Files\util</Filter>
     </ClInclude>
-    <ClInclude Include="util\randomtostd.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="seal\util\common.h">
+      <Filter>Header Files\util</Filter>
     </ClInclude>
-    <ClInclude Include="plaintext.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="seal\util\computation.h">
+      <Filter>Header Files\util</Filter>
     </ClInclude>
-    <ClInclude Include="ciphertext.h">
+    <ClInclude Include="seal\util\defines.h">
+      <Filter>Header Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="seal\util\locks.h">
+      <Filter>Header Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="seal\util\mempool.h">
+      <Filter>Header Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="seal\util\modulus.h">
+      <Filter>Header Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="seal\util\ntt.h">
+      <Filter>Header Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="seal\util\polyarith.h">
+      <Filter>Header Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="seal\util\polyarithmod.h">
+      <Filter>Header Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="seal\util\polyarithsmallmod.h">
+      <Filter>Header Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="seal\util\polycore.h">
+      <Filter>Header Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="seal\util\nussbaumer.h">
+      <Filter>Header Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="seal\util\polyfftmultmod.h">
+      <Filter>Header Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="seal\util\polymodulus.h">
+      <Filter>Header Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="seal\util\randomtostd.h">
+      <Filter>Header Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="seal\util\smallntt.h">
+      <Filter>Header Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="seal\util\uintarith.h">
+      <Filter>Header Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="seal\util\uintarithmod.h">
+      <Filter>Header Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="seal\util\uintarithsmallmod.h">
+      <Filter>Header Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="seal\util\uintcore.h">
+      <Filter>Header Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="seal\util\globals.h">
+      <Filter>Header Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="seal\defaultparams.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="bigpoly.cpp">
+    <ClCompile Include="seal\bigpoly.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="bigpolyarith.cpp">
+    <ClCompile Include="seal\bigpolyarray.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="biguint.cpp">
+    <ClCompile Include="seal\biguint.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="chooser.cpp">
+    <ClCompile Include="seal\chooser.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="decryptor.cpp">
+    <ClCompile Include="seal\context.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="encoder.cpp">
+    <ClCompile Include="seal\decryptor.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="encryptionparams.cpp">
+    <ClCompile Include="seal\encryptionparams.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="encryptor.cpp">
+    <ClCompile Include="seal\encryptor.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="evaluator.cpp">
+    <ClCompile Include="seal\evaluationkeys.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="keygenerator.cpp">
+    <ClCompile Include="seal\evaluator.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="randomgen.cpp">
+    <ClCompile Include="seal\keygenerator.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="simulator.cpp">
+    <ClCompile Include="seal\polycrt.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="utilities.cpp">
+    <ClCompile Include="seal\randomgen.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="util\clipnormal.cpp">
-      <Filter>Source Files\util</Filter>
-    </ClCompile>
-    <ClCompile Include="util\common.cpp">
-      <Filter>Source Files\util</Filter>
-    </ClCompile>
-    <ClCompile Include="util\computation.cpp">
-      <Filter>Source Files\util</Filter>
-    </ClCompile>
-    <ClCompile Include="util\mempool.cpp">
-      <Filter>Source Files\util</Filter>
-    </ClCompile>
-    <ClCompile Include="util\modulus.cpp">
-      <Filter>Source Files\util</Filter>
-    </ClCompile>
-    <ClCompile Include="util\polyarith.cpp">
-      <Filter>Source Files\util</Filter>
-    </ClCompile>
-    <ClCompile Include="util\polyarithmod.cpp">
-      <Filter>Source Files\util</Filter>
-    </ClCompile>
-    <ClCompile Include="util\polycore.cpp">
-      <Filter>Source Files\util</Filter>
-    </ClCompile>
-    <ClCompile Include="util\polyextras.cpp">
-      <Filter>Source Files\util</Filter>
-    </ClCompile>
-    <ClCompile Include="util\polyfftmult.cpp">
-      <Filter>Source Files\util</Filter>
-    </ClCompile>
-    <ClCompile Include="util\polyfftmultmod.cpp">
-      <Filter>Source Files\util</Filter>
-    </ClCompile>
-    <ClCompile Include="util\polymodulus.cpp">
-      <Filter>Source Files\util</Filter>
-    </ClCompile>
-    <ClCompile Include="util\uintarith.cpp">
-      <Filter>Source Files\util</Filter>
-    </ClCompile>
-    <ClCompile Include="util\uintarithmod.cpp">
-      <Filter>Source Files\util</Filter>
-    </ClCompile>
-    <ClCompile Include="util\uintcore.cpp">
-      <Filter>Source Files\util</Filter>
-    </ClCompile>
-    <ClCompile Include="util\uintextras.cpp">
-      <Filter>Source Files\util</Filter>
-    </ClCompile>
-    <ClCompile Include="polycrt.cpp">
+    <ClCompile Include="seal\galoiskeys.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="bigpolyarray.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="util\locks.cpp">
+    <ClCompile Include="seal\util\baseconverter.cpp">
       <Filter>Source Files\util</Filter>
     </ClCompile>
-    <ClCompile Include="evaluationkeys.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="util\ntt.cpp">
+    <ClCompile Include="seal\util\numth.cpp">
       <Filter>Source Files\util</Filter>
     </ClCompile>
-    <ClCompile Include="util\crt.cpp">
+    <ClCompile Include="seal\util\polyfftmultsmallmod.cpp">
       <Filter>Source Files\util</Filter>
     </ClCompile>
-    <ClCompile Include="plaintext.cpp">
+    <ClCompile Include="seal\simulator.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ciphertext.cpp">
+    <ClCompile Include="seal\smallmodulus.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="seal\utilities.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="seal\util\hash.cpp">
+      <Filter>Source Files\util</Filter>
+    </ClCompile>
+    <ClCompile Include="seal\util\clipnormal.cpp">
+      <Filter>Source Files\util</Filter>
+    </ClCompile>
+    <ClCompile Include="seal\util\computation.cpp">
+      <Filter>Source Files\util</Filter>
+    </ClCompile>
+    <ClCompile Include="seal\util\mempool.cpp">
+      <Filter>Source Files\util</Filter>
+    </ClCompile>
+    <ClCompile Include="seal\util\modulus.cpp">
+      <Filter>Source Files\util</Filter>
+    </ClCompile>
+    <ClCompile Include="seal\util\ntt.cpp">
+      <Filter>Source Files\util</Filter>
+    </ClCompile>
+    <ClCompile Include="seal\util\polyarith.cpp">
+      <Filter>Source Files\util</Filter>
+    </ClCompile>
+    <ClCompile Include="seal\util\polyarithmod.cpp">
+      <Filter>Source Files\util</Filter>
+    </ClCompile>
+    <ClCompile Include="seal\util\polyarithsmallmod.cpp">
+      <Filter>Source Files\util</Filter>
+    </ClCompile>
+    <ClCompile Include="seal\util\nussbaumer.cpp">
+      <Filter>Source Files\util</Filter>
+    </ClCompile>
+    <ClCompile Include="seal\util\polyfftmultmod.cpp">
+      <Filter>Source Files\util</Filter>
+    </ClCompile>
+    <ClCompile Include="seal\util\polymodulus.cpp">
+      <Filter>Source Files\util</Filter>
+    </ClCompile>
+    <ClCompile Include="seal\util\smallntt.cpp">
+      <Filter>Source Files\util</Filter>
+    </ClCompile>
+    <ClCompile Include="seal\util\uintarith.cpp">
+      <Filter>Source Files\util</Filter>
+    </ClCompile>
+    <ClCompile Include="seal\util\uintarithmod.cpp">
+      <Filter>Source Files\util</Filter>
+    </ClCompile>
+    <ClCompile Include="seal\util\uintarithsmallmod.cpp">
+      <Filter>Source Files\util</Filter>
+    </ClCompile>
+    <ClCompile Include="seal\util\uintcore.cpp">
+      <Filter>Source Files\util</Filter>
+    </ClCompile>
+    <ClCompile Include="seal\util\globals.cpp">
+      <Filter>Source Files\util</Filter>
+    </ClCompile>
+    <ClCompile Include="seal\plaintext.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="seal\ciphertext.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="seal\encoder.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

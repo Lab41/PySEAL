@@ -81,13 +81,21 @@
     <Compile Include="BigPolyArrayWrapper.cs" />
     <Compile Include="BigPolyWrapper.cs" />
     <Compile Include="BigUIntWrapper.cs" />
+    <Compile Include="CiphertextWrapper.cs" />
+    <Compile Include="ContextWrapper.cs" />
     <Compile Include="EncoderWrapper.cs" />
     <Compile Include="EncryptionParamsWrapper.cs" />
     <Compile Include="EncryptorWrapper.cs" />
     <Compile Include="EvaluatorWrapper.cs" />
+    <Compile Include="GaloisKeysWrapper.cs" />
     <Compile Include="KeyGeneratorWrapper.cs" />
+    <Compile Include="PlaintextWrapper.cs" />
+    <Compile Include="PolyCRTWrapper.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="EvaluationKeysWrapper.cs" />
+    <Compile Include="PublicKeyWrapper.cs" />
+    <Compile Include="SecretKeyWrapper.cs" />
+    <Compile Include="SmallModulusWrapper.cs" />
     <Compile Include="UtilitiesWrapper.cs" />
   </ItemGroup>
   <ItemGroup>

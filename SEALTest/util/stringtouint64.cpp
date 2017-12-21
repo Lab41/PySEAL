@@ -1,5 +1,6 @@
 #include "CppUnitTest.h"
-#include "util/common.h"
+#include "seal/util/common.h"
+#include "seal/util/uintcore.h"
 #include <cstdint>
 #include <cstring>
 
@@ -130,72 +131,72 @@ namespace SEALTest
                 parsed[0] = 0x123;
                 parsed[1] = 0x123;
                 parsed[2] = 0x123;
-                hex_string_to_uint64("0", 1, 3, parsed);
+                hex_string_to_uint("0", 1, 3, parsed);
                 Assert::AreEqual(0, memcmp(correct, parsed, 3 * sizeof(uint64_t)));
                 parsed[0] = 0x123;
                 parsed[1] = 0x123;
                 parsed[2] = 0x123;
-                hex_string_to_uint64("0", 1, 1, parsed);
+                hex_string_to_uint("0", 1, 1, parsed);
                 Assert::AreEqual(0, memcmp(correct, parsed, 1 * sizeof(uint64_t)));
                 parsed[0] = 0x123;
                 parsed[1] = 0x123;
                 parsed[2] = 0x123;
-                hex_string_to_uint64(nullptr, 0, 3, parsed);
+                hex_string_to_uint(nullptr, 0, 3, parsed);
                 Assert::AreEqual(0, memcmp(correct, parsed, 3 * sizeof(uint64_t)));
 
                 correct[0] = 1;
                 parsed[0] = 0x123;
                 parsed[1] = 0x123;
                 parsed[2] = 0x123;
-                hex_string_to_uint64("1", 1, 3, parsed);
+                hex_string_to_uint("1", 1, 3, parsed);
                 Assert::AreEqual(0, memcmp(correct, parsed, 3 * sizeof(uint64_t)));
                 parsed[0] = 0x123;
                 parsed[1] = 0x123;
                 parsed[2] = 0x123;
-                hex_string_to_uint64("01", 2, 3, parsed);
+                hex_string_to_uint("01", 2, 3, parsed);
                 Assert::AreEqual(0, memcmp(correct, parsed, 3 * sizeof(uint64_t)));
                 parsed[0] = 0x123;
                 parsed[1] = 0x123;
                 parsed[2] = 0x123;
-                hex_string_to_uint64("001", 3, 1, parsed);
+                hex_string_to_uint("001", 3, 1, parsed);
                 Assert::AreEqual(0, memcmp(correct, parsed, 1 * sizeof(uint64_t)));
 
                 correct[0] = 0xF;
                 parsed[0] = 0x123;
                 parsed[1] = 0x123;
                 parsed[2] = 0x123;
-                hex_string_to_uint64("F", 1, 3, parsed);
+                hex_string_to_uint("F", 1, 3, parsed);
                 Assert::AreEqual(0, memcmp(correct, parsed, 3 * sizeof(uint64_t)));
 
                 correct[0] = 0x10;
                 parsed[0] = 0x123;
                 parsed[1] = 0x123;
                 parsed[2] = 0x123;
-                hex_string_to_uint64("10", 2, 3, parsed);
+                hex_string_to_uint("10", 2, 3, parsed);
                 Assert::AreEqual(0, memcmp(correct, parsed, 3 * sizeof(uint64_t)));
                 parsed[0] = 0x123;
                 parsed[1] = 0x123;
                 parsed[2] = 0x123;
-                hex_string_to_uint64("010", 3, 3, parsed);
+                hex_string_to_uint("010", 3, 3, parsed);
                 Assert::AreEqual(0, memcmp(correct, parsed, 3 * sizeof(uint64_t)));
 
                 correct[0] = 0x100;
                 parsed[0] = 0x123;
                 parsed[1] = 0x123;
                 parsed[2] = 0x123;
-                hex_string_to_uint64("100", 3, 3, parsed);
+                hex_string_to_uint("100", 3, 3, parsed);
                 Assert::AreEqual(0, memcmp(correct, parsed, 3 * sizeof(uint64_t)));
 
                 correct[0] = 0x123;
                 parsed[0] = 0x123;
                 parsed[1] = 0x123;
                 parsed[2] = 0x123;
-                hex_string_to_uint64("123", 3, 3, parsed);
+                hex_string_to_uint("123", 3, 3, parsed);
                 Assert::AreEqual(0, memcmp(correct, parsed, 3 * sizeof(uint64_t)));
                 parsed[0] = 0x123;
                 parsed[1] = 0x123;
                 parsed[2] = 0x123;
-                hex_string_to_uint64("00000123", 8, 3, parsed);
+                hex_string_to_uint("00000123", 8, 3, parsed);
                 Assert::AreEqual(0, memcmp(correct, parsed, 3 * sizeof(uint64_t)));
 
                 correct[0] = 0;
@@ -203,7 +204,7 @@ namespace SEALTest
                 parsed[0] = 0x123;
                 parsed[1] = 0x123;
                 parsed[2] = 0x123;
-                hex_string_to_uint64("10000000000000000", 17, 3, parsed);
+                hex_string_to_uint("10000000000000000", 17, 3, parsed);
                 Assert::AreEqual(0, memcmp(correct, parsed, 3 * sizeof(uint64_t)));
 
                 correct[0] = 0x1123456789ABCDEF;
@@ -211,12 +212,12 @@ namespace SEALTest
                 parsed[0] = 0x123;
                 parsed[1] = 0x123;
                 parsed[2] = 0x123;
-                hex_string_to_uint64("11123456789ABCDEF", 17, 3, parsed);
+                hex_string_to_uint("11123456789ABCDEF", 17, 3, parsed);
                 Assert::AreEqual(0, memcmp(correct, parsed, 3 * sizeof(uint64_t)));
                 parsed[0] = 0x123;
                 parsed[1] = 0x123;
                 parsed[2] = 0x123;
-                hex_string_to_uint64("000011123456789ABCDEF", 21, 3, parsed);
+                hex_string_to_uint("000011123456789ABCDEF", 21, 3, parsed);
                 Assert::AreEqual(0, memcmp(correct, parsed, 3 * sizeof(uint64_t)));
 
                 correct[0] = 0x3456789ABCDEF123;
@@ -225,7 +226,7 @@ namespace SEALTest
                 parsed[0] = 0x123;
                 parsed[1] = 0x123;
                 parsed[2] = 0x123;
-                hex_string_to_uint64("123456789ABCDEF123456789ABCDEF123456789ABCDEF123", 48, 3, parsed);
+                hex_string_to_uint("123456789ABCDEF123456789ABCDEF123456789ABCDEF123", 48, 3, parsed);
                 Assert::AreEqual(0, memcmp(correct, parsed, 3 * sizeof(uint64_t)));
 
                 correct[0] = 0xFFFFFFFFFFFFFFFF;
@@ -234,7 +235,7 @@ namespace SEALTest
                 parsed[0] = 0x123;
                 parsed[1] = 0x123;
                 parsed[2] = 0x123;
-                hex_string_to_uint64("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF", 48, 3, parsed);
+                hex_string_to_uint("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF", 48, 3, parsed);
                 Assert::AreEqual(0, memcmp(correct, parsed, 3 * sizeof(uint64_t)));
 
                 correct[0] = 0x100;
@@ -243,28 +244,28 @@ namespace SEALTest
                 parsed[0] = 0x123;
                 parsed[1] = 0x123;
                 parsed[2] = 0x123;
-                hex_string_to_uint64("100", 3, 3, parsed);
+                hex_string_to_uint("100", 3, 3, parsed);
                 Assert::AreEqual(0, memcmp(correct, parsed, 3 * sizeof(uint64_t)));
 
                 correct[0] = 0x10;
                 parsed[0] = 0x123;
                 parsed[1] = 0x123;
                 parsed[2] = 0x123;
-                hex_string_to_uint64("100", 2, 3, parsed);
+                hex_string_to_uint("100", 2, 3, parsed);
                 Assert::AreEqual(0, memcmp(correct, parsed, 3 * sizeof(uint64_t)));
 
                 correct[0] = 0x1;
                 parsed[0] = 0x123;
                 parsed[1] = 0x123;
                 parsed[2] = 0x123;
-                hex_string_to_uint64("100", 1, 3, parsed);
+                hex_string_to_uint("100", 1, 3, parsed);
                 Assert::AreEqual(0, memcmp(correct, parsed, 3 * sizeof(uint64_t)));
 
                 correct[0] = 0;
                 parsed[0] = 0x123;
                 parsed[1] = 0x123;
                 parsed[2] = 0x123;
-                hex_string_to_uint64("100", 0, 3, parsed);
+                hex_string_to_uint("100", 0, 3, parsed);
                 Assert::AreEqual(0, memcmp(correct, parsed, 3 * sizeof(uint64_t)));
             }
         };

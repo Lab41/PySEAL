@@ -1,10 +1,11 @@
 #include "CppUnitTest.h"
-#include "encryptionparams.h"
-#include "encryptor.h"
-#include "decryptor.h"
-#include "evaluator.h"
-#include "keygenerator.h"
-#include "encoder.h"
+#include "seal/context.h"
+#include "seal/encryptor.h"
+#include "seal/decryptor.h"
+#include "seal/evaluator.h"
+#include "seal/keygenerator.h"
+#include "seal/polycrt.h"
+#include "seal/encoder.h"
 #include <cstdint>
 #include <string>
 
@@ -20,898 +21,1015 @@ namespace SEALTest
         TEST_METHOD(FVEncryptNegateDecrypt)
         {
             EncryptionParameters parms;
-            BigUInt coeff_modulus;
-            BigUInt plain_modulus;
-            BigPoly poly_modulus;
-            parms.set_decomposition_bit_count(4);
-            parms.set_noise_standard_deviation(3.19);
-            parms.set_noise_max_deviation(35.06);
-            coeff_modulus.resize(48);
-            coeff_modulus = "FFFFFFFFC001";
-            plain_modulus.resize(7);
-            plain_modulus = 1 << 6;
-            poly_modulus.resize(65, 1);
-            poly_modulus[0] = 1;
-            poly_modulus[64] = 1;
-            parms.set_poly_modulus(poly_modulus);
+            SmallModulus plain_modulus(1 << 6);
+            parms.set_poly_modulus("1x^64 + 1");
             parms.set_plain_modulus(plain_modulus);
-            parms.set_coeff_modulus(coeff_modulus);
-            parms.validate();
-            KeyGenerator keygen(parms);
-            keygen.generate();
+            parms.set_coeff_modulus({ small_mods_40bit(0) });
+            SEALContext context(parms);
+            KeyGenerator keygen(context);
 
             BalancedEncoder encoder(plain_modulus);
+            Encryptor encryptor(context, keygen.public_key());
+            Evaluator evaluator(context);
+            Decryptor decryptor(context, keygen.secret_key());
 
-            Encryptor encryptor(parms, keygen.public_key());
-            Evaluator evaluator(parms);
-            Decryptor decryptor(parms, keygen.secret_key());
+            Ciphertext encrypted;
+            encryptor.encrypt(encoder.encode(0x12345678), encrypted);
+            evaluator.negate(encrypted);
+            Plaintext plain;
+            decryptor.decrypt(encrypted, plain);
+            Assert::AreEqual(static_cast<int32_t>(-0x12345678), encoder.decode_int32(plain));
+            Assert::IsTrue(encrypted.hash_block() == encrypted.hash_block());
+            Assert::IsTrue(encrypted.hash_block() == parms.hash_block());
 
-            BigPolyArray encrypted = encryptor.encrypt(encoder.encode(0x12345678));
-            BigPolyArray negated;
-            evaluator.negate(encrypted, negated);
-            Assert::AreEqual(static_cast<int32_t>(-0x12345678), encoder.decode_int32(decryptor.decrypt(negated)));
+            encryptor.encrypt(encoder.encode(0), encrypted);
+            evaluator.negate(encrypted);
+            decryptor.decrypt(encrypted, plain);
+            Assert::AreEqual(static_cast<int32_t>(0), encoder.decode_int32(plain));
+            Assert::IsTrue(encrypted.hash_block() == encrypted.hash_block());
+            Assert::IsTrue(encrypted.hash_block() == parms.hash_block());
 
-            encrypted = encryptor.encrypt(encoder.encode(0));
-            evaluator.negate(encrypted, negated);
-            Assert::AreEqual(static_cast<int32_t>(0), encoder.decode_int32(decryptor.decrypt(negated)));
+            encryptor.encrypt(encoder.encode(1), encrypted);
+            evaluator.negate(encrypted);
+            decryptor.decrypt(encrypted, plain);
+            Assert::AreEqual(static_cast<int32_t>(-1), encoder.decode_int32(plain));
+            Assert::IsTrue(encrypted.hash_block() == encrypted.hash_block());
+            Assert::IsTrue(encrypted.hash_block() == parms.hash_block());
 
-            encrypted = encryptor.encrypt(encoder.encode(1));
-            evaluator.negate(encrypted, negated);
-            Assert::AreEqual(static_cast<int32_t>(-1), encoder.decode_int32(decryptor.decrypt(negated)));
+            encryptor.encrypt(encoder.encode(-1), encrypted);
+            evaluator.negate(encrypted);
+            decryptor.decrypt(encrypted, plain);
+            Assert::AreEqual(static_cast<int32_t>(1), encoder.decode_int32(plain));
+            Assert::IsTrue(encrypted.hash_block() == encrypted.hash_block());
+            Assert::IsTrue(encrypted.hash_block() == parms.hash_block());
 
-            encrypted = encryptor.encrypt(encoder.encode(-1));
-            BigPolyArray negate2 = evaluator.negate(encrypted);
-            Assert::AreEqual(static_cast<int32_t>(1), encoder.decode_int32(decryptor.decrypt(negate2)));
+            encryptor.encrypt(encoder.encode(2), encrypted);
+            evaluator.negate(encrypted);
+            decryptor.decrypt(encrypted, plain);
+            Assert::AreEqual(static_cast<int32_t>(-2), encoder.decode_int32(plain));
+            Assert::IsTrue(encrypted.hash_block() == encrypted.hash_block());
+            Assert::IsTrue(encrypted.hash_block() == parms.hash_block());
 
-            encrypted = encryptor.encrypt(encoder.encode(2));
-            evaluator.negate(encrypted, negated);
-            Assert::AreEqual(static_cast<int32_t>(-2), encoder.decode_int32(decryptor.decrypt(negated)));
-
-            encrypted = encryptor.encrypt(encoder.encode(-5));
-            evaluator.negate(encrypted, negated);
-            Assert::AreEqual(static_cast<int32_t>(5), encoder.decode_int32(decryptor.decrypt(negated)));
+            encryptor.encrypt(encoder.encode(-5), encrypted);
+            evaluator.negate(encrypted);
+            decryptor.decrypt(encrypted, plain);
+            Assert::AreEqual(static_cast<int32_t>(5), encoder.decode_int32(plain));
+            Assert::IsTrue(encrypted.hash_block() == encrypted.hash_block());
+            Assert::IsTrue(encrypted.hash_block() == parms.hash_block());
         }
 
         TEST_METHOD(FVEncryptAddDecrypt)
         {
             EncryptionParameters parms;
-            BigUInt coeff_modulus;
-            BigUInt plain_modulus;
-            BigPoly poly_modulus;
-            parms.set_decomposition_bit_count(4);
-            parms.set_noise_standard_deviation(3.19);
-            parms.set_noise_max_deviation(35.06);
-            coeff_modulus.resize(48);
-            coeff_modulus = "FFFFFFFFC001";
-            plain_modulus.resize(7);
-            plain_modulus = 1 << 6;
-            poly_modulus.resize(65, 1);
-            poly_modulus[0] = 1;
-            poly_modulus[64] = 1;
-            parms.set_poly_modulus(poly_modulus); 
+            SmallModulus plain_modulus(1 << 6);
+            parms.set_poly_modulus("1x^64 + 1");
             parms.set_plain_modulus(plain_modulus);
-            parms.set_coeff_modulus(coeff_modulus);
-            parms.validate();
-
-            KeyGenerator keygen(parms);
-            keygen.generate();
+            parms.set_coeff_modulus({ small_mods_40bit(0) });
+            SEALContext context(parms);
+            KeyGenerator keygen(context);
 
             BalancedEncoder encoder(plain_modulus);
+            Encryptor encryptor(context, keygen.public_key());
+            Evaluator evaluator(context);
+            Decryptor decryptor(context, keygen.secret_key());
 
-            Encryptor encryptor(parms, keygen.public_key());
-            Evaluator evaluator(parms);
-            Decryptor decryptor(parms, keygen.secret_key());
+            Ciphertext encrypted1;
+            encryptor.encrypt(encoder.encode(0x12345678), encrypted1);
+            Ciphertext encrypted2;
+            encryptor.encrypt(encoder.encode(0x54321), encrypted2);
+            evaluator.add(encrypted1, encrypted2);
+            Plaintext plain;
+            decryptor.decrypt(encrypted1, plain);
+            Assert::AreEqual(static_cast<uint64_t>(0x12399999), encoder.decode_uint64(plain));
+            Assert::IsTrue(encrypted2.hash_block() == encrypted1.hash_block());
+            Assert::IsTrue(encrypted1.hash_block() == parms.hash_block());
 
-            BigPolyArray encrypted1 = encryptor.encrypt(encoder.encode(0x12345678));
-            BigPolyArray encrypted2 = encryptor.encrypt(encoder.encode(0x54321));
-            BigPolyArray sum = evaluator.add(encrypted1, encrypted2);
-            Assert::AreEqual(static_cast<uint64_t>(0x12399999), encoder.decode_uint64(decryptor.decrypt(sum)));
+            encryptor.encrypt(encoder.encode(0), encrypted1);
+            encryptor.encrypt(encoder.encode(0), encrypted2);
+            evaluator.add(encrypted1, encrypted2);
+            decryptor.decrypt(encrypted1, plain);
+            Assert::AreEqual(static_cast<uint64_t>(0), encoder.decode_uint64(plain));
+            Assert::IsTrue(encrypted2.hash_block() == encrypted1.hash_block());
+            Assert::IsTrue(encrypted1.hash_block() == parms.hash_block());
 
-            encrypted1 = encryptor.encrypt(encoder.encode(0));
-            encrypted2 = encryptor.encrypt(encoder.encode(0));
-            sum = evaluator.add(encrypted1, encrypted2);
-            Assert::AreEqual(static_cast<uint64_t>(0), encoder.decode_uint64(decryptor.decrypt(sum)));
+            encryptor.encrypt(encoder.encode(0), encrypted1);
+            encryptor.encrypt(encoder.encode(5), encrypted2);
+            evaluator.add(encrypted1, encrypted2);
+            decryptor.decrypt(encrypted1, plain);
+            Assert::AreEqual(static_cast<uint64_t>(5), encoder.decode_uint64(plain));
+            Assert::IsTrue(encrypted2.hash_block() == encrypted1.hash_block());
+            Assert::IsTrue(encrypted1.hash_block() == parms.hash_block());
 
-            encrypted1 = encryptor.encrypt(encoder.encode(0));
-            encrypted2 = encryptor.encrypt(encoder.encode(5));
-            sum = evaluator.add(encrypted1, encrypted2);
-            Assert::AreEqual(static_cast<uint64_t>(5), encoder.decode_uint64(decryptor.decrypt(sum)));
+            encryptor.encrypt(encoder.encode(5), encrypted1);
+            encryptor.encrypt(encoder.encode(-3), encrypted2);
+            evaluator.add(encrypted1, encrypted2);
+            decryptor.decrypt(encrypted1, plain);
+            Assert::AreEqual(static_cast<int32_t>(2), encoder.decode_int32(plain));
+            Assert::IsTrue(encrypted2.hash_block() == encrypted1.hash_block());
+            Assert::IsTrue(encrypted1.hash_block() == parms.hash_block());
 
-            encrypted1 = encryptor.encrypt(encoder.encode(5));
-            encrypted2 = encryptor.encrypt(encoder.encode(-3));
-            sum = evaluator.add(encrypted1, encrypted2);
-            Assert::AreEqual(static_cast<int32_t>(2), encoder.decode_int32(decryptor.decrypt(sum)));
+            encryptor.encrypt(encoder.encode(-7), encrypted1);
+            encryptor.encrypt(encoder.encode(2), encrypted2);
+            evaluator.add(encrypted1, encrypted2);
+            decryptor.decrypt(encrypted1, plain);
+            Assert::AreEqual(static_cast<int32_t>(-5), encoder.decode_int32(plain));
+            Assert::IsTrue(encrypted2.hash_block() == encrypted1.hash_block());
+            Assert::IsTrue(encrypted1.hash_block() == parms.hash_block());
 
-            encrypted1 = encryptor.encrypt(encoder.encode(-7));
-            encrypted2 = encryptor.encrypt(encoder.encode(2));
-            sum = evaluator.add(encrypted1, encrypted2);
-            Assert::AreEqual(static_cast<int32_t>(-5), encoder.decode_int32(decryptor.decrypt(sum)));
-
-            BigPoly plain1 = "2x^2 + 1x^1 + 3";
-            BigPoly plain2 = "3x^3 + 4x^2 + 5x^1 + 6";
-            BigPolyArray encrypted3 = encryptor.encrypt(plain1);
-            BigPolyArray encrypted4 = encryptor.encrypt(plain2);
-            BigPolyArray sum2 = evaluator.add(encrypted3, encrypted4);
-            BigPoly plain_sum2 = decryptor.decrypt(sum2);
-            Assert::IsTrue(plain_sum2.to_string() == "3x^3 + 6x^2 + 6x^1 + 9");
+            Plaintext plain1 = "2x^2 + 1x^1 + 3";
+            Plaintext plain2 = "3x^3 + 4x^2 + 5x^1 + 6";
+            encryptor.encrypt(plain1, encrypted1);
+            encryptor.encrypt(plain2, encrypted2);
+            evaluator.add(encrypted1, encrypted2);
+            decryptor.decrypt(encrypted1, plain);
+            Assert::IsTrue(plain.to_string() == "3x^3 + 6x^2 + 6x^1 + 9");
+            Assert::IsTrue(encrypted2.hash_block() == encrypted1.hash_block());
+            Assert::IsTrue(encrypted1.hash_block() == parms.hash_block());
 
             plain1 = "3x^5 + 1x^4 + 4x^3 + 1";
             plain2 = "5x^2 + 9x^1 + 2";
-            encrypted3 = encryptor.encrypt(plain1);
-            encrypted4 = encryptor.encrypt(plain2);
-            sum2 = evaluator.add(encrypted3, encrypted4);
-            plain_sum2 = decryptor.decrypt(sum2);
-            Assert::IsTrue(plain_sum2.to_string() == "3x^5 + 1x^4 + 4x^3 + 5x^2 + 9x^1 + 3");
-
+            encryptor.encrypt(plain1, encrypted1);
+            encryptor.encrypt(plain2, encrypted2);
+            evaluator.add(encrypted1, encrypted2);
+            decryptor.decrypt(encrypted1, plain);
+            Assert::IsTrue(plain.to_string() == "3x^5 + 1x^4 + 4x^3 + 5x^2 + 9x^1 + 3");
+            Assert::IsTrue(encrypted2.hash_block() == encrypted1.hash_block());
+            Assert::IsTrue(encrypted1.hash_block() == parms.hash_block());
         }
 
         TEST_METHOD(FVEncryptSubDecrypt)
         {
             EncryptionParameters parms;
-            BigUInt coeff_modulus;
-            BigUInt plain_modulus;
-            BigPoly poly_modulus;
-            parms.set_decomposition_bit_count(4);
-            parms.set_noise_standard_deviation(3.19);
-            parms.set_noise_max_deviation(35.06);
-            coeff_modulus.resize(48);
-            coeff_modulus = "FFFFFFFFC001";
-            plain_modulus.resize(7);
-            plain_modulus = 1 << 6;
-            poly_modulus.resize(65, 1);
-            poly_modulus[0] = 1;
-            poly_modulus[64] = 1;
-            parms.set_poly_modulus(poly_modulus);
+            SmallModulus plain_modulus(1 << 6);
+            parms.set_poly_modulus("1x^64 + 1");
             parms.set_plain_modulus(plain_modulus);
-            parms.set_coeff_modulus(coeff_modulus);
-            parms.validate();
-            KeyGenerator keygen(parms);
-            keygen.generate();
+            parms.set_coeff_modulus({ small_mods_40bit(0) });
+            SEALContext context(parms);
+            KeyGenerator keygen(context);
 
             BalancedEncoder encoder(plain_modulus);
+            Encryptor encryptor(context, keygen.public_key());
+            Evaluator evaluator(context);
+            Decryptor decryptor(context, keygen.secret_key());
 
-            Encryptor encryptor(parms, keygen.public_key());
-            Evaluator evaluator(parms);
-            Decryptor decryptor(parms, keygen.secret_key());
+            Ciphertext encrypted1;
+            encryptor.encrypt(encoder.encode(0x12345678), encrypted1);
+            Ciphertext encrypted2;
+            encryptor.encrypt(encoder.encode(0x54321), encrypted2);
+            evaluator.sub(encrypted1, encrypted2);
+            Plaintext plain;
+            decryptor.decrypt(encrypted1, plain);
+            Assert::AreEqual(static_cast<int32_t>(0x122F1357), encoder.decode_int32(plain));
+            Assert::IsTrue(encrypted2.hash_block() == encrypted1.hash_block());
+            Assert::IsTrue(encrypted1.hash_block() == parms.hash_block());
 
-            BigPolyArray encrypted1 = encryptor.encrypt(encoder.encode(0x12345678));
-            BigPolyArray encrypted2 = encryptor.encrypt(encoder.encode(0x54321));
-            BigPolyArray diff = evaluator.sub(encrypted1, encrypted2);
-            Assert::AreEqual(static_cast<int32_t>(0x122F1357), encoder.decode_int32(decryptor.decrypt(diff)));
+            encryptor.encrypt(encoder.encode(0), encrypted1);
+            encryptor.encrypt(encoder.encode(0), encrypted2);
+            evaluator.sub(encrypted1, encrypted2);
+            decryptor.decrypt(encrypted1, plain);
+            Assert::AreEqual(static_cast<int32_t>(0), encoder.decode_int32(plain));
+            Assert::IsTrue(encrypted2.hash_block() == encrypted1.hash_block());
+            Assert::IsTrue(encrypted1.hash_block() == parms.hash_block());
 
-            encrypted1 = encryptor.encrypt(encoder.encode(0));
-            encrypted2 = encryptor.encrypt(encoder.encode(0));
-            diff = evaluator.sub(encrypted1, encrypted2);
-            Assert::AreEqual(static_cast<int32_t>(0), encoder.decode_int32(decryptor.decrypt(diff)));
+            encryptor.encrypt(encoder.encode(0), encrypted1);
+            encryptor.encrypt(encoder.encode(5), encrypted2);
+            evaluator.sub(encrypted1, encrypted2);
+            decryptor.decrypt(encrypted1, plain);
+            Assert::AreEqual(static_cast<int32_t>(-5), encoder.decode_int32(plain));
+            Assert::IsTrue(encrypted2.hash_block() == encrypted1.hash_block());
+            Assert::IsTrue(encrypted1.hash_block() == parms.hash_block());
 
-            encrypted1 = encryptor.encrypt(encoder.encode(0));
-            encrypted2 = encryptor.encrypt(encoder.encode(5));
-            diff = evaluator.sub(encrypted1, encrypted2);
-            Assert::AreEqual(static_cast<int32_t>(-5), encoder.decode_int32(decryptor.decrypt(diff)));
+            encryptor.encrypt(encoder.encode(5), encrypted1);
+            encryptor.encrypt(encoder.encode(-3), encrypted2);
+            evaluator.sub(encrypted1, encrypted2);
+            decryptor.decrypt(encrypted1, plain);
+            Assert::AreEqual(static_cast<int32_t>(8), encoder.decode_int32(plain));
+            Assert::IsTrue(encrypted2.hash_block() == encrypted1.hash_block());
+            Assert::IsTrue(encrypted1.hash_block() == parms.hash_block());
 
-            encrypted1 = encryptor.encrypt(encoder.encode(5));
-            encrypted2 = encryptor.encrypt(encoder.encode(-3));
-            diff = evaluator.sub(encrypted1, encrypted2);
-            Assert::AreEqual(static_cast<int32_t>(8), encoder.decode_int32(decryptor.decrypt(diff)));
-
-            encrypted1 = encryptor.encrypt(encoder.encode(-7));
-            encrypted2 = encryptor.encrypt(encoder.encode(2));
-            diff = evaluator.sub(encrypted1, encrypted2);
-            Assert::AreEqual(static_cast<int32_t>(-9), encoder.decode_int32(decryptor.decrypt(diff)));
+            encryptor.encrypt(encoder.encode(-7), encrypted1);
+            encryptor.encrypt(encoder.encode(2), encrypted2);
+            evaluator.sub(encrypted1, encrypted2);
+            decryptor.decrypt(encrypted1, plain);
+            Assert::AreEqual(static_cast<int32_t>(-9), encoder.decode_int32(plain));
+            Assert::IsTrue(encrypted2.hash_block() == encrypted1.hash_block());
+            Assert::IsTrue(encrypted1.hash_block() == parms.hash_block());
         }
 
         TEST_METHOD(FVEncryptAddPlainDecrypt)
         {
             EncryptionParameters parms;
-            BigUInt coeff_modulus;
-            BigUInt plain_modulus;
-            BigPoly poly_modulus;
-            parms.set_decomposition_bit_count(4);
-            parms.set_noise_standard_deviation(3.19);
-            parms.set_noise_max_deviation(35.06);
-            coeff_modulus.resize(48);
-            coeff_modulus = "FFFFFFFFC001";
-            plain_modulus.resize(7);
-            plain_modulus = 1 << 6;
-            poly_modulus.resize(65, 1);
-            poly_modulus[0] = 1;
-            poly_modulus[64] = 1;
-            parms.set_poly_modulus(poly_modulus);
+            SmallModulus plain_modulus(1 << 6);
+            parms.set_poly_modulus("1x^64 + 1");
             parms.set_plain_modulus(plain_modulus);
-            parms.set_coeff_modulus(coeff_modulus);
-            parms.validate();
-            KeyGenerator keygen(parms);
-            keygen.generate();
+            parms.set_coeff_modulus({ small_mods_40bit(0) });
+            SEALContext context(parms);
+            KeyGenerator keygen(context);
 
             BalancedEncoder encoder(plain_modulus);
+            Encryptor encryptor(context, keygen.public_key());
+            Evaluator evaluator(context);
+            Decryptor decryptor(context, keygen.secret_key());
 
-            Encryptor encryptor(parms, keygen.public_key());
-            Evaluator evaluator(parms);
-            Decryptor decryptor(parms, keygen.secret_key());
+            Ciphertext encrypted1;
+            Ciphertext encrypted2;
+            Plaintext plain;
+            encryptor.encrypt(encoder.encode(0x12345678), encrypted1);
+            plain = encoder.encode(0x54321);
+            evaluator.add_plain(encrypted1, plain);
+            decryptor.decrypt(encrypted1, plain);
+            Assert::AreEqual(static_cast<uint64_t>(0x12399999), encoder.decode_uint64(plain));
+            Assert::IsTrue(encrypted1.hash_block() == parms.hash_block());
 
-            BigPolyArray encrypted1 = encryptor.encrypt(encoder.encode(0x12345678));
-            BigPoly plain2(64, 48);
-            plain2 = encoder.encode(0x54321);
-            BigPolyArray sum = evaluator.add_plain(encrypted1, plain2);
-            Assert::AreEqual(static_cast<uint64_t>(0x12399999), encoder.decode_uint64(decryptor.decrypt(sum)));
+            encryptor.encrypt(encoder.encode(0), encrypted1);
+            plain = encoder.encode(0);
+            evaluator.add_plain(encrypted1, plain);
+            decryptor.decrypt(encrypted1, plain);
+            Assert::AreEqual(static_cast<uint64_t>(0), encoder.decode_uint64(plain));
+            Assert::IsTrue(encrypted1.hash_block() == parms.hash_block());
 
-            encrypted1 = encryptor.encrypt(encoder.encode(0));
-            plain2 = encoder.encode(0);
-            sum = evaluator.add_plain(encrypted1, plain2);
-            Assert::AreEqual(static_cast<uint64_t>(0), encoder.decode_uint64(decryptor.decrypt(sum)));
+            encryptor.encrypt(encoder.encode(0), encrypted1);
+            plain = encoder.encode(5);
+            evaluator.add_plain(encrypted1, plain);
+            decryptor.decrypt(encrypted1, plain);
+            Assert::AreEqual(static_cast<uint64_t>(5), encoder.decode_uint64(plain));
+            Assert::IsTrue(encrypted1.hash_block() == parms.hash_block());
 
-            encrypted1 = encryptor.encrypt(encoder.encode(0));
-            plain2 = encoder.encode(5);
-            sum = evaluator.add_plain(encrypted1, plain2);
-            Assert::AreEqual(static_cast<uint64_t>(5), encoder.decode_uint64(decryptor.decrypt(sum)));
+            encryptor.encrypt(encoder.encode(5), encrypted1);
+            plain = encoder.encode(-3);
+            evaluator.add_plain(encrypted1, plain);
+            decryptor.decrypt(encrypted1, plain);
+            Assert::AreEqual(static_cast<uint64_t>(2), encoder.decode_uint64(plain));
+            Assert::IsTrue(encrypted1.hash_block() == parms.hash_block());
 
-            encrypted1 = encryptor.encrypt(encoder.encode(5));
-            plain2 = encoder.encode(-3);
-            sum = evaluator.add_plain(encrypted1, plain2);
-            Assert::AreEqual(static_cast<int32_t>(2), encoder.decode_int32(decryptor.decrypt(sum)));
-
-            encrypted1 = encryptor.encrypt(encoder.encode(-7));
-            plain2 = encoder.encode(2);
-            sum = evaluator.add_plain(encrypted1, plain2);
-            Assert::AreEqual(static_cast<int32_t>(-5), encoder.decode_int32(decryptor.decrypt(sum)));
+            encryptor.encrypt(encoder.encode(-7), encrypted1);
+            plain = encoder.encode(7);
+            evaluator.add_plain(encrypted1, plain);
+            decryptor.decrypt(encrypted1, plain);
+            Assert::AreEqual(static_cast<uint64_t>(0), encoder.decode_uint64(plain));
+            Assert::IsTrue(encrypted1.hash_block() == parms.hash_block());
         }
 
         TEST_METHOD(FVEncryptSubPlainDecrypt)
         {
             EncryptionParameters parms;
-            BigUInt coeff_modulus;
-            BigUInt plain_modulus;
-            BigPoly poly_modulus;
-            parms.set_decomposition_bit_count(4);
-            parms.set_noise_standard_deviation(3.19);
-            parms.set_noise_max_deviation(35.06);
-            coeff_modulus.resize(48);
-            coeff_modulus = "FFFFFFFFC001";
-            plain_modulus.resize(7);
-            plain_modulus = 1 << 6;
-            poly_modulus.resize(65, 1);
-            poly_modulus[0] = 1;
-            poly_modulus[64] = 1;
-            parms.set_poly_modulus(poly_modulus);
+            SmallModulus plain_modulus(1 << 6);
+            parms.set_poly_modulus("1x^64 + 1");
             parms.set_plain_modulus(plain_modulus);
-            parms.set_coeff_modulus(coeff_modulus);
-            parms.validate();
-            KeyGenerator keygen(parms);
-            keygen.generate();
+            parms.set_coeff_modulus({ small_mods_40bit(0) });
+            SEALContext context(parms);
+            KeyGenerator keygen(context);
 
             BalancedEncoder encoder(plain_modulus);
+            Encryptor encryptor(context, keygen.public_key());
+            Evaluator evaluator(context);
+            Decryptor decryptor(context, keygen.secret_key());
 
-            Encryptor encryptor(parms, keygen.public_key());
-            Evaluator evaluator(parms);
-            Decryptor decryptor(parms, keygen.secret_key());
+            Ciphertext encrypted1;
+            Plaintext plain;
+            encryptor.encrypt(encoder.encode(0x12345678), encrypted1);
+            plain = encoder.encode(0x54321);
+            evaluator.sub_plain(encrypted1, plain);
+            decryptor.decrypt(encrypted1, plain);
+            Assert::AreEqual(static_cast<uint64_t>(0x122F1357), encoder.decode_uint64(plain));
+            Assert::IsTrue(encrypted1.hash_block() == parms.hash_block());
 
-            BigPolyArray encrypted1 = encryptor.encrypt(encoder.encode(0x12345678));
-            BigPoly plain2(64, 48);
-            plain2 = encoder.encode(0x54321);
-            BigPolyArray diff = evaluator.sub_plain(encrypted1, plain2);
-            Assert::AreEqual(static_cast<int32_t>(0x122F1357), encoder.decode_int32(decryptor.decrypt(diff)));
+            encryptor.encrypt(encoder.encode(0), encrypted1);
+            plain = encoder.encode(0);
+            evaluator.sub_plain(encrypted1, plain);
+            decryptor.decrypt(encrypted1, plain);
+            Assert::AreEqual(static_cast<uint64_t>(0), encoder.decode_uint64(plain));
+            Assert::IsTrue(encrypted1.hash_block() == parms.hash_block());
 
-            encrypted1 = encryptor.encrypt(encoder.encode(0));
-            plain2 = encoder.encode(0);
-            diff = evaluator.sub_plain(encrypted1, plain2);
-            Assert::AreEqual(static_cast<int32_t>(0), encoder.decode_int32(decryptor.decrypt(diff)));
+            encryptor.encrypt(encoder.encode(0), encrypted1);
+            plain = encoder.encode(5);
+            evaluator.sub_plain(encrypted1, plain);
+            decryptor.decrypt(encrypted1, plain);
+            Assert::IsTrue(static_cast<int64_t>(-5) == encoder.decode_int64(plain));
+            Assert::IsTrue(encrypted1.hash_block() == parms.hash_block());
 
-            encrypted1 = encryptor.encrypt(encoder.encode(0));
-            plain2 = encoder.encode(5);
-            diff = evaluator.sub_plain(encrypted1, plain2);
-            Assert::AreEqual(static_cast<int32_t>(-5), encoder.decode_int32(decryptor.decrypt(diff)));
+            encryptor.encrypt(encoder.encode(5), encrypted1);
+            plain = encoder.encode(-3);
+            evaluator.sub_plain(encrypted1, plain);
+            decryptor.decrypt(encrypted1, plain);
+            Assert::AreEqual(static_cast<uint64_t>(8), encoder.decode_uint64(plain));
+            Assert::IsTrue(encrypted1.hash_block() == parms.hash_block());
 
-            encrypted1 = encryptor.encrypt(encoder.encode(5));
-            plain2 = encoder.encode(-3);
-            diff = evaluator.sub_plain(encrypted1, plain2);
-            Assert::AreEqual(static_cast<int32_t>(8), encoder.decode_int32(decryptor.decrypt(diff)));
-
-            encrypted1 = encryptor.encrypt(encoder.encode(-7));
-            plain2 = encoder.encode(2);
-            diff = evaluator.sub_plain(encrypted1, plain2);
-            Assert::AreEqual(static_cast<int32_t>(-9), encoder.decode_int32(decryptor.decrypt(diff)));
+            encryptor.encrypt(encoder.encode(-7), encrypted1);
+            plain = encoder.encode(2);
+            evaluator.sub_plain(encrypted1, plain);
+            decryptor.decrypt(encrypted1, plain);
+            Assert::IsTrue(static_cast<int64_t>(-9) == encoder.decode_int64(plain));
+            Assert::IsTrue(encrypted1.hash_block() == parms.hash_block());
         }
 
         TEST_METHOD(FVEncryptMultiplyPlainDecrypt)
         {
             EncryptionParameters parms;
-            BigUInt coeff_modulus;
-            BigUInt plain_modulus;
-            BigPoly poly_modulus;
-            parms.set_decomposition_bit_count(4);
-            parms.set_noise_standard_deviation(3.19);
-            parms.set_noise_max_deviation(35.06);
-            coeff_modulus.resize(48);
-            coeff_modulus = "FFFFFFFFC001";
-            plain_modulus.resize(7);
-            plain_modulus = 1 << 6;
-            poly_modulus.resize(65, 1);
-            poly_modulus[0] = 1;
-            poly_modulus[64] = 1;
-            parms.set_poly_modulus(poly_modulus);
+            SmallModulus plain_modulus(1 << 6);
+            parms.set_poly_modulus("1x^64 + 1");
             parms.set_plain_modulus(plain_modulus);
-            parms.set_coeff_modulus(coeff_modulus);
-            parms.validate();
-            KeyGenerator keygen(parms);
-            keygen.generate();
+            parms.set_coeff_modulus({ small_mods_40bit(0) });
+            SEALContext context(parms);
+            KeyGenerator keygen(context);
 
             BalancedEncoder encoder(plain_modulus);
+            Encryptor encryptor(context, keygen.public_key());
+            Evaluator evaluator(context);
+            Decryptor decryptor(context, keygen.secret_key());
 
-            Encryptor encryptor(parms, keygen.public_key());
-            Evaluator evaluator(parms);
-            Decryptor decryptor(parms, keygen.secret_key());
+            Ciphertext encrypted;
+            Plaintext plain;
+            encryptor.encrypt(encoder.encode(0x12345678), encrypted);
+            plain = encoder.encode(0x54321);
+            evaluator.multiply_plain(encrypted, plain);
+            decryptor.decrypt(encrypted, plain);
+            Assert::AreEqual(static_cast<uint64_t>(0x5FCBBBB88D78), encoder.decode_uint64(plain));
+            Assert::IsTrue(encrypted.hash_block() == parms.hash_block());
 
-            BigPolyArray encrypted1 = encryptor.encrypt(encoder.encode(0x12345678));
-            BigPoly plain2(64, 48);
-            plain2 = encoder.encode(0x54321);
-            BigPolyArray product = evaluator.multiply_plain(encrypted1, plain2);
-            Assert::AreEqual(static_cast<uint64_t>(0x5FCBBBB88D78), encoder.decode_uint64(decryptor.decrypt(product)));
+            encryptor.encrypt(encoder.encode(0), encrypted);
+            plain = encoder.encode(5);
+            evaluator.multiply_plain(encrypted, plain);
+            decryptor.decrypt(encrypted, plain);
+            Assert::AreEqual(static_cast<uint64_t>(0), encoder.decode_uint64(plain));
+            Assert::IsTrue(encrypted.hash_block() == parms.hash_block());
 
-            encrypted1 = encryptor.encrypt(encoder.encode(0));
-            plain2 = encoder.encode(5);
-            product = evaluator.multiply_plain(encrypted1, plain2);
-            Assert::AreEqual(static_cast<uint64_t>(0), encoder.decode_uint64(decryptor.decrypt(product)));
+            encryptor.encrypt(encoder.encode(7), encrypted);
+            plain = encoder.encode(1);
+            evaluator.multiply_plain(encrypted, plain);
+            decryptor.decrypt(encrypted, plain);
+            Assert::AreEqual(static_cast<uint64_t>(7), encoder.decode_uint64(plain));
+            Assert::IsTrue(encrypted.hash_block() == parms.hash_block());
 
-            encrypted1 = encryptor.encrypt(encoder.encode(7));
-            plain2 = encoder.encode(1);
-            product = evaluator.multiply_plain(encrypted1, plain2);
-            Assert::AreEqual(static_cast<uint64_t>(7), encoder.decode_uint64(decryptor.decrypt(product)));
+            encryptor.encrypt(encoder.encode(5), encrypted);
+            plain = encoder.encode(-3);
+            evaluator.multiply_plain(encrypted, plain);
+            decryptor.decrypt(encrypted, plain);
+            Assert::IsTrue(static_cast<int64_t>(-15) == encoder.decode_int64(plain));
+            Assert::IsTrue(encrypted.hash_block() == parms.hash_block());
 
-            encrypted1 = encryptor.encrypt(encoder.encode(5));
-            plain2 = encoder.encode(-3);
-            product = evaluator.multiply_plain(encrypted1, plain2);
-            Assert::AreEqual(static_cast<int32_t>(-15), encoder.decode_int32(decryptor.decrypt(product)));
-
-            encrypted1 = encryptor.encrypt(encoder.encode(-7));
-            plain2 = encoder.encode(2);
-            product = evaluator.multiply_plain(encrypted1, plain2);
-            Assert::AreEqual(static_cast<int32_t>(-14), encoder.decode_int32(decryptor.decrypt(product)));
+            encryptor.encrypt(encoder.encode(-7), encrypted);
+            plain = encoder.encode(2);
+            evaluator.multiply_plain(encrypted, plain);
+            decryptor.decrypt(encrypted, plain);
+            Assert::IsTrue(static_cast<int64_t>(-14) == encoder.decode_int64(plain));
+            Assert::IsTrue(encrypted.hash_block() == parms.hash_block());
         }
 
         TEST_METHOD(FVEncryptMultiplyDecrypt)
         {
             {
                 EncryptionParameters parms;
-                BigUInt coeff_modulus;
-                BigUInt plain_modulus;
-                BigPoly poly_modulus;
-                parms.set_decomposition_bit_count(4);
-                parms.set_noise_standard_deviation(3.19);
-                parms.set_noise_max_deviation(35.06);
-                coeff_modulus.resize(48);
-                coeff_modulus = "FFFFFFFFC001";
-                plain_modulus.resize(7);
-                plain_modulus = 1 << 6;
-                poly_modulus.resize(65, 1);
-                poly_modulus[0] = 1;
-                poly_modulus[64] = 1;
-                parms.set_poly_modulus(poly_modulus);
+                SmallModulus plain_modulus(1 << 6);
+                parms.set_poly_modulus("1x^64 + 1");
                 parms.set_plain_modulus(plain_modulus);
-                parms.set_coeff_modulus(coeff_modulus);
-                parms.validate();
-                KeyGenerator keygen(parms);
-                keygen.generate();
+                parms.set_coeff_modulus({ small_mods_40bit(0) });
+                SEALContext context(parms);
+                KeyGenerator keygen(context);
 
                 BalancedEncoder encoder(plain_modulus);
+                Encryptor encryptor(context, keygen.public_key());
+                Evaluator evaluator(context);
+                Decryptor decryptor(context, keygen.secret_key());
 
-                Encryptor encryptor(parms, keygen.public_key());
-                Evaluator evaluator(parms);
-                Decryptor decryptor(parms, keygen.secret_key());
+                Ciphertext encrypted1;
+                Ciphertext encrypted2;
+                Plaintext plain;
+                encryptor.encrypt(encoder.encode(0x12345678), encrypted1);
+                encryptor.encrypt(encoder.encode(0x54321), encrypted2);
+                evaluator.multiply(encrypted1, encrypted2);
+                decryptor.decrypt(encrypted1, plain);
+                Assert::AreEqual(static_cast<uint64_t>(0x5FCBBBB88D78), encoder.decode_uint64(plain));
+                Assert::IsTrue(encrypted2.hash_block() == encrypted1.hash_block());
+                Assert::IsTrue(encrypted1.hash_block() == parms.hash_block());
 
-                BigPolyArray encrypted1 = encryptor.encrypt(encoder.encode(0x12345678));
-                BigPolyArray encrypted2 = encryptor.encrypt(encoder.encode(0x54321));
-                BigPolyArray product = evaluator.multiply(encrypted1, encrypted2);
-                Assert::AreEqual(static_cast<uint64_t>(0x5FCBBBB88D78), encoder.decode_uint64(decryptor.decrypt(product)));
+                encryptor.encrypt(encoder.encode(0), encrypted1);
+                encryptor.encrypt(encoder.encode(0), encrypted2);
+                evaluator.multiply(encrypted1, encrypted2);
+                decryptor.decrypt(encrypted1, plain);
+                Assert::AreEqual(static_cast<uint64_t>(0), encoder.decode_uint64(plain));
+                Assert::IsTrue(encrypted2.hash_block() == encrypted1.hash_block());
+                Assert::IsTrue(encrypted1.hash_block() == parms.hash_block());
 
-                encrypted1 = encryptor.encrypt(encoder.encode(0));
-                encrypted2 = encryptor.encrypt(encoder.encode(0));
-                product = evaluator.multiply(encrypted1, encrypted2);
-                Assert::AreEqual(static_cast<uint64_t>(0), encoder.decode_uint64(decryptor.decrypt(product)));
+                encryptor.encrypt(encoder.encode(0), encrypted1);
+                encryptor.encrypt(encoder.encode(5), encrypted2);
+                evaluator.multiply(encrypted1, encrypted2);
+                decryptor.decrypt(encrypted1, plain);
+                Assert::AreEqual(static_cast<uint64_t>(0), encoder.decode_uint64(plain));
+                Assert::IsTrue(encrypted2.hash_block() == encrypted1.hash_block());
+                Assert::IsTrue(encrypted1.hash_block() == parms.hash_block());
 
-                encrypted1 = encryptor.encrypt(encoder.encode(0));
-                encrypted2 = encryptor.encrypt(encoder.encode(5));
-                product = evaluator.multiply(encrypted1, encrypted2);
-                Assert::AreEqual(static_cast<uint64_t>(0), encoder.decode_uint64(decryptor.decrypt(product)));
+                encryptor.encrypt(encoder.encode(7), encrypted1);
+                encryptor.encrypt(encoder.encode(1), encrypted2);
+                evaluator.multiply(encrypted1, encrypted2);
+                decryptor.decrypt(encrypted1, plain);
+                Assert::AreEqual(static_cast<uint64_t>(7), encoder.decode_uint64(plain));
+                Assert::IsTrue(encrypted2.hash_block() == encrypted1.hash_block());
+                Assert::IsTrue(encrypted1.hash_block() == parms.hash_block());
 
-                encrypted1 = encryptor.encrypt(encoder.encode(7));
-                encrypted2 = encryptor.encrypt(encoder.encode(1));
-                product = evaluator.multiply(encrypted1, encrypted2);
-                Assert::AreEqual(static_cast<uint64_t>(7), encoder.decode_uint64(decryptor.decrypt(product)));
+                encryptor.encrypt(encoder.encode(5), encrypted1);
+                encryptor.encrypt(encoder.encode(-3), encrypted2);
+                evaluator.multiply(encrypted1, encrypted2);
+                decryptor.decrypt(encrypted1, plain);
+                Assert::IsTrue(static_cast<int64_t>(-15) == encoder.decode_int64(plain));
+                Assert::IsTrue(encrypted2.hash_block() == encrypted1.hash_block());
+                Assert::IsTrue(encrypted1.hash_block() == parms.hash_block());
 
-                encrypted1 = encryptor.encrypt(encoder.encode(5));
-                encrypted2 = encryptor.encrypt(encoder.encode(-3));
-                product = evaluator.multiply(encrypted1, encrypted2);
-                Assert::AreEqual(static_cast<int32_t>(-15), encoder.decode_int32(decryptor.decrypt(product)));
-
-                encrypted1 = encryptor.encrypt(encoder.encode(-7));
-                encrypted2 = encryptor.encrypt(encoder.encode(2));
-                product = evaluator.multiply(encrypted1, encrypted2);
-                Assert::AreEqual(static_cast<int32_t>(-14), encoder.decode_int32(decryptor.decrypt(product)));
+                encryptor.encrypt(encoder.encode(0x10000), encrypted1);
+                encryptor.encrypt(encoder.encode(0x100), encrypted2);
+                evaluator.multiply(encrypted1, encrypted2);
+                decryptor.decrypt(encrypted1, plain);
+                Assert::AreEqual(static_cast<uint64_t>(0x1000000), encoder.decode_uint64(plain));
+                Assert::IsTrue(encrypted2.hash_block() == encrypted1.hash_block());
+                Assert::IsTrue(encrypted1.hash_block() == parms.hash_block());
             }
-
             {
                 EncryptionParameters parms;
-                BigUInt coeff_modulus;
-                BigUInt plain_modulus;
-                BigPoly poly_modulus;
-                parms.set_decomposition_bit_count(4);
-                parms.set_noise_standard_deviation(3.19);
-                parms.set_noise_max_deviation(35.06);
-                coeff_modulus = "FFFFFFFFFFFFFFFFFFFF";
-                plain_modulus.resize(7);
-                plain_modulus = 1 << 6;
-                poly_modulus.resize(129, 1);
-                poly_modulus[0] = 1;
-                poly_modulus[128] = 1;
-                parms.set_poly_modulus(poly_modulus);
+                SmallModulus plain_modulus(1 << 6);
+                parms.set_poly_modulus("1x^128 + 1");
                 parms.set_plain_modulus(plain_modulus);
-                parms.set_coeff_modulus(coeff_modulus);
-                parms.validate();
-                KeyGenerator keygen(parms);
-                keygen.generate();
+                parms.set_coeff_modulus({ small_mods_40bit(0), small_mods_40bit(1) });
+                SEALContext context(parms);
+                KeyGenerator keygen(context);
 
                 BalancedEncoder encoder(plain_modulus);
+                Encryptor encryptor(context, keygen.public_key());
+                Evaluator evaluator(context);
+                Decryptor decryptor(context, keygen.secret_key());
 
-                Encryptor encryptor(parms, keygen.public_key());
-                Evaluator evaluator(parms);
-                Decryptor decryptor(parms, keygen.secret_key());
+                Ciphertext encrypted1;
+                Ciphertext encrypted2;
+                Plaintext plain;
+                encryptor.encrypt(encoder.encode(0x12345678), encrypted1);
+                encryptor.encrypt(encoder.encode(0x54321), encrypted2);
+                evaluator.multiply(encrypted1, encrypted2);
+                decryptor.decrypt(encrypted1, plain);
+                Assert::AreEqual(static_cast<uint64_t>(0x5FCBBBB88D78), encoder.decode_uint64(plain));
+                Assert::IsTrue(encrypted2.hash_block() == encrypted1.hash_block());
+                Assert::IsTrue(encrypted1.hash_block() == parms.hash_block());
 
-                BigPolyArray encrypted1 = encryptor.encrypt(encoder.encode(0x12345678));
-                BigPolyArray encrypted2 = encryptor.encrypt(encoder.encode(0x54321));
-                BigPolyArray product = evaluator.multiply(encrypted1, encrypted2);
-                Assert::AreEqual(static_cast<uint64_t>(0x5FCBBBB88D78), encoder.decode_uint64(decryptor.decrypt(product)));
+                encryptor.encrypt(encoder.encode(0), encrypted1);
+                encryptor.encrypt(encoder.encode(0), encrypted2);
+                evaluator.multiply(encrypted1, encrypted2);
+                decryptor.decrypt(encrypted1, plain);
+                Assert::AreEqual(static_cast<uint64_t>(0), encoder.decode_uint64(plain));
+                Assert::IsTrue(encrypted2.hash_block() == encrypted1.hash_block());
+                Assert::IsTrue(encrypted1.hash_block() == parms.hash_block());
 
-                encrypted1 = encryptor.encrypt(encoder.encode(0));
-                encrypted2 = encryptor.encrypt(encoder.encode(0));
-                product = evaluator.multiply(encrypted1, encrypted2);
-                Assert::AreEqual(static_cast<uint64_t>(0), encoder.decode_uint64(decryptor.decrypt(product)));
+                encryptor.encrypt(encoder.encode(0), encrypted1);
+                encryptor.encrypt(encoder.encode(5), encrypted2);
+                evaluator.multiply(encrypted1, encrypted2);
+                decryptor.decrypt(encrypted1, plain);
+                Assert::AreEqual(static_cast<uint64_t>(0), encoder.decode_uint64(plain));
+                Assert::IsTrue(encrypted2.hash_block() == encrypted1.hash_block());
+                Assert::IsTrue(encrypted1.hash_block() == parms.hash_block());
 
-                encrypted1 = encryptor.encrypt(encoder.encode(0));
-                encrypted2 = encryptor.encrypt(encoder.encode(5));
-                product = evaluator.multiply(encrypted1, encrypted2);
-                Assert::AreEqual(static_cast<uint64_t>(0), encoder.decode_uint64(decryptor.decrypt(product)));
+                encryptor.encrypt(encoder.encode(7), encrypted1);
+                encryptor.encrypt(encoder.encode(1), encrypted2);
+                evaluator.multiply(encrypted1, encrypted2);
+                decryptor.decrypt(encrypted1, plain);
+                Assert::AreEqual(static_cast<uint64_t>(7), encoder.decode_uint64(plain));
+                Assert::IsTrue(encrypted2.hash_block() == encrypted1.hash_block());
+                Assert::IsTrue(encrypted1.hash_block() == parms.hash_block());
 
-                encrypted1 = encryptor.encrypt(encoder.encode(7));
-                encrypted2 = encryptor.encrypt(encoder.encode(1));
-                product = evaluator.multiply(encrypted1, encrypted2);
-                Assert::AreEqual(static_cast<uint64_t>(7), encoder.decode_uint64(decryptor.decrypt(product)));
+                encryptor.encrypt(encoder.encode(5), encrypted1);
+                encryptor.encrypt(encoder.encode(-3), encrypted2);
+                evaluator.multiply(encrypted1, encrypted2);
+                decryptor.decrypt(encrypted1, plain);
+                Assert::IsTrue(static_cast<int64_t>(-15) == encoder.decode_int64(plain));
+                Assert::IsTrue(encrypted2.hash_block() == encrypted1.hash_block());
+                Assert::IsTrue(encrypted1.hash_block() == parms.hash_block());
 
-                encrypted1 = encryptor.encrypt(encoder.encode(5));
-                encrypted2 = encryptor.encrypt(encoder.encode(-3));
-                product = evaluator.multiply(encrypted1, encrypted2);
-                Assert::AreEqual(static_cast<int32_t>(-15), encoder.decode_int32(decryptor.decrypt(product)));
+                encryptor.encrypt(encoder.encode(0x10000), encrypted1);
+                encryptor.encrypt(encoder.encode(0x100), encrypted2);
+                evaluator.multiply(encrypted1, encrypted2);
+                decryptor.decrypt(encrypted1, plain);
+                Assert::AreEqual(static_cast<uint64_t>(0x1000000), encoder.decode_uint64(plain));
+                Assert::IsTrue(encrypted2.hash_block() == encrypted1.hash_block());
+                Assert::IsTrue(encrypted1.hash_block() == parms.hash_block());
+            }
+            {
+                EncryptionParameters parms;
+                SmallModulus plain_modulus(1 << 6);
+                parms.set_poly_modulus("1x^128 + 1");
+                parms.set_plain_modulus(plain_modulus);
+                parms.set_coeff_modulus({ small_mods_40bit(0), small_mods_40bit(1) });
+                SEALContext context(parms);
+                KeyGenerator keygen(context);
 
-                encrypted1 = encryptor.encrypt(encoder.encode(-7));
-                encrypted2 = encryptor.encrypt(encoder.encode(2));
-                product = evaluator.multiply(encrypted1, encrypted2);
-                Assert::AreEqual(static_cast<int32_t>(-14), encoder.decode_int32(decryptor.decrypt(product)));
+                BalancedEncoder encoder(plain_modulus);
+                Encryptor encryptor(context, keygen.public_key());
+                Evaluator evaluator(context);
+                Decryptor decryptor(context, keygen.secret_key());
+
+                Ciphertext encrypted1;
+                Plaintext plain;
+                encryptor.encrypt(encoder.encode(123), encrypted1);
+                evaluator.multiply(encrypted1, encrypted1, encrypted1);
+                evaluator.multiply(encrypted1, encrypted1, encrypted1);
+                decryptor.decrypt(encrypted1, plain);
+                Assert::AreEqual(static_cast<uint64_t>(228886641), encoder.decode_uint64(plain));
+                Assert::IsTrue(encrypted1.hash_block() == parms.hash_block());
             }
         }
 
         TEST_METHOD(FVEncryptSquareDecrypt)
         {
             EncryptionParameters parms;
-            BigUInt coeff_modulus;
-            BigUInt plain_modulus;
-            BigPoly poly_modulus;
-            parms.set_decomposition_bit_count(4);
-            parms.set_noise_standard_deviation(3.19);
-            parms.set_noise_max_deviation(35.06);
-            coeff_modulus = "FFFFFFFFFFFFFFFFFFFF";
-            plain_modulus.resize(7);
-            plain_modulus = 1 << 6;
-            poly_modulus.resize(65, 1);
-            poly_modulus[0] = 1;
-            poly_modulus[64] = 1;
-            parms.set_poly_modulus(poly_modulus);
+            SmallModulus plain_modulus(1 << 6);
+            parms.set_poly_modulus("1x^128 + 1");
             parms.set_plain_modulus(plain_modulus);
-            parms.set_coeff_modulus(coeff_modulus);
-            parms.validate();
-            KeyGenerator keygen(parms);
-            keygen.generate();
+            parms.set_coeff_modulus({ small_mods_40bit(0), small_mods_40bit(1) });
+            SEALContext context(parms);
+            KeyGenerator keygen(context);
 
             BalancedEncoder encoder(plain_modulus);
+            Encryptor encryptor(context, keygen.public_key());
+            Evaluator evaluator(context);
+            Decryptor decryptor(context, keygen.secret_key());
 
-            Encryptor encryptor(parms, keygen.public_key());
-            Evaluator evaluator(parms);
-            Decryptor decryptor(parms, keygen.secret_key());
+            Ciphertext encrypted;
+            Plaintext plain;
+            encryptor.encrypt(encoder.encode(1), encrypted);
+            evaluator.square(encrypted);
+            decryptor.decrypt(encrypted, plain);
+            Assert::AreEqual(1ULL, encoder.decode_uint64(plain));
+            Assert::IsTrue(encrypted.hash_block() == parms.hash_block());
 
-            BigPolyArray encrypted1 = encryptor.encrypt(encoder.encode(1));
-            BigPolyArray product = evaluator.square(encrypted1);
-            Assert::AreEqual(static_cast<uint64_t>(1), encoder.decode_uint64(decryptor.decrypt(product)));
+            encryptor.encrypt(encoder.encode(0), encrypted);
+            evaluator.square(encrypted);
+            decryptor.decrypt(encrypted, plain);
+            Assert::AreEqual(0ULL, encoder.decode_uint64(plain));
+            Assert::IsTrue(encrypted.hash_block() == parms.hash_block());
 
-            encrypted1 = encryptor.encrypt(encoder.encode(0));
-            product = evaluator.square(encrypted1);
-            Assert::AreEqual(static_cast<uint64_t>(0), encoder.decode_uint64(decryptor.decrypt(product)));
+            encryptor.encrypt(encoder.encode(-5), encrypted);
+            evaluator.square(encrypted);
+            decryptor.decrypt(encrypted, plain);
+            Assert::AreEqual(25ULL, encoder.decode_uint64(plain));
+            Assert::IsTrue(encrypted.hash_block() == parms.hash_block());
 
-            encrypted1 = encryptor.encrypt(encoder.encode(-5));
-            product = evaluator.square(encrypted1);
-            Assert::AreEqual(static_cast<uint64_t>(25), encoder.decode_uint64(decryptor.decrypt(product)));
+            encryptor.encrypt(encoder.encode(-1), encrypted);
+            evaluator.square(encrypted);
+            decryptor.decrypt(encrypted, plain);
+            Assert::AreEqual(1ULL, encoder.decode_uint64(plain));
+            Assert::IsTrue(encrypted.hash_block() == parms.hash_block());
 
-            encrypted1 = encryptor.encrypt(encoder.encode(-1));
-            product = evaluator.square(encrypted1);
-            Assert::AreEqual(static_cast<uint64_t>(1), encoder.decode_uint64(decryptor.decrypt(product)));
+            encryptor.encrypt(encoder.encode(123), encrypted);
+            evaluator.square(encrypted);
+            decryptor.decrypt(encrypted, plain);
+            Assert::AreEqual(15129ULL, encoder.decode_uint64(plain));
+            Assert::IsTrue(encrypted.hash_block() == parms.hash_block());
 
-            encrypted1 = encryptor.encrypt(encoder.encode(123));
-            product = evaluator.square(encrypted1);
-            Assert::AreEqual(static_cast<uint64_t>(15129), encoder.decode_uint64(decryptor.decrypt(product)));
+            encryptor.encrypt(encoder.encode(0x10000), encrypted);
+            evaluator.square(encrypted);
+            decryptor.decrypt(encrypted, plain);
+            Assert::AreEqual(0x100000000ULL, encoder.decode_uint64(plain));
+            Assert::IsTrue(encrypted.hash_block() == parms.hash_block());
+
+            encryptor.encrypt(encoder.encode(123), encrypted);
+            evaluator.square(encrypted);
+            evaluator.square(encrypted);
+            decryptor.decrypt(encrypted, plain);
+            Assert::AreEqual(228886641ULL, encoder.decode_uint64(plain));
+            Assert::IsTrue(encrypted.hash_block() == parms.hash_block());
         }
 
         TEST_METHOD(FVEncryptMultiplyManyDecrypt)
         {
             EncryptionParameters parms;
-            BigUInt coeff_modulus;
-            BigUInt plain_modulus;
-            BigPoly poly_modulus;
-            parms.set_decomposition_bit_count(4);
-            parms.set_noise_standard_deviation(3.19);
-            parms.set_noise_max_deviation(35.06);
-            coeff_modulus.resize(48);
-            coeff_modulus = "FFFFFFFFC001";
-            plain_modulus.resize(7);
-            plain_modulus = 1 << 6;
-            poly_modulus.resize(65, 1);
-            poly_modulus[0] = 1;
-            poly_modulus[64] = 1;
-            parms.set_poly_modulus(poly_modulus);
+            SmallModulus plain_modulus(1 << 6);
+            parms.set_poly_modulus("1x^128 + 1");
             parms.set_plain_modulus(plain_modulus);
-            parms.set_coeff_modulus(coeff_modulus);
-            parms.validate();
-            KeyGenerator keygen(parms);
-            keygen.generate(3);
+            parms.set_coeff_modulus({ small_mods_40bit(0), small_mods_40bit(1) });
+            SEALContext context(parms);
+            KeyGenerator keygen(context);
 
             BalancedEncoder encoder(plain_modulus);
+            Encryptor encryptor(context, keygen.public_key());
+            Evaluator evaluator(context);
+            Decryptor decryptor(context, keygen.secret_key());
+            EvaluationKeys evk;
+            keygen.generate_evaluation_keys(4, evk);
 
-            Encryptor encryptor(parms, keygen.public_key());
-            Evaluator evaluator(parms, keygen.evaluation_keys());
+            Ciphertext encrypted1, encrypted2, encrypted3, encrypted4, product;
+            Plaintext plain;
+            encryptor.encrypt(encoder.encode(5), encrypted1);
+            encryptor.encrypt(encoder.encode(6), encrypted2);
+            encryptor.encrypt(encoder.encode(7), encrypted3);
+            vector<Ciphertext> encrypteds{ encrypted1, encrypted2, encrypted3 };
+                evaluator.multiply_many(encrypteds, evk, product);
+                decryptor.decrypt(product, plain);
+                Assert::AreEqual(static_cast<uint64_t>(210), encoder.decode_uint64(plain));
+                Assert::IsTrue(encrypted1.hash_block() == product.hash_block());
+                Assert::IsTrue(encrypted2.hash_block() == product.hash_block());
+                Assert::IsTrue(encrypted3.hash_block() == product.hash_block());
+                Assert::IsTrue(product.hash_block() == parms.hash_block());
 
-            EvaluationKeys evk = keygen.evaluation_keys();
-            int evk_size = evk.size();
-            for (int i = 0; i < evk_size; ++i)
-            {
-                for (int j = 0; j < evk[0].first.size(); ++j)
-                {
-                    Assert::IsTrue(keygen.evaluation_keys()[i].first[j] == evaluator.evaluation_keys()[i].first[j]);
-                    Assert::IsTrue(keygen.evaluation_keys()[i].second[j] == evaluator.evaluation_keys()[i].second[j]);
-                }
-            }
+                encryptor.encrypt(encoder.encode(-9), encrypted1);
+                encryptor.encrypt(encoder.encode(-17), encrypted2);
+                encrypteds = { encrypted1, encrypted2 };
+                evaluator.multiply_many(encrypteds, evk, product);
+                decryptor.decrypt(product, plain);
+                Assert::AreEqual(static_cast<uint64_t>(153), encoder.decode_uint64(plain));
+                Assert::IsTrue(encrypted1.hash_block() == product.hash_block());
+                Assert::IsTrue(encrypted2.hash_block() == product.hash_block());
+                Assert::IsTrue(product.hash_block() == parms.hash_block());
 
-            Decryptor decryptor(parms, keygen.secret_key());
+                encryptor.encrypt(encoder.encode(2), encrypted1);
+                encryptor.encrypt(encoder.encode(-31), encrypted2);
+                encryptor.encrypt(encoder.encode(7), encrypted3);
+                encrypteds = { encrypted1, encrypted2, encrypted3 };
+                evaluator.multiply_many(encrypteds, evk, product);
+                decryptor.decrypt(product, plain);
+                Assert::IsTrue(static_cast<int64_t>(-434) == encoder.decode_int64(plain));
+                Assert::IsTrue(encrypted1.hash_block() == product.hash_block());
+                Assert::IsTrue(encrypted2.hash_block() == product.hash_block());
+                Assert::IsTrue(encrypted3.hash_block() == product.hash_block());
+                Assert::IsTrue(product.hash_block() == parms.hash_block());
 
-            BigPolyArray encrypted1 = encryptor.encrypt(encoder.encode(5));
-            BigPolyArray encrypted2 = encryptor.encrypt(encoder.encode(6));
-            BigPolyArray encrypted3 = encryptor.encrypt(encoder.encode(7));
-            vector<BigPolyArray> encrypteds = { encrypted1, encrypted2, encrypted3 };
-            BigPolyArray product = evaluator.multiply_many(encrypteds);
-            Assert::AreEqual(static_cast<uint64_t>(210), encoder.decode_uint64(decryptor.decrypt(product)));
+                encryptor.encrypt(encoder.encode(1), encrypted1);
+                encryptor.encrypt(encoder.encode(-1), encrypted2);
+                encryptor.encrypt(encoder.encode(1), encrypted3);
+                encryptor.encrypt(encoder.encode(-1), encrypted4);
+                encrypteds = { encrypted1, encrypted2, encrypted3, encrypted4 };
+                evaluator.multiply_many(encrypteds, evk, product);
+                decryptor.decrypt(product, plain);
+                Assert::AreEqual(static_cast<uint64_t>(1), encoder.decode_uint64(plain));
+                Assert::IsTrue(encrypted1.hash_block() == product.hash_block());
+                Assert::IsTrue(encrypted2.hash_block() == product.hash_block());
+                Assert::IsTrue(encrypted3.hash_block() == product.hash_block());
+                Assert::IsTrue(encrypted4.hash_block() == product.hash_block());
+                Assert::IsTrue(product.hash_block() == parms.hash_block());
 
-            encrypted1 = encryptor.encrypt(encoder.encode(-9));
-            encrypted2 = encryptor.encrypt(encoder.encode(-17));
-            encrypteds = { encrypted1, encrypted2 };
-            product = evaluator.multiply_many(encrypteds);
-            Assert::AreEqual(static_cast<uint64_t>(153), encoder.decode_uint64(decryptor.decrypt(product)));
-
-            encrypted1 = encryptor.encrypt(encoder.encode(2));
-            encrypted2 = encryptor.encrypt(encoder.encode(-31));
-            encrypted3 = encryptor.encrypt(encoder.encode(7));
-            encrypteds = { encrypted1, encrypted2, encrypted3 };
-            product = evaluator.multiply_many(encrypteds);
-            Assert::AreEqual(static_cast<int32_t>(-434), encoder.decode_int32(decryptor.decrypt(product)));
-
-            encrypted1 = encryptor.encrypt(encoder.encode(1));
-            encrypted2 = encryptor.encrypt(encoder.encode(-1));
-            encrypted3 = encryptor.encrypt(encoder.encode(1));
-            BigPolyArray encrypted4 = encryptor.encrypt(encoder.encode(-1));
-            encrypteds = { encrypted1, encrypted2, encrypted3, encrypted4 };
-            product = evaluator.multiply_many(encrypteds);
-            Assert::AreEqual(static_cast<int32_t>(1), encoder.decode_int32(decryptor.decrypt(product)));
-
-            encrypted1 = encryptor.encrypt(encoder.encode(98765));
-            encrypted2 = encryptor.encrypt(encoder.encode(0));
-            encrypted3 = encryptor.encrypt(encoder.encode(12345));
-            encrypted4 = encryptor.encrypt(encoder.encode(34567));
-            encrypteds = { encrypted1, encrypted2, encrypted3, encrypted4 };
-            product = evaluator.multiply_many(encrypteds);
-            Assert::AreEqual(static_cast<int32_t>(0), encoder.decode_int32(decryptor.decrypt(product)));
+                encryptor.encrypt(encoder.encode(98765), encrypted1);
+                encryptor.encrypt(encoder.encode(0), encrypted2);
+                encryptor.encrypt(encoder.encode(12345), encrypted3);
+                encryptor.encrypt(encoder.encode(34567), encrypted4);
+                encrypteds = { encrypted1, encrypted2, encrypted3, encrypted4 };
+                evaluator.multiply_many(encrypteds, evk, product);
+                decryptor.decrypt(product, plain);
+                Assert::AreEqual(static_cast<uint64_t>(0), encoder.decode_uint64(plain));
+                Assert::IsTrue(encrypted1.hash_block() == product.hash_block());
+                Assert::IsTrue(encrypted2.hash_block() == product.hash_block());
+                Assert::IsTrue(encrypted3.hash_block() == product.hash_block());
+                Assert::IsTrue(encrypted4.hash_block() == product.hash_block());
+                Assert::IsTrue(product.hash_block() == parms.hash_block());
         }
 
         TEST_METHOD(FVEncryptExponentiateDecrypt)
         {
             EncryptionParameters parms;
-            BigUInt coeff_modulus;
-            BigUInt plain_modulus;
-            BigPoly poly_modulus;
-            parms.set_decomposition_bit_count(4);
-            parms.set_noise_standard_deviation(3.19);
-            parms.set_noise_max_deviation(35.06);
-            coeff_modulus.resize(48);
-            coeff_modulus = "FFFFFFFFC001";
-            plain_modulus.resize(7);
-            plain_modulus = 1 << 4;
-            poly_modulus.resize(65, 1);
-            poly_modulus[0] = 1;
-            poly_modulus[64] = 1;
-            parms.set_poly_modulus(poly_modulus);
+            SmallModulus plain_modulus(1 << 6);
+            parms.set_poly_modulus("1x^128 + 1");
             parms.set_plain_modulus(plain_modulus);
-            parms.set_coeff_modulus(coeff_modulus);
-            parms.validate();
-            KeyGenerator keygen(parms);
-            keygen.generate(1);
+            parms.set_coeff_modulus({ small_mods_40bit(0), small_mods_40bit(1) });
+            SEALContext context(parms);
+            KeyGenerator keygen(context);
 
             BalancedEncoder encoder(plain_modulus);
+            Encryptor encryptor(context, keygen.public_key());
+            Evaluator evaluator(context);
+            Decryptor decryptor(context, keygen.secret_key());
+            EvaluationKeys evk;
+            keygen.generate_evaluation_keys(4, evk);
 
-            Encryptor encryptor(parms, keygen.public_key());
-            Evaluator evaluator(parms, keygen.evaluation_keys());
-            Decryptor decryptor(parms, keygen.secret_key());
+            Ciphertext encrypted;
+            Plaintext plain;
+            encryptor.encrypt(encoder.encode(5), encrypted);
+            evaluator.exponentiate(encrypted, 1, evk);
+            decryptor.decrypt(encrypted, plain);
+            Assert::AreEqual(static_cast<uint64_t>(5), encoder.decode_uint64(plain));
+            Assert::IsTrue(encrypted.hash_block() == encrypted.hash_block());
+            Assert::IsTrue(encrypted.hash_block() == parms.hash_block());
 
-            BigPolyArray encrypted = encryptor.encrypt(encoder.encode(5));
-            BigPolyArray power = evaluator.exponentiate(encrypted, 1);
-            Assert::AreEqual(static_cast<uint64_t>(5), encoder.decode_uint64(decryptor.decrypt(power)));
+            encryptor.encrypt(encoder.encode(7), encrypted);
+            evaluator.exponentiate(encrypted, 2, evk);
+            decryptor.decrypt(encrypted, plain);
+            Assert::AreEqual(static_cast<uint64_t>(49), encoder.decode_uint64(plain));
+            Assert::IsTrue(encrypted.hash_block() == encrypted.hash_block());
+            Assert::IsTrue(encrypted.hash_block() == parms.hash_block());
 
-            encrypted = encryptor.encrypt(encoder.encode(7));
-            power = evaluator.exponentiate(encrypted, 2);
-            Assert::AreEqual(static_cast<uint64_t>(49), encoder.decode_uint64(decryptor.decrypt(power)));
+            encryptor.encrypt(encoder.encode(-7), encrypted);
+            evaluator.exponentiate(encrypted, 3, evk);
+            decryptor.decrypt(encrypted, plain);
+            Assert::IsTrue(static_cast<int64_t>(-343) == encoder.decode_int64(plain));
+            Assert::IsTrue(encrypted.hash_block() == encrypted.hash_block());
+            Assert::IsTrue(encrypted.hash_block() == parms.hash_block());
 
-            encrypted = encryptor.encrypt(encoder.encode(-7));
-            power = evaluator.exponentiate(encrypted, 3);
-            Assert::AreEqual(static_cast<int32_t>(-343), encoder.decode_int32(decryptor.decrypt(power)));
+            encryptor.encrypt(encoder.encode(0x100), encrypted);
+            evaluator.exponentiate(encrypted, 4, evk);
+            decryptor.decrypt(encrypted, plain);
+            Assert::AreEqual(static_cast<uint64_t>(0x100000000), encoder.decode_uint64(plain));
+            Assert::IsTrue(encrypted.hash_block() == encrypted.hash_block());
+            Assert::IsTrue(encrypted.hash_block() == parms.hash_block());
         }
 
         TEST_METHOD(FVEncryptAddManyDecrypt)
         {
             EncryptionParameters parms;
-            BigUInt coeff_modulus;
-            BigUInt plain_modulus;
-            BigPoly poly_modulus; 
-            parms.set_decomposition_bit_count(2);
-            parms.set_noise_standard_deviation(3.19);
-            parms.set_noise_max_deviation(35.06);
-            coeff_modulus.resize(48);
-            coeff_modulus = "FFFFFFFFC001";
-            plain_modulus.resize(7);
-            plain_modulus = 1 << 4;
-            poly_modulus.resize(65, 1);
-            poly_modulus[0] = 1;
-            poly_modulus[64] = 1;
+            SmallModulus plain_modulus(1 << 6);
+            BigPoly poly_modulus("1x^128 + 1");
             parms.set_poly_modulus(poly_modulus);
             parms.set_plain_modulus(plain_modulus);
-            parms.set_coeff_modulus(coeff_modulus);
-            parms.validate();
-            KeyGenerator keygen(parms);
-            keygen.generate();
+            parms.set_coeff_modulus({ small_mods_40bit(0), small_mods_40bit(1) });
+            SEALContext context(parms);
+            KeyGenerator keygen(context);
 
             BalancedEncoder encoder(plain_modulus);
+            Encryptor encryptor(context, keygen.public_key());
+            Evaluator evaluator(context);
+            Decryptor decryptor(context, keygen.secret_key());
 
-            Encryptor encryptor(parms, keygen.public_key());
-            Evaluator evaluator(parms);
-            Decryptor decryptor(parms, keygen.secret_key());
+            Ciphertext encrypted1, encrypted2, encrypted3, encrypted4, sum;
+            Plaintext plain;
+            encryptor.encrypt(encoder.encode(5), encrypted1);
+            encryptor.encrypt(encoder.encode(6), encrypted2);
+            encryptor.encrypt(encoder.encode(7), encrypted3);
+            vector<Ciphertext> encrypteds = { encrypted1, encrypted2, encrypted3 };
+            evaluator.add_many(encrypteds, sum);
+            decryptor.decrypt(sum, plain);
+            Assert::AreEqual(static_cast<uint64_t>(18), encoder.decode_uint64(plain));
+            Assert::IsTrue(encrypted1.hash_block() == sum.hash_block());
+            Assert::IsTrue(encrypted2.hash_block() == sum.hash_block());
+            Assert::IsTrue(encrypted3.hash_block() == sum.hash_block());
+            Assert::IsTrue(sum.hash_block() == parms.hash_block());
 
-            BigPolyArray encrypted1 = encryptor.encrypt(encoder.encode(5));
-            BigPolyArray encrypted2 = encryptor.encrypt(encoder.encode(6));
-            BigPolyArray encrypted3 = encryptor.encrypt(encoder.encode(7));
-            vector<BigPolyArray> encrypteds = { encrypted1, encrypted2, encrypted3 };
-            BigPolyArray product = evaluator.add_many(encrypteds);
-            Assert::AreEqual(static_cast<uint64_t>(18), encoder.decode_uint64(decryptor.decrypt(product)));
+            encryptor.encrypt(encoder.encode(-9), encrypted1);
+            encryptor.encrypt(encoder.encode(-17), encrypted2);
+            encrypteds = { encrypted1, encrypted2, };
+            evaluator.add_many(encrypteds, sum);
+            decryptor.decrypt(sum, plain);
+            Assert::IsTrue(static_cast<int64_t>(-26) == encoder.decode_int64(plain));
+            Assert::IsTrue(encrypted1.hash_block() == sum.hash_block());
+            Assert::IsTrue(encrypted2.hash_block() == sum.hash_block());
+            Assert::IsTrue(sum.hash_block() == parms.hash_block());
 
-            encrypted1 = encryptor.encrypt(encoder.encode(-9));
-            encrypted2 = encryptor.encrypt(encoder.encode(-17));
-            encrypteds = { encrypted1, encrypted2 };
-            product = evaluator.add_many(encrypteds);
-            Assert::AreEqual(static_cast<int32_t>(-26), encoder.decode_int32(decryptor.decrypt(product)));
-
-            encrypted1 = encryptor.encrypt(encoder.encode(2));
-            encrypted2 = encryptor.encrypt(encoder.encode(-31));
-            encrypted3 = encryptor.encrypt(encoder.encode(7));
+            encryptor.encrypt(encoder.encode(2), encrypted1);
+            encryptor.encrypt(encoder.encode(-31), encrypted2);
+            encryptor.encrypt(encoder.encode(7), encrypted3);
             encrypteds = { encrypted1, encrypted2, encrypted3 };
-            product = evaluator.add_many(encrypteds);
-            Assert::AreEqual(static_cast<int32_t>(-22), encoder.decode_int32(decryptor.decrypt(product)));
+            evaluator.add_many(encrypteds, sum);
+            decryptor.decrypt(sum, plain);
+            Assert::IsTrue(static_cast<int64_t>(-22) == encoder.decode_int64(plain));
+            Assert::IsTrue(encrypted1.hash_block() == sum.hash_block());
+            Assert::IsTrue(encrypted2.hash_block() == sum.hash_block());
+            Assert::IsTrue(encrypted3.hash_block() == sum.hash_block());
+            Assert::IsTrue(sum.hash_block() == parms.hash_block());
 
-            encrypted1 = encryptor.encrypt(encoder.encode(1));
-            encrypted2 = encryptor.encrypt(encoder.encode(-1));
-            encrypted3 = encryptor.encrypt(encoder.encode(1));
-            BigPolyArray encrypted4 = encryptor.encrypt(encoder.encode(-1));
+            encryptor.encrypt(encoder.encode(1), encrypted1);
+            encryptor.encrypt(encoder.encode(-1), encrypted2);
+            encryptor.encrypt(encoder.encode(1), encrypted3);
+            encryptor.encrypt(encoder.encode(-1), encrypted4);
             encrypteds = { encrypted1, encrypted2, encrypted3, encrypted4 };
-            product = evaluator.add_many(encrypteds);
-            Assert::AreEqual(static_cast<int32_t>(0), encoder.decode_int32(decryptor.decrypt(product)));
+            evaluator.add_many(encrypteds, sum);
+            decryptor.decrypt(sum, plain);
+            Assert::AreEqual(static_cast<uint64_t>(0), encoder.decode_uint64(plain));
+            Assert::IsTrue(encrypted1.hash_block() == sum.hash_block());
+            Assert::IsTrue(encrypted2.hash_block() == sum.hash_block());
+            Assert::IsTrue(encrypted3.hash_block() == sum.hash_block());
+            Assert::IsTrue(encrypted4.hash_block() == sum.hash_block());
+            Assert::IsTrue(sum.hash_block() == parms.hash_block());
 
-            encrypted1 = encryptor.encrypt(encoder.encode(98765));
-            encrypted2 = encryptor.encrypt(encoder.encode(0));
-            encrypted3 = encryptor.encrypt(encoder.encode(12345));
-            encrypted4 = encryptor.encrypt(encoder.encode(34567));
+            encryptor.encrypt(encoder.encode(98765), encrypted1);
+            encryptor.encrypt(encoder.encode(0), encrypted2);
+            encryptor.encrypt(encoder.encode(12345), encrypted3);
+            encryptor.encrypt(encoder.encode(34567), encrypted4);
             encrypteds = { encrypted1, encrypted2, encrypted3, encrypted4 };
-            product = evaluator.add_many(encrypteds);
-            Assert::AreEqual(static_cast<int32_t>(145677), encoder.decode_int32(decryptor.decrypt(product)));
+            evaluator.add_many(encrypteds, sum);
+            decryptor.decrypt(sum, plain);
+            Assert::AreEqual(static_cast<uint64_t>(145677), encoder.decode_uint64(plain));
+            Assert::IsTrue(encrypted1.hash_block() == sum.hash_block());
+            Assert::IsTrue(encrypted2.hash_block() == sum.hash_block());
+            Assert::IsTrue(encrypted3.hash_block() == sum.hash_block());
+            Assert::IsTrue(encrypted4.hash_block() == sum.hash_block());
+            Assert::IsTrue(sum.hash_block() == parms.hash_block());
 
             BalancedFractionalEncoder frac_encoder(plain_modulus, poly_modulus, 10, 15);
-            encrypted1 = encryptor.encrypt(frac_encoder.encode(3.1415));
-            encrypted2 = encryptor.encrypt(frac_encoder.encode(12.345));
-            encrypted3 = encryptor.encrypt(frac_encoder.encode(98.765));
-            encrypted4 = encryptor.encrypt(frac_encoder.encode(1.1111));
+            encryptor.encrypt(frac_encoder.encode(3.1415), encrypted1);
+            encryptor.encrypt(frac_encoder.encode(12.345), encrypted2);
+            encryptor.encrypt(frac_encoder.encode(98.765), encrypted3);
+            encryptor.encrypt(frac_encoder.encode(1.1111), encrypted4);
             encrypteds = { encrypted1, encrypted2, encrypted3, encrypted4 };
-            product = evaluator.add_many(encrypteds);
-            Assert::IsTrue(abs(frac_encoder.decode(decryptor.decrypt(product)) - 115.3626) < 0.000001);
+            evaluator.add_many(encrypteds, sum);
+            decryptor.decrypt(sum, plain);
+            Assert::IsTrue(abs(frac_encoder.decode(plain) - 115.3626) < 0.000001);
+            Assert::IsTrue(encrypted1.hash_block() == sum.hash_block());
+            Assert::IsTrue(encrypted2.hash_block() == sum.hash_block());
+            Assert::IsTrue(encrypted3.hash_block() == sum.hash_block());
+            Assert::IsTrue(encrypted4.hash_block() == sum.hash_block());
+            Assert::IsTrue(sum.hash_block() == parms.hash_block());
         }
 
-        TEST_METHOD(TransformPlainToFromNTT)
+        TEST_METHOD(TransformPlainToNTT)
         {
             EncryptionParameters parms;
-            BigUInt coeff_modulus;
-            BigUInt plain_modulus;
-            BigPoly poly_modulus;
-            parms.set_decomposition_bit_count(4);
-            parms.set_noise_standard_deviation(3.19);
-            parms.set_noise_max_deviation(35.06);
-            coeff_modulus.resize(48);
-            coeff_modulus = "FFFFFFFFC001";
-            plain_modulus.resize(7);
-            plain_modulus = 1 << 6;
-            poly_modulus.resize(65, 1);
-            poly_modulus[0] = 1;
-            poly_modulus[64] = 1;
+            SmallModulus plain_modulus(1 << 6);
+            BigPoly poly_modulus("1x^128 + 1");
             parms.set_poly_modulus(poly_modulus);
             parms.set_plain_modulus(plain_modulus);
-            parms.set_coeff_modulus(coeff_modulus);
-            parms.validate();
+            parms.set_coeff_modulus({ small_mods_40bit(0), small_mods_40bit(1) });
+            SEALContext context(parms);
+            KeyGenerator keygen(context);
 
-            Evaluator evaluator(parms);
-            BigPoly plain;
-
-            plain = "0";
+            Evaluator evaluator(context);
+            Plaintext plain = "0";
             evaluator.transform_to_ntt(plain);
             Assert::IsTrue(plain.to_string() == "0");
-            evaluator.transform_from_ntt(plain);
-            Assert::IsTrue(plain.to_string() == "0");
 
+            plain.release();
             plain = "1";
             evaluator.transform_to_ntt(plain);
-            for (int i = 0; i < 64; i++)
+            for (int i = 0; i < 128; i++)
             {
-                Assert::IsTrue(plain[i].to_string() == "1");
+                Assert::IsTrue(plain[i] == 1);
             }
-            Assert::IsTrue(plain[64].to_string() == "0");
-            evaluator.transform_from_ntt(plain);
-            Assert::IsTrue(plain.to_string() == "1");
+            Assert::IsTrue(plain[128] == 0);
 
+            plain.release();
             plain = "2";
             evaluator.transform_to_ntt(plain);
-            for (int i = 0; i < 64; i++)
+            for (int i = 0; i < 128; i++)
             {
-                Assert::IsTrue(plain[i].to_string() == "2");
+                Assert::IsTrue(plain[i] == 2);
             }
-            Assert::IsTrue(plain[64].to_string() == "0");
-            evaluator.transform_from_ntt(plain);
-            Assert::IsTrue(plain.to_string() == "2");
-
-            plain = "Fx^10 + Ex^9 + Dx^8 + Cx^7 + Bx^6 + Ax^5 + 1x^4 + 2x^3 + 3x^2 + 4x^1 + 5";
-            evaluator.transform_to_ntt(plain);
-            evaluator.transform_from_ntt(plain);
-            Assert::IsTrue(plain.to_string() == "Fx^10 + Ex^9 + Dx^8 + Cx^7 + Bx^6 + Ax^5 + 1x^4 + 2x^3 + 3x^2 + 4x^1 + 5");
+            Assert::IsTrue(plain[128] == 0);
         }
 
         TEST_METHOD(TransformEncryptedToFromNTT)
         {
             EncryptionParameters parms;
-            BigUInt coeff_modulus;
-            BigUInt plain_modulus;
-            BigPoly poly_modulus;
-            parms.set_decomposition_bit_count(4);
-            parms.set_noise_standard_deviation(3.19);
-            parms.set_noise_max_deviation(35.06);
-            coeff_modulus.resize(48);
-            coeff_modulus = "FFFFFFFFC001";
-            plain_modulus.resize(7);
-            plain_modulus = 1 << 6;
-            poly_modulus.resize(65, 1);
-            poly_modulus[0] = 1;
-            poly_modulus[64] = 1;
+            SmallModulus plain_modulus(1 << 6);
+            BigPoly poly_modulus("1x^128 + 1");
             parms.set_poly_modulus(poly_modulus);
             parms.set_plain_modulus(plain_modulus);
-            parms.set_coeff_modulus(coeff_modulus);
-            parms.validate();
+            parms.set_coeff_modulus({ small_mods_40bit(0), small_mods_40bit(1) });
+            SEALContext context(parms);
+            KeyGenerator keygen(context);
 
-            KeyGenerator keygen(parms);
-            keygen.generate();
+            Encryptor encryptor(context, keygen.public_key());
+            Evaluator evaluator(context);
+            Decryptor decryptor(context, keygen.secret_key());
 
-            Encryptor encryptor(parms, keygen.public_key());
-            Evaluator evaluator(parms);
-            Decryptor decryptor(parms, keygen.secret_key());
-
-            BigPoly plain;
-            BigPolyArray cipher;
-
+            Plaintext plain;
+            Ciphertext encrypted;
             plain = "0";
-            encryptor.encrypt(plain, cipher);
-            evaluator.transform_to_ntt(cipher);
-            evaluator.transform_from_ntt(cipher);
-            decryptor.decrypt(cipher, plain);
+            encryptor.encrypt(plain, encrypted);
+            evaluator.transform_to_ntt(encrypted);
+            evaluator.transform_from_ntt(encrypted);
+            decryptor.decrypt(encrypted, plain);
             Assert::IsTrue(plain.to_string() == "0");
+            Assert::IsTrue(encrypted.hash_block() == parms.hash_block());
 
             plain = "1";
-            encryptor.encrypt(plain, cipher);
-            evaluator.transform_to_ntt(cipher);
-            evaluator.transform_from_ntt(cipher);
-            decryptor.decrypt(cipher, plain);
+            encryptor.encrypt(plain, encrypted);
+            evaluator.transform_to_ntt(encrypted);
+            evaluator.transform_from_ntt(encrypted);
+            decryptor.decrypt(encrypted, plain);
             Assert::IsTrue(plain.to_string() == "1");
+            Assert::IsTrue(encrypted.hash_block() == parms.hash_block());
 
             plain = "Fx^10 + Ex^9 + Dx^8 + Cx^7 + Bx^6 + Ax^5 + 1x^4 + 2x^3 + 3x^2 + 4x^1 + 5";
-            encryptor.encrypt(plain, cipher);
-            evaluator.transform_to_ntt(cipher);
-            evaluator.transform_from_ntt(cipher);
-            decryptor.decrypt(cipher, plain);
+            encryptor.encrypt(plain, encrypted);
+            evaluator.transform_to_ntt(encrypted);
+            evaluator.transform_from_ntt(encrypted);
+            decryptor.decrypt(encrypted, plain);
             Assert::IsTrue(plain.to_string() == "Fx^10 + Ex^9 + Dx^8 + Cx^7 + Bx^6 + Ax^5 + 1x^4 + 2x^3 + 3x^2 + 4x^1 + 5");
+            Assert::IsTrue(encrypted.hash_block() == parms.hash_block());
         }
 
         TEST_METHOD(FVEncryptMultiplyPlainNTTDecrypt)
         {
             EncryptionParameters parms;
-            BigUInt coeff_modulus;
-            BigUInt plain_modulus;
-            BigPoly poly_modulus;
-            parms.set_decomposition_bit_count(4);
-            parms.set_noise_standard_deviation(3.19);
-            parms.set_noise_max_deviation(35.06);
-            coeff_modulus.resize(48);
-            coeff_modulus = "FFFFFFFFC001";
-            plain_modulus.resize(7);
-            plain_modulus = 1 << 6;
-            poly_modulus.resize(65, 1);
-            poly_modulus[0] = 1;
-            poly_modulus[64] = 1;
+            SmallModulus plain_modulus(1 << 6);
+            BigPoly poly_modulus("1x^128 + 1");
             parms.set_poly_modulus(poly_modulus);
             parms.set_plain_modulus(plain_modulus);
-            parms.set_coeff_modulus(coeff_modulus);
-            parms.validate();
+            parms.set_coeff_modulus({ small_mods_40bit(0), small_mods_40bit(1) });
+            SEALContext context(parms);
+            KeyGenerator keygen(context);
 
-            KeyGenerator keygen(parms);
-            keygen.generate();
+            Encryptor encryptor(context, keygen.public_key());
+            Evaluator evaluator(context);
+            Decryptor decryptor(context, keygen.secret_key());
 
-            Encryptor encryptor(parms, keygen.public_key());
-            Evaluator evaluator(parms);
-            Decryptor decryptor(parms, keygen.secret_key());
+            Plaintext plain;
+            Plaintext plain_multiplier;
+            Ciphertext encrypted;
 
-            BigPoly plain;
-            BigPoly plain_multiplier;
-            BigPolyArray cipher;
-
-            plain = "0";
-            encryptor.encrypt(plain, cipher);
-            evaluator.transform_to_ntt(cipher);
-            plain_multiplier = "1";
+            plain = 0;
+            encryptor.encrypt(plain, encrypted);
+            evaluator.transform_to_ntt(encrypted);
+            plain_multiplier = 1;
             evaluator.transform_to_ntt(plain_multiplier);
-            evaluator.multiply_plain_ntt(cipher, plain_multiplier, cipher);
-            evaluator.transform_from_ntt(cipher);
-            decryptor.decrypt(cipher, plain);
+            evaluator.multiply_plain_ntt(encrypted, plain_multiplier);
+            evaluator.transform_from_ntt(encrypted);
+            decryptor.decrypt(encrypted, plain);
             Assert::IsTrue(plain.to_string() == "0");
+            Assert::IsTrue(encrypted.hash_block() == parms.hash_block());
 
-            plain = "2";
-            encryptor.encrypt(plain, cipher);
-            evaluator.transform_to_ntt(cipher);
-            plain_multiplier = "3";
+            plain = 2;
+            encryptor.encrypt(plain, encrypted);
+            evaluator.transform_to_ntt(encrypted);
+            plain_multiplier.release();
+            plain_multiplier = 3;
             evaluator.transform_to_ntt(plain_multiplier);
-            evaluator.multiply_plain_ntt(cipher, plain_multiplier, cipher);
-            evaluator.transform_from_ntt(cipher);
-            decryptor.decrypt(cipher, plain);
+            evaluator.multiply_plain_ntt(encrypted, plain_multiplier);
+            evaluator.transform_from_ntt(encrypted);
+            decryptor.decrypt(encrypted, plain);
             Assert::IsTrue(plain.to_string() == "6");
+            Assert::IsTrue(encrypted.hash_block() == parms.hash_block());
 
-            plain = "1";
-            encryptor.encrypt(plain, cipher);
-            evaluator.transform_to_ntt(cipher);
+            plain = 1;
+            encryptor.encrypt(plain, encrypted);
+            evaluator.transform_to_ntt(encrypted);
+            plain_multiplier.release();
             plain_multiplier = "Fx^10 + Ex^9 + Dx^8 + Cx^7 + Bx^6 + Ax^5 + 1x^4 + 2x^3 + 3x^2 + 4x^1 + 5";
             evaluator.transform_to_ntt(plain_multiplier);
-            evaluator.multiply_plain_ntt(cipher, plain_multiplier, cipher);
-            evaluator.transform_from_ntt(cipher);
-            decryptor.decrypt(cipher, plain);
+            evaluator.multiply_plain_ntt(encrypted, plain_multiplier);
+            evaluator.transform_from_ntt(encrypted);
+            decryptor.decrypt(encrypted, plain);
             Assert::IsTrue(plain.to_string() == "Fx^10 + Ex^9 + Dx^8 + Cx^7 + Bx^6 + Ax^5 + 1x^4 + 2x^3 + 3x^2 + 4x^1 + 5");
+            Assert::IsTrue(encrypted.hash_block() == parms.hash_block());
 
             plain = "1x^20";
-            encryptor.encrypt(plain, cipher);
-            evaluator.transform_to_ntt(cipher);
+            encryptor.encrypt(plain, encrypted);
+            evaluator.transform_to_ntt(encrypted);
+            plain_multiplier.release();
             plain_multiplier = "Fx^10 + Ex^9 + Dx^8 + Cx^7 + Bx^6 + Ax^5 + 1x^4 + 2x^3 + 3x^2 + 4x^1 + 5";
             evaluator.transform_to_ntt(plain_multiplier);
-            evaluator.multiply_plain_ntt(cipher, plain_multiplier, cipher);
-            evaluator.transform_from_ntt(cipher);
-            decryptor.decrypt(cipher, plain);
+            evaluator.multiply_plain_ntt(encrypted, plain_multiplier);
+            evaluator.transform_from_ntt(encrypted);
+            decryptor.decrypt(encrypted, plain);
             Assert::IsTrue(plain.to_string() == "Fx^30 + Ex^29 + Dx^28 + Cx^27 + Bx^26 + Ax^25 + 1x^24 + 2x^23 + 3x^22 + 4x^21 + 5x^20");
+            Assert::IsTrue(encrypted.hash_block() == parms.hash_block());
+        }
+
+        TEST_METHOD(FVEncryptRotateMatrixDecrypt)
+        {
+            EncryptionParameters parms;
+            SmallModulus plain_modulus(257);
+            BigPoly poly_modulus("1x^8 + 1");
+            parms.set_poly_modulus(poly_modulus);
+            parms.set_plain_modulus(plain_modulus);
+            parms.set_coeff_modulus({ small_mods_40bit(0), small_mods_40bit(1) });
+            SEALContext context(parms);
+            KeyGenerator keygen(context);
+            GaloisKeys glk;
+            keygen.generate_galois_keys(24, glk);
+
+            Encryptor encryptor(context, keygen.public_key());
+            Evaluator evaluator(context);
+            Decryptor decryptor(context, keygen.secret_key());
+            PolyCRTBuilder crtbuilder(context);
+
+            Plaintext plain;
+            vector<uint64_t> plain_vec{
+                1, 2, 3, 4,
+                5, 6, 7, 8
+            };
+            crtbuilder.compose(plain_vec, plain);
+            Ciphertext encrypted;
+            encryptor.encrypt(plain, encrypted);
+
+            evaluator.rotate_columns(encrypted, glk);
+            decryptor.decrypt(encrypted, plain);
+            crtbuilder.decompose(plain, plain_vec);
+            Assert::IsTrue(plain_vec == vector<uint64_t>{
+                5, 6, 7, 8,
+                1, 2, 3, 4
+            });
+
+            evaluator.rotate_rows(encrypted, -1, glk);
+            decryptor.decrypt(encrypted, plain);
+            crtbuilder.decompose(plain, plain_vec);
+            Assert::IsTrue(plain_vec == vector<uint64_t>{
+                8, 5, 6, 7,
+                4, 1, 2, 3
+            });
+
+            evaluator.rotate_rows(encrypted, 2, glk);
+            decryptor.decrypt(encrypted, plain);
+            crtbuilder.decompose(plain, plain_vec);
+            Assert::IsTrue(plain_vec == vector<uint64_t>{
+                6, 7, 8, 5,
+                2, 3, 4, 1
+            });
+
+            evaluator.rotate_columns(encrypted, glk);
+            decryptor.decrypt(encrypted, plain);
+            crtbuilder.decompose(plain, plain_vec);
+            Assert::IsTrue(plain_vec == vector<uint64_t>{
+                2, 3, 4, 1,
+                6, 7, 8, 5
+            });
+
+            evaluator.rotate_rows(encrypted, 0, glk);
+            decryptor.decrypt(encrypted, plain);
+            crtbuilder.decompose(plain, plain_vec);
+            Assert::IsTrue(plain_vec == vector<uint64_t>{
+                2, 3, 4, 1,
+                6, 7, 8, 5
+            });
         }
     };
 }

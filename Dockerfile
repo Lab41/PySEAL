@@ -12,15 +12,18 @@ RUN apt-get -qqy update && apt-get install -qqy \
 	python3 \
 	python3-dev \
 	python3-pip \
+	sudo \
 	--no-install-recommends
 
 # Build SEAL libraries
-RUN mkdir -p SEAL
-COPY /SEAL /SEAL/SEAL
-WORKDIR /SEAL/SEAL
+RUN mkdir -p SEAL/
+COPY /SEAL/ /SEAL/SEAL/
+WORKDIR /SEAL/SEAL/
+RUN chmod +x configure
+RUN sed -i -e 's/\r$//' configure
 RUN ./configure
 RUN make
-ENV LD_LIBRARY_PATH /SEAL/bin:$LD_LIBRARY_PATH
+ENV LD_LIBRARY_PATH SEAL/bin:$LD_LIBRARY_PATH
 
 # Build SEAL C++ example
 COPY /SEALExamples /SEAL/SEALExamples

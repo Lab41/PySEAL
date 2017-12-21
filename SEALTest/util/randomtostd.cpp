@@ -1,6 +1,6 @@
 #include "CppUnitTest.h"
-#include "randomgen.h"
-#include "util/randomtostd.h"
+#include "seal/randomgen.h"
+#include "seal/util/randomtostd.h"
 #include <cstdint>
 #include <memory>
 

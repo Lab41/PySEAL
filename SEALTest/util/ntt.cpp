@@ -1,10 +1,9 @@
 #include "CppUnitTest.h"
-#include "util/ntt.h"
-#include "util/mempool.h"
-#include "util/uintcore.h"
-#include "util/polycore.h"
-#include "util/uintarithmod.h"
-#include "bigpoly.h"
+#include "seal/util/ntt.h"
+#include "seal/util/mempool.h"
+#include "seal/util/uintcore.h"
+#include "seal/util/polycore.h"
+#include "seal/util/uintarithmod.h"
 #include <random>
 #include <cstdint>
 
@@ -22,7 +21,7 @@ namespace SEALTest
         public:
             TEST_METHOD(NTTTablesBasicsTest)
             {
-                MemoryPoolHandle pool = MemoryPoolHandle::acquire_new();
+                MemoryPoolHandle pool = MemoryPoolHandle::New();
                 NTTTables tables(pool);
                 Pointer modulus_anchor(allocate_uint(1, pool));
                 modulus_anchor[0] = 37;
@@ -38,7 +37,7 @@ namespace SEALTest
 
             TEST_METHOD(NTTTablesPrimitiveRootsTest)
             {   
-                MemoryPoolHandle pool = MemoryPoolHandle::acquire_new();
+                MemoryPoolHandle pool = MemoryPoolHandle::New();
                 NTTTables tables(pool);
                 {
                     Pointer modulus_anchor(allocate_uint(1, pool));
@@ -48,7 +47,7 @@ namespace SEALTest
                     Modulus modulus(modulus_anchor.get(), 1, pool);
                     tables.generate(coeff_count_power, modulus);
                     Assert::AreEqual(*tables.get_from_root_powers(1), static_cast<uint64_t>(6)); 
-                    Assert::AreEqual(*tables.get_from_root_powers(0), static_cast<uint64_t>(1));
+                    Assert::AreEqual(*tables.get_from_root_powers(0), 1ULL);
                 }
 
                 {
@@ -58,7 +57,7 @@ namespace SEALTest
                     int coeff_count = 1 << coeff_count_power;
                     Modulus modulus(modulus_anchor.get(), 1, pool);
                     tables.generate(coeff_count_power, modulus);
-                    Assert::AreEqual(*tables.get_from_root_powers(0), static_cast<uint64_t>(1));
+                    Assert::AreEqual(*tables.get_from_root_powers(0), 1ULL);
                     Assert::AreEqual(*tables.get_from_root_powers(1), static_cast<uint64_t>(4));
                     Assert::AreEqual(*tables.get_from_root_powers(2), static_cast<uint64_t>(2));
                     Assert::AreEqual(*tables.get_from_root_powers(3), static_cast<uint64_t>(8));
@@ -72,7 +71,7 @@ namespace SEALTest
                     int coeff_count_power = 3;
                     int coeff_count = 1 << coeff_count_power;
                     tables.generate(coeff_count_power, modulus);
-                    Assert::AreEqual(tables.get_from_root_powers(0)[0], static_cast<uint64_t>(1));
+                    Assert::AreEqual(tables.get_from_root_powers(0)[0], 1ULL);
                     Assert::AreEqual(tables.get_from_root_powers(0)[1], static_cast<uint64_t>(0));
                     Assert::AreEqual(tables.get_from_root_powers(1)[0], static_cast<uint64_t>(12050986380748263604));
                     Assert::AreEqual(tables.get_from_root_powers(1)[1], static_cast<uint64_t>(803));
@@ -93,7 +92,7 @@ namespace SEALTest
 
             TEST_METHOD(NegacyclicNTTTest)
             {
-                MemoryPoolHandle pool = MemoryPoolHandle::acquire_new();
+                MemoryPoolHandle pool = MemoryPoolHandle::New();
                 NTTTables tables(pool);
                 {
                     Pointer modulus_anchor(allocate_uint(1, pool));
@@ -112,8 +111,8 @@ namespace SEALTest
                     poly[0] = 1;
                     poly[1] = 0;
                     ntt_negacyclic_harvey(poly.get(), tables, pool);
-                    Assert::AreEqual(poly[0], static_cast<uint64_t>(1));
-                    Assert::AreEqual(poly[1], static_cast<uint64_t>(1));
+                    Assert::AreEqual(poly[0], 1ULL);
+                    Assert::AreEqual(poly[1], 1ULL);
 
                     poly[0] = 12;
                     poly[1] = 18;
@@ -156,7 +155,7 @@ namespace SEALTest
 
             TEST_METHOD(InverseNegacyclicNTTTest)
             {
-                MemoryPoolHandle pool = MemoryPoolHandle::acquire_new();
+                MemoryPoolHandle pool = MemoryPoolHandle::New();
                 NTTTables tables(pool);
                 {
                     Pointer modulus_anchor(allocate_uint(1, pool));

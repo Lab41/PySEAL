@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -119,7 +119,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>NOMINMAX</PreprocessorDefinitions>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <AdditionalIncludeDirectories>$(SolutionDir)SEAL\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)SEAL;$(ProjectDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <SDLCheck>true</SDLCheck>
       <XMLDocumentationFileName>$(SolutionDir)bin\$(Platform)\$(Configuration)\</XMLDocumentationFileName>
       <GenerateXMLDocumentationFiles>true</GenerateXMLDocumentationFiles>
@@ -161,7 +161,7 @@
       <WarningLevel>Level3</WarningLevel>
       <PreprocessorDefinitions>NOMINMAX</PreprocessorDefinitions>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <AdditionalIncludeDirectories>$(SolutionDir)SEAL\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)SEAL;$(ProjectDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <SDLCheck>true</SDLCheck>
       <XMLDocumentationFileName>$(SolutionDir)bin\$(Platform)\$(Configuration)\</XMLDocumentationFileName>
       <GenerateXMLDocumentationFiles>true</GenerateXMLDocumentationFiles>
@@ -184,47 +184,57 @@
     <Reference Include="System.Numerics" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="AssemblyInfo.cpp" />
-    <ClCompile Include="BigPolyArithWrapper.cpp" />
-    <ClCompile Include="BigPolyArrayWrapper.cpp" />
-    <ClCompile Include="BigPolyWrapper.cpp" />
-    <ClCompile Include="BigUIntWrapper.cpp" />
-    <ClCompile Include="ChooserWrapper.cpp" />
-    <ClCompile Include="CiphertextWrapper.cpp" />
-    <ClCompile Include="Common.cpp" />
-    <ClCompile Include="DecryptorWrapper.cpp" />
-    <ClCompile Include="EncoderWrapper.cpp" />
-    <ClCompile Include="EncryptionParamsWrapper.cpp" />
-    <ClCompile Include="EncryptorWrapper.cpp" />
-    <ClCompile Include="EvaluationKeysWrapper.cpp" />
-    <ClCompile Include="EvaluatorWrapper.cpp" />
-    <ClCompile Include="KeyGeneratorWrapper.cpp" />
-    <ClCompile Include="MemoryPoolHandleWrapper.cpp" />
-    <ClCompile Include="PlaintextWrapper.cpp" />
-    <ClCompile Include="PolyCRTWrapper.cpp" />
-    <ClCompile Include="SimulatorWrapper.cpp" />
-    <ClCompile Include="UtilitiesWrapper.cpp" />
+    <ClCompile Include="sealnet\AssemblyInfo.cpp" />
+    <ClCompile Include="sealnet\BigPolyArrayWrapper.cpp" />
+    <ClCompile Include="sealnet\BigPolyWrapper.cpp" />
+    <ClCompile Include="sealnet\BigUIntWrapper.cpp" />
+    <ClCompile Include="sealnet\ChooserWrapper.cpp" />
+    <ClCompile Include="sealnet\CiphertextWrapper.cpp" />
+    <ClCompile Include="sealnet\Common.cpp" />
+    <ClCompile Include="sealnet\ContextWrapper.cpp" />
+    <ClCompile Include="sealnet\DecryptorWrapper.cpp" />
+    <ClCompile Include="sealnet\DefaultParamsWrapper.cpp" />
+    <ClCompile Include="sealnet\EncoderWrapper.cpp" />
+    <ClCompile Include="sealnet\EncryptionParamsWrapper.cpp" />
+    <ClCompile Include="sealnet\EncryptorWrapper.cpp" />
+    <ClCompile Include="sealnet\EvaluationKeysWrapper.cpp" />
+    <ClCompile Include="sealnet\EvaluatorWrapper.cpp" />
+    <ClCompile Include="sealnet\GaloisKeysWrapper.cpp" />
+    <ClCompile Include="sealnet\KeyGeneratorWrapper.cpp" />
+    <ClCompile Include="sealnet\MemoryPoolHandleWrapper.cpp" />
+    <ClCompile Include="sealnet\PlaintextWrapper.cpp" />
+    <ClCompile Include="sealnet\PolyCRTWrapper.cpp" />
+    <ClCompile Include="sealnet\PublicKeyWrapper.cpp" />
+    <ClCompile Include="sealnet\SecretKeyWrapper.cpp" />
+    <ClCompile Include="sealnet\SimulatorWrapper.cpp" />
+    <ClCompile Include="sealnet\SmallModulusWrapper.cpp" />
+    <ClCompile Include="sealnet\UtilitiesWrapper.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="BigPolyArithWrapper.h" />
-    <ClInclude Include="BigPolyArrayWrapper.h" />
-    <ClInclude Include="BigPolyWrapper.h" />
-    <ClInclude Include="BigUIntWrapper.h" />
-    <ClInclude Include="ChooserWrapper.h" />
-    <ClInclude Include="CiphertextWrapper.h" />
-    <ClInclude Include="Common.h" />
-    <ClInclude Include="DecryptorWrapper.h" />
-    <ClInclude Include="EncoderWrapper.h" />
-    <ClInclude Include="EncryptionParamsWrapper.h" />
-    <ClInclude Include="EncryptorWrapper.h" />
-    <ClInclude Include="EvaluationKeysWrapper.h" />
-    <ClInclude Include="EvaluatorWrapper.h" />
-    <ClInclude Include="KeyGeneratorWrapper.h" />
-    <ClInclude Include="MemoryPoolHandleWrapper.h" />
-    <ClInclude Include="PlaintextWrapper.h" />
-    <ClInclude Include="PolyCRTWrapper.h" />
-    <ClInclude Include="SimulatorWrapper.h" />
-    <ClInclude Include="UtilitiesWrapper.h" />
+    <ClInclude Include="sealnet\BigPolyArrayWrapper.h" />
+    <ClInclude Include="sealnet\BigPolyWrapper.h" />
+    <ClInclude Include="sealnet\BigUIntWrapper.h" />
+    <ClInclude Include="sealnet\ChooserWrapper.h" />
+    <ClInclude Include="sealnet\CiphertextWrapper.h" />
+    <ClInclude Include="sealnet\Common.h" />
+    <ClInclude Include="sealnet\ContextWrapper.h" />
+    <ClInclude Include="sealnet\DecryptorWrapper.h" />
+    <ClInclude Include="sealnet\DefaultParamsWrapper.h" />
+    <ClInclude Include="sealnet\EncoderWrapper.h" />
+    <ClInclude Include="sealnet\EncryptionParamsWrapper.h" />
+    <ClInclude Include="sealnet\EncryptorWrapper.h" />
+    <ClInclude Include="sealnet\EvaluationKeysWrapper.h" />
+    <ClInclude Include="sealnet\EvaluatorWrapper.h" />
+    <ClInclude Include="sealnet\GaloisKeysWrapper.h" />
+    <ClInclude Include="sealnet\KeyGeneratorWrapper.h" />
+    <ClInclude Include="sealnet\MemoryPoolHandleWrapper.h" />
+    <ClInclude Include="sealnet\PlaintextWrapper.h" />
+    <ClInclude Include="sealnet\PolyCRTWrapper.h" />
+    <ClInclude Include="sealnet\PublicKeyWrapper.h" />
+    <ClInclude Include="sealnet\SecretKeyWrapper.h" />
+    <ClInclude Include="sealnet\SimulatorWrapper.h" />
+    <ClInclude Include="sealnet\SmallModulusWrapper.h" />
+    <ClInclude Include="sealnet\UtilitiesWrapper.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -1,160 +1,177 @@
 #include "CppUnitTest.h"
-#include "encryptionparams.h"
-#include "bigpoly.h"
-#include "bigpolyarith.h"
-#include "polycrt.h"
-#include <cstdint>
+#include "seal/polycrt.h"
+#include "seal/context.h"
+#include "seal/keygenerator.h"
+#include <vector>
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 using namespace seal;
 using namespace seal::util;
 using namespace std;
 
-
 namespace SEALTest
 {
-    TEST_CLASS(PolyCRTBuilderTEST)
+    TEST_CLASS(PolyCRTBuilderTest)
     {
     public:
-        TEST_METHOD(PolyCRTZBuilderEncodeDecodeTEST)
+        TEST_METHOD(BatchUnbatchUIntVector)
         {
             EncryptionParameters parms;
-            parms.poly_modulus() = "1x^4096 + 1";
-            parms.coeff_modulus() = "FFFFFFFFFFF"; 
-            parms.plain_modulus() = 40961;
-            PolyCRTBuilder crtbuilder(parms); 
-            uint64_t slot_count = crtbuilder.get_slot_count();
-            Assert::AreEqual(slot_count, static_cast<uint64_t>(4096)); 
-            vector<BigUInt> values(slot_count, BigUInt(parms.plain_modulus().bit_count(), static_cast<uint64_t>(0)));
+            parms.set_poly_modulus("1x^64 + 1");
+            parms.set_coeff_modulus({ small_mods_60bit(0) });
+            parms.set_plain_modulus(257);
 
+            SEALContext context(parms);
+            Assert::IsTrue(context.qualifiers().enable_batching);
 
-            values[2] = 2;
-            values[3] = 3;
-            values[5] = 5;
-            values[7] = 7;
- 
+            PolyCRTBuilder crtbuilder(context);
+            Assert::AreEqual(64, crtbuilder.slot_count());
+            vector<uint64_t> plain_vec;
+            for (int i = 0; i < crtbuilder.slot_count(); i++)
+            {
+                plain_vec.push_back(i);
+            }
 
-            BigPoly plain_coeff_poly = crtbuilder.compose(values);
-            vector<BigUInt> values_dec = crtbuilder.decompose(plain_coeff_poly);
-            for (int i = 0; i < 4096; i++) {
-                if (i == 2 || i == 3 || i == 5 || i == 7)
-                {
-                    Assert::AreEqual(values_dec[i][0], static_cast<uint8_t>(i));
-                }
-                else {
-                    Assert::AreEqual(values_dec[i][0], static_cast<uint8_t>(0));
-                }
+            Plaintext plain;
+            crtbuilder.compose(plain_vec, plain);
+            vector<uint64_t> plain_vec2;
+            crtbuilder.decompose(plain, plain_vec2);
+            Assert::IsTrue(plain_vec == plain_vec2);
+
+            for (int i = 0; i < crtbuilder.slot_count(); i++)
+            {
+                plain_vec[i] = 5;
+            }
+            crtbuilder.compose(plain_vec, plain);
+            Assert::IsTrue(plain.to_string() == "5");
+            crtbuilder.decompose(plain, plain_vec2);
+            Assert::IsTrue(plain_vec == plain_vec2);
+
+            vector<uint64_t> short_plain_vec;
+            for (int i = 0; i < 20; i++)
+            {
+                short_plain_vec.push_back(i);
+            }
+            crtbuilder.compose(short_plain_vec, plain);
+            vector<uint64_t> short_plain_vec2;
+            crtbuilder.decompose(plain, short_plain_vec2);
+            Assert::AreEqual(20ULL, short_plain_vec.size());
+            Assert::AreEqual(64ULL, short_plain_vec2.size());
+            for (int i = 0; i < 20; i++)
+            {
+                Assert::AreEqual(short_plain_vec[i], short_plain_vec2[i]);
+            }
+            for (int i = 20; i < crtbuilder.slot_count(); i++)
+            {
+                Assert::AreEqual(0ULL, short_plain_vec2[i]);
             }
         }
 
-        TEST_METHOD(PolyCRTZBuilderAddTEST)
+        TEST_METHOD(BatchUnbatchIntVector)
         {
             EncryptionParameters parms;
-            parms.poly_modulus() = "1x^16 + 1";
-            parms.coeff_modulus() = "FFFFFFFFFFF";
-            parms.plain_modulus() = 97;
-            PolyCRTBuilder crtbuilder(parms);
-            uint64_t slot_count = crtbuilder.get_slot_count();
-            vector<BigUInt> value_vec1(slot_count, BigUInt(parms.plain_modulus().bit_count(), static_cast<uint64_t>(0)));
+            parms.set_poly_modulus("1x^64 + 1");
+            parms.set_coeff_modulus({ small_mods_60bit(0) });
+            parms.set_plain_modulus(257);
 
-            value_vec1[0] = 1;
-            value_vec1[3] = 3;
-            value_vec1[5] = 4;
-            value_vec1[15] = 9;
+            SEALContext context(parms);
+            Assert::IsTrue(context.qualifiers().enable_batching);
 
-            vector<BigUInt> value_vec2(slot_count, BigUInt(parms.plain_modulus().bit_count(), static_cast<uint64_t>(0)));
+            PolyCRTBuilder crtbuilder(context);
+            Assert::AreEqual(64, crtbuilder.slot_count());
+            vector<int64_t> plain_vec;
+            for (int i = 0; i < crtbuilder.slot_count(); i++)
+            {
+                plain_vec.push_back(i * (1 - 2 * (i % 2)));
+            }
 
-            value_vec2[0] = 2;
-            value_vec2[3] = 5;
-            value_vec2[5] = 7;
-            value_vec2[15] = 90;
+            Plaintext plain;
+            crtbuilder.compose(plain_vec, plain);
+            vector<int64_t> plain_vec2;
+            crtbuilder.decompose(plain, plain_vec2);
+            Assert::IsTrue(plain_vec == plain_vec2);
 
+            for (int i = 0; i < crtbuilder.slot_count(); i++)
+            {
+                plain_vec[i] = -5;
+            }
+            crtbuilder.compose(plain_vec, plain);
+            Assert::IsTrue(plain.to_string() == "FC");
+            crtbuilder.decompose(plain, plain_vec2);
+            Assert::IsTrue(plain_vec == plain_vec2);
 
-            BigPoly plain_coeff_poly1 = crtbuilder.compose(value_vec1);
-            BigPoly plain_coeff_poly2 = crtbuilder.compose(value_vec2);
-            BigPolyArith arith;
-            BigPoly plain_coeff_poly_sum = arith.add(plain_coeff_poly1, plain_coeff_poly2, BigUInt(7, "61"));
-
-            for (int i = 0; i < 16; i++) {
-                if (i == 0)
-                {
-                    Assert::AreEqual(crtbuilder.get_slot(plain_coeff_poly_sum, i)[0], static_cast<uint8_t>(3));
-                }
-                else if ( i == 3) {
-                    Assert::AreEqual(crtbuilder.get_slot(plain_coeff_poly_sum, i)[0], static_cast<uint8_t>(8));
-                }
-                else if ( i == 5)
-                {
-                    Assert::AreEqual(crtbuilder.get_slot(plain_coeff_poly_sum, i)[0], static_cast<uint8_t>(11));
-                }
-                else if (i == 15)
-                {
-                    Assert::AreEqual(crtbuilder.get_slot(plain_coeff_poly_sum, i)[0], static_cast<uint8_t>(2));
-                }
-                else
-                {
-                    Assert::AreEqual(crtbuilder.get_slot(plain_coeff_poly_sum, i)[0], static_cast<uint8_t>(0));
-                }
+            vector<int64_t> short_plain_vec;
+            for (int i = 0; i < 20; i++)
+            {
+                short_plain_vec.push_back(i * (1 - 2 * (i % 2)));
+            }
+            crtbuilder.compose(short_plain_vec, plain);
+            vector<int64_t> short_plain_vec2;
+            crtbuilder.decompose(plain, short_plain_vec2);
+            Assert::AreEqual(20ULL, short_plain_vec.size());
+            Assert::AreEqual(64ULL, short_plain_vec2.size());
+            for (int i = 0; i < 20; i++)
+            {
+                Assert::IsTrue(short_plain_vec[i] == short_plain_vec2[i]);
+            }
+            for (int i = 20; i < crtbuilder.slot_count(); i++)
+            {
+                Assert::IsTrue(0LL == short_plain_vec2[i]);
             }
         }
 
-        TEST_METHOD(PolyCRTZBuilderMultiplyTEST)
+        TEST_METHOD(BatchUnbatchPlaintext)
         {
             EncryptionParameters parms;
-            parms.poly_modulus() = "1x^1024 + 1";
-            parms.coeff_modulus() = "FFFFFFFFFFF";
-            parms.plain_modulus() = 12289;
-            PolyCRTBuilder crtbuilder(parms);
-            uint64_t slot_count = crtbuilder.get_slot_count();
-            vector<BigUInt> value_vec1(slot_count, BigUInt(parms.plain_modulus().bit_count(), static_cast<uint64_t>(0)));
+            parms.set_poly_modulus("1x^64 + 1");
+            parms.set_coeff_modulus({ small_mods_60bit(0) });
+            parms.set_plain_modulus(257);
 
-            value_vec1[0] = 0;
-            value_vec1[1] = 1;
-            value_vec1[2] = 2;
-            value_vec1[3] = 3;
+            SEALContext context(parms);
+            Assert::IsTrue(context.qualifiers().enable_batching);
 
-            vector<BigUInt> value_vec2(slot_count, BigUInt(parms.plain_modulus().bit_count(), static_cast<uint64_t>(0)));
+            PolyCRTBuilder crtbuilder(context);
+            Assert::AreEqual(64, crtbuilder.slot_count());
+            Plaintext plain(crtbuilder.slot_count());
+            for (int i = 0; i < crtbuilder.slot_count(); i++)
+            {
+                plain[i] = i;
+            }
 
-            value_vec2[0] = 5000;
-            value_vec2[1] = 6000;
-            value_vec2[2] = 7000;
-            value_vec2[3] = 8000;
+            crtbuilder.compose(plain);
+            crtbuilder.decompose(plain);
+            for (int i = 0; i < crtbuilder.slot_count(); i++)
+            {
+                Assert::IsTrue(plain[i] == i);
+            }
 
+            for (int i = 0; i < crtbuilder.slot_count(); i++)
+            {
+                plain[i] = 5;
+            }
+            crtbuilder.compose(plain);
+            Assert::IsTrue(plain.to_string() == "5");
+            crtbuilder.decompose(plain);
+            for (int i = 0; i < crtbuilder.slot_count(); i++)
+            {
+                Assert::AreEqual(5ULL, plain[i]);
+            }
 
-            BigPoly plain_coeff_poly1 = crtbuilder.compose(value_vec1);
-            BigPoly plain_coeff_poly2 = crtbuilder.compose(value_vec2);
-            
-            BigPoly polymod = "1x^1024 + 1";
-            
-            BigPolyArith arith;
-
-
-            BigPoly plain_coeff_poly_mult = arith.multiply(plain_coeff_poly1, plain_coeff_poly2, polymod, BigUInt(14,static_cast<uint64_t>(12289)));
-
-            for (int i = 0; i < 1024; i++) {
-                if (i == 0)
-                {
-                    Assert::IsTrue(crtbuilder.get_slot(plain_coeff_poly_mult, i).to_dec_string() == "0");
-                }
-                else if (i == 1) {
-                    Assert::IsTrue(crtbuilder.get_slot(plain_coeff_poly_mult, i).to_dec_string() == "6000"); 
-                }
-                else if (i == 2)
-                {
-                    Assert::IsTrue(crtbuilder.get_slot(plain_coeff_poly_mult, i).to_dec_string() == "1711");
-                }
-                else if (i == 3)
-                {
-                    Assert::IsTrue(crtbuilder.get_slot(plain_coeff_poly_mult, i).to_dec_string() == "11711");
-                }
-                else
-                {
-                    Assert::IsTrue(crtbuilder.get_slot(plain_coeff_poly_mult, i).to_dec_string() == "0");
-                }
+            Plaintext short_plain(20);
+            for (int i = 0; i < 20; i++)
+            {
+                short_plain[i] = i;
+            }
+            crtbuilder.compose(short_plain);
+            crtbuilder.decompose(short_plain);
+            for (int i = 0; i < 20; i++)
+            {
+                Assert::IsTrue(short_plain[i] == i);
+            }
+            for (int i = 20; i < crtbuilder.slot_count(); i++)
+            {
+                Assert::IsTrue(short_plain[i] == 0);
             }
         }
-
-
-
     };
 }
