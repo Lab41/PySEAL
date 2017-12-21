@@ -12,7 +12,7 @@ namespace seal
 {
     /**
     Class to store a plaintext element. The data for the plaintext is a polynomial with coefficients
-    modulo the plaintext modulus. The degree of the plaintext polynomial must be one less than the 
+    modulo the plaintext modulus. The degree of the plaintext polynomial must be one less than the
     degree of the polynomial modulus. The backing array always allocates one 64-bit word per each
     coefficient of the polynoimal.
 
@@ -23,9 +23,9 @@ namespace seal
     memory pool can quickly lead to contention and poor performance in multi-threaded applications.
     In addition to its coefficient count, a plaintext also has a capacity which denotes the coefficient
     count that fits in the current allocation. Since each coefficient is a 64-bit word, this is exactly
-    the number of 64-bit words that are allocated. In high-performance applications unnecessary 
-    re-allocations should also be avoided by reserving enough memory for the plaintext to begin with 
-    either by providing the capacity to the constructor as an extra argument, or by calling the reserve 
+    the number of 64-bit words that are allocated. In high-performance applications unnecessary
+    re-allocations should also be avoided by reserving enough memory for the plaintext to begin with
+    either by providing the capacity to the constructor as an extra argument, or by calling the reserve
     function at any time.
 
     @par Aliased Plaintexts
@@ -85,7 +85,7 @@ namespace seal
 
         /**
         Constructs a plaintext representing a constant polynomial 0. The coefficient count of the
-        polynomial and the capacity are set to the given values. The memory pool is set to the pool 
+        polynomial and the capacity are set to the given values. The memory pool is set to the pool
         pointed to by the given MemoryPoolHandle, or the global memory pool by default.
 
         @param[in] capacity The capacity
@@ -139,7 +139,7 @@ namespace seal
 
         /**
         Constructs a plaintext and sets its value to the polynomial represented by the given BigPoly.
-        The memory pool is set to the pool pointed to by the given MemoryPoolHandle, or the global 
+        The memory pool is set to the pool pointed to by the given MemoryPoolHandle, or the global
         memory pool by default.
 
         @param[in] poly The plaintext polynomial
@@ -158,7 +158,7 @@ namespace seal
 
         /**
         Constructs a plaintext from a given hexadecimal string describing the plaintext polynomial.
-        The memory pool is set to the pool pointed to by the given MemoryPoolHandle, or the global 
+        The memory pool is set to the pool pointed to by the given MemoryPoolHandle, or the global
         memory pool by default.
 
         The string description of the polynomial must adhere to the format returned by to_string(),
@@ -342,9 +342,9 @@ namespace seal
         /**
         Resizes the plaintext to have a given coefficient count. The plaintext is automatically
         reallocated if the new coefficient count does not fit in the current capacity. If the
-        plaintext is not aliased, the allocation is made from the memory pool pointed to by the 
-        given MemoryPoolHandle. If the plaintext is aliased, the coefficient count is simply 
-        increased within the current capacity, and an exception is thrown if the current capacity 
+        plaintext is not aliased, the allocation is made from the memory pool pointed to by the
+        given MemoryPoolHandle. If the plaintext is aliased, the coefficient count is simply
+        increased within the current capacity, and an exception is thrown if the current capacity
         is exceeded.
 
         @param[in] coeff_count The number of coefficients in the plaintext polynomial
@@ -359,8 +359,8 @@ namespace seal
         /**
         Resizes the plaintext to have a given coefficient count. The plaintext is automatically
         reallocated if the new coefficient count does not fit in the current capacity. If the
-        plaintext is not aliased, the allocation is made from the memory pool pointed to by the 
-        currently held MemoryPoolHandle. If the currently held MemoryPoolHandle is uninitialized, 
+        plaintext is not aliased, the allocation is made from the memory pool pointed to by the
+        currently held MemoryPoolHandle. If the currently held MemoryPoolHandle is uninitialized,
         it is set to point to the global memory pool instead, and the memory is allocated from the
         global memory pool. If the plaintext is aliased, the coefficient count is simply increased
         within the current capacity, and an exception is thrown if the current capacity is exceeded.
@@ -581,8 +581,16 @@ namespace seal
             return plaintext_poly_[coeff_index];
         }
 
+        inline std::uint64_t coeff_at(int coeff_index) {
+          if (coeff_index < 0 || coeff_index >= coeff_count_)
+          {
+              throw std::out_of_range("coeff_index must be within [0, coeff_count)");
+          }
+          return plaintext_poly_[coeff_index];
+        }
+
         /**
-        Returns whether or not the plaintext has the same semantic value as a given plaintext. 
+        Returns whether or not the plaintext has the same semantic value as a given plaintext.
         Leading zero coefficients are ignored by the comparison.
 
         @param[in] compare The plaintext to compare against
@@ -598,7 +606,7 @@ namespace seal
         }
 
         /**
-        Returns whether or not the plaintext has a different semantic value than a given 
+        Returns whether or not the plaintext has a different semantic value than a given
         plaintext. Leading zero coefficients are ignored by the comparison.
 
         @param[in] compare The plaintext to compare against
@@ -672,7 +680,7 @@ namespace seal
         }
 
         /**
-        Saves the Plaintext to an output stream. The output is in binary format and not human-readable. 
+        Saves the Plaintext to an output stream. The output is in binary format and not human-readable.
         The output stream must have the "binary" flag set.
 
         @param[in] stream The stream to save the plaintext to
