@@ -42,8 +42,101 @@ PYBIND11_MODULE(seal, m) {
           "Returns the BigUInt value as a double. Note that precision may be lost during the conversion.")
     .def("significant_bit_count", (int (BigUInt::*)()) &BigUInt::significant_bit_count, "Returns the value of the current SmallModulus");
 
+  py::class_<ChooserEncoder>(m, "ChooserEncoder")
+    .def(py::init<>())
+    .def(py::init<std::uint64_t>())
+    .def("encode", (ChooserPoly (ChooserEncoder::*)(std::uint64_t)) &ChooserEncoder::encode,
+        "Encodes a number (represented by std::uint64_t) into a ChooserPoly object")
+    .def("encode", (void (ChooserEncoder::*)(std::uint64_t, ChooserPoly &)) &ChooserEncoder::encode,
+        "Encodes a number (represented by std::uint64_t) into a ChooserPoly object")
+    .def("encode", (ChooserPoly (ChooserEncoder::*)(std::int64_t)) &ChooserEncoder::encode,
+        "Encodes a number (represented by std::uint64_t) into a ChooserPoly object")
+    .def("encode", (void (ChooserEncoder::*)(std::int64_t, ChooserPoly &)) &ChooserEncoder::encode,
+        "Encodes a number (represented by std::uint64_t) into a ChooserPoly object")
+    .def("encode", (ChooserPoly (ChooserEncoder::*)(BigUInt)) &ChooserEncoder::encode,
+        "Encodes a number (represented by std::uint64_t) into a ChooserPoly object")
+    .def("encode", (void (ChooserEncoder::*)(BigUInt, ChooserPoly &)) &ChooserEncoder::encode,
+        "Encodes a number (represented by std::uint64_t) into a ChooserPoly object")
+    .def("encode", (ChooserPoly (ChooserEncoder::*)(std::uint32_t)) &ChooserEncoder::encode,
+        "Encodes a number (represented by std::uint64_t) into a ChooserPoly object")
+    .def("encode", (ChooserPoly (ChooserEncoder::*)(std::int32_t)) &ChooserEncoder::encode,
+        "Encodes a number (represented by std::uint64_t) into a ChooserPoly object")
+    .def("base", (std::uint64_t (ChooserEncoder::*)()) &ChooserEncoder::base,
+        "Returns the base used for encoding");
+
   py::class_<ChooserEvaluator>(m, "ChooserEvaluator")
-    .def(py::init<>());
+    .def(py::init<>())
+    .def(py::init<const MemoryPoolHandle &>())
+    .def("multiply_many", (ChooserPoly (ChooserEvaluator::*)(const std::vector<ChooserPoly> &,
+        int)) &ChooserEvaluator::multiply_many,
+        "Performs an operation modeling Evaluator::multiply_many() on ChooserPoly objects")
+    .def("add", (ChooserPoly (ChooserEvaluator::*)(const ChooserPoly &,
+        const ChooserPoly &)) &ChooserEvaluator::add,
+        "Performs an operation modeling Evaluator::add() on ChooserPoly objects")
+    .def("add_many", (ChooserPoly (ChooserEvaluator::*)(const std::vector<ChooserPoly> &
+        )) &ChooserEvaluator::add_many,
+        "Performs an operation modeling Evaluator::add() on ChooserPoly objects")
+    .def("sub", (ChooserPoly (ChooserEvaluator::*)(const ChooserPoly &,
+        const ChooserPoly &)) &ChooserEvaluator::sub,
+        "Performs an operation modeling Evaluator::sub() on ChooserPoly objects")
+    .def("multiply", (ChooserPoly (ChooserEvaluator::*)(const ChooserPoly &,
+        const ChooserPoly &)) &ChooserEvaluator::multiply,
+        "Performs an operation modeling Evaluator::multiply() on ChooserPoly objects")
+    .def("square", (ChooserPoly (ChooserEvaluator::*)(const ChooserPoly &
+        )) &ChooserEvaluator::square,
+        "Performs an operation modeling Evaluator::square() on ChooserPoly objects")
+    .def("relinearize", (ChooserPoly (ChooserEvaluator::*)(const ChooserPoly &,
+        int)) &ChooserEvaluator::relinearize,
+        "Performs an operation modeling Evaluator::relinearize() on ChooserPoly objects")
+    .def("multiply_plain", (ChooserPoly (ChooserEvaluator::*)(const ChooserPoly &,
+        int, std::uint64_t)) &ChooserEvaluator::multiply_plain,
+        "Performs an operation modeling Evaluator::multiply_plain() on ChooserPoly objects")
+    .def("multiply_plain", (ChooserPoly (ChooserEvaluator::*)(const ChooserPoly &,
+        const ChooserPoly &)) &ChooserEvaluator::multiply_plain,
+        "Performs an operation modeling Evaluator::multiply_plain() on ChooserPoly objects")
+    .def("add_plain", (ChooserPoly (ChooserEvaluator::*)(const ChooserPoly &,
+        int, std::uint64_t)) &ChooserEvaluator::add_plain,
+        "Performs an operation modeling Evaluator::add_plain() on ChooserPoly objects")
+    .def("add_plain", (ChooserPoly (ChooserEvaluator::*)(const ChooserPoly &,
+        const ChooserPoly &)) &ChooserEvaluator::add_plain,
+        "Performs an operation modeling Evaluator::add_plain() on ChooserPoly objects")
+    .def("sub_plain", (ChooserPoly (ChooserEvaluator::*)(const ChooserPoly &,
+        int, std::uint64_t)) &ChooserEvaluator::sub_plain,
+        "Performs an operation modeling Evaluator::sub_plain() on ChooserPoly objects")
+    .def("sub_plain", (ChooserPoly (ChooserEvaluator::*)(const ChooserPoly &,
+        const ChooserPoly &)) &ChooserEvaluator::sub_plain,
+        "Performs an operation modeling Evaluator::sub_plain() on ChooserPoly objects")
+    .def("exponentiate", (ChooserPoly (ChooserEvaluator::*)(const ChooserPoly &,
+        std::uint64_t, int)) &ChooserEvaluator::exponentiate,
+        "Performs an operation modeling Evaluator::exponentiate() on ChooserPoly objects")
+    .def("negate", (ChooserPoly (ChooserEvaluator::*)(const ChooserPoly &)) &ChooserEvaluator::negate,
+        "Performs an operation modeling Evaluator::negate() on ChooserPoly objects")
+    .def("select_parameters", (bool (ChooserEvaluator::*)(const std::vector<ChooserPoly> &,
+        int, EncryptionParameters &)) &ChooserEvaluator::select_parameters,
+        "Provides the user with optimized encryption parameters")
+    .def("select_parameters", (bool (ChooserEvaluator::*)(const std::vector<ChooserPoly> &,
+        int, double, const std::map<int, std::vector<SmallModulus> > &, EncryptionParameters &)) &ChooserEvaluator::select_parameters,
+        "Provides the user with optimized encryption parameters");
+
+  py::class_<ChooserPoly>(m, "ChooserPoly")
+    .def(py::init<>())
+    .def(py::init<int, std::uint64_t>())
+    .def(py::init<const ChooserPoly &>())
+    /*.def("max_coeff_count", (int (ChooserPoly::*)()) &ChooserPoly::max_coeff_count,
+        "Returns the upper bound on the number of non-zero coefficients")*/
+    .def("max_coeff_count", (int & (ChooserPoly::*)()) &ChooserPoly::max_coeff_count,
+        "Returns a reference to the upper bound on the number of non-zero coefficients")
+    .def("max_abs_value", (std::uint64_t & (ChooserPoly::*)()) &ChooserPoly::max_abs_value,
+        "Returns a reference to the upper bound on the absolute value of coefficients")
+    .def("test_parameters", (bool (ChooserPoly::*)(const EncryptionParameters &, int)) &ChooserPoly::test_parameters,
+        "Determines whether given encryption parameters are large enough to support operations in the operation history of the current ChooserPoly")
+    .def("simulate", (Simulation (ChooserPoly::*)(const EncryptionParameters &)) &ChooserPoly::simulate,
+        "Simulates noise budget consumption")
+    .def("reset", (void (ChooserPoly::*)()) &ChooserPoly::reset,
+        "Sets the bounds on the degree and the absolute value of the coefficients of \
+        the modeled plaintext polynomial to zero, and sets the operation history to null")
+    .def("set_fresh", (void (ChooserPoly::*)()) &ChooserPoly::set_fresh,
+        "Sets the operation history to that of a freshly encrypted ciphertext");
 
   py::class_<Ciphertext>(m, "Ciphertext")
     .def(py::init<>())
@@ -79,6 +172,7 @@ PYBIND11_MODULE(seal, m) {
     .def(py::init<>())
     .def(py::init<const EncryptionParameters &>())
     .def("plain_modulus", &EncryptionParameters::plain_modulus, "Returns the plaintext modulus")
+    .def("poly_modulus", &EncryptionParameters::poly_modulus, "Returns the polynomial modulus")
     .def("set_coeff_modulus",
         (void (EncryptionParameters::*)(const std::vector<SmallModulus> &)) &EncryptionParameters::set_coeff_modulus,
         "Set coefficient modulus parameter")
@@ -126,6 +220,18 @@ PYBIND11_MODULE(seal, m) {
         &Evaluator::multiply_plain, "Multiplies a ciphertext and a plaintext.")
     .def("multiply_plain", (void (Evaluator::*)(const Ciphertext &, const Plaintext &, Ciphertext &))
         &Evaluator::multiply_plain, "Multiplies a ciphertext and a plaintext.")
+    .def("exponentiate", (void (Evaluator::*)(Ciphertext &, std::uint64_t,
+        const EvaluationKeys &, const MemoryPoolHandle &))
+        &Evaluator::exponentiate, "Exponentiates a ciphertext.")
+    .def("exponentiate", (void (Evaluator::*)(Ciphertext &, std::uint64_t,
+        const EvaluationKeys &))
+        &Evaluator::exponentiate, "Exponentiates a ciphertext.")
+    .def("exponentiate", (void (Evaluator::*)(const Ciphertext &, std::uint64_t,
+        const EvaluationKeys &, Ciphertext &, const MemoryPoolHandle &))
+        &Evaluator::exponentiate, "Exponentiates a ciphertext.")
+    .def("exponentiate", (void (Evaluator::*)(const Ciphertext &, std::uint64_t,
+        const EvaluationKeys &, Ciphertext &))
+        &Evaluator::exponentiate, "Exponentiates a ciphertext.")
     .def("negate", (void (Evaluator::*)(Ciphertext &)) &Evaluator::negate,
         "Negates a ciphertext")
     .def("negate", (void (Evaluator::*)(const Ciphertext &, Ciphertext &)) &Evaluator::negate,

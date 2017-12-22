@@ -13,7 +13,10 @@ from seal import ChooserEvaluator,     \
                  SEALContext,          \
                  EvaluationKeys,       \
                  GaloisKeys,           \
-                 PolyCRTBuilder
+                 PolyCRTBuilder,       \
+                 ChooserEncoder,       \
+                 ChooserEvaluator,     \
+                 ChooserPoly
 
 def example_basics_i():
     print_example_banner("Example: Basics I");
@@ -494,7 +497,7 @@ def example_basics_ii():
 
     evaluator.square(encrypted)
     print("Size after second squaring: " + (str)(encrypted.size()))
-    print("Noise budget after second squaring: " + (str)(decryptor.invariant_noise_budget) + " bits")
+    print("Noise budget after second squaring: " + (str)(decryptor.invariant_noise_budget(encrypted)) + " bits")
     evaluator.relinearize(encrypted, ev_keys60)
     print("Size after relinearization: " + (str)(encrypted.size()))
     print("Noise budget after relinearizing (dbc = " + (str)(ev_keys60.decomposition_bit_count()) +
@@ -879,6 +882,116 @@ def example_batching():
     # might be relatively expensive when the noise budget is nearly full, unless
     # a small decomposition bit count is used, which again is computationally costly.
 
+def example_parameter_selection():
+    print_example_banner("Example: Automatic Parameter Selection")
+
+    # SEAL contains an automatic parameter selection tool that can help the user
+    # select optimal parameters that support a particular computation. In this
+    # example we show how the tool can be used to find parameters for evaluating
+    # the degree 3 polynomial 42x^3-27x+1 on an encrypted input encoded with the
+    # IntegerEncoder. For this to be possible, we need to know an upper bound on
+    # the size of the input, and in this example assume that x is an integer with
+    # base-3 representation of length at most 10.
+    print("Finding optimized parameters for computing 42x^3-27x+1: ")
+
+    # The set of tools in the parameter selector are ChooserPoly, ChooserEvaluator,
+    # ChooserEncoder, ChooserEncryptor, and ChooserDecryptor. Of these the most
+    # important ones are ChooserPoly, which is an object representing the input
+    # data both in plaintext and encrypted form, and ChooserEvaluator, which
+    # simulates plaintext coefficient growth and noise budget consumption in the
+    # computations. Here we use also the ChooserEncoder to conveniently obtain
+    # ChooserPoly objects modeling the plaintext coefficients 42, -27, and 1.
+
+    # Note that we are using the IntegerEncoder with base 3.
+    chooser_encoder = ChooserEncoder(3)
+    chooser_evaluator = ChooserEvaluator()
+
+    # First we create a ChooserPoly representing the input data. You can think of
+    # this modeling a freshly encrypted ciphertext of a plaintext polynomial of
+    # length at most 10 coefficients, where the coefficients have absolute value
+    # at most 1 (as is the case when using IntegerEncoder with base 3).
+    c_input = ChooserPoly(10, 1)
+
+    # Normally Evaluator::exponentiate takes the evaluation keys as argument. Since
+    # no keys exist here, we simply pass the desired decomposition bit count (15)
+    # to the ChooserEvaluator::exponentiate function.
+
+    # Here we compute the first term.
+    c_cubed_input = chooser_evaluator.exponentiate(c_input, 3, 15)
+    c_term1 = chooser_evaluator.multiply_plain(c_cubed_input, chooser_encoder.encode(42))
+
+    # Then compute the second term.
+    c_term2 = chooser_evaluator.multiply_plain(c_input, chooser_encoder.encode(27))
+
+    # Subtract the first two terms.
+    c_sum12 = chooser_evaluator.sub(c_term1, c_term2)
+
+    # Finally add a plaintext constant 1.
+    c_result = chooser_evaluator.add_plain(c_sum12, chooser_encoder.encode(1))
+
+    # The optimal parameters are now computed using the select_parameters
+    # function in ChooserEvaluator. It is possible to give this function the
+    # results of several distinct computations (as ChooserPoly objects), all
+    # of which are supposed to be possible to perform with the resulting set
+    # of parameters. However, here we have only one input ChooserPoly.
+    optimal_parms = EncryptionParameters()
+    chooser_evaluator.select_parameters([c_result], 0, optimal_parms)
+    print("Done")
+
+    # Create an SEALContext object for the returned parameters
+    optimal_context = SEALContext(optimal_parms)
+    print_parameters(optimal_context)
+
+    # Do the parameters actually make any sense? We can try to perform the
+    # homomorphic computation using the given parameters and see what happens.
+    keygen = KeyGenerator(optimal_context)
+    public_key = keygen.public_key()
+    secret_key = keygen.secret_key()
+    ev_keys = EvaluationKeys()
+    keygen.generate_evaluation_keys(15, ev_keys)
+
+    encryptor = Encryptor(optimal_context, public_key)
+    evaluator = Evaluator(optimal_context)
+    decryptor = Decryptor(optimal_context, secret_key)
+    encoder = IntegerEncoder(optimal_context.plain_modulus(), 3)
+
+    # Now perform the computations on some real data.
+    input_value = 12345
+    plain_input = encoder.encode(input_value)
+    print("Encoded " + (str)(input_value) + " as polynomial " + plain_input.to_string())
+
+    input_ciphertext = Ciphertext()
+    print("Encrypting: ")
+    encryptor.encrypt(plain_input, input_ciphertext)
+    print("Done")
+
+    print("Computing 42x^3-27x+1 on encrypted x=12345: ")
+    deg3_term = Ciphertext()
+    evaluator.exponentiate(input_ciphertext, 3, ev_keys, deg3_term)
+    evaluator.multiply_plain(deg3_term, encoder.encode(42))
+    deg1_term = Ciphertext()
+    evaluator.multiply_plain(input_ciphertext, encoder.encode(27), deg1_term)
+    evaluator.sub(deg3_term, deg1_term)
+    evaluator.add_plain(deg3_term, encoder.encode(1))
+    print("Done")
+
+    # Now deg3_term holds the result. We decrypt, decode, and print the result.
+    plain_result = Plaintext()
+    print("Decrypting: ")
+    decryptor.decrypt(deg3_term, plain_result)
+    print("Done")
+    print("Polynomial 42x^3-27x+1 evaluated at x=12345: " + (str)(encoder.decode_int64(plain_result)))
+
+    # We should have a reasonable amount of noise room left if the parameter
+    # selection was done properly. The user can experiment for instance by
+    # changing the decomposition bit count, and observing how it affects the
+    # result. Typically the budget should never be even close to 0. Instead,
+    # SEAL uses heuristic upper bound estimates on the noise budget consumption,
+    # which ensures that the computation will succeed with very high probability
+    # with the selected parameters.
+    print("Noise budget in result: " + (str)(decryptor.invariant_noise_budget(deg3_term)) + " bits")
+
+
 def main():
     # Example: Basics I
     example_basics_i()
@@ -886,10 +999,11 @@ def main():
     example_basics_ii()
     # Example: Weighted Average
     example_weighted_average()
-    # Example: Automatic Parameter Selection
     # example_parameter_selection()
     # Example: Batching using CRT
-    example_batching();
+    example_batching()
+    # Example: Parameter Selection
+    example_parameter_selection()
     # Example: Relinearization
     # example_relinearization();
     # Example: Timing of basic operations
@@ -909,7 +1023,7 @@ def print_parameters(context):
     print("| coeff_modulus_size: " + (str)(context.total_coeff_modulus().significant_bit_count()) + " bits")
 
     print("| plain_modulus: " + (str)(context.plain_modulus().value()))
-    print("| noise_standard_deviation: " + (str)(context.noise_standard_deviation))
+    print("| noise_standard_deviation: " + (str)(context.noise_standard_deviation()))
 
 if __name__ == '__main__':
     main()

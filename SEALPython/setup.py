@@ -23,8 +23,8 @@ ext_modules = [
 
 setup(
     name='seal',
-    version='2.2',
-    author='Todd Stavish',
+    version='2.3',
+    author='Todd Stavish, Shashwat Kishore', 
     author_email='toddstavish@gmail.com',
     description='Python wrapper for SEAL',
     ext_modules=ext_modules,
