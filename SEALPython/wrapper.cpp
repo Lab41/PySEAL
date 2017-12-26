@@ -30,6 +30,14 @@ PYBIND11_MODULE(seal, m) {
 
   py::class_<BigPoly>(m, "BigPoly")
     .def(py::init<>())
+    .def(py::init<int, int>())
+    .def(py::init<const std::string &>())
+    .def(py::init<int, int, const std::string &>())
+    .def(py::init<int, int, std::uint64_t *>())
+    .def(py::init<const BigPoly &>())
+    .def(py::init<BigPoly &>())
+    .def("coeff_count", &BigPoly::coeff_count,
+          "Returns the coefficient count for the BigPoly.")
     .def("to_string", &BigPoly::to_string,
          "Returns a human-readable string description of the BigPoly");
 
@@ -143,6 +151,14 @@ PYBIND11_MODULE(seal, m) {
     .def(py::init<const MemoryPoolHandle &>())
     .def(py::init<const EncryptionParameters &, const MemoryPoolHandle &>())
     .def(py::init<const EncryptionParameters &>())
+    .def("reserve", (void (Ciphertext::*)(int)) &Ciphertext::reserve,
+        "Allocates enough memory to accommodate the backing array of a ciphertext with given capacity")
+    .def("reserve", (void (Ciphertext::*)(int, const MemoryPoolHandle &)) &Ciphertext::reserve,
+        "Allocates enough memory to accommodate the backing array of a ciphertext with given capacity")
+    .def("reserve", (void (Ciphertext::*)(const EncryptionParameters &, int)) &Ciphertext::reserve,
+        "Allocates enough memory to accommodate the backing array of a ciphertext with given capacity")
+    .def("reserve", (void (Ciphertext::*)(const EncryptionParameters &, int, const MemoryPoolHandle &)) &Ciphertext::reserve,
+        "Allocates enough memory to accommodate the backing array of a ciphertext with given capacity")
     .def("size", &Ciphertext::size, "Returns the capacity of the allocation");
 
   py::class_<Decryptor>(m, "Decryptor")
@@ -364,6 +380,8 @@ PYBIND11_MODULE(seal, m) {
   py::class_<MemoryPoolHandle>(m, "MemoryPoolHandle")
     .def(py::init<>())
     .def(py::init<const MemoryPoolHandle &>())
+    .def_static("New", &MemoryPoolHandle::New,
+               "Returns a MemoryPoolHandle pointing to a new memory pool")
     .def_static("acquire_global", &MemoryPoolHandle::Global,
                "Returns a MemoryPoolHandle pointing to the global memory pool");
 
@@ -372,6 +390,11 @@ PYBIND11_MODULE(seal, m) {
      .def(py::init<const BigPoly &>())
      .def(py::init<const std::string &, const MemoryPoolHandle &>())
      .def(py::init<const std::string &>())
+     .def(py::init<int, int>())
+     .def(py::init<int, int, const MemoryPoolHandle &>())
+     .def(py::init<int, int, std::uint64_t *>())
+     .def("significant_coeff_count", &Plaintext::significant_coeff_count,
+        "Returns the significant coefficient count of the current plaintext polynomial")
      .def("to_string", &Plaintext::to_string, "Returns the plaintext as a formatted string")
      .def("coeff_count", &Plaintext::coeff_count, "Returns the coefficient count of the current plaintext polynomial")
      .def("coeff_at", &Plaintext::coeff_at, "Returns coefficient at a given index");
@@ -421,6 +444,8 @@ PYBIND11_MODULE(seal, m) {
   py::class_<SEALContext>(m, "SEALContext")
      .def(py::init<const EncryptionParameters &>())
      .def(py::init<const EncryptionParameters &, const MemoryPoolHandle &>())
+     .def("parms", (const EncryptionParameters & (SEALContext::*)()) &SEALContext::parms,
+        "Returns a constant reference to the underlying encryption parameters")
      .def("noise_standard_deviation", (double (SEALContext::*)()) &SEALContext::noise_standard_deviation,
         "Returns the maximum deviation of the noise distribution that was given in the encryption parameters")
      .def("total_coeff_modulus", (const BigUInt & (SEALContext::*)()) &SEALContext::total_coeff_modulus,
