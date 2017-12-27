@@ -19,19 +19,23 @@ our encryption parameters as the argument in the constructor for the context; th
 the validity of the parameters.
 
 The last objects to instantiate before we can complete various encryption tasks are:
-- KeyGenerator object (which takes in the context as its constructor argument and generates a public/private key).
+- KeyGenerator object (which takes in the context as its constructor argument and generates a public/private key pair as
+  well as evaluation keys).
 - Encryptor object (which takes in the context and the public key as its constructor arguments and encrypts plaintext
   polynomials).
 - Decryptor object (which takes in the context and the secret key as its constructor arguments and decrypts plaintext
   polynomials).
 - IntegerEncoder object (which takes in the context's plain modulus as its constructor argument and encodes integers
   as plaintext polynomials and decodes plaintext polnomials as integers).
-- Evaluator object (which takes in the context as its constructor argument and performs computations on encrypted data).
+- Evaluator object (which takes in the context as its constructor argument, and performs computations on encrypted data
+  and relinearizes encrypted data after multiplication operations).
+- EvaluationKeys object (which requires no arguments for the constructor and is passed to a KeyGenerator to generate
+  evaluation keys and is also passed to an Evaluator when relinearizing).
 
 Once these objects are all instantiated, we can homomorphically encrypt and perform computations on encrypted data as follows:
 - Use the IntegerEncoder object to encode our data as plaintext polynomials.
 - Use the Encryptor object to encrypt the plaintext polynomials obtained above.
-- Use the Evaluator object to perform computations on the encrypted data.
+- Use the Evaluator object to perform computations on encrypted data (taking care to relinearize after multiplication operations).
 - Use the Decryptor object to decrypt the encrypted computational output(s).
 - Use the IntegerEncoder object to decode the decrypted output(s) (which are plaintext polynomials) and convert them back
   into integer data.
