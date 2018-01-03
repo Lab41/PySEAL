@@ -1,3 +1,6 @@
+import time
+import random
+import threading
 import seal
 from seal import ChooserEvaluator,     \
                  Ciphertext,           \
@@ -6,11 +9,17 @@ from seal import ChooserEvaluator,     \
                  EncryptionParameters, \
                  Evaluator,            \
                  IntegerEncoder,       \
+                 FractionalEncoder,    \
                  KeyGenerator,         \
                  MemoryPoolHandle,     \
-                 Plaintext, \
-                 SEALContext, \
-                 EvaluationKeys
+                 Plaintext,            \
+                 SEALContext,          \
+                 EvaluationKeys,       \
+                 GaloisKeys,           \
+                 PolyCRTBuilder,       \
+                 ChooserEncoder,       \
+                 ChooserEvaluator,     \
+                 ChooserPoly
 
 def example_basics_i():
     print_example_banner("Example: Basics I");
@@ -491,7 +500,7 @@ def example_basics_ii():
 
     evaluator.square(encrypted)
     print("Size after second squaring: " + (str)(encrypted.size()))
-    print("Noise budget after second squaring: " + (str)(decryptor.invariant_noise_budget) + " bits")
+    print("Noise budget after second squaring: " + (str)(decryptor.invariant_noise_budget(encrypted)) + " bits")
     evaluator.relinearize(encrypted, ev_keys60)
     print("Size after relinearization: " + (str)(encrypted.size()))
     print("Noise budget after relinearizing (dbc = " + (str)(ev_keys60.decomposition_bit_count()) +
@@ -546,21 +555,1007 @@ def example_basics_ii():
     # every last bit of performance, especially when slightly larger parameters
     # are used.
 
+def example_weighted_average():
+    print_example_banner("Example: Weighted Average");
+
+    # In this example we demonstrate the FractionalEncoder, and use it to compute
+    # a weighted average of 10 encrypted rational numbers. In this computation we
+    # perform homomorphic multiplications of ciphertexts by plaintexts, which is
+    # much faster than regular multiplications of ciphertexts by ciphertexts.
+    # Moreover, such `plain multiplications' never increase the ciphertext size,
+    # which is why we have no need for evaluation keys in this example.
+
+    # We start by creating encryption parameters, setting up the SEALContext, keys,
+    # and other relevant objects. Since our computation has multiplicative depth of
+    # only two, it suffices to use a small poly_modulus.
+    parms = EncryptionParameters()
+    parms.set_poly_modulus("1x^2048 + 1")
+    parms.set_coeff_modulus(seal.coeff_modulus_128(2048))
+    parms.set_plain_modulus(1 << 8)
+
+    context = SEALContext(parms)
+    print_parameters(context)
+
+    keygen = KeyGenerator(context)
+    public_key = keygen.public_key()
+    secret_key = keygen.secret_key()
+
+    # We also set up an Encryptor, Evaluator, and Decryptor here.
+    encryptor = Encryptor(context, public_key)
+    evaluator = Evaluator(context)
+    decryptor = Decryptor(context, secret_key)
+
+    # Create a vector of 10 rational numbers (as doubles).
+    rational_numbers = [3.1, 4.159, 2.65, 3.5897, 9.3, 2.3, 8.46, 2.64, 3.383, 2.795]
+
+    # Create a vector of weights.
+    coefficients = [0.1, 0.05, 0.05, 0.2, 0.05, 0.3, 0.1, 0.025, 0.075, 0.05]
+
+    # We need a FractionalEncoder to encode the rational numbers into plaintext
+    # polynomials. In this case we decide to reserve 64 coefficients of the
+    # polynomial for the integral part (low-degree terms) and expand the fractional
+    # part to 32 digits of precision (in base 3) (high-degree terms). These numbers
+    # can be changed according to the precision that is needed; note that these
+    # choices leave a lot of unused space in the 2048-coefficient polynomials.
+    encoder = FractionalEncoder(context.plain_modulus(), context.poly_modulus(), 64, 32, 3)
+
+    # We create a vector of ciphertexts for encrypting the rational numbers.
+    encrypted_rationals = []
+    rational_numbers_string = "Encoding and encrypting: "
+    for i in range(10):
+        # We create our Ciphertext objects into the vector by passing the
+        # encryption parameters as an argument to the constructor. This ensures
+        # that enough memory is allocated for a size 2 ciphertext. In this example
+        # our ciphertexts never grow in size (plain multiplication does not cause
+        # ciphertext growth), so we can expect the ciphertexts to remain in the same
+        # location in memory throughout the computation. In more complicated examples
+        # one might want to call a constructor that reserves enough memory for the
+        # ciphertext to grow to a specified size to avoid costly memory moves when
+        # multiplications and relinearizations are performed.
+        encrypted_rationals.append(Ciphertext(parms))
+        encryptor.encrypt(encoder.encode(rational_numbers[i]), encrypted_rationals[i])
+        rational_numbers_string += (str)(rational_numbers[i])[:6]
+        if i < 9: rational_numbers_string += ", "
+    print(rational_numbers_string)
+
+    # Next we encode the coefficients. There is no reason to encrypt these since they
+    # are not private data.
+    encoded_coefficients = []
+    encoded_coefficients_string = "Encoding plaintext coefficients: "
+    for i in range(10):
+        encoded_coefficients.append(encoder.encode(coefficients[i]))
+        encoded_coefficients_string += (str)(coefficients[i])[:6]
+        if i < 9: encoded_coefficients_string += ", "
+    print(encoded_coefficients_string)
+
+    # We also need to encode 0.1. Multiplication by this plaintext will have the
+    # effect of dividing by 10. Note that in SEAL it is impossible to divide
+    # ciphertext by another ciphertext, but in this way division by a plaintext is
+    # possible.
+    div_by_ten = encoder.encode(0.1)
+
+    # Now compute each multiplication.
+
+    print("Computing products: ")
+    for i in range(10):
+        # Note how we use plain multiplication instead of usual multiplication. The
+        # result overwrites the first argument in the function call.
+        evaluator.multiply_plain(encrypted_rationals[i], encoded_coefficients[i])
+    print("Done")
+
+    # To obtain the linear sum we need to still compute the sum of the ciphertexts
+    # in encrypted_rationals. There is an easy way to add together a vector of
+    # Ciphertexts.
+    encrypted_result = Ciphertext()
+    print("Adding up all 10 ciphertexts: ")
+    evaluator.add_many(encrypted_rationals, encrypted_result)
+    print("Done")
+
+    # Perform division by 10 by plain multiplication with div_by_ten.
+    print("Dividing by 10: ")
+    evaluator.multiply_plain(encrypted_result, div_by_ten)
+    print("Done")
+
+    # How much noise budget do we have left?
+    print("Noise budget in result: " + (str)(decryptor.invariant_noise_budget(encrypted_result)) + " bits")
+
+    # Decrypt, decode, and print result.
+    plain_result = Plaintext()
+    print("Decrypting result: ")
+    decryptor.decrypt(encrypted_result, plain_result)
+    print("Done")
+    result = encoder.decode(plain_result)
+    print("Weighted average: " + (str)(result)[:8])
+
+def example_batching():
+    print_example_banner("Example: Batching with PolyCRTBuilder");
+
+    # In this fundamental example we discuss and demonstrate a powerful technique
+    # called `batching'. If N denotes the degree of the polynomial modulus, and T
+    # the plaintext modulus, then batching is automatically enabled in SEAL if
+    # T is a prime and congruent to 1 modulo 2*N. In batching the plaintexts are
+    # viewed as matrices of size 2-by-(N/2) with each element an integer modulo T.
+    # Homomorphic operations act element-wise between encrypted matrices, allowing
+    # the user to obtain speeds-ups of several orders of magnitude in naively
+    # vectorizable computations. We demonstrate two more homomorphic operations
+    # which act on encrypted matrices by rotating the rows cyclically, or rotate
+    # the columns (i.e. swap the rows). These operations require the construction
+    # of so-called `Galois keys', which are very similar to evaluation keys.
+    parms = EncryptionParameters()
+
+    parms.set_poly_modulus("1x^4096 + 1")
+    parms.set_coeff_modulus(seal.coeff_modulus_128(4096))
+
+    # Note that 40961 is a prime number and 2*4096 divides 40960.
+    parms.set_plain_modulus(40961)
+
+    context = SEALContext(parms)
+    print_parameters(context)
+
+    # We can see that batching is indeed enabled by looking at the encryption
+    # parameter qualifiers created by SEALContext.
+    qualifiers = context.qualifiers()
+    #print("Batching enable: " + boolalpha + qualifiers.enable_batching)
+    #print("Batching enable: " + qualifiers.enable_batching)
+
+    keygen = KeyGenerator(context)
+    public_key = keygen.public_key()
+    secret_key = keygen.secret_key()
+
+    # We need to create Galois keys for performing matrix row and column rotations.
+    # Like evaluation keys, the behavior of Galois keys depends on a decomposition
+    # bit count. The noise budget consumption behavior of matrix row and column
+    # rotations is exactly like that of relinearization. Thus, we refer the reader
+    # to example_basics_ii() for more details.
+
+    # Here we use a moderate size decomposition bit count.
+    gal_keys = GaloisKeys()
+    keygen.generate_galois_keys(30, gal_keys)
+
+    # Since we are going to do some multiplications we will also relinearize.
+    ev_keys = EvaluationKeys()
+    keygen.generate_evaluation_keys(30, ev_keys)
+
+    # We also set up an Encryptor, Evaluator, and Decryptor here.
+    encryptor = Encryptor(context, public_key)
+    evaluator = Evaluator(context)
+    decryptor = Decryptor(context, secret_key)
+
+    # Batching is done through an instance of the PolyCRTBuilder class so need
+    # to start by constructing one.
+    crtbuilder = PolyCRTBuilder(context)
+
+    # The total number of batching `slots' is degree(poly_modulus). The matrices
+    # we encrypt are of size 2-by-(slot_count / 2).
+    slot_count = (int)(crtbuilder.slot_count())
+    row_size = (int)(slot_count / 2)
+    print("Plaintext matrix row size: " + (str)(row_size))
+
+    # Printing the matrix is a bit of a pain.
+    def print_matrix(matrix):
+        print("")
+
+        # We're not going to print every column of the matrix (there are 2048). Instead
+        # print this many slots from beginning and end of the matrix.
+        print_size = 5
+
+        current_line = "    ["
+        for i in range(print_size):
+            current_line += ((str)(matrix[i]) + ", ")
+        current_line += ("..., ")
+        for i in range(row_size - print_size, row_size):
+            current_line += ((str)(matrix[i]))
+            if i != row_size-1: current_line += ", "
+            else: current_line += "]"
+        print(current_line)
+
+        current_line = "    ["
+        for i in range(row_size, row_size + print_size):
+            current_line += ((str)(matrix[i]) + ", ")
+        current_line += ("..., ")
+        for i in range(2*row_size - print_size, 2*row_size):
+            current_line += ((str)(matrix[i]))
+            if i != 2*row_size-1: current_line += ", "
+            else: current_line += "]"
+        print(current_line)
+        print("")
+
+    # The matrix plaintext is simply given to PolyCRTBuilder as a flattened vector
+    # of numbers of size slot_count. The first row_size numbers form the first row,
+    # and the rest form the second row. Here we create the following matrix:
+
+    #     [ 0,  1,  2,  3,  0,  0, ...,  0 ]
+    #     [ 4,  5,  6,  7,  0,  0, ...,  0 ]
+    pod_matrix = [0]*slot_count
+    pod_matrix[0] = 0
+    pod_matrix[1] = 1
+    pod_matrix[2] = 2
+    pod_matrix[3] = 3
+    pod_matrix[row_size] = 4
+    pod_matrix[row_size + 1] = 5
+    pod_matrix[row_size + 2] = 6
+    pod_matrix[row_size + 3] = 7
+
+    print("Input plaintext matrix:")
+    print_matrix(pod_matrix)
+
+    # First we use PolyCRTBuilder to compose the matrix into a plaintext.
+    plain_matrix = Plaintext()
+    crtbuilder.compose(pod_matrix, plain_matrix)
+
+    # Next we encrypt the plaintext as usual.
+    encrypted_matrix = Ciphertext()
+    print("Encrypting: ")
+    encryptor.encrypt(plain_matrix, encrypted_matrix)
+    print("Done")
+    print("Noise budget in fresh encryption: " +
+        (str)(decryptor.invariant_noise_budget(encrypted_matrix)) + " bits")
+
+    # Operating on the ciphertext results in homomorphic operations being performed
+    # simultaneously in all 4096 slots (matrix elements). To illustrate this, we
+    # form another plaintext matrix
+
+    #     [ 1,  2,  1,  2,  1,  2, ..., 2 ]
+    #     [ 1,  2,  1,  2,  1,  2, ..., 2 ]
+
+    # and compose it into a plaintext.
+    pod_matrix2 = []
+    for i in range(slot_count): pod_matrix2.append((i % 2) + 1)
+    plain_matrix2 = Plaintext()
+    crtbuilder.compose(pod_matrix2, plain_matrix2)
+    print("Second input plaintext matrix:")
+    print_matrix(pod_matrix2)
+
+    # We now add the second (plaintext) matrix to the encrypted one using another
+    # new operation -- plain addition -- and square the sum.
+    print("Adding and squaring: ")
+    evaluator.add_plain(encrypted_matrix, plain_matrix2)
+    evaluator.square(encrypted_matrix)
+    evaluator.relinearize(encrypted_matrix, ev_keys)
+    print("Done")
+
+    # How much noise budget do we have left?
+    print("Noise budget in result: " + (str)(decryptor.invariant_noise_budget(encrypted_matrix)) + " bits")
+
+    # We decrypt and decompose the plaintext to recover the result as a matrix.
+    plain_result = Plaintext()
+    print("Decrypting result: ")
+    decryptor.decrypt(encrypted_matrix, plain_result)
+    print("Done")
+
+    crtbuilder.decompose(plain_result)
+    pod_result = [plain_result.coeff_at(i) for i in range(plain_result.coeff_count())]
+
+    print("Result plaintext matrix:")
+    print_matrix(pod_result)
+
+    # Note how the operation was performed in one go for each of the elements of the
+    # matrix. It is possible to achieve incredible performance improvements by using
+    # this method when the computation is easily vectorizable.
+
+    # All of our discussion so far could have applied just as well for a simple vector
+    # data type (not matrix). Now we show how the matrix view of the plaintext can be
+    # used for more functionality. Namely, it is possible to rotate the matrix rows
+    # cyclically, and same for the columns (i.e. swap the two rows). For this we need
+    # the Galois keys that we generated earlier.
+
+    # We return to the original matrix that we started with.
+    encryptor.encrypt(plain_matrix, encrypted_matrix)
+    print("Unrotated matrix: ")
+    print_matrix(pod_matrix)
+    print("Noise budget in fresh encryption: " +
+        (str)(decryptor.invariant_noise_budget(encrypted_matrix)) + " bits")
+
+    # Now rotate the rows to the left 3 steps, decrypt, decompose, and print.
+    evaluator.rotate_rows(encrypted_matrix, 3, gal_keys)
+    print("Rotated rows 3 steps left: ")
+    decryptor.decrypt(encrypted_matrix, plain_result)
+    crtbuilder.decompose(plain_result)
+    pod_result = [plain_result.coeff_at(i) for i in range(plain_result.coeff_count())]
+    print_matrix(pod_result)
+    print("Noise budget after rotation" +
+        (str)(decryptor.invariant_noise_budget(encrypted_matrix)) + " bits")
+
+    # Rotate columns (swap rows), decrypt, decompose, and print.
+    evaluator.rotate_columns(encrypted_matrix, gal_keys)
+    print("Rotated columns: ")
+    decryptor.decrypt(encrypted_matrix, plain_result)
+    crtbuilder.decompose(plain_result)
+    pod_result = [plain_result.coeff_at(i) for i in range(plain_result.coeff_count())]
+    print_matrix(pod_result)
+    print("Noise budget after rotation: " +
+        (str)(decryptor.invariant_noise_budget(encrypted_matrix)) + " bits")
+
+    # Rotate rows to the right 4 steps, decrypt, decompose, and print.
+    evaluator.rotate_rows(encrypted_matrix, -4, gal_keys)
+    print("Rotated rows 4 steps right: ")
+    decryptor.decrypt(encrypted_matrix, plain_result)
+    crtbuilder.decompose(plain_result)
+    pod_result = [plain_result.coeff_at(i) for i in range(plain_result.coeff_count())]
+    print_matrix(pod_result)
+    print("Noise budget after rotation: " +
+        (str)(decryptor.invariant_noise_budget(encrypted_matrix)) + " bits")
+
+    # The output is as expected. Note how the noise budget gets a big hit in the
+    # first rotation, but remains almost unchanged in the next rotations. This is
+    # again the same phenomenon that occurs with relinearization, where the noise
+    # budget is consumed down to some bound determined by the decomposition bit count
+    # and the encryption parameters. For example, after some multiplications have
+    # been performed, rotations might practically for free (noise budget-wise), but
+    # might be relatively expensive when the noise budget is nearly full, unless
+    # a small decomposition bit count is used, which again is computationally costly.
+
+def example_parameter_selection():
+    print_example_banner("Example: Automatic Parameter Selection")
+
+    # SEAL contains an automatic parameter selection tool that can help the user
+    # select optimal parameters that support a particular computation. In this
+    # example we show how the tool can be used to find parameters for evaluating
+    # the degree 3 polynomial 42x^3-27x+1 on an encrypted input encoded with the
+    # IntegerEncoder. For this to be possible, we need to know an upper bound on
+    # the size of the input, and in this example assume that x is an integer with
+    # base-3 representation of length at most 10.
+    print("Finding optimized parameters for computing 42x^3-27x+1: ")
+
+    # The set of tools in the parameter selector are ChooserPoly, ChooserEvaluator,
+    # ChooserEncoder, ChooserEncryptor, and ChooserDecryptor. Of these the most
+    # important ones are ChooserPoly, which is an object representing the input
+    # data both in plaintext and encrypted form, and ChooserEvaluator, which
+    # simulates plaintext coefficient growth and noise budget consumption in the
+    # computations. Here we use also the ChooserEncoder to conveniently obtain
+    # ChooserPoly objects modeling the plaintext coefficients 42, -27, and 1.
+
+    # Note that we are using the IntegerEncoder with base 3.
+    chooser_encoder = ChooserEncoder(3)
+    chooser_evaluator = ChooserEvaluator()
+
+    # First we create a ChooserPoly representing the input data. You can think of
+    # this modeling a freshly encrypted ciphertext of a plaintext polynomial of
+    # length at most 10 coefficients, where the coefficients have absolute value
+    # at most 1 (as is the case when using IntegerEncoder with base 3).
+    c_input = ChooserPoly(10, 1)
+
+    # Normally Evaluator::exponentiate takes the evaluation keys as argument. Since
+    # no keys exist here, we simply pass the desired decomposition bit count (15)
+    # to the ChooserEvaluator::exponentiate function.
+
+    # Here we compute the first term.
+    c_cubed_input = chooser_evaluator.exponentiate(c_input, 3, 15)
+    c_term1 = chooser_evaluator.multiply_plain(c_cubed_input, chooser_encoder.encode(42))
+
+    # Then compute the second term.
+    c_term2 = chooser_evaluator.multiply_plain(c_input, chooser_encoder.encode(27))
+
+    # Subtract the first two terms.
+    c_sum12 = chooser_evaluator.sub(c_term1, c_term2)
+
+    # Finally add a plaintext constant 1.
+    c_result = chooser_evaluator.add_plain(c_sum12, chooser_encoder.encode(1))
+
+    # The optimal parameters are now computed using the select_parameters
+    # function in ChooserEvaluator. It is possible to give this function the
+    # results of several distinct computations (as ChooserPoly objects), all
+    # of which are supposed to be possible to perform with the resulting set
+    # of parameters. However, here we have only one input ChooserPoly.
+    optimal_parms = EncryptionParameters()
+    chooser_evaluator.select_parameters([c_result], 0, optimal_parms)
+    print("Done")
+
+    # Create an SEALContext object for the returned parameters
+    optimal_context = SEALContext(optimal_parms)
+    print_parameters(optimal_context)
+
+    # Do the parameters actually make any sense? We can try to perform the
+    # homomorphic computation using the given parameters and see what happens.
+    keygen = KeyGenerator(optimal_context)
+    public_key = keygen.public_key()
+    secret_key = keygen.secret_key()
+    ev_keys = EvaluationKeys()
+    keygen.generate_evaluation_keys(15, ev_keys)
+
+    encryptor = Encryptor(optimal_context, public_key)
+    evaluator = Evaluator(optimal_context)
+    decryptor = Decryptor(optimal_context, secret_key)
+    encoder = IntegerEncoder(optimal_context.plain_modulus(), 3)
+
+    # Now perform the computations on some real data.
+    input_value = 12345
+    plain_input = encoder.encode(input_value)
+    print("Encoded " + (str)(input_value) + " as polynomial " + plain_input.to_string())
+
+    input_ciphertext = Ciphertext()
+    print("Encrypting: ")
+    encryptor.encrypt(plain_input, input_ciphertext)
+    print("Done")
+
+    print("Computing 42x^3-27x+1 on encrypted x=12345: ")
+    deg3_term = Ciphertext()
+    evaluator.exponentiate(input_ciphertext, 3, ev_keys, deg3_term)
+    evaluator.multiply_plain(deg3_term, encoder.encode(42))
+    deg1_term = Ciphertext()
+    evaluator.multiply_plain(input_ciphertext, encoder.encode(27), deg1_term)
+    evaluator.sub(deg3_term, deg1_term)
+    evaluator.add_plain(deg3_term, encoder.encode(1))
+    print("Done")
+
+    # Now deg3_term holds the result. We decrypt, decode, and print the result.
+    plain_result = Plaintext()
+    print("Decrypting: ")
+    decryptor.decrypt(deg3_term, plain_result)
+    print("Done")
+    print("Polynomial 42x^3-27x+1 evaluated at x=12345: " + (str)(encoder.decode_int64(plain_result)))
+
+    # We should have a reasonable amount of noise room left if the parameter
+    # selection was done properly. The user can experiment for instance by
+    # changing the decomposition bit count, and observing how it affects the
+    # result. Typically the budget should never be even close to 0. Instead,
+    # SEAL uses heuristic upper bound estimates on the noise budget consumption,
+    # which ensures that the computation will succeed with very high probability
+    # with the selected parameters.
+    print("Noise budget in result: " + (str)(decryptor.invariant_noise_budget(deg3_term)) + " bits")
+
+def example_performance_st():
+    print_example_banner("Example: Performance Test (Single Thread)");
+
+    # In this thread we perform a timing of basic operations in single-threaded
+    # execution. We use the following lambda function to run the timing example.
+    def performance_test_st(context):
+        print_parameters(context)
+        poly_modulus = context.poly_modulus()
+        coeff_modulus = context.total_coeff_modulus()
+        plain_modulus = context.plain_modulus()
+
+        # Set up keys. For both relinearization and rotations we use a large
+        # decomposition bit count for best possible computational performance.
+        dbc = seal.dbc_max()
+        print("Generating secret/public keys: ")
+        keygen = KeyGenerator(context)
+        print("Done")
+
+        secret_key = keygen.secret_key()
+        public_key = keygen.public_key()
+
+        # Generate evaluation keys.
+        ev_keys = EvaluationKeys()
+        print("Generating evaluation keys (dbc = " + (str)(dbc) + "): ")
+        time_start = time.time()
+        keygen.generate_evaluation_keys(dbc, ev_keys)
+        time_end = time.time()
+        time_diff = time_end - time_start
+        print("Done [" + (str)(1000000*time_diff) + " microseconds]")
+
+        # Generate Galois keys. In larger examples the Galois keys can use
+        # a significant amount of memory, which can become a problem in constrained
+        # systems. The user should try enabling some of the larger runs of
+        # the test (see below) and to observe their effect on the memory pool
+        # allocation size. The key generation can also take a significant
+        # amount of time, as can be observed from the print-out.
+        gal_keys = GaloisKeys()
+        """if not context.qualifiers().enable_batching:
+            print("Given encryption parameters do not support batching.")
+            return"""
+        print("Generating Galois keys (dbc = " + (str)(dbc) + "): ")
+        time_start = time.time()
+        keygen.generate_galois_keys(dbc, gal_keys)
+        time_end = time.time()
+        time_diff = time_end - time_start
+        print("Done [" + (str)(1000000*time_diff) + " microseconds]")
+
+        encryptor = Encryptor(context, public_key)
+        decryptor = Decryptor(context, secret_key)
+        evaluator = Evaluator(context)
+        crtbuilder = PolyCRTBuilder(context)
+        encoder = IntegerEncoder(plain_modulus)
+
+        # These will hold the total times used by each operation.
+        time_batch_sum = 0
+        time_unbatch_sum = 0
+        time_encrypt_sum = 0
+        time_decrypt_sum = 0
+        time_add_sum = 0
+        time_multiply_sum = 0
+        time_multiply_plain_sum = 0
+        time_square_sum = 0
+        time_relinearize_sum = 0
+        time_rotate_rows_one_step_sum = 0
+        time_rotate_rows_random_sum = 0
+        time_rotate_columns_sum = 0
+
+        # How many times to run the test?
+        count = 10
+
+        # Populate a vector of values to batch.
+        pod_vector = []
+        for i in range(crtbuilder.slot_count()):
+            pod_vector.append(random.randint(0, 4294967295) % plain_modulus.value())
+
+        print("Running tests ")
+        for i in range(count):
+            # [Batching]
+            # There is nothing unusual here. We batch our random plaintext matrix into
+            # the polynomial. The user can try changing the decomposition bit count to
+            # something smaller to see the effect. Note that the plaintext we use is of
+            # the correct size, so no unnecessary reallocations are needed.
+            plain = Plaintext(context.parms().poly_modulus().coeff_count(), 0)
+            time_start = time.time()
+            crtbuilder.compose(pod_vector, plain)
+            time_end = time.time()
+            time_batch_sum += (time_end - time_start)
+
+            # [Unbatching]
+            # We unbatch what we just batched.
+            pod_vector2 = []
+            time_start = time.time()
+            decomposed_plain = plain
+            crtbuilder.decompose(decomposed_plain)
+            pod_vector2 = [decomposed_plain.coeff_at(i) for i in range(decomposed_plain.coeff_count())]
+            time_end = time.time()
+            time_unbatch_sum += (time_end - time_start)
+            if pod_vector2 != pod_vector:
+                print("Batch/unbatch failed. Something is wrong.")
+                return
+
+            # [Encryption]
+            # We make sure our ciphertext is already allocated and large enough to
+            # hold the encryption with these encryption parameters. We encrypt our
+            # random batched matrix here.
+            encrypted = Ciphertext(context.parms())
+            time_start = time.time()
+            encryptor.encrypt(plain, encrypted)
+            time_end = time.time()
+            time_encrypt_sum += (time_end - time_start)
+
+            # [Decryption]
+            # We decrypt what we just encrypted.
+            plain2 = Plaintext(context.parms().poly_modulus().coeff_count(), 0)
+            time_start = time.time()
+            decryptor.decrypt(encrypted, plain2)
+            time_end = time.time()
+            time_decrypt_sum += (time_end - time_start)
+            if plain2.to_string() != plain.to_string():
+                print((str)(plain2.coeff_count()) + " " + (str)(plain2.significant_coeff_count()))
+                print("Encrypt/decrypt failed. Something is wrong.")
+                return
+
+            # [Add]
+            # We create two ciphertexts that are both of size 2, and perform a few
+            # additions with them.
+            encrypted1 = Ciphertext(context.parms())
+            encryptor.encrypt(encoder.encode(i), encrypted1)
+            encrypted2 = Ciphertext(context.parms())
+            encryptor.encrypt(encoder.encode(i + 1), encrypted2)
+            time_start = time.time()
+            evaluator.add(encrypted1, encrypted1)
+            evaluator.add(encrypted2, encrypted2)
+            evaluator.add(encrypted1, encrypted2)
+            time_end = time.time()
+            time_add_sum += (time_end - time_start) / 3.0
+
+            # [Multiply]
+            # We multiply two ciphertexts of size 2. Since the size of the result
+            # will be 3, and will overwrite the first argument, we reserve first
+            # enough memory to avoid reallocating during multiplication.
+            encrypted1.reserve(3)
+            time_start = time.time()
+            evaluator.multiply(encrypted1, encrypted2)
+            time_end = time.time()
+            time_multiply_sum += (time_end - time_start)
+
+            # [Multiply Plain]
+            # We multiply a ciphertext of size 2 with a random plaintext. Recall
+            # that plain multiplication does not change the size of the ciphertext,
+            # so we use encrypted2 here, which still has size 2.
+            time_start = time.time()
+            evaluator.multiply_plain(encrypted2, plain)
+            time_end = time.time()
+            time_multiply_plain_sum += (time_end - time_start)
+
+            # [Square]
+            # We continue to use the size 2 ciphertext encrypted2. Now we square it
+            # which is a faster special case of homomorphic multiplication.
+            time_start = time.time()
+            evaluator.square(encrypted2)
+            time_end = time.time()
+            time_square_sum += (time_end - time_start)
+
+            # [Relinearize]
+            # Time to get back to encrypted1, which at this point is still of size 3.
+            # We now relinearize it back to size 2. Since the allocation is currently
+            # big enough to contain a ciphertext of size 3, no reallocation is needed
+            # in the process.
+            time_start = time.time()
+            evaluator.relinearize(encrypted1, ev_keys)
+            time_end = time.time()
+            time_relinearize_sum += (time_end - time_start)
+
+            # [Rotate Rows One Step]
+            # We rotate matrix rows by one step left and measure the time.
+            time_start = time.time()
+            evaluator.rotate_rows(encrypted, 1, gal_keys)
+            evaluator.rotate_rows(encrypted, -1, gal_keys)
+            time_end = time.time()
+            time_rotate_rows_one_step_sum += (time_end - time_start) / 2
+
+            # [Rotate Rows Random]
+            # We rotate matrix rows by a random number of steps. This is a bit more
+            # expensive than rotating by just one step.
+            row_size = crtbuilder.slot_count() / 2
+            random_rotation = (int)((int)(random.random()*(row_size+1)) % row_size)
+            time_start = time.time()
+            evaluator.rotate_rows(encrypted, random_rotation, gal_keys)
+            time_end = time.time()
+            time_rotate_rows_random_sum += (time_end - time_start)
+
+            # [Rotate Columns]
+            # Nothing surprising here.
+            time_start = time.time()
+            evaluator.rotate_columns(encrypted, gal_keys)
+            time_end = time.time()
+            time_rotate_columns_sum += (time_end - time_start)
+
+            # Print a dot to indicate progress.
+            print(".")
+
+        print(" Done")
+
+        avg_batch = (time_batch_sum / count)*1000000
+        avg_unbatch = (time_unbatch_sum / count)*1000000
+        avg_encrypt = (time_encrypt_sum / count)*1000000
+        avg_decrypt = (time_decrypt_sum / count)*1000000
+        avg_add = (time_add_sum / count)*1000000
+        avg_multiply = (time_multiply_sum / count)*1000000
+        avg_multiply_plain = (time_multiply_plain_sum / count)*1000000
+        avg_square = (time_square_sum / count)*1000000
+        avg_relinearize = (time_relinearize_sum / count)*1000000
+        avg_rotate_rows_one_step = (time_rotate_rows_one_step_sum / count)*1000000
+        avg_rotate_rows_random = (time_rotate_rows_random_sum / count)*1000000
+        avg_rotate_columns = (time_rotate_columns_sum / count)*1000000
+
+        print("Average batch: " + (str)(avg_batch) + " microseconds")
+        print("Average unbatch: " + (str)(avg_unbatch) + " microseconds")
+        print("Average encrypt: " + (str)(avg_encrypt) + " microseconds")
+        print("Average decrypt: " + (str)(avg_decrypt) + " microseconds")
+        print("Average add: " + (str)(avg_add) + " microseconds")
+        print("Average multiply: " + (str)(avg_multiply) + " microseconds")
+        print("Average multiply plain: " + (str)(avg_multiply_plain) + " microseconds")
+        print("Average square: " + (str)(avg_square) + " microseconds")
+        print("Average relinearize: " + (str)(avg_relinearize) + " microseconds")
+        print("Average rotate rows one step: " + (str)(avg_rotate_rows_one_step) + " microseconds")
+        print("Average rotate rows random: " + (str)(avg_rotate_rows_random) + " microseconds")
+        print("Average rotate columns: " + (str)(avg_rotate_columns) + " microseconds")
+
+    parms = EncryptionParameters()
+    parms.set_poly_modulus("1x^4096 + 1")
+    parms.set_coeff_modulus(seal.coeff_modulus_128(4096))
+    parms.set_plain_modulus(786433)
+    context = SEALContext(parms)
+    performance_test_st(context)
+
+    print("")
+    parms.set_poly_modulus("1x^8192 + 1")
+    parms.set_coeff_modulus(seal.coeff_modulus_128(8192))
+    parms.set_plain_modulus(786433)
+    context = SEALContext(parms)
+    performance_test_st(context)
+
+    # Comment out the following to run the bigger examples.
+    """print("")
+    parms.set_poly_modulus("1x^16384 + 1")
+    parms.set_coeff_modulus(seal.coeff_modulus_128(16384))
+    parms.set_plain_modulus(786433)
+    context = SEALContext(parms)
+    performance_test_st(context)
+
+    print("")
+    parms.set_poly_modulus("1x^32768 + 1")
+    parms.set_coeff_modulus(seal.coeff_modulus_128(32768))
+    parms.set_plain_modulus(786433)
+    context = SEALContext(parms)
+    performance_test_st(context)"""
+
+def example_performance_mt(th_count):
+    print_example_banner("Example: Performance Test (" + (str)(th_count) + " Threads)")
+
+    #In this example we show how to efficiently run SEAL in a multi-threaded
+    # application.
+
+    # SEAL does not use multi-threading inside its functions, but most of the
+    # tools such as Encryptor, Decryptor, PolyCRTBuilder, and Evaluator are by
+    # default thread-safe. However, by default these classes perform a large
+    # number of allocations from a thread-safe memory pool, which can get slow
+    # when several threads are used. Instead, here we show how the user can create
+    # local memory pools using the MemoryPoolHandle class, which can be either
+    # thread-safe (slower) or thread-unsafe (faster). For example, here we use
+    # the MemoryPoolHandle class to essentially get thread-local memory pools.
+
+    # First we set up shared instances of EncryptionParameters, SEALContext,
+    # KeyGenerator, keys, Encryptor, Decryptor, Evaluator, PolyCRTBuilder.
+    # After these classes are constructed, they are thread-safe to use.
+    parms = EncryptionParameters()
+    parms.set_poly_modulus("1x^8192 + 1")
+    parms.set_coeff_modulus(seal.coeff_modulus_128(8192))
+    parms.set_plain_modulus(786433)
+
+    context = SEALContext(parms)
+    print_parameters(context)
+
+    poly_modulus = context.poly_modulus()
+    coeff_modulus = context.total_coeff_modulus()
+    plain_modulus = context.plain_modulus()
+
+    dbc = seal.dbc_max()
+    print("Generating secret/public keys: ")
+    keygen = KeyGenerator(context)
+    print("Done")
+
+    secret_key = keygen.secret_key()
+    public_key = keygen.public_key()
+
+    ev_keys = EvaluationKeys()
+    print("Generating evaluation keys (dbc = " + (str)(dbc) + "): ")
+    time_start = time.time()
+    keygen.generate_evaluation_keys(dbc, ev_keys)
+    time_end = time.time()
+    time_diff = (time_end - time_start)*1000000
+    print("Done [" + (str)(time_diff) + " microseconds]")
+
+    gal_keys = GaloisKeys()
+    """if not context.qualifiers().enable_batching:
+        print("Given encryption parameters do not support batching.")
+        return"""
+    print("Generating Galois keys (dbc = " + (str)(dbc) + "): ")
+    time_start = time.time()
+    keygen.generate_galois_keys(dbc, gal_keys)
+    time_end = time.time()
+    time_diff = (time_end - time_start)*1000000
+    print("Done [" + (str)(time_diff) + " microseconds]")
+
+    encryptor = Encryptor(context, public_key)
+    decryptor = Decryptor(context, secret_key)
+    evaluator = Evaluator(context)
+    crtbuilder = PolyCRTBuilder(context)
+    encoder = IntegerEncoder(plain_modulus)
+
+    # We need a lambda function similar to what we had in the single-threaded
+    # performance example. In this case the functions is slightly different,
+    # since we share the same SEALContext, other tool classes, and keys among
+    # all threads (captured by reference below). We also take a MemoryPoolHandle
+    # as an argument; the memory pool managed by this MemoryPoolHandle will be
+    # used for all dynamic allocations in the homomorphic computations.
+    def performance_test_mt(th_index, lock, pool):
+        # Print the thread index and memory pool address. The idea is that for
+        # each thread we pass a MemoryPoolHandle pointing to a new memory pool.
+        # The given MemoryPoolHandle is then used for all allocations inside this
+        # function, and all functions it calls, e.g. plaintext and ciphertext
+        # allocations, and allocations that occur during homomorphic operations.
+        # This prevents costly concurrent allocations from becoming a bottleneck.
+        lock.acquire()
+        print("")
+        print("Thread index: " + (str)(th_index))
+        #cout << "Memory pool address: " << hex
+        #    << "0x" << &pool.operator seal::util::MemoryPool &() << dec << endl;
+        print("Starting tests ... ")
+        lock.release()
+
+        poly_modulus = context.poly_modulus()
+        coeff_modulus = context.total_coeff_modulus()
+        plain_modulus = context.plain_modulus()
+
+        # These will hold the total times used by each operation.
+        time_batch_sum = 0
+        time_unbatch_sum = 0
+        time_encrypt_sum = 0
+        time_decrypt_sum = 0
+        time_add_sum = 0
+        time_multiply_sum = 0
+        time_multiply_plain_sum = 0
+        time_square_sum = 0
+        time_relinearize_sum = 0
+        time_rotate_rows_one_step_sum = 0
+        time_rotate_rows_random_sum = 0
+        time_rotate_columns_sum = 0
+
+        # How many times to run the test?
+        count = 10
+
+        # Populate a vector of values to batch if enable_batching == true.
+        pod_vector = []
+        for i in range(crtbuilder.slot_count()):
+            pod_vector.append(random.randint(0, 4294967295) % plain_modulus.value())
+
+        for i in range(count):
+            # [Batching]
+            # Note that we pass the MemoryPoolHandle as an argment to the constructor
+            # of the plaintext. This was the plaintext memory is allocated from the
+            # thread-local memory pool, and costly concurrent allocations from the
+            # same memory pool can be avoided.
+            plain = Plaintext(context.parms().poly_modulus().coeff_count(), 0, pool)
+            time_start = time.time()
+            crtbuilder.compose(pod_vector, plain)
+            time_end = time.time()
+            time_batch_sum += (time_end - time_start)*1000000
+
+            # [Unbatching]
+            # The decompose-operation needs to perform a single allocation from
+            # a memory pool. Note how we pass our MemoryPoolHandle to it as an
+            # argument, suggesting it to use the given pool for the allocation.
+            # Again, we avoid having several threads allocating from the same
+            # memory pool concurrently.
+            time_start = time.time()
+            crtbuilder.decompose(plain, pool)
+            pod_vector2 = [plain.coeff_at(i) for i in range(plain.coeff_count())]
+            time_end = time.time()
+            time_unbatch_sum += (time_end - time_start)*1000000
+            if pod_vector2 != pod_vector:
+                print("Batch/unbatch failed. Something is wrong.")
+                return
+
+            # [Encryption]
+            # We allocate the result ciphertext from the local memory pool. Here
+            #encryption also takes the MemoryPoolHandle as an argument.
+            encrypted = Ciphertext(context.parms(), pool)
+            time_start = time.time()
+            encryptor.encrypt(plain, encrypted, pool)
+            time_end = time.time()
+            time_encrypt_sum += (time_end - time_start)*1000000
+
+            # [Decryption]
+            plain2 = Plaintext(context.parms().poly_modulus().coeff_count(), 0, pool)
+            time_start = time.time()
+            decryptor.decrypt(encrypted, plain2, pool)
+            time_end = time.time()
+            time_decrypt_sum += (time_end - time_start)*1000000
+            if plain2.to_string() != plain.to_string():
+                print((str)(plain2.coeff_count()) + " " + (str)(plain2.significant_coeff_count()))
+                print((str)(plain.coeff_count()) + " " + (str)(plain.significant_coeff_count()))
+                print("Encrypt/decrypt failed. Something is wrong.")
+                return
+
+            # [Add]
+            # Note how both ciphertexts are allocated from the local memory pool, and
+            # how the local memory pool is also used for encryption. Homomorphic
+            # addition on the other hand does not need to make any dynamic allocations.
+            encrypted1 = Ciphertext(context.parms(), pool)
+            encryptor.encrypt(encoder.encode(i), encrypted1, pool)
+            encrypted2 = Ciphertext(context.parms(), pool)
+            encryptor.encrypt(encoder.encode(i + 1), encrypted2, pool)
+            time_start = time.time()
+            evaluator.add(encrypted1, encrypted1)
+            evaluator.add(encrypted2, encrypted2)
+            evaluator.add(encrypted1, encrypted2)
+            time_end = time.time()
+            time_add_sum += ((time_end - time_start) / 3.0)*1000000
+
+            # [Multiply]
+            # Multiplication is a heavy-duty operation making several allocations
+            # from the local memory pool.
+            encrypted1.reserve(3)
+            time_start = time.time()
+            evaluator.multiply(encrypted1, encrypted2, pool)
+            time_end = time.time()
+            time_multiply_sum += (time_end - time_start)*1000000
+
+            # [Multiply Plain]
+            time_start = time.time()
+            evaluator.multiply_plain(encrypted2, plain, pool)
+            time_end = time.time()
+            time_multiply_plain_sum += (time_end - time_start)*1000000
+
+            # [Square]
+            time_start = time.time()
+            evaluator.square(encrypted2, pool)
+            time_end = time.time()
+            time_square_sum += (time_end - time_start)*1000000
+
+            # [Relinearize]
+            time_start = time.time()
+            evaluator.relinearize(encrypted1, ev_keys, pool)
+            time_end = time.time()
+            time_relinearize_sum += (time_end - time_start)*1000000
+
+            # [Rotate Rows One Step]
+            time_start = time.time()
+            evaluator.rotate_rows(encrypted, 1, gal_keys, pool)
+            evaluator.rotate_rows(encrypted, -1, gal_keys, pool)
+            time_end = time.time()
+            time_rotate_rows_one_step_sum += ((time_end - time_start) / 2.0)*1000000
+
+            # [Rotate Rows Random]
+            row_size = crtbuilder.slot_count() / 2
+            random_rotation = (int)((int)(random.random()*(row_size+1)) % row_size)
+            time_start = time.time()
+            evaluator.rotate_rows(encrypted, random_rotation, gal_keys, pool)
+            time_end = time.time()
+            time_rotate_rows_random_sum += (time_end - time_start)*1000000
+
+            # [Rotate Columns]
+            time_start = time.time()
+            evaluator.rotate_columns(encrypted, gal_keys, pool)
+            time_end = time.time()
+            time_rotate_columns_sum += (time_end - time_start)*1000000
+
+        avg_batch = time_batch_sum / count
+        avg_unbatch = time_unbatch_sum / count
+        avg_encrypt = time_encrypt_sum / count
+        avg_decrypt = time_decrypt_sum / count
+        avg_add = time_add_sum / count
+        avg_multiply = time_multiply_sum / count
+        avg_multiply_plain = time_multiply_plain_sum / count
+        avg_square = time_square_sum / count
+        avg_relinearize = time_relinearize_sum / count
+        avg_rotate_rows_one_step = time_rotate_rows_one_step_sum / count
+        avg_rotate_rows_random = time_rotate_rows_random_sum / count
+        avg_rotate_columns = time_rotate_columns_sum / count
+
+        lock.acquire()
+        print("")
+        print("Test finished for thread " + (str)(th_index))
+        print("Average batch: " + (str)(avg_batch) + " microseconds")
+        print("Average unbatch: " + (str)(avg_unbatch) + " microseconds")
+        print("Average encrypt: " + (str)(avg_encrypt) + " microseconds")
+        print("Average decrypt: " + (str)(avg_decrypt) + " microseconds")
+        print("Average add: " + (str)(avg_add) + " microseconds")
+        print("Average multiply: " + (str)(avg_multiply) + " microseconds")
+        print("Average multiply plain: " + (str)(avg_multiply_plain) + " microseconds")
+        print("Average square: " + (str)(avg_square) + " microseconds")
+        print("Average relinearize: " + (str)(avg_relinearize) + " microseconds")
+        print("Average rotate rows one step: " + (str)(avg_rotate_rows_one_step) + " microseconds")
+        print("Average rotate rows random: " + (str)(avg_rotate_rows_random) + " microseconds")
+        print("Average rotate columns: " + (str)(avg_rotate_columns) + " microseconds")
+        lock.release()
+
+    print_lock = threading.Lock()
+    th_vector = []
+    for i in range(th_count):
+        # Each thread is created and given a MemoryPoolHandle pointing to a new
+        # memory pool. Essentially, this results in thread-local memory pools
+        # and resolves the contention that would result from several threads
+        # allocating from e.g. the global memory pool. The bool argument given
+        # to MemoryPoolHandle::New means that the created memory pool is
+        # thread-unsafe, resulting in better performance. The user can change
+        # the argument to "true" instead. However, in this small example the
+        # difference in performance is non-existent.
+        #new_pool = MemoryPoolHandle()
+        #new_pool.
+        th_vector.append(
+            threading.Thread(target = performance_test_mt, args = (i + 1, print_lock, MemoryPoolHandle().New(False)))
+        )
+
+        # The global memory pool is thread-safe, and unless otherwise specified,
+        # it is used for (nearly) all dynamic allocations. The user can comment
+        # out the lines below to test the performance of the global memory pool
+        # in this example. Again, the performance difference might only show up
+        # when a large number of threads are used.
+        """th_vector.append(
+            threading.Thread(target = performance_test_mt, args = (i + 1, print_lock, MemoryPoolHandle().acquire_global()))
+        )"""
+
+
+    # We are done here. Join the threads.
+    for i in range(len(th_vector)):
+        th_vector[i].start()
+
+    for i in range(len(th_vector)):
+        th_vector[i].join()
+
+
 def main():
     # Example: Basics I
     example_basics_i()
     # Example: Basics II
     example_basics_ii()
     # Example: Weighted Average
-    # example_weighted_average()
-    # Example: Automatic Parameter Selection
-    # example_parameter_selection()
+    example_weighted_average()
     # Example: Batching using CRT
-    # example_batching();
-    # Example: Relinearization
-    # example_relinearization();
-    # Example: Timing of basic operations
-    # example_timing()
+    example_batching()
+    # Example: Parameter Selection
+    example_parameter_selection()
+    # Example: Performance (Single Thread)
+    example_performance_st()
+    # Example: Performance (Multi Thread)
+    th_count = ((int)(input('Thread count: ')))
+    if th_count > 0: example_performance_mt(th_count)
+    else: print('Invalid thread count.')
     # Wait for ENTER before closing screen.
     input('Press ENTER to exit')
 
@@ -576,7 +1571,7 @@ def print_parameters(context):
     print("| coeff_modulus_size: " + (str)(context.total_coeff_modulus().significant_bit_count()) + " bits")
 
     print("| plain_modulus: " + (str)(context.plain_modulus().value()))
-    print("| noise_standard_deviation: " + (str)(context.noise_standard_deviation))
+    print("| noise_standard_deviation: " + (str)(context.noise_standard_deviation()))
 
 if __name__ == '__main__':
     main()
