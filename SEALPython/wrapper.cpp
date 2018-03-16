@@ -148,6 +148,7 @@ PYBIND11_MODULE(seal, m) {
 
   py::class_<Ciphertext>(m, "Ciphertext")
     .def(py::init<>())
+    .def(py::init<const Ciphertext &>())
     .def(py::init<const MemoryPoolHandle &>())
     .def(py::init<const EncryptionParameters &, const MemoryPoolHandle &>())
     .def(py::init<const EncryptionParameters &>())
