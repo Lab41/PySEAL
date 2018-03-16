@@ -1,7 +1,7 @@
 #
 # Container to build Linux SEAL libraries, python wrapper, and examples
 #
-FROM ubuntu:16.10
+FROM ubuntu:17.10
 MAINTAINER Todd Stavish <toddstavish@gmail.com>
 
 # Install binary dependencies
@@ -13,6 +13,7 @@ RUN apt-get -qqy update && apt-get install -qqy \
 	python3-dev \
 	python3-pip \
 	sudo \
+        libdpkg-perl \
 	--no-install-recommends
 
 # Build SEAL libraries
