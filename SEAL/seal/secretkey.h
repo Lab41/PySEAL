@@ -86,7 +86,7 @@ namespace seal
         void python_save(std::string &path) const
         {
             std::ofstream out(path);
-            save(path);
+            save(out);
             out.close();
         }
 
