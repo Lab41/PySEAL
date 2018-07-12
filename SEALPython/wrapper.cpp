@@ -160,7 +160,12 @@ PYBIND11_MODULE(seal, m) {
         "Allocates enough memory to accommodate the backing array of a ciphertext with given capacity")
     .def("reserve", (void (Ciphertext::*)(const EncryptionParameters &, int, const MemoryPoolHandle &)) &Ciphertext::reserve,
         "Allocates enough memory to accommodate the backing array of a ciphertext with given capacity")
-    .def("size", &Ciphertext::size, "Returns the capacity of the allocation");
+    .def("size", &Ciphertext::size, "Returns the capacity of the allocation")
+    .def("python_save", (void (Ciphertext::*)(std::string &)) &Ciphertext::python_save,
+        "Saves Ciphertext object to file given filepath")
+    .def("python_load", (void (Ciphertext::*)(std::string &)) &Ciphertext::python_load,
+        "Loads Ciphertext object from file given filepath");
+
 
   py::class_<Decryptor>(m, "Decryptor")
     .def(py::init<const SEALContext &, const SecretKey &>())
@@ -463,4 +468,5 @@ PYBIND11_MODULE(seal, m) {
 
   m.def("coeff_modulus_128", &coeff_modulus_128, "Returns the default coefficients modulus for a given polynomial modulus degree.");
   m.def("dbc_max", &dbc_max, "Return dbc max value.");
+
 }

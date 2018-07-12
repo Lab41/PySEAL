@@ -1,2 +1,2 @@
 #!/bin/bash
-docker build -t seal -f Dockerfile .
+docker build -t seal-save -f Dockerfile .
