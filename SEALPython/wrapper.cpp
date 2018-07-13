@@ -161,9 +161,9 @@ PYBIND11_MODULE(seal, m) {
     .def("reserve", (void (Ciphertext::*)(const EncryptionParameters &, int, const MemoryPoolHandle &)) &Ciphertext::reserve,
         "Allocates enough memory to accommodate the backing array of a ciphertext with given capacity")
     .def("size", &Ciphertext::size, "Returns the capacity of the allocation")
-    .def("python_save", (void (Ciphertext::*)(std::string &)) &Ciphertext::python_save,
+    .def("save", (void (Ciphertext::*)(std::string &)) &Ciphertext::python_save,
         "Saves Ciphertext object to file given filepath")
-    .def("python_load", (void (Ciphertext::*)(std::string &)) &Ciphertext::python_load,
+    .def("load", (void (Ciphertext::*)(std::string &)) &Ciphertext::python_load,
         "Loads Ciphertext object from file given filepath");
 
 
@@ -444,12 +444,16 @@ PYBIND11_MODULE(seal, m) {
   py::class_<PublicKey>(m, "PublicKey")
      .def(py::init<>())
      .def("save", (void (PublicKey::*)(std::string &)) &PublicKey::python_save,
-        "Saves PublicKey object to file given filepath");
+        "Saves PublicKey object to file given filepath")
+     .def("load", (void (PublicKey::*)(std::string &)) &PublicKey::python_load,
+        "Loads PublicKey object from file given filepath");
 
   py::class_<SecretKey>(m, "SecretKey")
      .def(py::init<>())
      .def("save", (void (SecretKey::*)(std::string &)) &SecretKey::python_save,
-        "Saves SecretKey object to file given filepath");
+        "Saves SecretKey object to file given filepath")
+     .def("load", (void (SecretKey::*)(std::string &)) &SecretKey::python_load,
+        "Loads PublicKey object from file given filepath");
 
   py::class_<SEALContext>(m, "SEALContext")
      .def(py::init<const EncryptionParameters &>())
