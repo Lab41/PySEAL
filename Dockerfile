@@ -12,6 +12,7 @@ RUN apt-get -qqy update && apt-get install -qqy \
 	python3 \
 	python3-dev \
 	python3-pip \
+	net-tools
 	sudo \
         libdpkg-perl \
 	--no-install-recommends
