@@ -112,6 +112,13 @@ namespace seal
         stream.write(reinterpret_cast<const char*>(ciphertext_array_.get()), size_ * poly_coeff_count_ * coeff_mod_count_ * bytes_per_uint64);
     }
 
+    void Ciphertext::python_save(std::string &path) const
+    {
+        std::ofstream out(path);
+        save(out);
+        out.close();
+    }
+
     void Ciphertext::load(istream &stream)
     {
         stream.read(reinterpret_cast<char*>(&hash_block_), sizeof(EncryptionParameters::hash_block_type));
@@ -127,6 +134,13 @@ namespace seal
 
         // Read data
         stream.read(reinterpret_cast<char*>(ciphertext_array_.get()), size_ * poly_coeff_count_ * coeff_mod_count_ * bytes_per_uint64);
+    }
+
+    void Ciphertext::python_load(std::string &path)
+    {
+        std::ifstream in(path);
+        load(in);
+        in.close();
     }
 
     void Ciphertext::resize(int size, int poly_coeff_count, int coeff_mod_count, const MemoryPoolHandle &pool)

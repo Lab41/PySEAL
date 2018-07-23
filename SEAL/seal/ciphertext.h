@@ -2,6 +2,7 @@
 
 #include <string>
 #include <iostream>
+#include <fstream>
 #include "seal/util/uintcore.h"
 #include "seal/encryptionparams.h"
 #include "seal/memorypoolhandle.h"
@@ -485,7 +486,7 @@ namespace seal
         @see load() to load a saved ciphertext.
         */
         void save(std::ostream &stream) const;
-
+        void python_save(std::string &path) const;
         /**
         Loads a ciphertext from an input stream overwriting the current ciphertext.
 
@@ -493,7 +494,7 @@ namespace seal
         @see save() to save a ciphertext.
         */
         void load(std::istream &stream);
-
+        void python_load(std::string &path);
         /**
         Returns a constant reference to the hash block.
 

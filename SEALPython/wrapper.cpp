@@ -160,7 +160,12 @@ PYBIND11_MODULE(seal, m) {
         "Allocates enough memory to accommodate the backing array of a ciphertext with given capacity")
     .def("reserve", (void (Ciphertext::*)(const EncryptionParameters &, int, const MemoryPoolHandle &)) &Ciphertext::reserve,
         "Allocates enough memory to accommodate the backing array of a ciphertext with given capacity")
-    .def("size", &Ciphertext::size, "Returns the capacity of the allocation");
+    .def("size", &Ciphertext::size, "Returns the capacity of the allocation")
+    .def("save", (void (Ciphertext::*)(std::string &)) &Ciphertext::python_save,
+        "Saves Ciphertext object to file given filepath")
+    .def("load", (void (Ciphertext::*)(std::string &)) &Ciphertext::python_load,
+        "Loads Ciphertext object from file given filepath");
+
 
   py::class_<Decryptor>(m, "Decryptor")
     .def(py::init<const SEALContext &, const SecretKey &>())
@@ -437,10 +442,18 @@ PYBIND11_MODULE(seal, m) {
         &PolyCRTBuilder::decompose, "Inverse of compose. This function unbatches a given SEAL plaintext");
 
   py::class_<PublicKey>(m, "PublicKey")
-     .def(py::init<>());
+     .def(py::init<>())
+     .def("save", (void (PublicKey::*)(std::string &)) &PublicKey::python_save,
+        "Saves PublicKey object to file given filepath")
+     .def("load", (void (PublicKey::*)(std::string &)) &PublicKey::python_load,
+        "Loads PublicKey object from file given filepath");
 
   py::class_<SecretKey>(m, "SecretKey")
-     .def(py::init<>());
+     .def(py::init<>())
+     .def("save", (void (SecretKey::*)(std::string &)) &SecretKey::python_save,
+        "Saves SecretKey object to file given filepath")
+     .def("load", (void (SecretKey::*)(std::string &)) &SecretKey::python_load,
+        "Loads PublicKey object from file given filepath");
 
   py::class_<SEALContext>(m, "SEALContext")
      .def(py::init<const EncryptionParameters &>())
@@ -463,4 +476,5 @@ PYBIND11_MODULE(seal, m) {
 
   m.def("coeff_modulus_128", &coeff_modulus_128, "Returns the default coefficients modulus for a given polynomial modulus degree.");
   m.def("dbc_max", &dbc_max, "Return dbc max value.");
+
 }
