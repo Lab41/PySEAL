@@ -3,6 +3,7 @@
 #include "seal/bigpolyarray.h"
 #include "seal/encryptionparams.h"
 #include <iostream>
+#include <fstream>
 
 namespace seal
 {
@@ -76,6 +77,12 @@ namespace seal
                 sizeof(EncryptionParameters::hash_block_type));
             pk_array_.save(stream);
         }
+        void python_save(std::string &path) const
+        {
+            std::ofstream out(path);
+            save(out);
+            out.close();
+        }
 
         /**
         Loads a PublicKey from an input stream overwriting the current PublicKey.
@@ -87,6 +94,12 @@ namespace seal
             stream.read(reinterpret_cast<char*>(&hash_block_), 
                 sizeof(EncryptionParameters::hash_block_type));
             pk_array_.load(stream);
+        }
+        void python_load(std::string &path)
+        {
+            std::ifstream in(path);
+            load(in);
+            in.close();
         }
 
         /**

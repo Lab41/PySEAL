@@ -183,6 +183,10 @@ PYBIND11_MODULE(seal, m) {
             return c;
         }
     ));
+    .def("save", (void (Ciphertext::*)(std::string &)) &Ciphertext::python_save,
+        "Saves Ciphertext object to file given filepath")
+    .def("load", (void (Ciphertext::*)(std::string &)) &Ciphertext::python_load,
+        "Loads Ciphertext object from file given filepath");
 
   py::class_<Decryptor>(m, "Decryptor")
     .def(py::init<const SEALContext &, const SecretKey &>())
@@ -251,14 +255,6 @@ PYBIND11_MODULE(seal, m) {
         &Evaluator::sub_plain, "Subtracts a plaintext from a ciphertext.")
     .def("sub_plain", (void (Evaluator::*)(const Ciphertext &, const Plaintext &, Ciphertext &))
         &Evaluator::sub_plain, "Subtracts a plaintext from a ciphertext.")
-    .def("multiply_plain", (void (Evaluator::*)(Ciphertext &, const Plaintext &, const MemoryPoolHandle &))
-        &Evaluator::multiply_plain, "Multiplies a ciphertext and a plaintext.")
-    .def("multiply_plain", (void (Evaluator::*)(Ciphertext &, const Plaintext &))
-        &Evaluator::multiply_plain, "Multiplies a ciphertext and a plaintext.")
-    .def("multiply_plain", (void (Evaluator::*)(const Ciphertext &, const Plaintext &, Ciphertext &, const MemoryPoolHandle &))
-        &Evaluator::multiply_plain, "Multiplies a ciphertext and a plaintext.")
-    .def("multiply_plain", (void (Evaluator::*)(const Ciphertext &, const Plaintext &, Ciphertext &))
-        &Evaluator::multiply_plain, "Multiplies a ciphertext and a plaintext.")
     .def("exponentiate", (void (Evaluator::*)(Ciphertext &, std::uint64_t,
         const EvaluationKeys &, const MemoryPoolHandle &))
         &Evaluator::exponentiate, "Exponentiates a ciphertext.")
@@ -459,10 +455,18 @@ PYBIND11_MODULE(seal, m) {
         &PolyCRTBuilder::decompose, "Inverse of compose. This function unbatches a given SEAL plaintext");
 
   py::class_<PublicKey>(m, "PublicKey")
-     .def(py::init<>());
+     .def(py::init<>())
+     .def("save", (void (PublicKey::*)(std::string &)) &PublicKey::python_save,
+        "Saves PublicKey object to file given filepath")
+     .def("load", (void (PublicKey::*)(std::string &)) &PublicKey::python_load,
+        "Loads PublicKey object from file given filepath");
 
   py::class_<SecretKey>(m, "SecretKey")
-     .def(py::init<>());
+     .def(py::init<>())
+     .def("save", (void (SecretKey::*)(std::string &)) &SecretKey::python_save,
+        "Saves SecretKey object to file given filepath")
+     .def("load", (void (SecretKey::*)(std::string &)) &SecretKey::python_load,
+        "Loads PublicKey object from file given filepath");
 
   py::class_<SEALContext>(m, "SEALContext")
      .def(py::init<const EncryptionParameters &>())
@@ -511,4 +515,5 @@ PYBIND11_MODULE(seal, m) {
 
   m.def("coeff_modulus_128", &coeff_modulus_128, "Returns the default coefficients modulus for a given polynomial modulus degree.");
   m.def("dbc_max", &dbc_max, "Return dbc max value.");
+
 }

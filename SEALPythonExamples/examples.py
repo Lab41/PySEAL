@@ -1585,6 +1585,145 @@ def example_performance_mt(th_count):
 		th_vector[i].join()
 
 
+
+def save_example():
+
+    print_example_banner("Example: Basics I");
+
+   
+    parms = EncryptionParameters()
+
+    # We first set the polynomial modulus. This must be a power-of-2 cyclotomic
+    # polynomial, i.e. a polynomial of the form "1x^(power-of-2) + 1". The polynomial
+    # modulus should be thought of mainly affecting the security level of the scheme;
+    # larger polynomial modulus makes the scheme more secure. At the same time, it
+    # makes ciphertext sizes larger, and consequently all operations slower.
+    # Recommended degrees for poly_modulus are 1024, 2048, 4096, 8192, 16384, 32768,
+    # but it is also possible to go beyond this. Since we perform only a very small
+    # computation in this example, it suffices to use a very small polynomial modulus
+    parms.set_poly_modulus("1x^2048 + 1")
+
+   
+    parms.set_coeff_modulus(seal.coeff_modulus_128(2048))
+
+    # The plaintext modulus can be any positive integer, even though here we take
+    # it to be a power of two. In fact, in many cases one might instead want it to
+    # be a prime number; we will see this in example_batching(). The plaintext
+    # modulus determines the size of the plaintext data type, but it also affects
+    # the noise budget in a freshly encrypted ciphertext, and the consumption of
+    # the noise budget in homomorphic multiplication. Thus, it is essential to try
+    # to keep the plaintext data type as small as possible for good performance.
+    # The noise budget in a freshly encrypted ciphertext is
+
+    #     ~ log2(coeff_modulus/plain_modulus) (bits)
+
+    # and the noise budget consumption in a homomorphic multiplication is of the
+    # form log2(plain_modulus) + (other terms).
+    parms.set_plain_modulus(1 << 8)
+
+    # Now that all parameters are set, we are ready to construct a SEALContext
+    # object. This is a heavy class that checks the validity and properties of
+    # the parameters we just set, and performs and stores several important
+    # pre-computations.
+    context = SEALContext(parms)
+
+    # Print the parameters that we have chosen
+    print_parameters(context);
+
+ 
+    encoder = IntegerEncoder(context.plain_modulus())
+
+    # We are now ready to generate the secret and public keys. For this purpose we need
+    # an instance of the KeyGenerator class. Constructing a KeyGenerator automatically
+    # generates the public and secret key, which can then be read to local variables.
+    # To create a fresh pair of keys one can call KeyGenerator::generate() at any time.
+    keygen = KeyGenerator(context)
+    public_key = keygen.public_key()
+    secret_key = keygen.secret_key()
+
+    # To be able to encrypt, we need to construct an instance of Encryptor. Note that
+    # the Encryptor only requires the public key.
+    encryptor = Encryptor(context, public_key)
+
+    # Computations on the ciphertexts are performed with the Evaluator class.
+    evaluator = Evaluator(context)
+
+    # We will of course want to decrypt our results to verify that everything worked,
+    # so we need to also construct an instance of Decryptor. Note that the Decryptor
+    # requires the secret key.
+    decryptor = Decryptor(context, secret_key)
+
+    # We start by encoding two integers as plaintext polynomials.
+    value1 = 5;
+    plain1 = encoder.encode(value1);
+    print("Encoded " + (str)(value1) + " as polynomial " + plain1.to_string() + " (plain1)")
+
+    value2 = -7;
+    plain2 = encoder.encode(value2);
+    print("Encoded " + (str)(value2) + " as polynomial " + plain2.to_string() + " (plain2)")
+
+    # Encrypting the values is easy.
+    encrypted1 = Ciphertext()
+    encrypted2 = Ciphertext()
+    print("Encrypting plain1: ")
+    encryptor.encrypt(plain1, encrypted1)
+    print("Done (encrypted1)")
+
+    encrypted1.save()
+
+    print("Encrypting plain2: ")
+    encryptor.encrypt(plain2, encrypted2)
+    print("Done (encrypted2)")
+
+    # To illustrate the concept of noise budget, we print the budgets in the fresh
+    # encryptions.
+    print("Noise budget in encrypted1: " + (str)(decryptor.invariant_noise_budget(encrypted1)) + " bits")
+    print("Noise budget in encrypted2: " + (str)(decryptor.invariant_noise_budget(encrypted2)) + " bits")
+
+    # As a simple example, we compute (-encrypted1 + encrypted2) * encrypted2.
+
+    # Negation is a unary operation.
+    evaluator.negate(encrypted1)
+
+    # Negation does not consume any noise budget.
+    print("Noise budget in -encrypted1: " + (str)(decryptor.invariant_noise_budget(encrypted1)) + " bits")
+
+    # Addition can be done in-place (overwriting the first argument with the result,
+    # or alternatively a three-argument overload with a separate destination variable
+    # can be used. The in-place variants are always more efficient. Here we overwrite
+    # encrypted1 with the sum.
+    evaluator.add(encrypted1, encrypted2)
+
+    # It is instructive to think that addition sets the noise budget to the minimum
+    # of the input noise budgets. In this case both inputs had roughly the same
+    # budget going on, and the output (in encrypted1) has just slightly lower budget.
+    # Depending on probabilistic effects, the noise growth consumption may or may
+    # not be visible when measured in whole bits.
+    print("Noise budget in -encrypted1 + encrypted2: " + (str)(decryptor.invariant_noise_budget(encrypted1)) + " bits")
+
+    # Finally multiply with encrypted2. Again, we use the in-place version of the
+    # function, overwriting encrypted1 with the product.
+    evaluator.multiply(encrypted1, encrypted2)
+
+    # Multiplication consumes a lot of noise budget. This is clearly seen in the
+    # print-out. The user can change the plain_modulus to see its effect on the
+    # rate of noise budget consumption.
+    print("Noise budget in (-encrypted1 + encrypted2) * encrypted2: " + (str)(decryptor.invariant_noise_budget(encrypted1)) + " bits")
+
+    # Now we decrypt and decode our result.
+    plain_result = Plaintext()
+    print("Decrypting result: ")
+    decryptor.decrypt(encrypted1, plain_result)
+    print("Done")
+
+    # Print the result plaintext polynomial.
+    print("Plaintext polynomial: " + plain_result.to_string())
+
+    # Decode to obtain an integer result.
+    print("Decoded integer: " + (str)(encoder.decode_int32(plain_result)))
+
+
+
 def main():
 	# Example: Basics I
 	example_basics_i()
