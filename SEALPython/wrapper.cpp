@@ -27,6 +27,28 @@ using namespace std;
 
 // http://pybind11.readthedocs.io/en/stable/classes.html
 
+template<class T>
+py::tuple serialize(T &c) {
+    std::stringstream output(std::ios::binary | std::ios::out);
+    c.save(output);
+    std::string cipherstr = output.str();
+    std::string base64_encoded_cipher = base64_encode(reinterpret_cast<const unsigned char*>(cipherstr.c_str()), cipherstr.length());
+    return py::make_tuple(base64_encoded_cipher);
+}
+
+template<class T>
+T deserialize(py::tuple t) {
+    if (t.size() != 1)
+        throw std::runtime_error("(Pickle) Invalid input tuple!");
+    T c = T();
+    std::string cipherstr_encoded = t[0].cast<std::string>();
+    std::string cipherstr_decoded = base64_decode(cipherstr_encoded);
+    std::stringstream input(std::ios::binary | std::ios::in);
+    input.str(cipherstr_decoded);
+    c.load(input);
+    return c;
+}
+
 PYBIND11_MODULE(seal, m) {
 
   py::class_<BigPoly>(m, "BigPoly")
@@ -162,27 +184,7 @@ PYBIND11_MODULE(seal, m) {
     .def("reserve", (void (Ciphertext::*)(const EncryptionParameters &, int, const MemoryPoolHandle &)) &Ciphertext::reserve,
         "Allocates enough memory to accommodate the backing array of a ciphertext with given capacity")
     .def("size", &Ciphertext::size, "Returns the capacity of the allocation")
-    .def(py::pickle(
-        [](const Ciphertext &c) {
-            std::stringstream output(std::ios::binary | std::ios::out);
-            c.save(output);
-            std::string cipherstr = output.str();
-            std::string base64_encoded_cipher = base64_encode(reinterpret_cast<const unsigned char*>(cipherstr.c_str()), cipherstr.length());
-            return py::make_tuple(base64_encoded_cipher);
-        },
-        [](py::tuple t) {
-            if (t.size() != 1)
-                throw std::runtime_error("(Pickle) Invalid input tuple!");
-
-            Ciphertext c = Ciphertext();
-            std::string cipherstr_encoded = t[0].cast<std::string>();
-            std::string cipherstr_decoded = base64_decode(cipherstr_encoded);
-            std::stringstream input(std::ios::binary | std::ios::in);
-            input.str(cipherstr_decoded);
-            c.load(input);
-            return c;
-        }
-    ));
+    .def(py::pickle(&serialize<Ciphertext>, &deserialize<Ciphertext>))
     .def("save", (void (Ciphertext::*)(std::string &)) &Ciphertext::python_save,
         "Saves Ciphertext object to file given filepath")
     .def("load", (void (Ciphertext::*)(std::string &)) &Ciphertext::python_load,
@@ -230,7 +232,8 @@ PYBIND11_MODULE(seal, m) {
         "Set polynomial modulus parameter")
     .def("set_poly_modulus",
         (void (EncryptionParameters::*)(const std::string &)) &EncryptionParameters::set_poly_modulus,
-        "Set polynomial modulus parameter");
+        "Set polynomial modulus parameter")
+    .def(py::pickle(&serialize<EncryptionParameters>, &deserialize<EncryptionParameters>));
 
   py::class_<EncryptionParameterQualifiers>(m, "EncryptionParameterQuailifers");
 
@@ -416,7 +419,8 @@ PYBIND11_MODULE(seal, m) {
         "Returns the significant coefficient count of the current plaintext polynomial")
      .def("to_string", &Plaintext::to_string, "Returns the plaintext as a formatted string")
      .def("coeff_count", &Plaintext::coeff_count, "Returns the coefficient count of the current plaintext polynomial")
-     .def("coeff_at", &Plaintext::coeff_at, "Returns coefficient at a given index");
+     .def("coeff_at", &Plaintext::coeff_at, "Returns coefficient at a given index")
+     .def(py::pickle(&serialize<Plaintext>, &deserialize<Plaintext> ));
 
   py::class_<PolyCRTBuilder>(m, "PolyCRTBuilder")
     .def(py::init<const SEALContext &, const MemoryPoolHandle &>())
@@ -459,14 +463,16 @@ PYBIND11_MODULE(seal, m) {
      .def("save", (void (PublicKey::*)(std::string &)) &PublicKey::python_save,
         "Saves PublicKey object to file given filepath")
      .def("load", (void (PublicKey::*)(std::string &)) &PublicKey::python_load,
-        "Loads PublicKey object from file given filepath");
+        "Loads PublicKey object from file given filepath")
+     .def(py::pickle(&serialize<PublicKey>, &deserialize<PublicKey>));
 
   py::class_<SecretKey>(m, "SecretKey")
      .def(py::init<>())
      .def("save", (void (SecretKey::*)(std::string &)) &SecretKey::python_save,
         "Saves SecretKey object to file given filepath")
      .def("load", (void (SecretKey::*)(std::string &)) &SecretKey::python_load,
-        "Loads PublicKey object from file given filepath");
+        "Loads PublicKey object from file given filepath")
+     .def(py::pickle(&serialize<SecretKey>, &deserialize<SecretKey>));
 
   py::class_<SEALContext>(m, "SEALContext")
      .def(py::init<const EncryptionParameters &>())
@@ -484,25 +490,11 @@ PYBIND11_MODULE(seal, m) {
         .def(py::pickle(
         [](const SEALContext &context) {
             EncryptionParameters parms_ = context.parms();
-
-            std::stringstream output(std::ios::binary | std::ios::out);
-            parms_.save(output);
-            std::string cipherstr = output.str();
-            std::string base64_encoded_cipher = base64_encode(reinterpret_cast<const unsigned char*>(cipherstr.c_str()), cipherstr.length());
-            return py::make_tuple(base64_encoded_cipher);
+            return serialize<EncryptionParameters>(parms_);
         },
         [](py::tuple t) {
-            if (t.size() != 1)
-                throw std::runtime_error("(Pickle) Invalid input tuple!");
-
             /* Create a new C++ instance */
-            EncryptionParameters parms_ = EncryptionParameters();
-            std::string cipherstr_encoded = t[0].cast<std::string>();
-            std::string cipherstr_decoded = base64_decode(cipherstr_encoded);
-            std::stringstream input(std::ios::binary | std::ios::in);
-            input.str(cipherstr_decoded);
-            parms_.load(input);
-
+            EncryptionParameters parms_ = deserialize<EncryptionParameters>(t);
             SEALContext context(parms_);
             return context;
         }
@@ -513,6 +505,7 @@ PYBIND11_MODULE(seal, m) {
       .def(py::init<std::uint64_t>())
       .def("value", (std::uint64_t (SmallModulus::*)()) &SmallModulus::value, "Returns the value of the current SmallModulus");
 
+  m.def("coeff_modulus_192", &coeff_modulus_192, "Returns the default coefficients modulus for a given polynomial modulus degree.");
   m.def("coeff_modulus_128", &coeff_modulus_128, "Returns the default coefficients modulus for a given polynomial modulus degree.");
   m.def("dbc_max", &dbc_max, "Return dbc max value.");
 
