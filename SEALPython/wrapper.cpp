@@ -420,7 +420,11 @@ PYBIND11_MODULE(seal, m) {
      .def("to_string", &Plaintext::to_string, "Returns the plaintext as a formatted string")
      .def("coeff_count", &Plaintext::coeff_count, "Returns the coefficient count of the current plaintext polynomial")
      .def("coeff_at", &Plaintext::coeff_at, "Returns coefficient at a given index")
-     .def(py::pickle(&serialize<Plaintext>, &deserialize<Plaintext> ));
+     .def(py::pickle(&serialize<Plaintext>, &deserialize<Plaintext> ))
+     .def("save", (void (Plaintext::*)(std::string &)) &Plaintext::python_save,
+        "Saves Plaintext object to file given filepath")
+     .def("load", (void (Plaintext::*)(std::string &)) &Plaintext::python_load,
+        "Loads Plaintext object from file given filepath");
 
   py::class_<PolyCRTBuilder>(m, "PolyCRTBuilder")
     .def(py::init<const SEALContext &, const MemoryPoolHandle &>())

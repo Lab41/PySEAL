@@ -2,6 +2,7 @@
 
 #include <string>
 #include <iostream>
+#include <fstream>
 #include "seal/memorypoolhandle.h"
 #include "seal/bigpoly.h"
 #include "seal/encryptionparams.h"
@@ -687,6 +688,7 @@ namespace seal
         @see load() to load a saved plaintext.
         */
         void save(std::ostream &stream) const;
+        void python_save(std::string &path) const;
 
         /**
         Loads a Plaintext from an input stream overwriting the current plaintext.
@@ -695,6 +697,7 @@ namespace seal
         @see save() to save a plaintext.
         */
         void load(std::istream &stream);
+        void python_load(std::string &path);
 
     private:
         MemoryPoolHandle pool_;
