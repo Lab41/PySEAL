@@ -345,6 +345,13 @@ namespace seal
         stream.write(reinterpret_cast<const char*>(plaintext_poly_.get()), coeff_count_ * bytes_per_uint64);
     }
 
+    void Plaintext::python_save(std::string &path) const
+    {
+        std::ofstream out(path);
+        save(out);
+        out.close();
+    }
+
     void Plaintext::load(istream &stream)
     {
         int32_t read_coeff_count = 0;
@@ -355,5 +362,12 @@ namespace seal
         
         // Read data
         stream.read(reinterpret_cast<char*>(plaintext_poly_.get()), read_coeff_count * bytes_per_uint64);
+    }
+
+    void Plaintext::python_load(std::string &path)
+    {
+        std::ifstream in(path);
+        load(in);
+        in.close();
     }
 }
