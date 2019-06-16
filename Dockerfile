@@ -45,6 +45,9 @@ WORKDIR /SEAL/SEALPython
 RUN python3 setup.py build_ext -i
 ENV PYTHONPATH $PYTHONPATH:/SEAL/SEALPython:/SEAL/bin
 
+# Add placeholder for notebooks directory to be mounted
+VOLUME /notebooks
+
 # Return to SEAL root directory
 WORKDIR /SEAL
 
